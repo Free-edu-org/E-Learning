@@ -1,21 +1,18 @@
 import { useState } from 'react';
-import { Group, User } from '../App';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
-import { ArrowLeft, Plus, Edit, Trash2, Users, UserPlus, X } from 'lucide-react';
-import { Badge } from './ui/badge';
-import { toast } from 'sonner@2.0.3';
-import { Label } from './ui/label';
-import { Textarea } from './ui/textarea';
-import { Checkbox } from './ui/checkbox';
-import { Avatar, AvatarFallback } from './ui/avatar';
-
-interface GroupManagementProps {
-  teacherId: string;
-  onBack: () => void;
-}
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Edit, Plus, Trash2, UserPlus, Users, X } from 'lucide-react';
+import { toast } from 'sonner';
+import { useAuth } from '@/app/providers/AuthProvider';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import type { Group, User } from '@/types';
 
 // Mock data
 const mockGroups: Group[] = [
@@ -74,7 +71,9 @@ const mockStudents: User[] = [
   }
 ];
 
-export function GroupManagement({ teacherId, onBack }: GroupManagementProps) {
+export function GroupManagement() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [groups, setGroups] = useState<Group[]>(mockGroups);
   const [students] = useState<User[]>(mockStudents.filter(s => !s.isArchived));
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -97,7 +96,7 @@ export function GroupManagement({ teacherId, onBack }: GroupManagementProps) {
       id: `group-${Date.now()}`,
       name: formName,
       description: formDescription,
-      teacherId,
+      teacherId: user?.id ?? 'teacher-1',
       studentIds: selectedStudentIds,
       createdAt: new Date()
     };
@@ -173,13 +172,17 @@ export function GroupManagement({ teacherId, onBack }: GroupManagementProps) {
     return students.find(s => s.id === studentId);
   };
 
+  if (!user) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <Button variant="outline" onClick={onBack}>
+            <Button variant="outline" onClick={() => navigate('/teacher')}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Powrót
             </Button>

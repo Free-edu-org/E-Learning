@@ -1,20 +1,17 @@
 import { useState } from 'react';
-import { User } from '../App';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
-import { ArrowLeft, Plus, Edit, Trash2, Archive, KeyRound, Search, UserCheck, UserX } from 'lucide-react';
-import { Badge } from './ui/badge';
-import { Avatar, AvatarFallback } from './ui/avatar';
-import { toast } from 'sonner@2.0.3';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Label } from './ui/label';
-
-interface StudentManagementProps {
-  teacherId: string;
-  onBack: () => void;
-}
+import { useNavigate } from 'react-router-dom';
+import { Archive, ArrowLeft, Edit, KeyRound, Plus, Search, Trash2, UserCheck } from 'lucide-react';
+import { toast } from 'sonner';
+import { useAuth } from '@/app/providers/AuthProvider';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import type { User } from '@/types';
 
 // Mock data
 const mockStudents: User[] = [
@@ -49,7 +46,9 @@ const mockStudents: User[] = [
   }
 ];
 
-export function StudentManagement({ teacherId, onBack }: StudentManagementProps) {
+export function StudentManagement() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [students, setStudents] = useState<User[]>(mockStudents);
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -147,13 +146,17 @@ export function StudentManagement({ teacherId, onBack }: StudentManagementProps)
     setIsEditDialogOpen(true);
   };
 
+  if (!user) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <Button variant="outline" onClick={onBack}>
+            <Button variant="outline" onClick={() => navigate('/teacher')}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Powrót
             </Button>

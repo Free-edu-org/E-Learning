@@ -1,22 +1,23 @@
 import { useState } from 'react';
-import { User, UserRole } from '../App';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import type { FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BookOpen } from 'lucide-react';
+import { useAuth } from '@/app/providers/AuthProvider';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import type { User } from '@/types';
 
-interface LoginViewProps {
-  onLogin: (user: User) => void;
-}
-
-export function LoginView({ onLogin }: LoginViewProps) {
+export function LoginPage() {
+  const { login } = useAuth();
+  const navigate = useNavigate();
   const [teacherEmail, setTeacherEmail] = useState('');
   const [teacherPassword, setTeacherPassword] = useState('');
   const [studentEmail, setStudentEmail] = useState('');
   const [studentPassword, setStudentPassword] = useState('');
 
-  const handleTeacherLogin = (e: React.FormEvent) => {
+  const handleTeacherLogin = (e: FormEvent) => {
     e.preventDefault();
     // Mock login
     const user: User = {
@@ -25,10 +26,11 @@ export function LoginView({ onLogin }: LoginViewProps) {
       role: 'teacher',
       avatar: '👩‍🏫'
     };
-    onLogin(user);
+    login(user);
+    navigate('/teacher');
   };
 
-  const handleStudentLogin = (e: React.FormEvent) => {
+  const handleStudentLogin = (e: FormEvent) => {
     e.preventDefault();
     // Mock login
     const user: User = {
@@ -37,7 +39,8 @@ export function LoginView({ onLogin }: LoginViewProps) {
       role: 'student',
       avatar: '👨‍🎓'
     };
-    onLogin(user);
+    login(user);
+    navigate('/student');
   };
 
   const handleDemoTeacher = () => {
@@ -48,7 +51,8 @@ export function LoginView({ onLogin }: LoginViewProps) {
       avatar: '👩‍🏫',
       email: 'anna.nauczyciel@szkola.pl'
     };
-    onLogin(user);
+    login(user);
+    navigate('/teacher');
   };
 
   const handleDemoStudent = () => {
@@ -60,7 +64,8 @@ export function LoginView({ onLogin }: LoginViewProps) {
       nickname: 'Janek',
       email: 'jan.kowalski@example.com'
     };
-    onLogin(user);
+    login(user);
+    navigate('/student');
   };
 
   return (

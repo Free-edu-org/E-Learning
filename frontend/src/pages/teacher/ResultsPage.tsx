@@ -1,15 +1,10 @@
 import { useState } from 'react';
-import { LessonResult } from '../App';
-import { Button } from './ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { ArrowLeft, TrendingUp, Award, Eye } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
-
-interface ResultsViewProps {
-  lessonId: string;
-  onBack: () => void;
-  onViewStudentStatistics?: (studentId: string) => void;
-}
+import { useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, Award, Eye, TrendingUp } from 'lucide-react';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import type { LessonResult } from '@/types';
 
 // Mock data
 const mockResults: LessonResult[] = [
@@ -68,7 +63,9 @@ const studentNames: Record<string, string> = {
   'student-5': 'Tomasz Wójcik'
 };
 
-export function ResultsView({ lessonId, onBack, onViewStudentStatistics }: ResultsViewProps) {
+export function ResultsPage() {
+  const navigate = useNavigate();
+  const { lessonId } = useParams();
   const [results] = useState<LessonResult[]>(mockResults);
 
   const averagePercentage = results.reduce((sum, r) => sum + r.percentage, 0) / results.length;
@@ -95,13 +92,13 @@ export function ResultsView({ lessonId, onBack, onViewStudentStatistics }: Resul
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <Button variant="outline" onClick={onBack}>
+            <Button variant="outline" onClick={() => navigate('/teacher')}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Powrót
             </Button>
             <div>
               <h1>Wyniki lekcji</h1>
-              <p className="text-gray-600">Present Simple vs Present Continuous</p>
+              <p className="text-gray-600">Present Simple vs Present Continuous ({lessonId ?? 'lesson-1'})</p>
             </div>
           </div>
         </div>
@@ -199,16 +196,14 @@ export function ResultsView({ lessonId, onBack, onViewStudentStatistics }: Resul
                         {result.percentage}%
                       </div>
                     </div>
-                    {onViewStudentStatistics && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => onViewStudentStatistics(result.studentId)}
-                      >
-                        <Eye className="w-4 h-4 mr-2" />
-                        Zobacz profil
-                      </Button>
-                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => navigate(`/teacher/students/${result.studentId}/statistics`)}
+                    >
+                      <Eye className="w-4 h-4 mr-2" />
+                      Zobacz profil
+                    </Button>
                   </div>
                 </div>
               ))}

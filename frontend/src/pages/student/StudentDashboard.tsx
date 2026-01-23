@@ -1,17 +1,11 @@
 import { useState } from 'react';
-import { User, Lesson } from '../App';
-import { Button } from './ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { LogOut, BookOpen, Play, TrendingUp, User as UserIcon, CheckCircle, Lock, Settings } from 'lucide-react';
-import { Badge } from './ui/badge';
-
-interface StudentDashboardProps {
-  user: User;
-  onLogout: () => void;
-  onStartLesson: (lessonId: string) => void;
-  onViewResults: () => void;
-  onEditProfile: () => void;
-}
+import { useNavigate } from 'react-router-dom';
+import { BookOpen, CheckCircle, LogOut, Lock, Settings, TrendingUp } from 'lucide-react';
+import { useAuth } from '@/app/providers/AuthProvider';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import type { Lesson } from '@/types';
 
 interface LessonStatus {
   lessonId: string;
@@ -54,9 +48,11 @@ const mockLessons: Lesson[] = [
   }
 ];
 
-export function StudentDashboard({ user, onLogout, onStartLesson, onViewResults, onEditProfile }: StudentDashboardProps) {
+export function StudentDashboard() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [lessons] = useState<Lesson[]>(mockLessons);
-  const [lessonStatuses, setLessonStatuses] = useState<LessonStatus[]>([
+  const [lessonStatuses] = useState<LessonStatus[]>([
     { lessonId: 'lesson-1', completed: true, score: 8, percentage: 80 },
     { lessonId: 'lesson-2', completed: false },
     { lessonId: 'lesson-3', completed: false }
@@ -71,26 +67,36 @@ export function StudentDashboard({ user, onLogout, onStartLesson, onViewResults,
     return lessonStatuses.find(s => s.lessonId === lessonId);
   };
 
+  if (!user) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <div className="text-4xl cursor-pointer" onClick={onEditProfile} title="Edytuj profil">
+            <div className="text-4xl cursor-pointer" onClick={() => navigate('/student/profile')} title="Edytuj profil">
               {user.avatar}
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h1>Witaj, {user.name}!</h1>
-                <Button variant="ghost" size="sm" onClick={onEditProfile}>
+                <Button variant="ghost" size="sm" onClick={() => navigate('/student/profile')}>
                   <Settings className="w-4 h-4" />
                 </Button>
               </div>
               <p className="text-gray-600">Gotowy na naukę?</p>
             </div>
           </div>
-          <Button variant="outline" onClick={onLogout}>
+          <Button
+            variant="outline"
+            onClick={() => {
+              logout();
+              navigate('/login');
+            }}
+          >
             <LogOut className="w-4 h-4 mr-2" />
             Wyloguj
           </Button>
@@ -110,7 +116,7 @@ export function StudentDashboard({ user, onLogout, onStartLesson, onViewResults,
               <CardTitle>{Math.round(averageScore)}%</CardTitle>
             </CardHeader>
           </Card>
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={onViewResults}>
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/student/results')}>
             <CardHeader>
               <CardDescription>Twoje postępy</CardDescription>
               <div className="flex items-center gap-2">
@@ -182,7 +188,7 @@ export function StudentDashboard({ user, onLogout, onStartLesson, onViewResults,
                     ) : (
                       <Button
                         className="w-full"
-                        onClick={() => onStartLesson(lesson.id)}
+                        onClick={() => navigate(`/student/lessons/${lesson.id}`)}
                       >
                         Rozpocznij lekcję
                       </Button>

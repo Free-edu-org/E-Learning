@@ -1,5 +1,5 @@
-import { Task } from '../../App';
-import { Input } from '../ui/input';
+import { Input } from '@/components/ui/input';
+import type { Task } from '@/types';
 
 interface FillGapTaskProps {
   task: Task;

@@ -1,16 +1,12 @@
 import { useState } from 'react';
-import { LessonResult, User } from '../App';
-import { Button } from './ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { ArrowLeft, TrendingUp, CheckCircle, Award, Target } from 'lucide-react';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
-import { Avatar, AvatarFallback } from './ui/avatar';
-import { Badge } from './ui/badge';
-
-interface StudentStatisticsProps {
-  studentId: string;
-  onBack: () => void;
-}
+import { useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, Award, CheckCircle, Target, TrendingUp } from 'lucide-react';
+import { Bar, BarChart, CartesianGrid, Line, LineChart, PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import type { LessonResult, User } from '@/types';
 
 // Mock data
 const mockStudent: User = {
@@ -72,9 +68,13 @@ const lessonTypeData = [
   { type: 'Wybór', score: 92, count: 10 }
 ];
 
-export function StudentStatistics({ studentId, onBack }: StudentStatisticsProps) {
-  const [student] = useState<User>(mockStudent);
-  const [results] = useState<LessonResult[]>(mockResults);
+export function StudentStatistics() {
+  const { studentId } = useParams();
+  const navigate = useNavigate();
+  const [student] = useState<User>({ ...mockStudent, id: studentId ?? mockStudent.id });
+  const [results] = useState<LessonResult[]>(
+    mockResults.map(result => ({ ...result, studentId: studentId ?? result.studentId }))
+  );
 
   const averagePercentage = results.reduce((sum, r) => sum + r.percentage, 0) / results.length;
   const completedLessons = results.length;
@@ -91,7 +91,7 @@ export function StudentStatistics({ studentId, onBack }: StudentStatisticsProps)
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <Button variant="outline" onClick={onBack}>
+            <Button variant="outline" onClick={() => navigate('/teacher')}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Powrót
             </Button>

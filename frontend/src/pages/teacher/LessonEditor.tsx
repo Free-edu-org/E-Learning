@@ -1,20 +1,17 @@
 import { useState } from 'react';
-import { User, Lesson, Task, TaskType } from '../App';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Textarea } from './ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { ArrowLeft, Plus, Trash2, Save } from 'lucide-react';
-import { Badge } from './ui/badge';
+import { useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, Plus, Save, Trash2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import type { Task, TaskType } from '@/types';
 
-interface LessonEditorProps {
-  user: User;
-  lessonId: string | null;
-  onBack: () => void;
-}
-
-export function LessonEditor({ user, lessonId, onBack }: LessonEditorProps) {
+export function LessonEditor() {
+  const { lessonId } = useParams();
+  const navigate = useNavigate();
   const [title, setTitle] = useState('');
   const [topic, setTopic] = useState('');
   const [grammarRules, setGrammarRules] = useState('');
@@ -54,7 +51,7 @@ export function LessonEditor({ user, lessonId, onBack }: LessonEditorProps) {
   const saveLesson = () => {
     // Mock save
     console.log('Saving lesson:', { title, topic, grammarRules, tasks });
-    onBack();
+    navigate('/teacher');
   };
 
   const getTaskTypeName = (type: TaskType) => {
@@ -71,7 +68,7 @@ export function LessonEditor({ user, lessonId, onBack }: LessonEditorProps) {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <Button variant="outline" onClick={onBack}>
+            <Button variant="outline" onClick={() => navigate('/teacher')}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Powrót
             </Button>
