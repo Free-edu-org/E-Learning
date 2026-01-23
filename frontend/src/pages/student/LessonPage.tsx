@@ -1,18 +1,13 @@
 import { useState } from 'react';
-import { Task, StudentAnswer } from '../App';
-import { Button } from './ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Progress } from './ui/progress';
-import { ArrowLeft, ArrowRight, CheckCircle } from 'lucide-react';
-import { WordOrderTask } from './tasks/WordOrderTask';
-import { FillGapTask } from './tasks/FillGapTask';
-import { MultipleChoiceTask } from './tasks/MultipleChoiceTask';
-
-interface LessonViewProps {
-  lessonId: string;
-  studentId: string;
-  onComplete: () => void;
-}
+import { useNavigate, useParams } from 'react-router-dom';
+import { ArrowRight, CheckCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { FillGapTask } from '@/components/tasks/FillGapTask';
+import { MultipleChoiceTask } from '@/components/tasks/MultipleChoiceTask';
+import { WordOrderTask } from '@/components/tasks/WordOrderTask';
+import type { StudentAnswer } from '@/types';
 
 // Mock lesson data
 const mockLesson = {
@@ -64,13 +59,16 @@ const mockLesson = {
   ]
 };
 
-export function LessonView({ lessonId, studentId, onComplete }: LessonViewProps) {
+export function LessonPage() {
+  const { lessonId } = useParams();
+  const navigate = useNavigate();
   const [currentTaskIndex, setCurrentTaskIndex] = useState(0);
   const [answers, setAnswers] = useState<StudentAnswer[]>([]);
   const [currentAnswer, setCurrentAnswer] = useState<string | string[]>('');
   const [showResults, setShowResults] = useState(false);
 
-  const lesson = mockLesson;
+  const resolvedLessonId = lessonId ?? mockLesson.id;
+  const lesson = { ...mockLesson, id: resolvedLessonId };
   const currentTask = lesson.tasks[currentTaskIndex];
   const progress = ((currentTaskIndex + 1) / lesson.tasks.length) * 100;
 
@@ -101,7 +99,7 @@ export function LessonView({ lessonId, studentId, onComplete }: LessonViewProps)
   };
 
   const handleFinish = () => {
-    onComplete();
+    navigate('/student');
   };
 
   if (showResults) {

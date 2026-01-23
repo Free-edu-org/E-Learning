@@ -1,17 +1,14 @@
-import { useState, useEffect } from 'react';
-import { User } from '../App';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save } from 'lucide-react';
-import { toast } from 'sonner@2.0.3';
-import { Label } from './ui/label';
-import { Avatar, AvatarFallback } from './ui/avatar';
-
-interface StudentProfileEditorProps {
-  studentId: string;
-  onBack: () => void;
-}
+import { toast } from 'sonner';
+import { useAuth } from '@/app/providers/AuthProvider';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import type { User } from '@/types';
 
 // Mock student data
 const mockStudent: User = {
@@ -30,8 +27,11 @@ const availableAvatars = [
   '🌟', '⭐', '🎯', '🎨', '🎭', '🎪'
 ];
 
-export function StudentProfileEditor({ studentId, onBack }: StudentProfileEditorProps) {
-  const [student, setStudent] = useState<User>(mockStudent);
+export function StudentProfileEditor() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const initialStudent = user ?? mockStudent;
+  const [student, setStudent] = useState<User>(initialStudent);
   const [nickname, setNickname] = useState(student.nickname || '');
   const [selectedAvatar, setSelectedAvatar] = useState(student.avatar || '👤');
   const [motto, setMotto] = useState('Uczę się angielskiego z pasją! 📚');
@@ -53,7 +53,7 @@ export function StudentProfileEditor({ studentId, onBack }: StudentProfileEditor
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <Button variant="outline" onClick={onBack}>
+            <Button variant="outline" onClick={() => navigate('/student')}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Powrót
             </Button>

@@ -1,21 +1,13 @@
 import { useState } from 'react';
-import { User, Lesson } from '../App';
-import { Button } from './ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Plus, LogOut, BookOpen, BarChart3, Edit, Eye, Users, UsersRound, Power, PowerOff } from 'lucide-react';
-import { Badge } from './ui/badge';
-import { toast } from 'sonner@2.0.3';
-import { Switch } from './ui/switch';
-
-interface TeacherDashboardProps {
-  user: User;
-  onLogout: () => void;
-  onCreateLesson: () => void;
-  onEditLesson: (lessonId: string) => void;
-  onViewResults: (lessonId: string) => void;
-  onManageStudents: () => void;
-  onManageGroups: () => void;
-}
+import { useNavigate } from 'react-router-dom';
+import { BarChart3, BookOpen, LogOut, Plus, Users, UsersRound, Edit } from 'lucide-react';
+import { toast } from 'sonner';
+import { useAuth } from '@/app/providers/AuthProvider';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
+import type { Lesson } from '@/types';
 
 // Mock data
 const mockLessons: Lesson[] = [
@@ -54,7 +46,9 @@ const mockLessons: Lesson[] = [
   }
 ];
 
-export function TeacherDashboard({ user, onLogout, onCreateLesson, onEditLesson, onViewResults, onManageStudents, onManageGroups }: TeacherDashboardProps) {
+export function TeacherDashboard() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [lessons, setLessons] = useState<Lesson[]>(mockLessons);
 
   const handleToggleLessonActive = (lessonId: string) => {
@@ -75,6 +69,10 @@ export function TeacherDashboard({ user, onLogout, onCreateLesson, onEditLesson,
 
   const activeLessonsCount = lessons.filter(l => l.isActive).length;
 
+  if (!user) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen p-6">
       <div className="max-w-7xl mx-auto">
@@ -87,7 +85,13 @@ export function TeacherDashboard({ user, onLogout, onCreateLesson, onEditLesson,
               <p className="text-gray-600">Panel nauczyciela</p>
             </div>
           </div>
-          <Button variant="outline" onClick={onLogout}>
+          <Button
+            variant="outline"
+            onClick={() => {
+              logout();
+              navigate('/login');
+            }}
+          >
             <LogOut className="w-4 h-4 mr-2" />
             Wyloguj
           </Button>
@@ -123,7 +127,7 @@ export function TeacherDashboard({ user, onLogout, onCreateLesson, onEditLesson,
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <Button onClick={onManageStudents} variant="outline" className="h-auto py-6">
+          <Button onClick={() => navigate('/teacher/students')} variant="outline" className="h-auto py-6">
             <div className="flex flex-col items-center gap-2">
               <Users className="w-8 h-8 text-indigo-600" />
               <div>
@@ -132,7 +136,7 @@ export function TeacherDashboard({ user, onLogout, onCreateLesson, onEditLesson,
               </div>
             </div>
           </Button>
-          <Button onClick={onManageGroups} variant="outline" className="h-auto py-6">
+          <Button onClick={() => navigate('/teacher/groups')} variant="outline" className="h-auto py-6">
             <div className="flex flex-col items-center gap-2">
               <UsersRound className="w-8 h-8 text-purple-600" />
               <div>
@@ -141,7 +145,7 @@ export function TeacherDashboard({ user, onLogout, onCreateLesson, onEditLesson,
               </div>
             </div>
           </Button>
-          <Button onClick={onCreateLesson} variant="outline" className="h-auto py-6">
+          <Button onClick={() => navigate('/teacher/lessons/new')} variant="outline" className="h-auto py-6">
             <div className="flex flex-col items-center gap-2">
               <Plus className="w-8 h-8 text-green-600" />
               <div>
@@ -197,7 +201,7 @@ export function TeacherDashboard({ user, onLogout, onCreateLesson, onEditLesson,
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => onEditLesson(lesson.id)}
+                      onClick={() => navigate(`/teacher/lessons/${lesson.id}/edit`)}
                       className="flex-1"
                     >
                       <Edit className="w-4 h-4 mr-2" />
@@ -206,7 +210,7 @@ export function TeacherDashboard({ user, onLogout, onCreateLesson, onEditLesson,
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => onViewResults(lesson.id)}
+                      onClick={() => navigate(`/teacher/lessons/${lesson.id}/results`)}
                       className="flex-1"
                     >
                       <BarChart3 className="w-4 h-4 mr-2" />

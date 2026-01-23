@@ -1,14 +1,11 @@
 import { useState } from 'react';
-import { LessonResult } from '../App';
-import { Button } from './ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { ArrowLeft, TrendingUp, CheckCircle } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
-
-interface StudentResultsProps {
-  studentId: string;
-  onBack: () => void;
-}
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, CheckCircle, TrendingUp } from 'lucide-react';
+import { CartesianGrid, Line, LineChart, PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { useAuth } from '@/app/providers/AuthProvider';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import type { LessonResult } from '@/types';
 
 // Mock data
 const mockResults: LessonResult[] = [
@@ -35,12 +32,18 @@ const skillsData = [
   { skill: 'Czasy', score: 80 },
 ];
 
-export function StudentResults({ studentId, onBack }: StudentResultsProps) {
+export function StudentResults() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [results] = useState<LessonResult[]>(mockResults);
 
   const averagePercentage = results.reduce((sum, r) => sum + r.percentage, 0) / results.length;
   const completedLessons = results.length;
   const totalPoints = results.reduce((sum, r) => sum + r.score, 0);
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen p-6">
@@ -48,7 +51,7 @@ export function StudentResults({ studentId, onBack }: StudentResultsProps) {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <Button variant="outline" onClick={onBack}>
+            <Button variant="outline" onClick={() => navigate('/student')}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Powrót
             </Button>

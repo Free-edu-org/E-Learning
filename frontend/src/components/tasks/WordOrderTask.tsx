@@ -1,5 +1,5 @@
-import { Task } from '../../App';
-import { Button } from '../ui/button';
+import { Button } from '@/components/ui/button';
+import type { Task } from '@/types';
 import { ArrowDown, ArrowUp, X } from 'lucide-react';
 
 interface WordOrderTaskProps {
