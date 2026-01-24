@@ -10,13 +10,15 @@ export function ProtectedRoute({ roles }: ProtectedRouteProps) {
   const { user } = useAuth();
   const location = useLocation();
 
+  const fallbackPath =
+    user?.role === 'teacher' ? '/teacher' : user?.role === 'student' ? '/student' : '/login';
+
   if (!user) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
   if (roles && !roles.includes(user.role)) {
-    const fallback = user.role === 'teacher' ? '/teacher' : '/student';
-    return <Navigate to={fallback} replace />;
+    return <Navigate to={fallbackPath} replace />;
   }
 
   return <Outlet />;
