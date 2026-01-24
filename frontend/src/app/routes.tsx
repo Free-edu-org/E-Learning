@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Link, Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { AppShell } from '@/components/layout/AppShell';
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute';
@@ -13,6 +13,17 @@ import { ResultsPage } from '@/pages/teacher/ResultsPage';
 import { StudentResults } from '@/pages/student/StudentResults';
 import { StudentProfileEditor } from '@/pages/student/StudentProfileEditor';
 import { StudentStatistics } from '@/pages/student/StudentStatistics';
+import type { UserRole } from '@/types';
+
+function resolveRolePath(role: UserRole | null) {
+  if (role === 'teacher') {
+    return '/teacher';
+  }
+  if (role === 'student') {
+    return '/student';
+  }
+  return '/login';
+}
 
 function HomeRedirect() {
   const { user } = useAuth();
@@ -21,7 +32,27 @@ function HomeRedirect() {
     return <Navigate to="/login" replace />;
   }
 
-  return <Navigate to={`/${user.role}`} replace />;
+  return <Navigate to={resolveRolePath(user.role)} replace />;
+}
+
+function NotFoundRoute() {
+  const { user } = useAuth();
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  const fallbackPath = resolveRolePath(user.role);
+
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center gap-3 px-6 text-center">
+      <h1 className="text-2xl font-semibold text-slate-900">404 - Nie znaleziono strony</h1>
+      <p className="text-sm text-slate-600">Sprawdź adres lub wróć do swojego panelu.</p>
+      <Link className="text-sm font-medium text-indigo-600 hover:text-indigo-500" to={fallbackPath}>
+        Wróć do panelu
+      </Link>
+    </div>
+  );
 }
 
 export function AppRoutes() {
@@ -51,7 +82,7 @@ export function AppRoutes() {
         </Route>
       </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFoundRoute />} />
     </Routes>
   );
 }

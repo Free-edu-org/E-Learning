@@ -19,6 +19,7 @@ export function LoginPage() {
 
   const handleTeacherLogin = (e: FormEvent) => {
     e.preventDefault();
+    // TODO: Replace mock login with API call when backend auth is ready.
     // Mock login
     const user: User = {
       id: 'teacher-1',
@@ -32,6 +33,7 @@ export function LoginPage() {
 
   const handleStudentLogin = (e: FormEvent) => {
     e.preventDefault();
+    // TODO: Replace mock login with API call when backend auth is ready.
     // Mock login
     const user: User = {
       id: 'student-1',
