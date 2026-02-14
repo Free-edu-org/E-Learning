@@ -9,4 +9,11 @@ export default defineConfig({
             "@": path.resolve(__dirname, "./src"),
         },
     },
+    test: {
+        globals: true,
+        environment: "jsdom",
+        setupFiles: "src/setupTests.ts",
+        include: ["src/**/*.{test,spec}.{ts,tsx}"],
+        tsconfig: "./tsconfig.test.json",
+    },
 });

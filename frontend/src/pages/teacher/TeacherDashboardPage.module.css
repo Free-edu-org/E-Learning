@@ -1,0 +1,37 @@
+.card {
+  width: min(500px, 100%);
+  padding: 2rem;
+  border-radius: 1.4rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  text-align: center;
+}
+
+.heading {
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+.email {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.logoutButton {
+  border: 1px solid var(--border);
+  background: transparent;
+  border-radius: 0.9rem;
+  padding: 0.8rem 1rem;
+  cursor: pointer;
+  color: var(--text);
+  transition: border-color var(--transition), transform var(--transition);
+}
+
+.logoutButton:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
