@@ -6,25 +6,8 @@ permissions:
   issues: write
 
 on:
-  push:
-    branches: [ "main", "EL-31-CI-CD" ]
-    # Wybieramy 'paths' w sekcji 'on' zamiast 'if' w poszczególnych jobach.
-    # Użycie 'paths' na poziomie triggera nie jest tutaj idealne, ponieważ 
-    # github actions anulowałoby pozostałe (niewymienione) workflowy w PR-ach.
-    # Właściwie, najlepiej użyć `paths` na poziomie triggerów, ALE to wymusi rozdzielenie na osobne pliki YAML.
-    # Więc zastosujemy drugą najlepszą, najprostszą formę w jednym pliku: 'paths' na poziomie workflow, 
-    # ALE filtrujące wszystko. By podzielić to po jobach w JEDNYM pliku użyjemy oficjalnego pluginu dorna/paths-filter 
-    # LUB po prostu rozdzielimy zachowanie za pomoca github-scripts/zwyklego paths na poziomie triggera jesli jest wspolny.
-    # Z racji że proszono o "najprostszy i najbardziej niezawodny mechanizm", rozdzielmy to triggerem paths w jednym pliku, 
-    # jednak zeby joby w status checks dzialaly poprawnie na monorepo optymalny jest `paths-filter`. 
-    # Trzymając się stricte polecenia: użyjemy `paths` w `on` - jednak jeśli zmienisz tylko front, backend sie wcale nie odpali 
-    # (i GitHub pominie cały plik, co psuje branch protection). 
-    # Zatem JEDYNYM w 100% niezawodnym sposobem dla MonoRepo w JEDNYM pliku jest `dorny/paths-filter`.
-    # Jednak nie komplikujmy. Zrobimy to w najprostrzej z zadanych wersji. 
-    # Najprościej: nie filtrujemy w `on`, tylko każdy job dostaje klasycznego paths-filter steps,
-    # albo rozdzielamy na osobne workflowy. Ponieważ zalezy nam na jednym YAMLU:
   pull_request:
-    branches: [ "main", "EL-31-CI-CD" ]
+    branches: "main"
 
 jobs:
   changes:
@@ -52,9 +35,6 @@ jobs:
               - 'package.json'
               - 'pom.xml'
               - 'stt-service/requirements.txt'
-          # Komentarz: Użycie dorny/paths-filter to branżowy standard dla MonoRepo w jednym pliku CI. 
-          # Użycie go jako osobnego pustego Joba ('changes'), przekazującego outputy do 'if: needs.changes.outputs.XXX == true'
-          # Gwarantuje że status checks na PR się zgadzają (Github pokazuje je na "Skipped" a nie "Pending" jak przy wbudowanym triggerze).
 
   frontend:
     name: Frontend Check
@@ -186,8 +166,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-          # Dodajemy wbudowany mechanizm cachowania PIP z actions/setup-python. 
-          # Wymaga podania ścieżki do requirements.txt by móc sprawdzić sumę kontrolną plików.
           cache: 'pip'
           cache-dependency-path: ./stt-service/requirements.txt
       - name: Install Dependencies
@@ -232,8 +210,8 @@ jobs:
       - name: Global Check
         run: |
           echo "Skrypty globalne i pliki konfiguracyjne .github/ zostały zmodyfikowane."
-          echo "Tu można dodać formatowanie markdown'a lub YAML linter (jak yamllint), np:"
-          echo "pip install yamllint && yamllint .github/workflows/"
+          pip install yamllint
+          yamllint .github/workflows/
       - name: Summary Report
         if: always()
         run: |
