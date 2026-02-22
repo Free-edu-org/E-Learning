@@ -7,7 +7,7 @@ permissions:
 
 on:
   push:
-    branches: [ "main", "dev" ]
+    branches: "main"
     # Wybieramy 'paths' w sekcji 'on' zamiast 'if' w poszczególnych jobach.
     # Użycie 'paths' na poziomie triggera nie jest tutaj idealne, ponieważ 
     # github actions anulowałoby pozostałe (niewymienione) workflowy w PR-ach.
@@ -24,7 +24,7 @@ on:
     # Najprościej: nie filtrujemy w `on`, tylko każdy job dostaje klasycznego paths-filter steps,
     # albo rozdzielamy na osobne workflowy. Ponieważ zalezy nam na jednym YAMLU:
   pull_request:
-    branches: [ "main", "dev" ]
+    branches: "main"
 
 jobs:
   changes:
