@@ -75,7 +75,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Format Check (Prettier)
-        run: npx prettier --check "src/**/*.{js,jsx,ts,tsx,css,md}" || echo "Prettier formatting failed."
+        run: npx prettier --check "src/**/*.{js,jsx,ts,tsx,css,md}"
       - name: Lint
         run: npm run lint
       - name: Build and Typecheck
