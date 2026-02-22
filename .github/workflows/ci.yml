@@ -117,12 +117,14 @@ jobs:
         working-directory: ./backend
     steps:
       - uses: actions/checkout@v4
+      - name: Make mvnw executable
+        run: chmod +x mvnw
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-           distribution: 'oracle'
-           java-version: '25'
-           cache: 'maven'
+          distribution: 'oracle'
+          java-version: '25'
+          cache: 'maven'
       - name: Spotless Format Check
         run: ./mvnw spotless:check
       - name: Verify
