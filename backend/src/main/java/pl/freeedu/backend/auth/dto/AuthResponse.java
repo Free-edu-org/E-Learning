@@ -11,6 +11,6 @@ import pl.freeedu.backend.user.model.Role;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AuthResponse {
-    private String token;
-    private Role role;
+	private String token;
+	private Role role;
 }

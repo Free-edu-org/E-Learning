@@ -15,16 +15,16 @@ import pl.freeedu.backend.user.model.Role;
 @AllArgsConstructor
 public class RegisterRequest {
 
-    @NotBlank(message = "Username is required")
-    private String username;
+	@NotBlank(message = "Username is required")
+	private String username;
 
-    @NotBlank(message = "Email is required")
-    @Email(message = "Invalid email format")
-    private String email;
+	@NotBlank(message = "Email is required")
+	@Email(message = "Invalid email format")
+	private String email;
 
-    @NotBlank(message = "Password is required")
-    private String password;
+	@NotBlank(message = "Password is required")
+	private String password;
 
-    @NotNull(message = "Role is required")
-    private Role role;
+	@NotNull(message = "Role is required")
+	private Role role;
 }

@@ -10,10 +10,10 @@ import pl.freeedu.backend.user.model.User;
 @Mapper(componentModel = "spring")
 public interface AuthMapper {
 
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "password", source = "encodedPassword")
-    User toUser(RegisterRequest request, String encodedPassword);
+	@Mapping(target = "id", ignore = true)
+	@Mapping(target = "createdAt", ignore = true)
+	@Mapping(target = "password", source = "encodedPassword")
+	User toUser(RegisterRequest request, String encodedPassword);
 
-    AuthResponse toAuthResponse(String token, Role role);
+	AuthResponse toAuthResponse(String token, Role role);
 }

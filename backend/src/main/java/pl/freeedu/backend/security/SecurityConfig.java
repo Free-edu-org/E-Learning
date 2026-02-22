@@ -10,6 +10,11 @@ import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.reactive.CorsConfigurationSource;
+import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
+import java.util.Arrays;
+
 import pl.freeedu.backend.user.repository.UserRepository;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -18,48 +23,56 @@ import reactor.core.scheduler.Schedulers;
 @EnableWebFluxSecurity
 public class SecurityConfig {
 
-    private final UserRepository userRepository;
-    private final JwtService jwtService;
+	private final UserRepository userRepository;
+	private final JwtService jwtService;
 
-    public SecurityConfig(UserRepository userRepository, JwtService jwtService) {
-        this.userRepository = userRepository;
-        this.jwtService = jwtService;
-    }
+	public SecurityConfig(UserRepository userRepository, JwtService jwtService) {
+		this.userRepository = userRepository;
+		this.jwtService = jwtService;
+	}
 
-    @Bean
-    public ReactiveUserDetailsService userDetailsService() {
-        return username -> Mono.fromCallable(() -> userRepository.findByEmail(username))
-                .subscribeOn(Schedulers.boundedElastic())
-                .flatMap(optionalUser -> optionalUser.map(Mono::just).orElseGet(Mono::empty))
-                .map(u -> org.springframework.security.core.userdetails.User.builder()
-                        .username(u.getEmail())
-                        .password(u.getPassword())
-                        .authorities(u.getRole())
-                        .build());
-    }
+	@Bean
+	public ReactiveUserDetailsService userDetailsService() {
+		return username -> Mono.fromCallable(() -> userRepository.findByEmail(username))
+				.subscribeOn(Schedulers.boundedElastic())
+				.flatMap(optionalUser -> optionalUser.map(Mono::just).orElseGet(Mono::empty))
+				.map(u -> org.springframework.security.core.userdetails.User.builder().username(u.getEmail())
+						.password(u.getPassword()).authorities(u.getRole()).build());
+	}
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+	@Bean
+	public PasswordEncoder passwordEncoder() {
+		return new BCryptPasswordEncoder();
+	}
 
-    @Bean
-    public ReactiveUserDetailsPasswordService userDetailsPasswordService() {
-        return (userDetails, newPassword) -> Mono.just(userDetails);
-    }
+	@Bean
+	public ReactiveUserDetailsPasswordService userDetailsPasswordService() {
+		return (userDetails, newPassword) -> Mono.just(userDetails);
+	}
 
-    @Bean
-    public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http,
-                                                         ReactiveUserDetailsService userDetailsService) {
-        JwtAuthenticationFilter jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtService, userDetailsService);
+	@Bean
+	public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http,
+			ReactiveUserDetailsService userDetailsService) {
+		JwtAuthenticationFilter jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtService, userDetailsService);
 
-        return http
-                .csrf(ServerHttpSecurity.CsrfSpec::disable)
-                .authorizeExchange(exchanges -> exchanges
-                        .pathMatchers("/api/auth/**").permitAll()
-                        .pathMatchers("/v3/api-docs/**", "/swagger-ui.html", "/webjars/**").permitAll()
-                        .anyExchange().authenticated())
-                .addFilterAt(jwtAuthenticationFilter, SecurityWebFiltersOrder.AUTHENTICATION)
-                .build();
-    }
+		return http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
+				.csrf(ServerHttpSecurity.CsrfSpec::disable)
+				.authorizeExchange(exchanges -> exchanges.pathMatchers("/api/auth/**").permitAll()
+						.pathMatchers("/v3/api-docs/**", "/swagger-ui.html", "/webjars/**").permitAll().anyExchange()
+						.authenticated())
+				.addFilterAt(jwtAuthenticationFilter, SecurityWebFiltersOrder.AUTHENTICATION).build();
+	}
+
+	@Bean
+	public CorsConfigurationSource corsConfigurationSource() {
+		CorsConfiguration configuration = new CorsConfiguration();
+		configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "http://127.0.0.1:5173"));
+		configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"));
+		configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept"));
+		configuration.setAllowCredentials(true);
+
+		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+		source.registerCorsConfiguration("/**", configuration);
+		return source;
+	}
 }

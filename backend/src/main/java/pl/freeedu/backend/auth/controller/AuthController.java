@@ -22,33 +22,29 @@ import org.springframework.http.ProblemDetail;
 @Tag(name = "Authentication", description = "Endpoints for user registration and login")
 public class AuthController {
 
-    private final AuthService authService;
+	private final AuthService authService;
 
-    public AuthController(AuthService authService) {
-        this.authService = authService;
-    }
+	public AuthController(AuthService authService) {
+		this.authService = authService;
+	}
 
-    @Operation(summary = "Register a new user")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "User successfully registered"),
-            @ApiResponse(responseCode = "400", description = "Invalid input data", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
-            @ApiResponse(responseCode = "401", description = "Email is already taken", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
-    })
-    @PostMapping("/register")
-    @ResponseStatus(HttpStatus.CREATED)
-    public Mono<AuthResponse> register(@Valid @RequestBody Mono<RegisterRequest> request) {
-        return authService.register(request);
-    }
+	@Operation(summary = "Register a new user")
+	@ApiResponses(value = {@ApiResponse(responseCode = "201", description = "User successfully registered"),
+			@ApiResponse(responseCode = "400", description = "Invalid input data", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "401", description = "Email is already taken", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
+	@PostMapping("/register")
+	@ResponseStatus(HttpStatus.CREATED)
+	public Mono<AuthResponse> register(@Valid @RequestBody Mono<RegisterRequest> request) {
+		return authService.register(request);
+	}
 
-    @Operation(summary = "Login an existing user")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "User successfully authenticated"),
-            @ApiResponse(responseCode = "400", description = "Invalid input data", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
-            @ApiResponse(responseCode = "401", description = "Invalid credentials", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
-    })
-    @PostMapping("/login")
-    @ResponseStatus(HttpStatus.OK)
-    public Mono<AuthResponse> login(@Valid @RequestBody Mono<LoginRequest> request) {
-        return authService.login(request);
-    }
+	@Operation(summary = "Login an existing user")
+	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "User successfully authenticated"),
+			@ApiResponse(responseCode = "400", description = "Invalid input data", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "401", description = "Invalid credentials", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
+	@PostMapping("/login")
+	@ResponseStatus(HttpStatus.OK)
+	public Mono<AuthResponse> login(@Valid @RequestBody Mono<LoginRequest> request) {
+		return authService.login(request);
+	}
 }
