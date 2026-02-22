@@ -92,7 +92,7 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.backend == 'true' }}
     runs-on: ubuntu-latest
-    
+
     # Konfiguracja MySQL Service Container dla testów integracyjnych w Spring Boot
     services:
       mysql:
