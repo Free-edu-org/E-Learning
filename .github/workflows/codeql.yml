@@ -1,0 +1,92 @@
+name: "CodeQL Security Scan"
+
+on:
+  push:
+    branches: [ "main", "dev" ]
+  pull_request:
+    branches: [ "main", "dev" ]
+  schedule:
+    - cron: '30 2 * * 1'
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      java: ${{ steps.filter.outputs.java }}
+      js: ${{ steps.filter.outputs.js }}
+      python: ${{ steps.filter.outputs.python }}
+    steps:
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            java:
+              - 'backend/**'
+            js:
+              - 'frontend/**'
+            python:
+              - 'stt-service/**'
+          # Optymalizacja CodeQL: 
+          # Odpalamy pełny job security tylko na matrixach dla języków, 
+          # których zawartość w repozytorium się faktycznie zmieniła. Mniej minut CI zużytych.
+
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    needs: changes
+    # Uruchom analizę tylko jeśli dla sprawdzanego w macierzy języka zmodyfikowano pliki
+    if: |
+      (matrix.language == 'java-kotlin' && needs.changes.outputs.java == 'true') ||
+      (matrix.language == 'javascript-typescript' && needs.changes.outputs.js == 'true') ||
+      (matrix.language == 'python' && needs.changes.outputs.python == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    permissions:
+      security-events: write
+      packages: read
+      actions: read
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - language: java-kotlin
+          build-mode: manual
+        - language: javascript-typescript
+          build-mode: none
+        - language: python
+          build-mode: none
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        # CodeQL wymaga czasami git commit history żeby mapować podatności, 
+        # ale fetch-depth: 1 bywa szybsze jeśli CodeQL to akceptuje (actionv4 zwykle tak). 
+        # By być absolutnie zgodnym z dokumentacją bezpieczeństwa GitHub, zostawiamy domyślne zachowanie.
+        fetch-depth: 0
+
+    - if: matrix.language == 'java-kotlin'
+      name: Setup Java 25
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'oracle'
+        java-version: '25'
+        cache: 'maven'
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: ${{ matrix.language }}
+        build-mode: ${{ matrix.build-mode }}
+
+    - if: matrix.build-mode == 'manual'
+      name: Build Java
+      run: |
+        cd backend
+        ./mvnw clean compile -DskipTests
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+      with:
+        category: "/language:${{matrix.language}}"
