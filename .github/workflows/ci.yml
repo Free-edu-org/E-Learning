@@ -112,6 +112,24 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.backend == 'true' }}
     runs-on: ubuntu-latest
+    
+    # Konfiguracja MySQL Service Container dla testów integracyjnych w Spring Boot
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_DATABASE: freeedu
+          MYSQL_USER: freeedu
+          MYSQL_PASSWORD: freeedu_pass
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    # Nadpisujemy adres bazy danych z pliku na localhost port 3306 dla kontenera CI
+    env:
+      SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/freeedu
+
     defaults:
       run:
         working-directory: ./backend
@@ -175,7 +193,6 @@ jobs:
       - name: Install Dependencies
         run: |
           pip install -r requirements.txt
-          pip install ruff
       - name: Ruff Format Check
         run: ruff format --check .
       - name: Ruff Check (Lint)
