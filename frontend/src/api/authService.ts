@@ -1,4 +1,4 @@
-import { fetchApi } from "./apiClient";
+import {fetchApi} from "./apiClient";
 
 export interface LoginRequest {
     email: string;
@@ -12,7 +12,7 @@ export interface LoginResponse {
 
 export const authService = {
     login: (data: LoginRequest) => {
-        return fetchApi<LoginResponse>('/api/auth/login', {
+        return fetchApi<LoginResponse>('/api/v1/auth/login', {
             method: 'POST',
             body: JSON.stringify(data),
         });
