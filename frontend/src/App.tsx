@@ -1,34 +1,53 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
-import "./App.css";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AppThemeProvider } from "./context/ThemeContext";
+import { AuthProvider } from "./context/AuthContext";
+import { useAuth } from "./context/AuthContext";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import { Login } from "./features/auth/Login";
+import { Button, Box, Typography } from "@mui/material";
 
-function App() {
-  const [count, setCount] = useState(0);
+// Placeholder for protected home
+function Home() {
+  const { logout, role } = useAuth();
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <Box sx={{ p: 4, textAlign: "center" }}>
+      <Typography variant="h3" gutterBottom>
+        Witaj w FreeEdu!
+      </Typography>
+      <Typography variant="subtitle1" gutterBottom>
+        Jesteś pomyślnie zalogowany. Twoja rola to: {role}
+      </Typography>
+      <Button
+        variant="outlined"
+        color="primary"
+        onClick={logout}
+        sx={{ mt: 2 }}
+      >
+        Wyloguj się
+      </Button>
+    </Box>
+  );
+}
+
+function App() {
+  return (
+    <AppThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+
+            <Route element={<ProtectedRoute />}>
+              <Route path="/" element={<Home />} />
+              {/* Add more protected routes here */}
+            </Route>
+
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </AppThemeProvider>
   );
 }
 
