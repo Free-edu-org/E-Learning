@@ -6,12 +6,13 @@ import {
   Button,
   CircularProgress,
   Divider,
+  Grow,
   IconButton,
   Paper,
   TextField,
   Typography,
-  Zoom,
 } from "@mui/material";
+import { alpha, useTheme } from "@mui/material/styles";
 import {
   DarkMode as DarkModeIcon,
   LightMode as LightModeIcon,
@@ -27,6 +28,39 @@ export function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
   const { mode, toggleColorMode } = useAppTheme();
+  const theme = useTheme();
+  const cardBorderColor =
+    mode === "dark"
+      ? alpha(theme.palette.common.white, 0.15)
+      : alpha(theme.palette.primary.main, 0.35);
+  const cardHoverBorderColor =
+    mode === "dark"
+      ? alpha(theme.palette.primary.light, 0.35)
+      : theme.palette.primary.main;
+  const fieldBgColor =
+    mode === "dark" ? alpha(theme.palette.common.white, 0.04) : "transparent";
+  const fieldOutlineColor = alpha(theme.palette.text.secondary, 0.4);
+  const fieldTextColor = theme.palette.text.primary;
+  const dividerColor = alpha(theme.palette.text.secondary, 0.75);
+  const textFieldSx = {
+    backgroundColor: fieldBgColor,
+    borderRadius: 2,
+    "& .MuiOutlinedInput-root": {
+      color: fieldTextColor,
+      "&:hover .MuiOutlinedInput-notchedOutline": {
+        borderColor: cardHoverBorderColor,
+      },
+      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+        borderColor: cardHoverBorderColor,
+      },
+    },
+    "& .MuiOutlinedInput-notchedOutline": {
+      borderColor: fieldOutlineColor,
+    },
+    "& .MuiInputLabel-root": {
+      color: theme.palette.text.secondary,
+    },
+  };
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -67,19 +101,58 @@ export function Login() {
         alignItems: "center",
         justifyContent: "center",
         position: "relative",
-        transition: "background-color 0.3s ease",
+        bgcolor: theme.palette.background.default,
+        color: theme.palette.text.primary,
+        transition: theme.transitions.create("background-color", {
+          duration: theme.transitions.duration.standard,
+        }),
       }}
     >
-      <Box sx={{ position: "absolute", top: 16, right: 16 }}>
-        <IconButton onClick={toggleColorMode} color="inherit">
+      <Box
+        sx={{
+          position: "absolute",
+          top: 16,
+          right: 16,
+          bgcolor:
+            mode === "dark"
+              ? alpha(theme.palette.background.paper, 0.8)
+              : alpha(theme.palette.background.paper, 0.95),
+          borderRadius: "999px",
+          boxShadow: theme.shadows[4],
+        }}
+      >
+        <IconButton
+          onClick={toggleColorMode}
+          color="inherit"
+          sx={{
+            p: 1.25,
+          }}
+        >
           {mode === "dark" ? <LightModeIcon /> : <DarkModeIcon />}
         </IconButton>
       </Box>
 
-      <Zoom in={true} style={{ transitionDelay: "300ms" }}>
+      <Grow in timeout={500} style={{ transformOrigin: "top center" }}>
         <Paper
-          elevation={4}
-          sx={{ p: 4, width: "100%", maxWidth: 450, borderRadius: 3 }}
+          elevation={6}
+          sx={{
+            p: 4,
+            width: "100%",
+            maxWidth: 450,
+            borderRadius: 3,
+            backgroundColor: theme.palette.background.paper,
+            border: `1px solid ${cardBorderColor}`,
+            boxShadow: theme.shadows[8],
+            transition: theme.transitions.create(
+              ["transform", "box-shadow", "border-color"],
+              { duration: theme.transitions.duration.short },
+            ),
+            "&:hover": {
+              transform: "translateY(-6px) scale(1.01)",
+              boxShadow: theme.shadows[12],
+              borderColor: cardHoverBorderColor,
+            },
+          }}
         >
           <Box display="flex" flexDirection="column" alignItems="center" mb={3}>
             <Box
@@ -93,10 +166,18 @@ export function Login() {
             >
               <BookIcon fontSize="large" />
             </Box>
-            <Typography variant="h5" fontWeight="bold" gutterBottom>
+            <Typography
+              variant="h5"
+              fontWeight="bold"
+              gutterBottom
+              color={theme.palette.text.primary}
+            >
               English Learning Platform
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography
+              variant="body2"
+              color={theme.palette.text.secondary}
+            >
               Zaloguj się, aby kontynuować
             </Typography>
           </Box>
@@ -107,7 +188,13 @@ export function Login() {
             </Alert>
           )}
 
-          <Divider sx={{ mb: 3, fontSize: "0.8rem", color: "text.secondary" }}>
+          <Divider
+            sx={{
+              mb: 3,
+              fontSize: "0.8rem",
+              color: dividerColor,
+            }}
+          >
             LUB UŻYJ FORMULARZA
           </Divider>
 
@@ -122,6 +209,7 @@ export function Login() {
               required
               disabled={isLoading}
               variant="outlined"
+              sx={textFieldSx}
             />
             <TextField
               label="Hasło"
@@ -133,6 +221,7 @@ export function Login() {
               required
               disabled={isLoading}
               variant="outlined"
+              sx={textFieldSx}
             />
 
             <Button
@@ -152,7 +241,7 @@ export function Login() {
             </Button>
           </form>
         </Paper>
-      </Zoom>
+      </Grow>
     </Box>
   );
 }
