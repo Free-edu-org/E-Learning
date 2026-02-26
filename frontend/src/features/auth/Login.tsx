@@ -174,10 +174,7 @@ export function Login() {
             >
               English Learning Platform
             </Typography>
-            <Typography
-              variant="body2"
-              color={theme.palette.text.secondary}
-            >
+            <Typography variant="body2" color={theme.palette.text.secondary}>
               Zaloguj się, aby kontynuować
             </Typography>
           </Box>
