@@ -61,6 +61,17 @@ public class UserController {
 		return userService.getUser(id);
 	}
 
+	@Operation(summary = "Get current user profile", description = "Retrieve the profile details of the currently authenticated user.")
+	@ApiResponses(value = {
+			@ApiResponse(responseCode = "200", description = "Current user details successfully retrieved"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized - invalid token", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "404", description = "User not found", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
+	@GetMapping("/me")
+	@PreAuthorize("isAuthenticated()")
+	public Mono<UserResponse> getCurrentUser() {
+		return userService.getCurrentUser();
+	}
+
 	@Operation(summary = "Update user details", description = "Update user's profile information. Only available to the account owner or an admin.")
 	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "User details successfully updated"),
 			@ApiResponse(responseCode = "400", description = "Invalid input data", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),

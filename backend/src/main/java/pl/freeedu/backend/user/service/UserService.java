@@ -12,6 +12,7 @@ import pl.freeedu.backend.user.dto.UpdateUserRequest;
 import pl.freeedu.backend.user.dto.UserResponse;
 import pl.freeedu.backend.user.model.User;
 import pl.freeedu.backend.user.repository.UserRepository;
+import pl.freeedu.backend.security.util.SecurityUtils;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -51,6 +52,11 @@ public class UserService {
 		return Mono.fromCallable(
 				() -> userRepository.findById(id).orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND)))
 				.subscribeOn(Schedulers.boundedElastic()).map(userMapper::toUserResponse);
+	}
+
+	public Mono<UserResponse> getCurrentUser() {
+		return SecurityUtils.getCurrentUserId().flatMap(this::getUser)
+				.switchIfEmpty(Mono.error(new UserException(UserErrorCode.USER_NOT_FOUND)));
 	}
 
 	public Mono<UserResponse> updateUser(Integer id, Mono<UpdateUserRequest> requestMono) {

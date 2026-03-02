@@ -6,48 +6,17 @@ All backend responses now utilize standard RFC-7807 ProblemDetail for errors, gi
 ## Base URL
 Default local development base URL is `http://localhost:8080`
 
-## Authentication
+## 1. Authentication (`/api/v1/auth`)
 
-### 1. Register User
-- **URL**: `/api/auth/register`
-- **Method**: `POST`
-- **Description**: Registers a new user.
-
-**Request Body (JSON):**
-```json
-{
-  "email": "user@example.com",
-  "username": "student1",
-  "password": "strongPassword123",
-  "role": "STUDENT" // Can be STUDENT or ADMIN
-}
-```
-
-**Success (201 Created):**
-```json
-{
-  "token": "eyJhbGci... (JWT token)",
-  "role": "STUDENT"
-}
-```
-
-**Known Errors (400 Bad Request / 401 Unauthorized):**
-- Returns a standard ProblemDetail JSON structure with custom `code` property.
-- Example `code` values:
-  - `EMAIL_ALREADY_TAKEN`: Passed email is already in use.
-  - `VALIDATION_FAILED`: Fields are missing or invalid.
-
----
-
-### 2. Login User
-- **URL**: `/api/auth/login`
+### 1.1. Login User
+- **URL**: `/api/v1/auth/login`
 - **Method**: `POST`
 - **Description**: Authenticates an existing user and returns a JWT token.
 
 **Request Body (JSON):**
 ```json
 {
-  "email": "user@example.com",
+  "usernameOrEmail": "user@example.com", // Can be username or email
   "password": "strongPassword123"
 }
 ```
@@ -62,7 +31,166 @@ Default local development base URL is `http://localhost:8080`
 
 **Known Errors (401 Unauthorized):**
 - Example `code` values:
-  - `INVALID_CREDENTIALS`: Wrong email or password.
+  - `INVALID_CREDENTIALS`: Wrong username/email or password.
+
+---
+
+## 2. User Management (`/api/v1/users`)
+
+### 2.1. Register Student (Public)
+- **URL**: `/api/v1/users/register`
+- **Method**: `POST`
+- **Description**: Registers a new user with the `STUDENT` role. No JWT required.
+
+**Request Body (JSON):**
+```json
+{
+  "email": "user@example.com",
+  "username": "student1",
+  "password": "strongPassword123"
+}
+```
+
+**Success (201 Created):**
+```json
+{
+  "id": 1,
+  "username": "student1",
+  "email": "user@example.com",
+  "role": "STUDENT",
+  "createdAt": "2026-03-02T21:00:00Z"
+}
+```
+
+**Known Errors:**
+- `EMAIL_ALREADY_TAKEN` (400 Bad Request): Passed email is already in use.
+- `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
+
+---
+
+### 2.2. Create Admin
+- **URL**: `/api/v1/users/admin`
+- **Method**: `POST`
+- **Description**: Registers a new user with the `ADMIN` role. Requires `ADMIN` authority.
+
+**Request Body (JSON):**
+```json
+{
+  "email": "admin@example.com",
+  "username": "admin1",
+  "password": "secureAdminPassword"
+}
+```
+
+**Success (201 Created):**
+```json
+{
+  "id": 2,
+  "username": "admin1",
+  "email": "admin@example.com",
+  "role": "ADMIN",
+  "createdAt": "2026-03-02T21:05:00Z"
+}
+```
+
+---
+
+### 2.3. Get Current User Profile
+- **URL**: `/api/v1/users/me`
+- **Method**: `GET`
+- **Description**: Retrieves the profile details of the currently authenticated user. Requires a valid JWT.
+
+**Success (200 OK):**
+```json
+{
+  "id": 1,
+  "username": "student1",
+  "email": "user@example.com",
+  "role": "STUDENT",
+  "createdAt": "2026-03-02T21:00:00Z"
+}
+```
+
+**Known Errors:**
+- `USER_NOT_FOUND` (404 Not Found): User does not exist (token might be stale).
+
+---
+
+### 2.4. Get User Details
+- **URL**: `/api/v1/users/{id}`
+- **Method**: `GET`
+- **Description**: Retrieves user details. Requires `ADMIN` authority OR the requesting user ID must match the parameter ID.
+
+**Success (200 OK):**
+```json
+{
+  "id": 1,
+  "username": "student1",
+  "email": "user@example.com",
+  "role": "STUDENT",
+  "createdAt": "2026-03-02T21:00:00Z"
+}
+```
+
+**Known Errors:**
+- `USER_NOT_FOUND` (404 Not Found): User does not exist.
+
+---
+
+### 2.5. Update User Profile
+- **URL**: `/api/v1/users/{id}`
+- **Method**: `PUT`
+- **Description**: Updates username or email. Requires `ADMIN` authority OR the requesting user ID must match the parameter ID.
+
+**Request Body (JSON):**
+```json
+{
+  "email": "new.email@example.com",
+  "username": "newUsername"
+}
+```
+
+**Success (200 OK):**
+```json
+{
+  "id": 1,
+  "username": "newUsername",
+  "email": "new.email@example.com",
+  "role": "STUDENT",
+  "createdAt": "2026-03-02T21:00:00Z"
+}
+```
+
+---
+
+### 2.6. Change Password
+- **URL**: `/api/v1/users/{id}/password`
+- **Method**: `PATCH`
+- **Description**: Changes the user's password. Requires `ADMIN` authority OR the requesting user ID must match the parameter ID.
+
+**Request Body (JSON):**
+```json
+{
+  "oldPassword": "strongPassword123",
+  "newPassword": "evenStrongerPassword456"
+}
+```
+
+**Success (204 No Content):**
+*(Empty Response Body)*
+
+**Known Errors:**
+- `INVALID_CREDENTIALS` (401 Unauthorized): Old password does not match.
+
+---
+
+### 2.7. Delete User
+- **URL**: `/api/v1/users/{id}`
+- **Method**: `DELETE`
+- **Description**: Deletes a user account. Requires `ADMIN` authority OR the requesting user ID must match the parameter ID.
+
+**Success (204 No Content):**
+*(Empty Response Body)*
 
 ---
 
