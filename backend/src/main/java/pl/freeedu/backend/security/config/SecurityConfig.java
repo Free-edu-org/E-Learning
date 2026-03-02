@@ -1,7 +1,8 @@
-package pl.freeedu.backend.security;
+package pl.freeedu.backend.security.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
@@ -15,12 +16,16 @@ import org.springframework.web.cors.reactive.CorsConfigurationSource;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 
+import pl.freeedu.backend.security.jwt.JwtAuthenticationFilter;
+import pl.freeedu.backend.security.jwt.JwtService;
+import pl.freeedu.backend.security.principal.CustomUserDetails;
 import pl.freeedu.backend.user.repository.UserRepository;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 @Configuration
 @EnableWebFluxSecurity
+@EnableReactiveMethodSecurity
 public class SecurityConfig {
 
 	private final UserRepository userRepository;
@@ -33,11 +38,10 @@ public class SecurityConfig {
 
 	@Bean
 	public ReactiveUserDetailsService userDetailsService() {
-		return username -> Mono.fromCallable(() -> userRepository.findByEmail(username))
+		return username -> Mono.fromCallable(() -> userRepository.findByUsernameOrEmail(username, username))
 				.subscribeOn(Schedulers.boundedElastic())
 				.flatMap(optionalUser -> optionalUser.map(Mono::just).orElseGet(Mono::empty))
-				.map(u -> org.springframework.security.core.userdetails.User.builder().username(u.getEmail())
-						.password(u.getPassword()).authorities(u.getRole()).build());
+				.map(u -> new CustomUserDetails(u.getId(), u.getUsername(), u.getPassword(), u.getRole()));
 	}
 
 	@Bean
@@ -51,13 +55,14 @@ public class SecurityConfig {
 	}
 
 	@Bean
-	public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http,
-			ReactiveUserDetailsService userDetailsService) {
-		JwtAuthenticationFilter jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtService, userDetailsService);
+	public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
+		JwtAuthenticationFilter jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtService, userRepository);
 
 		return http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
-				.csrf(ServerHttpSecurity.CsrfSpec::disable)
+				.csrf(ServerHttpSecurity.CsrfSpec::disable).httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
+				.formLogin(ServerHttpSecurity.FormLoginSpec::disable)
 				.authorizeExchange(exchanges -> exchanges.pathMatchers("/api/v1/auth/**").permitAll()
+						.pathMatchers("/api/v1/users/register").permitAll()
 						.pathMatchers("/v3/api-docs/**", "/swagger-ui.html", "/webjars/**").permitAll().anyExchange()
 						.authenticated())
 				.addFilterAt(jwtAuthenticationFilter, SecurityWebFiltersOrder.AUTHENTICATION).build();

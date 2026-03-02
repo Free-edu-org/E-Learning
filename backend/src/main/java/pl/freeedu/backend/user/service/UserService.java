@@ -1,0 +1,90 @@
+package pl.freeedu.backend.user.service;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import pl.freeedu.backend.auth.exception.AuthErrorCode;
+import pl.freeedu.backend.auth.exception.AuthException;
+import pl.freeedu.backend.user.exception.UserErrorCode;
+import pl.freeedu.backend.user.exception.UserException;
+import pl.freeedu.backend.user.dto.RegisterUserRequest;
+import pl.freeedu.backend.user.dto.ChangePasswordRequest;
+import pl.freeedu.backend.user.dto.UpdateUserRequest;
+import pl.freeedu.backend.user.dto.UserResponse;
+import pl.freeedu.backend.user.model.User;
+import pl.freeedu.backend.user.repository.UserRepository;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
+
+@Service
+public class UserService {
+
+	private final UserRepository userRepository;
+	private final UserMapper userMapper;
+	private final PasswordEncoder passwordEncoder;
+
+	public UserService(UserRepository userRepository, UserMapper userMapper, PasswordEncoder passwordEncoder) {
+		this.userRepository = userRepository;
+		this.userMapper = userMapper;
+		this.passwordEncoder = passwordEncoder;
+	}
+
+	public Mono<UserResponse> createAdmin(Mono<RegisterUserRequest> requestMono) {
+		return registerUser(requestMono, (request, password) -> userMapper.toAdminUser(request, password));
+	}
+
+	public Mono<UserResponse> registerStudent(Mono<RegisterUserRequest> requestMono) {
+		return registerUser(requestMono, (request, password) -> userMapper.toStudentUser(request, password));
+	}
+
+	private Mono<UserResponse> registerUser(Mono<RegisterUserRequest> requestMono,
+			java.util.function.BiFunction<RegisterUserRequest, String, User> mapperFunction) {
+		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
+			if (userRepository.existsByEmail(request.getEmail())) {
+				throw new UserException(UserErrorCode.EMAIL_ALREADY_TAKEN);
+			}
+			User user = mapperFunction.apply(request, passwordEncoder.encode(request.getPassword()));
+			return userRepository.save(user);
+		}).subscribeOn(Schedulers.boundedElastic()).map(userMapper::toUserResponse));
+	}
+
+	public Mono<UserResponse> getUser(Integer id) {
+		return Mono.fromCallable(
+				() -> userRepository.findById(id).orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND)))
+				.subscribeOn(Schedulers.boundedElastic()).map(userMapper::toUserResponse);
+	}
+
+	public Mono<UserResponse> updateUser(Integer id, Mono<UpdateUserRequest> requestMono) {
+		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
+			User user = userRepository.findById(id).orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
+
+			if (!user.getEmail().equals(request.getEmail()) && userRepository.existsByEmail(request.getEmail())) {
+				throw new UserException(UserErrorCode.EMAIL_ALREADY_TAKEN);
+			}
+
+			userMapper.updateUserFromRequest(request, user);
+			return userRepository.save(user);
+		}).subscribeOn(Schedulers.boundedElastic()).map(userMapper::toUserResponse));
+	}
+
+	public Mono<Void> changePassword(Integer id, Mono<ChangePasswordRequest> requestMono) {
+		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
+			User user = userRepository.findById(id).orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
+
+			if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+				throw new AuthException(AuthErrorCode.INVALID_CREDENTIALS);
+			}
+
+			user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+			userRepository.save(user);
+			return (Void) null;
+		}).subscribeOn(Schedulers.boundedElastic()));
+	}
+
+	public Mono<Void> deleteUser(Integer id) {
+		return Mono.fromCallable(() -> {
+			User user = userRepository.findById(id).orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
+			userRepository.delete(user);
+			return (Void) null;
+		}).subscribeOn(Schedulers.boundedElastic()).then();
+	}
+}

@@ -1,24 +1,26 @@
-package pl.freeedu.backend.security;
+package pl.freeedu.backend.security.jwt;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
-import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
+import pl.freeedu.backend.security.principal.CustomUserDetails;
+import pl.freeedu.backend.user.repository.UserRepository;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 @Component
 public class JwtAuthenticationFilter implements WebFilter {
 
 	private final JwtService jwtService;
-	private final ReactiveUserDetailsService userDetailsService;
+	private final UserRepository userRepository;
 
-	public JwtAuthenticationFilter(JwtService jwtService, ReactiveUserDetailsService userDetailsService) {
+	public JwtAuthenticationFilter(JwtService jwtService, UserRepository userRepository) {
 		this.jwtService = jwtService;
-		this.userDetailsService = userDetailsService;
+		this.userRepository = userRepository;
 	}
 
 	@Override
@@ -31,12 +33,16 @@ public class JwtAuthenticationFilter implements WebFilter {
 
 		String jwt = authHeader.substring(7);
 		try {
-			String userEmail = jwtService.extractUsername(jwt);
-			if (userEmail != null) {
-				return userDetailsService.findByUsername(userEmail)
-						.filter(userDetails -> jwtService.isTokenValid(jwt, userDetails.getUsername()))
-						.map(userDetails -> new UsernamePasswordAuthenticationToken(userDetails, null,
-								userDetails.getAuthorities()))
+			Integer userId = jwtService.extractUserId(jwt);
+			if (userId != null) {
+				return Mono.fromCallable(() -> userRepository.findById(userId)).subscribeOn(Schedulers.boundedElastic())
+						.flatMap(optionalUser -> optionalUser.map(Mono::just).orElseGet(Mono::empty))
+						.filter(user -> jwtService.isTokenValid(jwt, user.getId())).map(user -> {
+							var userDetails = new CustomUserDetails(user.getId(), user.getEmail(), user.getPassword(),
+									user.getRole());
+							return new UsernamePasswordAuthenticationToken(userDetails, null,
+									userDetails.getAuthorities());
+						})
 						.flatMap(authentication -> chain.filter(exchange)
 								.contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication)))
 						.switchIfEmpty(chain.filter(exchange));
