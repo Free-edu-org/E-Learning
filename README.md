@@ -70,18 +70,27 @@ docker-compose down -v --rmi all
 ## 💻 Uruchamianie LOKALNE (Dla IDE bez pełnego Dockera)
 
 Jeżeli w Dockerze wolisz odpalić tylko bazę, a aplikacje odpalać z terminali dla debugowania:
-1. Uruchom tylko bazę: `docker-compose up -d mysql` (lub jakkolwiek nazwano serwis DB w compose).
+1. Uruchom tylko bazę:
+```bash
+docker-compose up -d mysql
+```
 
 **Backend (Java):**
+Kompilacja i weryfikacja (Spotless + Testy):
 ```bash
-cd backend
-./mvnw clean compile
-./mvnw spring-boot:run
+cd backend && ./mvnw clean compile test-compile
+```
+Uruchomienie serwera aplikacji Spring Boot:
+```bash
+cd backend && ./mvnw spring-boot:run
 ```
 
 **Frontend (React):**
+Instalacja zależności:
 ```bash
-cd frontend
-npm install
-npm run dev
+cd frontend && npm install
+```
+Uruchomienie serwera deweloperskiego Vite:
+```bash
+cd frontend && npm run dev
 ```
