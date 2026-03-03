@@ -45,6 +45,12 @@ Zatrzymanie kontenerów (bez usuwania danych z bazy MySQL ograniczonych do wolum
 docker-compose stop
 ```
 
+### User data in seed (for testing purposes):
+* Admin: admin@szkola.pl admin1
+* Students:
+* *  student1@edu.pl student1
+* *  student2@edu.pl student2
+
 ---
 
 ## 🛠 Extra Komendy (Przydatne w Developmentie)
