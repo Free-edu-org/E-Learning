@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: backend
+
+  datasource:
+    url: "jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:freeedu}"
+    username: "${DB_USER:freeedu}"
+    password: "${DB_PASSWORD:freeedu_pass}"
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-description: "init"
+    baseline-version: "0"
+    locations:
+      - classpath:db/migration
+      - classpath:db/seed
+
+application:
+  security:
+    jwt:
+      secret-key: "${JWT_SECRET_KEY:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}"
+      expiration: "${JWT_EXPIRATION:86400000}"
