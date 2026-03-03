@@ -62,7 +62,6 @@ public class SecurityConfig {
 				.csrf(ServerHttpSecurity.CsrfSpec::disable).httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
 				.formLogin(ServerHttpSecurity.FormLoginSpec::disable)
 				.authorizeExchange(exchanges -> exchanges.pathMatchers("/api/v1/auth/**").permitAll()
-						.pathMatchers("/api/v1/users/register").permitAll()
 						.pathMatchers("/v3/api-docs/**", "/swagger-ui.html", "/webjars/**").permitAll().anyExchange()
 						.authenticated())
 				.addFilterAt(jwtAuthenticationFilter, SecurityWebFiltersOrder.AUTHENTICATION).build();

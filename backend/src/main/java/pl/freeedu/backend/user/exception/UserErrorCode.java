@@ -7,7 +7,7 @@ import pl.freeedu.backend.exception.ErrorCode;
 @Getter
 public enum UserErrorCode implements ErrorCode {
 	USER_NOT_FOUND("User not found", HttpStatus.NOT_FOUND), EMAIL_ALREADY_TAKEN("Email is already taken",
-			HttpStatus.BAD_REQUEST);
+			HttpStatus.BAD_REQUEST), USERNAME_ALREADY_TAKEN("Username is already taken", HttpStatus.BAD_REQUEST);
 
 	private final String defaultMessage;
 	private final HttpStatus status;

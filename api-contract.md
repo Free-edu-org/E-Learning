@@ -16,7 +16,7 @@ Default local development base URL is `http://localhost:8080`
 **Request Body (JSON):**
 ```json
 {
-  "usernameOrEmail": "user@example.com", // Can be username or email
+  "identifier": "user@example.com", // Can be username or email
   "password": "strongPassword123"
 }
 ```
@@ -37,10 +37,10 @@ Default local development base URL is `http://localhost:8080`
 
 ## 2. User Management (`/api/v1/users`)
 
-### 2.1. Register Student (Public)
+### 2.1. Register Student
 - **URL**: `/api/v1/users/register`
 - **Method**: `POST`
-- **Description**: Registers a new user with the `STUDENT` role. No JWT required.
+- **Description**: Registers a new user with the `STUDENT` role. Requires `ADMIN` authority.
 
 **Request Body (JSON):**
 ```json
@@ -52,19 +52,14 @@ Default local development base URL is `http://localhost:8080`
 ```
 
 **Success (201 Created):**
-```json
-{
-  "id": 1,
-  "username": "student1",
-  "email": "user@example.com",
-  "role": "STUDENT",
-  "createdAt": "2026-03-02T21:00:00Z"
-}
-```
+*(Empty Response Body)*
 
 **Known Errors:**
 - `EMAIL_ALREADY_TAKEN` (400 Bad Request): Passed email is already in use.
+- `USERNAME_ALREADY_TAKEN` (400 Bad Request): Passed username is already in use.
 - `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token is not an admin token.
 
 ---
 
@@ -81,17 +76,13 @@ Default local development base URL is `http://localhost:8080`
   "password": "secureAdminPassword"
 }
 ```
-
 **Success (201 Created):**
-```json
-{
-  "id": 2,
-  "username": "admin1",
-  "email": "admin@example.com",
-  "role": "ADMIN",
-  "createdAt": "2026-03-02T21:05:00Z"
-}
-```
+*(Empty Response Body)*
+
+**Known Errors:**
+- `EMAIL_ALREADY_TAKEN` (400 Bad Request): Passed email is already in use.
+- `USERNAME_ALREADY_TAKEN` (400 Bad Request): Passed username is already in use.
+- `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
 
 ---
 
@@ -161,11 +152,16 @@ Default local development base URL is `http://localhost:8080`
 }
 ```
 
+**Known Errors:**
+- `EMAIL_ALREADY_TAKEN` (400 Bad Request): Passed email is already in use.
+- `USERNAME_ALREADY_TAKEN` (400 Bad Request): Passed username is already in use.
+- `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
+
 ---
 
 ### 2.6. Change Password
 - **URL**: `/api/v1/users/{id}/password`
-- **Method**: `PATCH`
+- **Method**: `PUT`
 - **Description**: Changes the user's password. Requires `ADMIN` authority OR the requesting user ID must match the parameter ID.
 
 **Request Body (JSON):**

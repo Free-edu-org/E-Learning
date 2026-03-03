@@ -10,6 +10,9 @@ import pl.freeedu.backend.auth.exception.AuthException;
 import pl.freeedu.backend.user.exception.UserException;
 import reactor.core.publisher.Mono;
 
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
+
 import java.net.URI;
 import java.util.stream.Collectors;
 
@@ -34,8 +37,19 @@ public class GlobalExceptionHandler {
 				GlobalErrorCode.VALIDATION_FAILED.name(), exchange);
 	}
 
+	@ExceptionHandler(AccessDeniedException.class)
+	public Mono<ProblemDetail> handleAccessDeniedException(AccessDeniedException ex, ServerWebExchange exchange) {
+		return buildProblemDetail(HttpStatus.FORBIDDEN, "Access Denied", "FORBIDDEN", exchange);
+	}
+
+	@ExceptionHandler(AuthenticationException.class)
+	public Mono<ProblemDetail> handleAuthenticationException(AuthenticationException ex, ServerWebExchange exchange) {
+		return buildProblemDetail(HttpStatus.UNAUTHORIZED, "Unauthorized", "UNAUTHORIZED", exchange);
+	}
+
 	@ExceptionHandler(Exception.class)
 	public Mono<ProblemDetail> handleGenericException(Exception ex, ServerWebExchange exchange) {
+		ex.printStackTrace();
 		return buildProblemDetail(GlobalErrorCode.INTERNAL_SERVER_ERROR.getStatus(), "An unexpected error occurred",
 				GlobalErrorCode.INTERNAL_SERVER_ERROR.name(), exchange);
 	}

@@ -29,23 +29,27 @@ public class UserService {
 		this.passwordEncoder = passwordEncoder;
 	}
 
-	public Mono<UserResponse> createAdmin(Mono<RegisterUserRequest> requestMono) {
+	public Mono<Void> createAdmin(Mono<RegisterUserRequest> requestMono) {
 		return registerUser(requestMono, (request, password) -> userMapper.toAdminUser(request, password));
 	}
 
-	public Mono<UserResponse> registerStudent(Mono<RegisterUserRequest> requestMono) {
+	public Mono<Void> registerStudent(Mono<RegisterUserRequest> requestMono) {
 		return registerUser(requestMono, (request, password) -> userMapper.toStudentUser(request, password));
 	}
 
-	private Mono<UserResponse> registerUser(Mono<RegisterUserRequest> requestMono,
+	private Mono<Void> registerUser(Mono<RegisterUserRequest> requestMono,
 			java.util.function.BiFunction<RegisterUserRequest, String, User> mapperFunction) {
 		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
 			if (userRepository.existsByEmail(request.getEmail())) {
 				throw new UserException(UserErrorCode.EMAIL_ALREADY_TAKEN);
 			}
+			if (userRepository.existsByUsername(request.getUsername())) {
+				throw new UserException(UserErrorCode.USERNAME_ALREADY_TAKEN);
+			}
 			User user = mapperFunction.apply(request, passwordEncoder.encode(request.getPassword()));
-			return userRepository.save(user);
-		}).subscribeOn(Schedulers.boundedElastic()).map(userMapper::toUserResponse));
+			userRepository.save(user);
+			return (Void) null;
+		}).subscribeOn(Schedulers.boundedElastic()));
 	}
 
 	public Mono<UserResponse> getUser(Integer id) {
@@ -65,6 +69,11 @@ public class UserService {
 
 			if (!user.getEmail().equals(request.getEmail()) && userRepository.existsByEmail(request.getEmail())) {
 				throw new UserException(UserErrorCode.EMAIL_ALREADY_TAKEN);
+			}
+
+			if (!user.getUsername().equals(request.getUsername())
+					&& userRepository.existsByUsername(request.getUsername())) {
+				throw new UserException(UserErrorCode.USERNAME_ALREADY_TAKEN);
 			}
 
 			userMapper.updateUserFromRequest(request, user);

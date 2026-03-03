@@ -44,8 +44,9 @@ public class JwtAuthenticationFilter implements WebFilter {
 									userDetails.getAuthorities());
 						})
 						.flatMap(authentication -> chain.filter(exchange)
-								.contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication)))
-						.switchIfEmpty(chain.filter(exchange));
+								.contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication))
+								.then(Mono.just(true)))
+						.switchIfEmpty(Mono.defer(() -> chain.filter(exchange).then(Mono.just(true)))).then();
 			}
 		} catch (Exception e) {
 			// Token invalid or expired

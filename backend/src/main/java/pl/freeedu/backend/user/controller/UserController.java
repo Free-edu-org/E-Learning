@@ -37,17 +37,18 @@ public class UserController {
 	@PostMapping("/admin")
 	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseStatus(HttpStatus.CREATED)
-	public Mono<UserResponse> createAdmin(@Valid @RequestBody Mono<RegisterUserRequest> request) {
+	public Mono<Void> createAdmin(@Valid @RequestBody Mono<RegisterUserRequest> request) {
 		return userService.createAdmin(request);
 	}
 
-	@Operation(summary = "Register a new student", description = "Allows a new user to register as a student.")
+	@Operation(summary = "Register a new student", description = "Allows an existing admin to register a new user as a student.")
 	@ApiResponses(value = {@ApiResponse(responseCode = "201", description = "Student user successfully registered"),
-			@ApiResponse(responseCode = "400", description = "Invalid input data", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
-			@ApiResponse(responseCode = "401", description = "Email is already taken", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
+			@ApiResponse(responseCode = "400", description = "Invalid input data or email already taken", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "401", description = "Unauthorized - requires ADMIN role", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PostMapping("/register")
+	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseStatus(HttpStatus.CREATED)
-	public Mono<UserResponse> registerStudent(@Valid @RequestBody Mono<RegisterUserRequest> request) {
+	public Mono<Void> registerStudent(@Valid @RequestBody Mono<RegisterUserRequest> request) {
 		return userService.registerStudent(request);
 	}
 
@@ -56,7 +57,7 @@ public class UserController {
 			@ApiResponse(responseCode = "401", description = "Unauthorized - invalid token or lack of permissions", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "404", description = "User not found", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@GetMapping("/{id}")
-	@PreAuthorize("hasRole('ADMIN') or @securityService.isOwnerOrAdmin(#id)")
+	@PreAuthorize("@securityService.isOwnerOrAdmin(#id)")
 	public Mono<UserResponse> getUser(@PathVariable Integer id) {
 		return userService.getUser(id);
 	}
@@ -78,7 +79,7 @@ public class UserController {
 			@ApiResponse(responseCode = "401", description = "Unauthorized - invalid token or lack of permissions", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "404", description = "User not found", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PutMapping("/{id}")
-	@PreAuthorize("hasRole('ADMIN') or @securityService.isOwnerOrAdmin(#id)")
+	@PreAuthorize("@securityService.isOwnerOrAdmin(#id)")
 	public Mono<UserResponse> updateUser(@PathVariable Integer id,
 			@Valid @RequestBody Mono<UpdateUserRequest> request) {
 		return userService.updateUser(id, request);
@@ -90,7 +91,7 @@ public class UserController {
 			@ApiResponse(responseCode = "401", description = "Unauthorized - invalid credentials or lack of permissions", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "404", description = "User not found", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PutMapping("/{id}/password")
-	@PreAuthorize("hasRole('ADMIN') or @securityService.isOwnerOrAdmin(#id)")
+	@PreAuthorize("@securityService.isOwnerOrAdmin(#id)")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public Mono<Void> changePassword(@PathVariable Integer id,
 			@Valid @RequestBody Mono<ChangePasswordRequest> request) {
@@ -102,7 +103,7 @@ public class UserController {
 			@ApiResponse(responseCode = "401", description = "Unauthorized - invalid token or lack of permissions", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "404", description = "User not found", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@DeleteMapping("/{id}")
-	@PreAuthorize("hasRole('ADMIN') or @securityService.isOwnerOrAdmin(#id)")
+	@PreAuthorize("@securityService.isOwnerOrAdmin(#id)")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public Mono<Void> deleteUser(@PathVariable Integer id) {
 		return userService.deleteUser(id);
