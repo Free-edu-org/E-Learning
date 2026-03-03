@@ -57,7 +57,7 @@ public class SecurityConfig {
 
 		return http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
 				.csrf(ServerHttpSecurity.CsrfSpec::disable)
-				.authorizeExchange(exchanges -> exchanges.pathMatchers("/api/auth/**").permitAll()
+				.authorizeExchange(exchanges -> exchanges.pathMatchers("/api/v1/auth/**").permitAll()
 						.pathMatchers("/v3/api-docs/**", "/swagger-ui.html", "/webjars/**").permitAll().anyExchange()
 						.authenticated())
 				.addFilterAt(jwtAuthenticationFilter, SecurityWebFiltersOrder.AUTHENTICATION).build();

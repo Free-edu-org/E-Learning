@@ -1,0 +1,234 @@
+name: CI Pipeline
+
+permissions:
+  pull-requests: write
+  contents: read
+  issues: write
+
+on:
+  pull_request:
+    branches: "main"
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.filter.outputs.backend }}
+      stt: ${{ steps.filter.outputs.stt }}
+      meta: ${{ steps.filter.outputs.meta }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+            backend:
+              - 'backend/**'
+            stt:
+              - 'stt-service/**'
+            meta:
+              - '.github/**'
+              - 'README.md'
+              - 'package.json'
+              - 'pom.xml'
+              - 'stt-service/requirements.txt'
+
+  frontend:
+    name: Frontend Check
+    needs: changes
+    if: ${{ needs.changes.outputs.frontend == 'true' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: ./frontend/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Format Check (Prettier)
+        run: npx prettier --check "src/**/*.{js,jsx,ts,tsx,css,md}"
+      - name: Lint
+        run: npm run lint
+      - name: Build and Typecheck
+        run: npm run build
+      - name: Summary Report
+        if: always()
+        run: |
+          echo "## Frontend CI Report 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+      - name: Comment PR on Failure
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `❌ **Frontend Check Failed**
+
+            Problem z jakością/kompilacją kodu na frontendzie.
+
+            **Jak naprawić lokalnie?** Uruchom w katalogu \`frontend/\`:
+            \`\`\`bash
+            npm ci
+            npx prettier --write "src/**/*.{js,jsx,ts,tsx,css,md}"
+            npm run lint
+            npm run build
+            \`\`\``
+            })
+
+  backend:
+    name: Backend Check
+    needs: changes
+    if: ${{ needs.changes.outputs.backend == 'true' }}
+    runs-on: ubuntu-latest
+
+    # Konfiguracja MySQL Service Container dla testów integracyjnych w Spring Boot
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_DATABASE: freeedu
+          MYSQL_USER: freeedu
+          MYSQL_PASSWORD: freeedu_pass
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    # Nadpisujemy adres bazy danych z pliku na localhost port 3306 dla kontenera CI
+    env:
+      SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/freeedu
+
+    defaults:
+      run:
+        working-directory: ./backend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Make mvnw executable
+        run: chmod +x mvnw
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'oracle'
+          java-version: '25'
+          cache: 'maven'
+      - name: Spotless Format Check
+        run: ./mvnw spotless:check
+      - name: Verify
+        run: ./mvnw clean verify
+      - name: Summary Report
+        if: always()
+        run: |
+          echo "## Backend CI Report ☕" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+      - name: Comment PR on Failure
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `❌ **Backend Check Failed**
+
+            Błąd kompilacji, testów lub formatowania Java.
+
+            **Jak naprawić lokalnie?** Uruchom w katalogu \`backend/\`:
+            \`\`\`bash
+            ./mvnw spotless:apply
+            ./mvnw clean verify
+            \`\`\``
+            })
+
+  stt-service:
+    name: STT Service Check
+    needs: changes
+    if: ${{ needs.changes.outputs.stt == 'true' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./stt-service
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: ./stt-service/requirements.txt
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt
+      - name: Ruff Format Check
+        run: ruff format --check .
+      - name: Ruff Check (Lint)
+        run: ruff check .
+      - name: Summary Report
+        if: always()
+        run: |
+          echo "## STT Service CI Report 🐍" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+      - name: Comment PR on Failure
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `❌ **STT Service Check Failed**
+
+            Błąd lintera lub formatowania kodu Python.
+
+            **Jak naprawić lokalnie?** Uruchom w katalogu \`stt-service/\`:
+            \`\`\`bash
+            ruff format .
+            ruff check --fix .
+            \`\`\``
+            })
+
+  meta-ci:
+    name: Meta & Global Checks
+    needs: changes
+    if: ${{ needs.changes.outputs.meta == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Global Check
+        run: |
+          echo "Skrypty globalne i pliki konfiguracyjne .github/ zostały zmodyfikowane."
+          pip install yamllint
+          yamllint .github/workflows/
+      - name: Summary Report
+        if: always()
+        run: |
+          echo "## Meta-CI Report 🛠️" >> $GITHUB_STEP_SUMMARY
+          echo "- **Global/Config modifications detected**" >> $GITHUB_STEP_SUMMARY
+      - name: Comment PR on Failure
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `❌ **Meta-CI Check Failed**
+
+            Błąd sprawdzania plików globalnych (.github/ itd.).
+
+            Przejrzyj logi CI, by sprawdzić przyczynę.`
+            })

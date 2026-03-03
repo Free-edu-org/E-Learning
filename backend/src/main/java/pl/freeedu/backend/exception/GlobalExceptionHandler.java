@@ -17,7 +17,7 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(AuthException.class)
 	public Mono<ProblemDetail> handleAuthException(AuthException ex, ServerWebExchange exchange) {
-		return buildProblemDetail(HttpStatus.UNAUTHORIZED, ex.getMessage(), ex.getErrorCode().name(), exchange);
+		return buildProblemDetail(HttpStatus.BAD_REQUEST, ex.getMessage(), ex.getErrorCode().name(), exchange);
 	}
 
 	@ExceptionHandler(WebExchangeBindException.class)

@@ -1,4 +1,4 @@
-package pl.freeedu.backend.auth.controller;
+package pl.freeedu.backend.auth.controller.v1;
 
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -18,7 +18,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ProblemDetail;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/v1/auth")
 @Tag(name = "Authentication", description = "Endpoints for user registration and login")
 public class AuthController {
 
