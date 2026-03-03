@@ -1,28 +1,32 @@
 CREATE TABLE speak_tasks (
-    id SERIAL PRIMARY KEY,
-    lesson_id INT REFERENCES lessons(id) ON DELETE CASCADE,
-    task TEXT NOT NULL
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    lesson_id INT NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,
+    task TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE choose_tasks (
-    id SERIAL PRIMARY KEY,
-    lesson_id INT REFERENCES lessons(id) ON DELETE CASCADE,
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    lesson_id INT NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,
     task TEXT NOT NULL,
-    possible_answers TEXT,
-    correct_answer INT
+    possible_answers TEXT NOT NULL,
+    correct_answer INT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE write_tasks (
-    id SERIAL PRIMARY KEY,
-    lesson_id INT REFERENCES lessons(id) ON DELETE CASCADE,
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    lesson_id INT NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,
     task TEXT NOT NULL,
-    correct_answer TEXT
+    correct_answer TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE scatter_tasks (
-    id SERIAL PRIMARY KEY,
-    lesson_id INT REFERENCES lessons(id) ON DELETE CASCADE,
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    lesson_id INT NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,
     task TEXT NOT NULL,
-    words TEXT,
-    correct_answer TEXT
+    words TEXT NOT NULL,
+    correct_answer TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

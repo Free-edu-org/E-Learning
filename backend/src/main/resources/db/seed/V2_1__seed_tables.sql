@@ -1,8 +1,8 @@
 -- Użytkownicy (Hasła powinny być haszowane, tu są tekstem jawnym dla przykładu)
 INSERT INTO users (email, username, password, role) VALUES
-    ('admin@szkola.pl', 'admin_marek', 'secret123', 'admin'),
-    ('student1@edu.pl', 'jan_kowalski', 'student789', 'student'),
-    ('student2@edu.pl', 'anna_nowak', 'pass456', 'student');
+    ('admin@szkola.pl', 'admin_marek', '$2a$10$E76vPLy8/fTJ36cpmvYNBOGKxUB72aTb7rexqJgvHIuaQLE4vS1KC', 'ADMIN'),
+    ('student1@edu.pl', 'jan_kowalski', '$2a$10$EfQqseEyw46zbJW75uREjeFG.SG5XK/OtIKrmxHMr0xyCmgS3N5f.', 'STUDENT'),
+    ('student2@edu.pl', 'anna_nowak', '$2a$10$KisRc079EPu5z5uFOV80m.h7jxAnUsJJStyNCR.Tiq.u/Z6s1cTCq', 'STUDENT');
 
 -- Grupy
 INSERT INTO user_groups (name, description) VALUES
