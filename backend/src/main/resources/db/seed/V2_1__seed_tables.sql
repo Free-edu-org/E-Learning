@@ -45,9 +45,9 @@ INSERT INTO group_has_lesson (group_id, lesson_id) VALUES
     (1, 2); -- Grupa A1 ma lekcję "Czasowniki"
 
 -- Odpowiedzi użytkowników (user_answers)
-INSERT INTO user_answers (task_id, user_id, lesson_id, answer, is_correct) VALUES
-    (1, 2, 1, 'Good morning', TRUE),
-    (1, 2, 1, 'Helo', FALSE); -- Literówka w odpowiedzi
+INSERT INTO user_answers (task_id, user_id, lesson_id, answer, is_correct, task_type) VALUES
+    (1, 2, 1, 'Good morning', TRUE, 'write_tasks'),
+    (1, 2, 1, 'Helo', FALSE, 'write_tasks'); -- Literówka w odpowiedzi
 
 -- Przyznane osiągnięcia (user_get_achivment)
 INSERT INTO user_get_achievement (user_id, achievement_id) VALUES
