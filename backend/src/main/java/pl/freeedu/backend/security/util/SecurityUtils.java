@@ -12,7 +12,7 @@ public class SecurityUtils {
 
 	public static Mono<Integer> getCurrentUserId() {
 		return ReactiveSecurityContextHolder.getContext().map(SecurityContext::getAuthentication)
-				.filter(Authentication::isAuthenticated).map(Authentication::getPrincipal).cast(CustomUserDetails.class)
-				.map(CustomUserDetails::getId);
+				.filter(Authentication::isAuthenticated).map(Authentication::getPrincipal)
+				.ofType(CustomUserDetails.class).map(CustomUserDetails::getId);
 	}
 }

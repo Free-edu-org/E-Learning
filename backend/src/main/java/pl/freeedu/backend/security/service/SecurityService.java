@@ -28,6 +28,6 @@ public class SecurityService {
 	public Mono<CustomUserDetails> getCurrentUser() {
 		return ReactiveSecurityContextHolder.getContext().map(SecurityContext::getAuthentication)
 				.filter(Authentication::isAuthenticated).map(Authentication::getPrincipal)
-				.cast(CustomUserDetails.class);
+				.filter(principal -> principal instanceof CustomUserDetails).cast(CustomUserDetails.class);
 	}
 }
