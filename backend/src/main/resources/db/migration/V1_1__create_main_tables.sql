@@ -1,7 +1,7 @@
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
-    username VARCHAR(255) NOT NULL,
+    username VARCHAR(255) NOT NULL UNIQUE,
     password TEXT NOT NULL,
     role VARCHAR(20) NOT NULL, -- Enum: 'admin', 'student'
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP

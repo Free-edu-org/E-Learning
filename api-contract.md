@@ -55,8 +55,8 @@ Default local development base URL is `http://localhost:8080`
 *(Empty Response Body)*
 
 **Known Errors:**
-- `EMAIL_ALREADY_TAKEN` (400 Bad Request): Passed email is already in use.
-- `USERNAME_ALREADY_TAKEN` (400 Bad Request): Passed username is already in use.
+- `EMAIL_ALREADY_TAKEN` (409 Conflict): Passed email is already in use.
+- `USERNAME_ALREADY_TAKEN` (409 Conflict): Passed username is already in use.
 - `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
 - `FORBIDDEN` (403 Forbidden): Token is not an admin token.
@@ -80,9 +80,11 @@ Default local development base URL is `http://localhost:8080`
 *(Empty Response Body)*
 
 **Known Errors:**
-- `EMAIL_ALREADY_TAKEN` (400 Bad Request): Passed email is already in use.
-- `USERNAME_ALREADY_TAKEN` (400 Bad Request): Passed username is already in use.
+- `EMAIL_ALREADY_TAKEN` (409 Conflict): Passed email is already in use.
+- `USERNAME_ALREADY_TAKEN` (409 Conflict): Passed username is already in use.
 - `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token is not an admin token.
 
 ---
 
@@ -98,11 +100,12 @@ Default local development base URL is `http://localhost:8080`
   "username": "student1",
   "email": "user@example.com",
   "role": "STUDENT",
-  "createdAt": "2026-03-02T21:00:00Z"
+  "createdAt": "2026-03-02T21:00:00"
 }
 ```
 
 **Known Errors:**
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
 - `USER_NOT_FOUND` (404 Not Found): User does not exist (token might be stale).
 
 ---
@@ -119,11 +122,13 @@ Default local development base URL is `http://localhost:8080`
   "username": "student1",
   "email": "user@example.com",
   "role": "STUDENT",
-  "createdAt": "2026-03-02T21:00:00Z"
+  "createdAt": "2026-03-02T21:00:00"
 }
 ```
 
 **Known Errors:**
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Lack of permissions (not an admin or owner).
 - `USER_NOT_FOUND` (404 Not Found): User does not exist.
 
 ---
@@ -148,14 +153,17 @@ Default local development base URL is `http://localhost:8080`
   "username": "newUsername",
   "email": "new.email@example.com",
   "role": "STUDENT",
-  "createdAt": "2026-03-02T21:00:00Z"
+  "createdAt": "2026-03-02T21:00:00"
 }
 ```
 
 **Known Errors:**
-- `EMAIL_ALREADY_TAKEN` (400 Bad Request): Passed email is already in use.
-- `USERNAME_ALREADY_TAKEN` (400 Bad Request): Passed username is already in use.
+- `EMAIL_ALREADY_TAKEN` (409 Conflict): Passed email is already in use.
+- `USERNAME_ALREADY_TAKEN` (409 Conflict): Passed username is already in use.
 - `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Lack of permissions (not an admin or owner).
+- `USER_NOT_FOUND` (404 Not Found): User does not exist.
 
 ---
 
@@ -176,7 +184,10 @@ Default local development base URL is `http://localhost:8080`
 *(Empty Response Body)*
 
 **Known Errors:**
-- `INVALID_CREDENTIALS` (401 Unauthorized): Old password does not match.
+- `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
+- `INVALID_CREDENTIALS` (401 Unauthorized): Old password does not match or token is invalid.
+- `FORBIDDEN` (403 Forbidden): Lack of permissions (not an admin or owner).
+- `USER_NOT_FOUND` (404 Not Found): User does not exist.
 
 ---
 
@@ -187,6 +198,11 @@ Default local development base URL is `http://localhost:8080`
 
 **Success (204 No Content):**
 *(Empty Response Body)*
+
+**Known Errors:**
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Lack of permissions (not an admin or owner).
+- `USER_NOT_FOUND` (404 Not Found): User does not exist.
 
 ---
 

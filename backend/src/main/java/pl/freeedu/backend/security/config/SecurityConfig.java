@@ -77,8 +77,8 @@ public class SecurityConfig {
 				.formLogin(ServerHttpSecurity.FormLoginSpec::disable)
 				.securityContextRepository(NoOpServerSecurityContextRepository.getInstance())
 				.authorizeExchange(exchanges -> exchanges.pathMatchers("/api/v1/auth/**").permitAll()
-						.pathMatchers("/v3/api-docs/**", "/swagger-ui.html", "/webjars/**").permitAll().anyExchange()
-						.authenticated())
+						.pathMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**", "/webjars/**")
+						.permitAll().anyExchange().authenticated())
 				.addFilterAt(jwtAuthenticationFilter, SecurityWebFiltersOrder.AUTHENTICATION).build();
 	}
 
