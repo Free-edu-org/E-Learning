@@ -35,6 +35,11 @@ Copy-Item frontend\.env.example -Destination frontend\.env
 
 ### 2. Uruchomienie platformy (Docker Compose)
 
+Przed podniesieniem kontenerów należy zbudować kod backendu (aby wygenerować najnowszy plik `.jar` w katalogu `target/`):
+```bash
+cd backend && ./mvnw clean package -DskipTests && cd ..
+```
+
 Teraz możesz podnieść kontenery w tle używając polecenia:
 ```bash
 docker-compose up -d
