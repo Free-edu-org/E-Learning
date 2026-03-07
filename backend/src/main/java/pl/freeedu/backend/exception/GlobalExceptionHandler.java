@@ -13,6 +13,8 @@ import reactor.core.publisher.Mono;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 
+import org.springframework.dao.DataIntegrityViolationException;
+
 import java.net.URI;
 import java.util.stream.Collectors;
 
@@ -45,6 +47,13 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(AuthenticationException.class)
 	public Mono<ProblemDetail> handleAuthenticationException(AuthenticationException ex, ServerWebExchange exchange) {
 		return buildProblemDetail(HttpStatus.UNAUTHORIZED, "Unauthorized", "UNAUTHORIZED", exchange);
+	}
+
+	@ExceptionHandler(DataIntegrityViolationException.class)
+	public Mono<ProblemDetail> handleDataIntegrityViolationException(DataIntegrityViolationException ex,
+			ServerWebExchange exchange) {
+		return buildProblemDetail(HttpStatus.CONFLICT, "Data integrity violation: possibly duplicate entry", "CONFLICT",
+				exchange);
 	}
 
 	@ExceptionHandler(Exception.class)

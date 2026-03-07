@@ -18,7 +18,7 @@ import org.springframework.http.ProblemDetail;
 
 @RestController
 @RequestMapping("/api/v1/auth")
-@Tag(name = "Authentication", description = "Endpoints for user registration and login")
+@Tag(name = "Authentication", description = "Endpoints for user login")
 public class AuthController {
 
 	private final AuthService authService;
