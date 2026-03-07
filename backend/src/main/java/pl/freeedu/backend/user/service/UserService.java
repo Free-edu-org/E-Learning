@@ -12,7 +12,7 @@ import pl.freeedu.backend.user.dto.UpdateUserRequest;
 import pl.freeedu.backend.user.dto.UserResponse;
 import pl.freeedu.backend.user.model.User;
 import pl.freeedu.backend.user.repository.UserRepository;
-import pl.freeedu.backend.security.util.SecurityUtils;
+import pl.freeedu.backend.security.service.SecurityService;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -22,11 +22,14 @@ public class UserService {
 	private final UserRepository userRepository;
 	private final UserMapper userMapper;
 	private final PasswordEncoder passwordEncoder;
+	private final SecurityService securityService;
 
-	public UserService(UserRepository userRepository, UserMapper userMapper, PasswordEncoder passwordEncoder) {
+	public UserService(UserRepository userRepository, UserMapper userMapper, PasswordEncoder passwordEncoder,
+			SecurityService securityService) {
 		this.userRepository = userRepository;
 		this.userMapper = userMapper;
 		this.passwordEncoder = passwordEncoder;
+		this.securityService = securityService;
 	}
 
 	public Mono<Void> createAdmin(Mono<RegisterUserRequest> requestMono) {
@@ -59,7 +62,7 @@ public class UserService {
 	}
 
 	public Mono<UserResponse> getCurrentUser() {
-		return SecurityUtils.getCurrentUserId().flatMap(this::getUser)
+		return securityService.getCurrentUserId().flatMap(this::getUser)
 				.switchIfEmpty(Mono.error(new UserException(UserErrorCode.USER_NOT_FOUND)));
 	}
 
