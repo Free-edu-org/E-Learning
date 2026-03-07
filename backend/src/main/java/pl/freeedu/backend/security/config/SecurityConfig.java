@@ -45,8 +45,13 @@ public class SecurityConfig {
 
 	@Bean
 	public ReactiveUserDetailsService userDetailsService() {
-		return username -> Mono.fromCallable(() -> userRepository.findByUsernameOrEmail(username, username))
-				.subscribeOn(Schedulers.boundedElastic())
+		return identifier -> Mono.fromCallable(() -> {
+			if (identifier.contains("@")) {
+				return userRepository.findByEmail(identifier);
+			} else {
+				return userRepository.findByUsername(identifier);
+			}
+		}).subscribeOn(Schedulers.boundedElastic())
 				.flatMap(optionalUser -> optionalUser.map(Mono::just).orElseGet(Mono::empty))
 				.map(u -> new CustomUserDetails(u.getId(), u.getUsername(), u.getPassword(), u.getRole()));
 	}
