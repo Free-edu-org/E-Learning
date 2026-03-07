@@ -18,16 +18,23 @@ import org.springframework.dao.DataIntegrityViolationException;
 import java.net.URI;
 import java.util.stream.Collectors;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
 	@ExceptionHandler(AuthException.class)
 	public Mono<ProblemDetail> handleAuthException(AuthException ex, ServerWebExchange exchange) {
+		log.warn("AuthException [{} {}]: {}", exchange.getRequest().getMethod(), exchange.getRequest().getPath(),
+				ex.getMessage());
 		return buildProblemDetail(ex.getErrorCode().getStatus(), ex.getMessage(), ex.getErrorCode().name(), exchange);
 	}
 
 	@ExceptionHandler(UserException.class)
 	public Mono<ProblemDetail> handleUserException(UserException ex, ServerWebExchange exchange) {
+		log.warn("UserException [{} {}]: {}", exchange.getRequest().getMethod(), exchange.getRequest().getPath(),
+				ex.getMessage());
 		return buildProblemDetail(ex.getErrorCode().getStatus(), ex.getMessage(), ex.getErrorCode().name(), exchange);
 	}
 
@@ -35,30 +42,39 @@ public class GlobalExceptionHandler {
 	public Mono<ProblemDetail> handleValidationException(WebExchangeBindException ex, ServerWebExchange exchange) {
 		String errors = ex.getBindingResult().getFieldErrors().stream()
 				.map(error -> error.getField() + ": " + error.getDefaultMessage()).collect(Collectors.joining(", "));
+		log.warn("ValidationException [{} {}]: {}", exchange.getRequest().getMethod(), exchange.getRequest().getPath(),
+				errors);
 		return buildProblemDetail(GlobalErrorCode.VALIDATION_FAILED.getStatus(), "Validation failed: " + errors,
 				GlobalErrorCode.VALIDATION_FAILED.name(), exchange);
 	}
 
 	@ExceptionHandler(AccessDeniedException.class)
 	public Mono<ProblemDetail> handleAccessDeniedException(AccessDeniedException ex, ServerWebExchange exchange) {
+		log.warn("AccessDeniedException [{} {}]: {}", exchange.getRequest().getMethod(),
+				exchange.getRequest().getPath(), ex.getMessage());
 		return buildProblemDetail(HttpStatus.FORBIDDEN, "Access Denied", "FORBIDDEN", exchange);
 	}
 
 	@ExceptionHandler(AuthenticationException.class)
 	public Mono<ProblemDetail> handleAuthenticationException(AuthenticationException ex, ServerWebExchange exchange) {
+		log.warn("AuthenticationException [{} {}]: {}", exchange.getRequest().getMethod(),
+				exchange.getRequest().getPath(), ex.getMessage());
 		return buildProblemDetail(HttpStatus.UNAUTHORIZED, "Unauthorized", "UNAUTHORIZED", exchange);
 	}
 
 	@ExceptionHandler(DataIntegrityViolationException.class)
 	public Mono<ProblemDetail> handleDataIntegrityViolationException(DataIntegrityViolationException ex,
 			ServerWebExchange exchange) {
+		log.warn("DataIntegrityViolationException [{} {}]: {}", exchange.getRequest().getMethod(),
+				exchange.getRequest().getPath(), ex.getMessage());
 		return buildProblemDetail(HttpStatus.CONFLICT, "Data integrity violation: possibly duplicate entry", "CONFLICT",
 				exchange);
 	}
 
 	@ExceptionHandler(Exception.class)
 	public Mono<ProblemDetail> handleGenericException(Exception ex, ServerWebExchange exchange) {
-		ex.printStackTrace();
+		log.error("Unhandled exception processing request [{} {}]", exchange.getRequest().getMethod(),
+				exchange.getRequest().getPath(), ex);
 		return buildProblemDetail(GlobalErrorCode.INTERNAL_SERVER_ERROR.getStatus(), "An unexpected error occurred",
 				GlobalErrorCode.INTERNAL_SERVER_ERROR.name(), exchange);
 	}
