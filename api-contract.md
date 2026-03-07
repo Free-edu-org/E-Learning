@@ -29,9 +29,9 @@ Default local development base URL is `http://localhost:8080`
 }
 ```
 
-**Known Errors (401 Unauthorized):**
-- Example `code` values:
-  - `INVALID_CREDENTIALS`: Wrong username/email or password.
+**Known Errors:**
+- `INVALID_CREDENTIALS` (401 Unauthorized): Wrong username/email or password.
+- `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
 
 ---
 
