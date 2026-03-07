@@ -12,8 +12,8 @@ public class SecurityService {
 
 	public Mono<Integer> getCurrentUserId() {
 		return ReactiveSecurityContextHolder.getContext().map(SecurityContext::getAuthentication)
-				.filter(Authentication::isAuthenticated).map(Authentication::getPrincipal)
-				.ofType(CustomUserDetails.class).map(CustomUserDetails::getId);
+				.filter(java.util.Objects::nonNull).filter(Authentication::isAuthenticated)
+				.map(Authentication::getPrincipal).ofType(CustomUserDetails.class).map(CustomUserDetails::getId);
 	}
 
 	public Mono<Boolean> isOwnerOrAdmin(Integer targetUserId) {
@@ -22,15 +22,17 @@ public class SecurityService {
 				return Mono.just(true);
 			}
 			return ReactiveSecurityContextHolder.getContext().map(SecurityContext::getAuthentication)
-					.filter(Authentication::isAuthenticated).map(authentication -> authentication.getAuthorities()
-							.stream().anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN")))
+					.filter(java.util.Objects::nonNull).filter(Authentication::isAuthenticated)
+					.map(authentication -> authentication.getAuthorities().stream()
+							.anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN")))
 					.defaultIfEmpty(false);
 		});
 	}
 
 	public Mono<CustomUserDetails> getCurrentUser() {
 		return ReactiveSecurityContextHolder.getContext().map(SecurityContext::getAuthentication)
-				.filter(Authentication::isAuthenticated).map(Authentication::getPrincipal)
-				.filter(principal -> principal instanceof CustomUserDetails).cast(CustomUserDetails.class);
+				.filter(java.util.Objects::nonNull).filter(Authentication::isAuthenticated)
+				.map(Authentication::getPrincipal).filter(principal -> principal instanceof CustomUserDetails)
+				.cast(CustomUserDetails.class);
 	}
 }
