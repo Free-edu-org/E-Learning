@@ -38,8 +38,8 @@ public class JwtAuthenticationFilter implements WebFilter {
 				return Mono.fromCallable(() -> userRepository.findById(userId)).subscribeOn(Schedulers.boundedElastic())
 						.flatMap(optionalUser -> optionalUser.map(Mono::just).orElseGet(Mono::empty))
 						.filter(user -> jwtService.isTokenValid(jwt, user.getId())).map(user -> {
-							var userDetails = new CustomUserDetails(user.getId(), user.getEmail(), user.getPassword(),
-									user.getRole());
+							var userDetails = new CustomUserDetails(user.getId(), user.getUsername(),
+									user.getPassword(), user.getRole());
 							return new UsernamePasswordAuthenticationToken(userDetails, null,
 									userDetails.getAuthorities());
 						})
