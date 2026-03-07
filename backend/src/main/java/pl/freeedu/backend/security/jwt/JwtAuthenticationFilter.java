@@ -36,17 +36,19 @@ public class JwtAuthenticationFilter implements WebFilter {
 			Integer userId = jwtService.extractUserId(jwt);
 			if (userId != null) {
 				return Mono.fromCallable(() -> userRepository.findById(userId)).subscribeOn(Schedulers.boundedElastic())
-						.flatMap(optionalUser -> optionalUser.map(Mono::just).orElseGet(Mono::empty))
-						.filter(user -> jwtService.isTokenValid(jwt, user.getId())).map(user -> {
-							var userDetails = new CustomUserDetails(user.getId(), user.getUsername(),
-									user.getPassword(), user.getRole());
-							return new UsernamePasswordAuthenticationToken(userDetails, null,
-									userDetails.getAuthorities());
-						})
-						.flatMap(authentication -> chain.filter(exchange)
-								.contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication))
-								.then(Mono.just(true)))
-						.switchIfEmpty(Mono.defer(() -> chain.filter(exchange).then(Mono.just(true)))).then();
+						.flatMap(optionalUser -> {
+							if (optionalUser.isPresent() && jwtService.isTokenValid(jwt, optionalUser.get().getId())) {
+								var user = optionalUser.get();
+								var userDetails = new CustomUserDetails(user.getId(), user.getUsername(),
+										user.getPassword(), user.getRole());
+								var authentication = new UsernamePasswordAuthenticationToken(userDetails, null,
+										userDetails.getAuthorities());
+								return chain.filter(exchange)
+										.contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication));
+							} else {
+								return chain.filter(exchange);
+							}
+						});
 			}
 		} catch (Exception e) {
 			// Token invalid or expired
