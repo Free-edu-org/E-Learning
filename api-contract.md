@@ -100,7 +100,7 @@ Default local development base URL is `http://localhost:8080`
   "username": "student1",
   "email": "user@example.com",
   "role": "STUDENT",
-  "createdAt": "2026-03-02T21:00:00Z"
+  "createdAt": "2026-03-02T21:00:00"
 }
 ```
 
@@ -122,7 +122,7 @@ Default local development base URL is `http://localhost:8080`
   "username": "student1",
   "email": "user@example.com",
   "role": "STUDENT",
-  "createdAt": "2026-03-02T21:00:00Z"
+  "createdAt": "2026-03-02T21:00:00"
 }
 ```
 
@@ -153,7 +153,7 @@ Default local development base URL is `http://localhost:8080`
   "username": "newUsername",
   "email": "new.email@example.com",
   "role": "STUDENT",
-  "createdAt": "2026-03-02T21:00:00Z"
+  "createdAt": "2026-03-02T21:00:00"
 }
 ```
 
