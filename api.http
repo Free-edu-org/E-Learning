@@ -1,0 +1,50 @@
+### FreeEdu API Http Requests Documentation
+# You can use VS Code REST Client or IntelliJ HTTP Client to execute these requests.
+
+@baseUrl = http://localhost:8080
+
+### Register User (STUDENT)
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "student01@example.com",
+  "username": "student01",
+  "password": "strongPassword123",
+  "role": "STUDENT"
+}
+
+###
+
+### Register User (ADMIN)
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "admin01@example.com",
+  "username": "admin01",
+  "password": "strongPassword123",
+  "role": "ADMIN"
+}
+
+###
+
+### Login User
+# @name login
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "student01@example.com",
+  "password": "strongPassword123"
+}
+
+###
+
+# Token is automatically extracted from the login response above
+@authToken = {{login.response.body.token}}
+
+### Example Protected Endpoint
+# Use this structure once you add protected API endpoints in the future
+# GET {{baseUrl}}/api/users/me
+# Authorization: Bearer {{authToken}}
