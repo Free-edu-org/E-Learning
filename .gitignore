@@ -6,6 +6,7 @@
 *.iml
 *.ipr
 *.iws
+.vscode/settings.json
 
 ############################
 # OS
