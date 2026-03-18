@@ -1,0 +1,44 @@
+### User Group CRUD Tests
+
+### Variables
+@baseUrl = http://localhost:9090
+@contentType = application/json
+
+### CREATE - Add new user group
+POST {{baseUrl}}/api/v1/user-groups
+Content-Type: {{contentType}}
+
+{
+  "name": "Java Beginners",
+  "description": "Group for learning Java basics"
+}
+
+### GET ALL - Get all user groups
+GET {{baseUrl}}/api/v1/user-groups
+
+### GET BY ID - Get specific user group (change ID as needed)
+GET {{baseUrl}}/api/v1/user-groups/1
+
+### UPDATE - Update user group (change ID as needed)
+PUT {{baseUrl}}/api/v1/user-groups/1
+Content-Type: {{contentType}}
+
+{
+  "name": "Advanced Java",
+  "description": "For experienced developers"
+}
+
+### DELETE - Delete user group (change ID as needed)
+DELETE {{baseUrl}}/api/v1/user-groups/1
+
+### Test 404 - Get non-existent user group
+GET {{baseUrl}}/api/v1/user-groups/9999
+
+### Test validation - Create group with empty name
+POST {{baseUrl}}/api/v1/user-groups
+Content-Type: {{contentType}}
+
+{
+  "name": "",
+  "description": "This should fail validation"
+}
