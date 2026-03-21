@@ -19,5 +19,7 @@ public class UserGroupResponse {
 
 	private String description;
 
+	private Integer studentCount;
+
 	private LocalDateTime createdAt;
 }
