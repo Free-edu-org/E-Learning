@@ -3,7 +3,6 @@ package pl.freeedu.backend.security.jwt;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
-import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
@@ -12,7 +11,6 @@ import pl.freeedu.backend.user.repository.UserRepository;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-@Component
 public class JwtAuthenticationFilter implements WebFilter {
 
 	private final JwtService jwtService;
@@ -36,6 +34,7 @@ public class JwtAuthenticationFilter implements WebFilter {
 			Integer userId = jwtService.extractUserId(jwt);
 			if (userId != null) {
 				return Mono.fromCallable(() -> userRepository.findById(userId)).subscribeOn(Schedulers.boundedElastic())
+						.publishOn(Schedulers.parallel())
 						.flatMap(optionalUser -> optionalUser.map(Mono::just).orElseGet(Mono::empty))
 						.filter(user -> jwtService.isTokenValid(jwt, user.getId())).map(user -> {
 							var userDetails = new CustomUserDetails(user.getId(), user.getUsername(),

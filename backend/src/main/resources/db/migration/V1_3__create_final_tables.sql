@@ -16,7 +16,7 @@ CREATE INDEX idx_user_answers_task_id ON user_answers(task_id);
 CREATE TABLE user_get_achievement (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    achievement_id INT NOT NULL REFERENCES achievement(id) ON DELETE CASCADE,
+    achievement_id INT NOT NULL REFERENCES achievements(id) ON DELETE CASCADE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

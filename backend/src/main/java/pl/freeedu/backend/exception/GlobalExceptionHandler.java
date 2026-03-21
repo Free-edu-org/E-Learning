@@ -8,6 +8,7 @@ import org.springframework.web.bind.support.WebExchangeBindException;
 import org.springframework.web.server.ServerWebExchange;
 import pl.freeedu.backend.auth.exception.AuthException;
 import pl.freeedu.backend.user.exception.UserException;
+import pl.freeedu.backend.usergroup.exception.UserGroupException;
 import reactor.core.publisher.Mono;
 
 import org.springframework.security.access.AccessDeniedException;
@@ -34,6 +35,13 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(UserException.class)
 	public Mono<ProblemDetail> handleUserException(UserException ex, ServerWebExchange exchange) {
 		log.warn("UserException [{} {}]: {}", exchange.getRequest().getMethod(), exchange.getRequest().getPath(),
+				ex.getMessage());
+		return buildProblemDetail(ex.getErrorCode().getStatus(), ex.getMessage(), ex.getErrorCode().name(), exchange);
+	}
+
+	@ExceptionHandler(UserGroupException.class)
+	public Mono<ProblemDetail> handleUserGroupException(UserGroupException ex, ServerWebExchange exchange) {
+		log.warn("UserGroupException [{} {}]: {}", exchange.getRequest().getMethod(), exchange.getRequest().getPath(),
 				ex.getMessage());
 		return buildProblemDetail(ex.getErrorCode().getStatus(), ex.getMessage(), ex.getErrorCode().name(), exchange);
 	}

@@ -31,8 +31,9 @@ public class AuthService {
 
 	public Mono<AuthResponse> login(Mono<LoginRequest> requestMono) {
 		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
-			User user = userRepository.findByUsernameOrEmail(request.getIdentifier(), request.getIdentifier())
-					.orElseThrow(() -> new AuthException(AuthErrorCode.INVALID_CREDENTIALS));
+			String identifier = request.getIdentifier();
+			User user = userRepository.findByEmail(identifier).orElseGet(() -> userRepository.findByUsername(identifier)
+					.orElseThrow(() -> new AuthException(AuthErrorCode.INVALID_CREDENTIALS)));
 
 			if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
 				throw new AuthException(AuthErrorCode.INVALID_CREDENTIALS);
