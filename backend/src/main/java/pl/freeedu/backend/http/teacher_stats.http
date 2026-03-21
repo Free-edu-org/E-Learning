@@ -1,0 +1,20 @@
+### Teacher Stats Tests
+
+### Variables
+@baseUrl = http://localhost:8080
+@contentType = application/json
+
+### GET STATS - Get dashboard statistics (requires ADMIN token)
+GET {{baseUrl}}/api/v1/teacher/stats
+Authorization: Bearer {{adminToken}}
+
+### Test 401 - No Authorization header
+GET {{baseUrl}}/api/v1/teacher/stats
+
+### Test 401 - Invalid token
+GET {{baseUrl}}/api/v1/teacher/stats
+Authorization: Bearer invalid_token_here
+
+### Test 403 - Student token (should be forbidden)
+GET {{baseUrl}}/api/v1/teacher/stats
+Authorization: Bearer {{studentToken}}

@@ -427,12 +427,12 @@ describe('User Groups API (/api/v1/user-groups)', () => {
             expect(response.data.code).toBe('USER_GROUP_NOT_FOUND');
         });
 
-        it('should fail for non-existent user (404 USER_GROUP_NOT_FOUND)', async () => {
+        it('should fail for non-existent user (404 USER_NOT_FOUND)', async () => {
             setAuthToken(adminToken);
             const response = await apiClient.post(`/user-groups/${testGroupId}/members/9999999`);
 
             expect(response.status).toBe(404);
-            expect(response.data.code).toBe('USER_GROUP_NOT_FOUND');
+            expect(response.data.code).toBe('USER_NOT_FOUND');
         });
 
         it('should deny unauthenticated user (401 Unauthorized)', async () => {
