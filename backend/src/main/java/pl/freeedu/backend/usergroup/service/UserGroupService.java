@@ -65,13 +65,9 @@ public class UserGroupService {
 	public Flux<UserGroupResponse> getAll() {
 		return Mono.fromCallable(() -> {
 			var countMap = userInGroupRepository.countAllByGroupId().stream()
-					.collect(Collectors.toMap(
-							UserInGroupRepository.GroupCountProjection::getGroupId,
-							UserInGroupRepository.GroupCountProjection::getCount
-					));
-			return userGroupRepository.findAll().stream()
-					.map(group -> toResponseWithCount(group, countMap))
-					.toList();
+					.collect(Collectors.toMap(UserInGroupRepository.GroupCountProjection::getGroupId,
+							UserInGroupRepository.GroupCountProjection::getCount));
+			return userGroupRepository.findAll().stream().map(group -> toResponseWithCount(group, countMap)).toList();
 		}).subscribeOn(Schedulers.boundedElastic()).flatMapMany(Flux::fromIterable);
 	}
 
