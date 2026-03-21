@@ -86,7 +86,7 @@ public class UserGroupService {
 				throw new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND);
 			}
 			User user = userRepository.findById(userId)
-					.orElseThrow(() -> new UserGroupException(UserGroupErrorCode.USER_NOT_FOUND));
+					.orElseThrow(() -> new UserGroupException(UserGroupErrorCode.INVALID_ROLE_FOR_GROUP));
 			if (user.getRole() != Role.STUDENT) {
 				throw new UserGroupException(UserGroupErrorCode.INVALID_ROLE_FOR_GROUP);
 			}
