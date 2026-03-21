@@ -724,4 +724,119 @@ describe('User Groups API (/api/v1/user-groups)', () => {
             expect(response.data).not.toHaveProperty('trace');
         });
     });
+
+    // ─── ADDITIONAL COVERAGE ──────────────────────────────────────────
+
+    describe('Additional Coverage', () => {
+        let emptyGroupId;
+        let multiGroupId;
+        let studentAId;
+        let studentBId;
+
+        beforeAll(async () => {
+            setAuthToken(adminToken);
+
+            // Create an empty group (no members) for delete test
+            const emptyRes = await apiClient.post('/user-groups', {
+                name: `EmptyGroup ${uniqueId}`,
+                description: 'Group with zero members'
+            });
+            emptyGroupId = emptyRes.data.id;
+
+            // Create a group for multi-member test
+            const multiRes = await apiClient.post('/user-groups', {
+                name: `MultiGroup ${uniqueId}`,
+                description: 'Group for multiple members'
+            });
+            multiGroupId = multiRes.data.id;
+
+            // Create two new students for multi-member tests
+            const studentAData = {
+                email: `extra.a.${uniqueId}@example.com`,
+                username: `extraA${uniqueId}`,
+                password: 'password123'
+            };
+            const studentBData = {
+                email: `extra.b.${uniqueId}@example.com`,
+                username: `extraB${uniqueId}`,
+                password: 'password123'
+            };
+            await apiClient.post('/users/register', studentAData);
+            await apiClient.post('/users/register', studentBData);
+
+            let loginRes = await apiClient.post('/auth/login', { identifier: studentAData.username, password: studentAData.password });
+            setAuthToken(loginRes.data.token);
+            let meRes = await apiClient.get('/users/me');
+            studentAId = meRes.data.id;
+
+            loginRes = await apiClient.post('/auth/login', { identifier: studentBData.username, password: studentBData.password });
+            setAuthToken(loginRes.data.token);
+            meRes = await apiClient.get('/users/me');
+            studentBId = meRes.data.id;
+
+            setAuthToken(adminToken);
+        });
+
+        it('should delete an empty group (no members) as ADMIN (204 No Content)', async () => {
+            setAuthToken(adminToken);
+            const response = await apiClient.delete(`/user-groups/${emptyGroupId}`);
+
+            expect(response.status).toBe(204);
+        });
+
+        it('should return 404 after deleting empty group', async () => {
+            setAuthToken(adminToken);
+            const response = await apiClient.get(`/user-groups/${emptyGroupId}`);
+
+            expect(response.status).toBe(404);
+        });
+
+        it('should correctly count multiple students in a group', async () => {
+            setAuthToken(adminToken);
+            await apiClient.post(`/user-groups/${multiGroupId}/members/${studentAId}`);
+            await apiClient.post(`/user-groups/${multiGroupId}/members/${studentBId}`);
+
+            const response = await apiClient.get(`/user-groups/${multiGroupId}`);
+            expect(response.status).toBe(200);
+            expect(response.data.studentCount).toBe(2);
+        });
+
+        it('should return 404 when updating a deleted group (404 USER_GROUP_NOT_FOUND)', async () => {
+            setAuthToken(adminToken);
+            const response = await apiClient.put(`/user-groups/${emptyGroupId}`, {
+                name: `Ghost Update ${uniqueId}`,
+                description: 'Updating deleted group'
+            });
+
+            expect(response.status).toBe(404);
+            expect(response.data.code).toBe('USER_GROUP_NOT_FOUND');
+        });
+
+        it('should fail update with null fields (400 VALIDATION_FAILED)', async () => {
+            setAuthToken(adminToken);
+            const response = await apiClient.put(`/user-groups/${multiGroupId}`, {
+                name: null,
+                description: null
+            });
+
+            expect(response.status).toBe(400);
+            expect(response.data.code).toBe('VALIDATION_FAILED');
+        });
+
+        it('should return 404 when removing member with non-existent userId', async () => {
+            setAuthToken(adminToken);
+            const response = await apiClient.delete(`/user-groups/${multiGroupId}/members/9999999`);
+
+            expect(response.status).toBe(404);
+            expect(response.data.code).toBe('MEMBER_NOT_IN_GROUP');
+        });
+
+        it('should return 404 when adding member to a deleted group', async () => {
+            setAuthToken(adminToken);
+            const response = await apiClient.post(`/user-groups/${emptyGroupId}/members/${studentAId}`);
+
+            expect(response.status).toBe(404);
+            expect(response.data.code).toBe('USER_GROUP_NOT_FOUND');
+        });
+    });
 });
