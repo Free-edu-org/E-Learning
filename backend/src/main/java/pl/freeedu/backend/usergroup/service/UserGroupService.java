@@ -75,7 +75,6 @@ public class UserGroupService {
 		return Mono.fromCallable(() -> {
 			UserGroup group = userGroupRepository.findById(id)
 					.orElseThrow(() -> new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND));
-			userInGroupRepository.deleteByGroupId(id);
 			userGroupRepository.delete(group);
 			return (Void) null;
 		}).subscribeOn(Schedulers.boundedElastic()).then();
