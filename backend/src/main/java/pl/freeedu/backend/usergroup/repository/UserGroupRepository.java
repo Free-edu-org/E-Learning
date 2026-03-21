@@ -6,4 +6,6 @@ import pl.freeedu.backend.usergroup.model.UserGroup;
 
 @Repository
 public interface UserGroupRepository extends JpaRepository<UserGroup, Integer> {
+
+	boolean existsByName(String name);
 }

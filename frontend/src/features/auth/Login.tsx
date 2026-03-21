@@ -62,7 +62,7 @@ export function Login() {
     },
   };
 
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -73,13 +73,13 @@ export function Login() {
     setIsLoading(true);
 
     try {
-      const response = await authService.login({ email, password });
+      const response = await authService.login({ identifier, password });
       login(response.token, response.role);
       navigate("/");
     } catch (err: unknown) {
       if (err instanceof ApiError) {
         if (err.problem.code === "INVALID_CREDENTIALS") {
-          setErrorMsg("Nieprawidłowy email lub hasło.");
+          setErrorMsg("Nieprawidłowy login/email lub hasło.");
         } else {
           setErrorMsg(err.problem.detail || "Wystąpił błąd logowania.");
         }
@@ -197,12 +197,12 @@ export function Login() {
 
           <form onSubmit={handleSubmit}>
             <TextField
-              label="Email"
-              type="email"
+              label="Login lub Email"
+              type="text"
               fullWidth
               margin="normal"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
               required
               disabled={isLoading}
               variant="outlined"

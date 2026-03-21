@@ -1,4 +1,4 @@
-package pl.freeedu.backend.security;
+package pl.freeedu.backend.security.jwt;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -21,8 +21,8 @@ public class JwtService {
 	@Value("${application.security.jwt.expiration:86400000}")
 	private long jwtExpiration;
 
-	public String extractUsername(String token) {
-		return extractClaim(token, Claims::getSubject);
+	public Integer extractUserId(String token) {
+		return Integer.parseInt(extractClaim(token, Claims::getSubject));
 	}
 
 	public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
@@ -30,23 +30,23 @@ public class JwtService {
 		return claimsResolver.apply(claims);
 	}
 
-	public String generateToken(String username) {
-		return generateToken(new HashMap<>(), username);
+	public String generateToken(Integer userId) {
+		return generateToken(new HashMap<>(), userId);
 	}
 
-	public String generateToken(Map<String, Object> extraClaims, String username) {
-		return buildToken(extraClaims, username, jwtExpiration);
+	public String generateToken(Map<String, Object> extraClaims, Integer userId) {
+		return buildToken(extraClaims, String.valueOf(userId), jwtExpiration);
 	}
 
-	private String buildToken(Map<String, Object> extraClaims, String username, long expiration) {
-		return Jwts.builder().claims(extraClaims).subject(username).issuedAt(new Date(System.currentTimeMillis()))
+	private String buildToken(Map<String, Object> extraClaims, String subject, long expiration) {
+		return Jwts.builder().claims(extraClaims).subject(subject).issuedAt(new Date(System.currentTimeMillis()))
 				.expiration(new Date(System.currentTimeMillis() + expiration)).signWith(getSignInKey(), Jwts.SIG.HS256)
 				.compact();
 	}
 
-	public boolean isTokenValid(String token, String targetUsername) {
-		final String username = extractUsername(token);
-		return (username.equals(targetUsername)) && !isTokenExpired(token);
+	public boolean isTokenValid(String token, Integer targetUserId) {
+		final Integer userId = extractUserId(token);
+		return (userId.equals(targetUserId)) && !isTokenExpired(token);
 	}
 
 	private boolean isTokenExpired(String token) {

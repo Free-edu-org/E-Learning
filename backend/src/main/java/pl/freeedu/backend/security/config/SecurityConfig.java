@@ -1,7 +1,8 @@
-package pl.freeedu.backend.security;
+package pl.freeedu.backend.security.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
@@ -10,17 +11,28 @@ import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.security.web.server.context.NoOpServerSecurityContextRepository;
+import org.springframework.security.web.server.csrf.CsrfWebFilter;
+import org.springframework.security.web.server.util.matcher.AndServerWebExchangeMatcher;
+import org.springframework.security.web.server.util.matcher.NegatedServerWebExchangeMatcher;
+import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatcher;
+import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsConfigurationSource;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
+
 import java.util.Arrays;
 
+import pl.freeedu.backend.security.jwt.JwtAuthenticationFilter;
+import pl.freeedu.backend.security.jwt.JwtService;
+import pl.freeedu.backend.security.principal.CustomUserDetails;
 import pl.freeedu.backend.user.repository.UserRepository;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 @Configuration
 @EnableWebFluxSecurity
+@EnableReactiveMethodSecurity
 public class SecurityConfig {
 
 	private final UserRepository userRepository;
@@ -33,11 +45,12 @@ public class SecurityConfig {
 
 	@Bean
 	public ReactiveUserDetailsService userDetailsService() {
-		return username -> Mono.fromCallable(() -> userRepository.findByEmail(username))
+		return identifier -> Mono
+				.fromCallable(() -> userRepository.findByEmail(identifier)
+						.or(() -> userRepository.findByUsername(identifier)))
 				.subscribeOn(Schedulers.boundedElastic())
 				.flatMap(optionalUser -> optionalUser.map(Mono::just).orElseGet(Mono::empty))
-				.map(u -> org.springframework.security.core.userdetails.User.builder().username(u.getEmail())
-						.password(u.getPassword()).authorities(u.getRole()).build());
+				.map(u -> new CustomUserDetails(u.getId(), u.getUsername(), u.getPassword(), u.getRole()));
 	}
 
 	@Bean
@@ -51,15 +64,23 @@ public class SecurityConfig {
 	}
 
 	@Bean
-	public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http,
-			ReactiveUserDetailsService userDetailsService) {
-		JwtAuthenticationFilter jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtService, userDetailsService);
+	public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
+		JwtAuthenticationFilter jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtService, userRepository);
+
+		ServerWebExchangeMatcher csrfIgnoredPaths = ServerWebExchangeMatchers.pathMatchers("/api/v1/**",
+				"/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**", "/webjars/**");
+
+		ServerWebExchangeMatcher requireCsrf = new AndServerWebExchangeMatcher(CsrfWebFilter.DEFAULT_CSRF_MATCHER,
+				new NegatedServerWebExchangeMatcher(csrfIgnoredPaths));
 
 		return http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
-				.csrf(ServerHttpSecurity.CsrfSpec::disable)
+				.csrf(csrf -> csrf.requireCsrfProtectionMatcher(requireCsrf)) // <-- zamiast disable
+				.httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
+				.formLogin(ServerHttpSecurity.FormLoginSpec::disable)
+				.securityContextRepository(NoOpServerSecurityContextRepository.getInstance())
 				.authorizeExchange(exchanges -> exchanges.pathMatchers("/api/v1/auth/**").permitAll()
-						.pathMatchers("/v3/api-docs/**", "/swagger-ui.html", "/webjars/**").permitAll().anyExchange()
-						.authenticated())
+						.pathMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**", "/webjars/**")
+						.permitAll().anyExchange().authenticated())
 				.addFilterAt(jwtAuthenticationFilter, SecurityWebFiltersOrder.AUTHENTICATION).build();
 	}
 

@@ -13,5 +13,6 @@ public interface UserGroupMapper {
 	@Mapping(target = "createdAt", ignore = true)
 	UserGroup toUserGroup(UserGroupRequest request);
 
+	@Mapping(target = "studentCount", ignore = true)
 	UserGroupResponse toUserGroupResponse(UserGroup userGroup);
 }
