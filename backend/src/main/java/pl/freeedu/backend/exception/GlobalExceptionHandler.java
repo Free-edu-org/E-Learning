@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.support.WebExchangeBindException;
 import org.springframework.web.server.ServerWebExchange;
 import pl.freeedu.backend.auth.exception.AuthException;
-import pl.freeedu.backend.usergroup.exception.UserGroupException;
 import reactor.core.publisher.Mono;
 
 import java.net.URI;
@@ -19,14 +18,6 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(AuthException.class)
 	public Mono<ProblemDetail> handleAuthException(AuthException ex, ServerWebExchange exchange) {
 		return buildProblemDetail(HttpStatus.BAD_REQUEST, ex.getMessage(), ex.getErrorCode().name(), exchange);
-	}
-
-	@ExceptionHandler(UserGroupException.class)
-	public Mono<ProblemDetail> handleUserGroupException(UserGroupException ex, ServerWebExchange exchange) {
-		HttpStatus status = ex.getErrorCode() == ErrorCode.USER_GROUP_NOT_FOUND
-				? HttpStatus.NOT_FOUND
-				: HttpStatus.BAD_REQUEST;
-		return buildProblemDetail(status, ex.getMessage(), ex.getErrorCode().name(), exchange);
 	}
 
 	@ExceptionHandler(WebExchangeBindException.class)
