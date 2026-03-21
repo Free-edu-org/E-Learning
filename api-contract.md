@@ -344,8 +344,7 @@ Default local development base URL is `http://localhost:8080`
 *(Empty Response Body)*
 
 **Known Errors:**
-- `USER_GROUP_NOT_FOUND` (404 Not Found): Group does not exist.
-- `USER_GROUP_NOT_FOUND` (404 Not Found): User does not exist.
+- `USER_GROUP_NOT_FOUND` (404 Not Found): Group or user does not exist.
 - `INVALID_ROLE_FOR_GROUP` (400 Bad Request): User is not a student.
 - `STUDENT_ALREADY_IN_GROUP` (409 Conflict): Student is already assigned to a group.
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
