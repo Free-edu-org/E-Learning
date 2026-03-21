@@ -29,9 +29,9 @@ Default local development base URL is `http://localhost:8080`
 }
 ```
 
-**Known Errors (401 Unauthorized):**
-- Example `code` values:
-  - `INVALID_CREDENTIALS`: Wrong username/email or password.
+**Known Errors:**
+- `INVALID_CREDENTIALS` (401 Unauthorized): Wrong username/email or password.
+- `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
 
 ---
 
@@ -344,7 +344,8 @@ Default local development base URL is `http://localhost:8080`
 *(Empty Response Body)*
 
 **Known Errors:**
-- `USER_GROUP_NOT_FOUND` (404 Not Found): Group or user does not exist.
+- `USER_GROUP_NOT_FOUND` (404 Not Found): Group does not exist.
+- `USER_NOT_FOUND` (404 Not Found): User does not exist.
 - `INVALID_ROLE_FOR_GROUP` (400 Bad Request): User is not a student.
 - `STUDENT_ALREADY_IN_GROUP` (409 Conflict): Student is already assigned to a group.
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
@@ -365,6 +366,36 @@ Default local development base URL is `http://localhost:8080`
 - `MEMBER_NOT_IN_GROUP` (404 Not Found): User is not a member of this group.
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
 - `FORBIDDEN` (403 Forbidden): Token is not an admin token.
+
+---
+
+## 4. Teacher Stats (`/api/v1/teacher/stats`)
+
+### 4.1. Get Dashboard Statistics
+- **URL**: `/api/v1/teacher/stats`
+- **Method**: `GET`
+- **Description**: Returns aggregated dashboard statistics: total and active lesson counts, active student count, and average answer score. Requires `ADMIN` authority.
+
+**Success (200 OK):**
+```json
+{
+  "totalLessons": 5,
+  "activeLessons": 3,
+  "activeStudents": 12,
+  "avgScore": 72.5
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `totalLessons` | Long | Total number of lessons in the system. |
+| `activeLessons` | Long | Number of lessons where `is_active = TRUE`. |
+| `activeStudents` | Long | Distinct students belonging to groups that have at least one lesson assigned. |
+| `avgScore` | Double | Average correctness score (0–100). Returns `0.0` when no answers exist (COALESCE guard). |
+
+**Known Errors:**
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token is not an admin token (e.g. STUDENT role).
 
 ---
 
