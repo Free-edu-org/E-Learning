@@ -2,6 +2,7 @@ package pl.freeedu.backend.usergroup.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 import pl.freeedu.backend.usergroup.model.UserInGroup;
 
 import java.util.Optional;
@@ -17,5 +18,6 @@ public interface UserInGroupRepository extends JpaRepository<UserInGroup, Intege
 
 	Optional<UserInGroup> findByUserIdAndGroupId(Integer userId, Integer groupId);
 
+	@Transactional
 	void deleteByGroupId(Integer groupId);
 }

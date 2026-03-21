@@ -1,7 +1,6 @@
 package pl.freeedu.backend.usergroup.service;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import pl.freeedu.backend.user.model.Role;
 import pl.freeedu.backend.user.model.User;
 import pl.freeedu.backend.user.repository.UserRepository;
@@ -26,10 +25,8 @@ public class UserGroupService {
 	private final UserRepository userRepository;
 	private final UserGroupMapper userGroupMapper;
 
-	public UserGroupService(UserGroupRepository userGroupRepository,
-			UserInGroupRepository userInGroupRepository,
-			UserRepository userRepository,
-			UserGroupMapper userGroupMapper) {
+	public UserGroupService(UserGroupRepository userGroupRepository, UserInGroupRepository userInGroupRepository,
+			UserRepository userRepository, UserGroupMapper userGroupMapper) {
 		this.userGroupRepository = userGroupRepository;
 		this.userInGroupRepository = userInGroupRepository;
 		this.userRepository = userRepository;
@@ -56,18 +53,15 @@ public class UserGroupService {
 	}
 
 	public Flux<UserGroupResponse> getAll() {
-		return Mono.fromCallable(() -> userGroupRepository.findAll().stream()
-				.map(this::toResponseWithCount).toList())
-				.subscribeOn(Schedulers.boundedElastic())
-				.flatMapMany(Flux::fromIterable);
+		return Mono.fromCallable(() -> userGroupRepository.findAll().stream().map(this::toResponseWithCount).toList())
+				.subscribeOn(Schedulers.boundedElastic()).flatMapMany(Flux::fromIterable);
 	}
 
 	public Mono<UserGroupResponse> update(Integer id, Mono<UserGroupRequest> requestMono) {
 		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
 			UserGroup group = userGroupRepository.findById(id)
 					.orElseThrow(() -> new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND));
-			if (!group.getName().equals(request.getName())
-					&& userGroupRepository.existsByName(request.getName())) {
+			if (!group.getName().equals(request.getName()) && userGroupRepository.existsByName(request.getName())) {
 				throw new UserGroupException(UserGroupErrorCode.GROUP_NAME_ALREADY_EXISTS);
 			}
 			group.setName(request.getName());
@@ -77,7 +71,6 @@ public class UserGroupService {
 		}).subscribeOn(Schedulers.boundedElastic()));
 	}
 
-	@Transactional
 	public Mono<Void> delete(Integer id) {
 		return Mono.fromCallable(() -> {
 			UserGroup group = userGroupRepository.findById(id)
@@ -101,15 +94,11 @@ public class UserGroupService {
 			if (userInGroupRepository.existsByUserId(userId)) {
 				throw new UserGroupException(UserGroupErrorCode.STUDENT_ALREADY_IN_GROUP);
 			}
-			userInGroupRepository.save(UserInGroup.builder()
-					.userId(userId)
-					.groupId(groupId)
-					.build());
+			userInGroupRepository.save(UserInGroup.builder().userId(userId).groupId(groupId).build());
 			return (Void) null;
 		}).subscribeOn(Schedulers.boundedElastic()).then();
 	}
 
-	@Transactional
 	public Mono<Void> removeMember(Integer groupId, Integer userId) {
 		return Mono.fromCallable(() -> {
 			if (!userGroupRepository.existsById(groupId)) {
