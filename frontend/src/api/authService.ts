@@ -1,8 +1,8 @@
 import { fetchApi } from "./apiClient";
 
 export interface LoginRequest {
-  email: string;
-  password?: string;
+  identifier: string;
+  password: string;
 }
 
 export interface LoginResponse {
