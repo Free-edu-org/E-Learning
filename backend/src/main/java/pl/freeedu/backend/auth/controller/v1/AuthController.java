@@ -29,8 +29,8 @@ public class AuthController {
 
 	@Operation(summary = "Login an existing user")
 	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "User successfully authenticated"),
-			@ApiResponse(responseCode = "400", description = "Invalid input data", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
-			@ApiResponse(responseCode = "401", description = "Invalid credentials", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
+			@ApiResponse(responseCode = "400", description = "Bad Request - VALIDATION_FAILED", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "401", description = "Unauthorized - INVALID_CREDENTIALS", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PostMapping("/login")
 	@ResponseStatus(HttpStatus.OK)
 	public Mono<AuthResponse> login(@Valid @RequestBody Mono<LoginRequest> request) {
