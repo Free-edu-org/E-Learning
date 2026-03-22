@@ -29,9 +29,9 @@ Default local development base URL is `http://localhost:8080`
 }
 ```
 
-**Known Errors (401 Unauthorized):**
-- Example `code` values:
-  - `INVALID_CREDENTIALS`: Wrong username/email or password.
+**Known Errors:**
+- `INVALID_CREDENTIALS` (401 Unauthorized): Wrong username/email or password.
+- `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
 
 ---
 
@@ -203,6 +203,199 @@ Default local development base URL is `http://localhost:8080`
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
 - `FORBIDDEN` (403 Forbidden): Lack of permissions (not an admin or owner).
 - `USER_NOT_FOUND` (404 Not Found): User does not exist.
+
+---
+
+## 3. User Groups (`/api/v1/user-groups`)
+
+### 3.1. Create User Group
+- **URL**: `/api/v1/user-groups`
+- **Method**: `POST`
+- **Description**: Creates a new user group. Group name must be unique. Requires `ADMIN` authority.
+
+**Request Body (JSON):**
+```json
+{
+  "name": "Angielski A1",
+  "description": "Grupa początkująca - semestr letni"
+}
+```
+
+**Success (201 Created):**
+```json
+{
+  "id": 1,
+  "name": "Angielski A1",
+  "description": "Grupa początkująca - semestr letni",
+  "studentCount": 0,
+  "createdAt": "2026-03-21T10:00:00"
+}
+```
+
+**Known Errors:**
+- `GROUP_NAME_ALREADY_EXISTS` (409 Conflict): Group with this name already exists.
+- `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token is not an admin token.
+
+---
+
+### 3.2. Get All User Groups
+- **URL**: `/api/v1/user-groups`
+- **Method**: `GET`
+- **Description**: Returns a list of all user groups. Requires `ADMIN` authority.
+
+**Success (200 OK):**
+```json
+[
+  {
+    "id": 1,
+    "name": "Angielski A1",
+    "description": "Grupa początkująca - semestr letni",
+    "studentCount": 2,
+    "createdAt": "2026-03-21T10:00:00"
+  }
+]
+```
+
+**Known Errors:**
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token is not an admin token.
+
+---
+
+### 3.3. Get User Group by ID
+- **URL**: `/api/v1/user-groups/{id}`
+- **Method**: `GET`
+- **Description**: Returns a single user group by its ID. Requires `ADMIN` authority.
+
+**Success (200 OK):**
+```json
+{
+  "id": 1,
+  "name": "Angielski A1",
+  "description": "Grupa początkująca - semestr letni",
+  "studentCount": 2,
+  "createdAt": "2026-03-21T10:00:00"
+}
+```
+
+**Known Errors:**
+- `USER_GROUP_NOT_FOUND` (404 Not Found): Group does not exist.
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token is not an admin token.
+
+---
+
+### 3.4. Update User Group
+- **URL**: `/api/v1/user-groups/{id}`
+- **Method**: `PUT`
+- **Description**: Updates name and/or description of an existing group. Requires `ADMIN` authority.
+
+**Request Body (JSON):**
+```json
+{
+  "name": "Angielski B1",
+  "description": "Grupa średniozaawansowana"
+}
+```
+
+**Success (200 OK):**
+```json
+{
+  "id": 1,
+  "name": "Angielski B1",
+  "description": "Grupa średniozaawansowana",
+  "studentCount": 2,
+  "createdAt": "2026-03-21T10:00:00"
+}
+```
+
+**Known Errors:**
+- `USER_GROUP_NOT_FOUND` (404 Not Found): Group does not exist.
+- `GROUP_NAME_ALREADY_EXISTS` (409 Conflict): Another group with this name already exists.
+- `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token is not an admin token.
+
+---
+
+### 3.5. Delete User Group
+- **URL**: `/api/v1/user-groups/{id}`
+- **Method**: `DELETE`
+- **Description**: Deletes a user group and all member associations. Does not delete user accounts. Requires `ADMIN` authority.
+
+**Success (204 No Content):**
+*(Empty Response Body)*
+
+**Known Errors:**
+- `USER_GROUP_NOT_FOUND` (404 Not Found): Group does not exist.
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token is not an admin token.
+
+---
+
+### 3.6. Add Member to Group
+- **URL**: `/api/v1/user-groups/{id}/members/{userId}`
+- **Method**: `POST`
+- **Description**: Adds a student to a group. Only users with role `STUDENT` can be added. A student can belong to at most one group. Requires `ADMIN` authority.
+
+**Success (204 No Content):**
+*(Empty Response Body)*
+
+**Known Errors:**
+- `USER_GROUP_NOT_FOUND` (404 Not Found): Group does not exist.
+- `USER_NOT_FOUND` (404 Not Found): User does not exist.
+- `INVALID_ROLE_FOR_GROUP` (400 Bad Request): User is not a student.
+- `STUDENT_ALREADY_IN_GROUP` (409 Conflict): Student is already assigned to a group.
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token is not an admin token.
+
+---
+
+### 3.7. Remove Member from Group
+- **URL**: `/api/v1/user-groups/{id}/members/{userId}`
+- **Method**: `DELETE`
+- **Description**: Removes a student from a group. Does not delete the user account. Requires `ADMIN` authority.
+
+**Success (204 No Content):**
+*(Empty Response Body)*
+
+**Known Errors:**
+- `USER_GROUP_NOT_FOUND` (404 Not Found): Group does not exist.
+- `MEMBER_NOT_IN_GROUP` (404 Not Found): User is not a member of this group.
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token is not an admin token.
+
+---
+
+## 4. Teacher Stats (`/api/v1/teacher/stats`)
+
+### 4.1. Get Dashboard Statistics
+- **URL**: `/api/v1/teacher/stats`
+- **Method**: `GET`
+- **Description**: Returns aggregated dashboard statistics: total and active lesson counts, active student count, and average answer score. Requires `ADMIN` authority.
+
+**Success (200 OK):**
+```json
+{
+  "totalLessons": 5,
+  "activeLessons": 3,
+  "activeStudents": 12,
+  "avgScore": 72.5
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `totalLessons` | Long | Total number of lessons in the system. |
+| `activeLessons` | Long | Number of lessons where `is_active = TRUE`. |
+| `activeStudents` | Long | Distinct students belonging to groups that have at least one lesson assigned. |
+| `avgScore` | Double | Average correctness score (0–100). Returns `0.0` when no answers exist (COALESCE guard). |
+
+**Known Errors:**
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token is not an admin token (e.g. STUDENT role).
 
 ---
 
