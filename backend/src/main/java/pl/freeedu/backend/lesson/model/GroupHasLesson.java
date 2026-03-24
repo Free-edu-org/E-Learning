@@ -15,13 +15,13 @@ public class GroupHasLesson {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     @Column(name = "group_id", nullable = false)
     private Integer groupId;
 
     @Column(name = "lesson_id", nullable = false)
-    private Long lessonId;
+    private Integer lessonId;
 
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;

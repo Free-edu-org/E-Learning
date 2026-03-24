@@ -15,16 +15,13 @@ public class Lesson {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String title;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String theme;
-
-    @Column(columnDefinition = "TEXT")
-    private String description;
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive;

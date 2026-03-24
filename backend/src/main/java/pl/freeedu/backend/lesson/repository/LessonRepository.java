@@ -5,6 +5,6 @@ import org.springframework.stereotype.Repository;
 import pl.freeedu.backend.lesson.model.Lesson;
 
 @Repository
-public interface LessonRepository extends JpaRepository<Lesson, Long> {
+public interface LessonRepository extends JpaRepository<Lesson, Integer> {
     // Można dodać query methody w razie potrzeby
 }

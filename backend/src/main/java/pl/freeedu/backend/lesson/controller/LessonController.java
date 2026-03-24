@@ -46,7 +46,7 @@ public class LessonController {
 	@PutMapping("/{id}")
 	@PreAuthorize("hasRole('TEACHER')")
 	public Mono<LessonResponse> updateLesson(
-			@PathVariable Long id,
+			@PathVariable Integer id,
 			@RequestBody Mono<LessonRequest> lessonRequest) {
 		return lessonService.updateLesson(id, lessonRequest);
 	}
@@ -56,7 +56,7 @@ public class LessonController {
 	@PreAuthorize("hasRole('TEACHER')")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public Mono<Void> updateLessonStatus(
-			@PathVariable Long id,
+			@PathVariable Integer id,
 			@RequestBody Mono<LessonStatusRequest> statusRequest) {
 		return lessonService.updateLessonStatus(id, statusRequest);
 	}
@@ -65,7 +65,7 @@ public class LessonController {
 	@DeleteMapping("/{id}")
 	@PreAuthorize("hasRole('TEACHER')")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public Mono<Void> deleteLesson(@PathVariable Long id) {
+	public Mono<Void> deleteLesson(@PathVariable Integer id) {
 		return lessonService.deleteLesson(id);
 	}
 }

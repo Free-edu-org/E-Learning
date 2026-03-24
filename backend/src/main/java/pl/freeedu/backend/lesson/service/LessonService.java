@@ -95,7 +95,6 @@ public class LessonService {
 				Lesson l = Lesson.builder()
 						.title(request.getTitle())
 						.theme(request.getTheme())
-						.description(request.getDescription())
 						.teacherId(teacherId)
 						.isActive(Boolean.FALSE) // default false as spec
 						.build();
@@ -116,7 +115,7 @@ public class LessonService {
 		));
 	}
 
-	public Mono<LessonResponse> updateLesson(Long id, Mono<LessonRequest> requestMono) {
+	public Mono<LessonResponse> updateLesson(Integer id, Mono<LessonRequest> requestMono) {
 		return requestMono.flatMap(request -> securityService.getCurrentUserId().flatMap(currentUserId ->
 			Mono.fromCallable(() -> {
 				Lesson lesson = lessonRepository.findById(id)
@@ -126,7 +125,6 @@ public class LessonService {
 				}
 				lesson.setTitle(request.getTitle());
 				lesson.setTheme(request.getTheme());
-				lesson.setDescription(request.getDescription());
 				Lesson saved = lessonRepository.save(lesson);
 
 				// opcjonalna zmiana relacji grup: jeżeli request.groupIds != null -> odśwież relacje
@@ -146,7 +144,7 @@ public class LessonService {
 		));
 	}
 
-	public Mono<Void> updateLessonStatus(Long id, Mono<LessonStatusRequest> statusMono) {
+	public Mono<Void> updateLessonStatus(Integer id, Mono<LessonStatusRequest> statusMono) {
 		return statusMono.flatMap(statusReq -> securityService.getCurrentUserId().flatMap(currentUserId ->
 			Mono.fromCallable(() -> {
 				Lesson lesson = lessonRepository.findById(id)
@@ -161,7 +159,7 @@ public class LessonService {
 		));
 	}
 
-	public Mono<Void> deleteLesson(Long id) {
+	public Mono<Void> deleteLesson(Integer id) {
 		return securityService.getCurrentUserId().flatMap(currentUserId ->
 			Mono.fromCallable(() -> {
 				Lesson lesson = lessonRepository.findById(id)
