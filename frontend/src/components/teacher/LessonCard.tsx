@@ -52,14 +52,14 @@ const MAX_CHIPS_VISIBLE = 2;
  * Renders up to MAX_CHIPS_VISIBLE group chips.
  * If there are more, shows "+N inne" chip with a tooltip listing the rest.
  */
-function GroupChips({
-  groups,
-}: {
-  groups: Lesson["groups"];
-}) {
+function GroupChips({ groups }: { groups: Lesson["groups"] }) {
   if (groups.length === 0) {
     return (
-      <Typography variant="caption" color="text.disabled" sx={{ fontStyle: "italic" }}>
+      <Typography
+        variant="caption"
+        color="text.disabled"
+        sx={{ fontStyle: "italic" }}
+      >
         Brak grup
       </Typography>
     );
@@ -132,7 +132,12 @@ export function LessonCard({ lesson, listView = false }: LessonCardProps) {
 
         {/* Title + theme */}
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography variant="body2" fontWeight={700} color="primary.main" noWrap>
+          <Typography
+            variant="body2"
+            fontWeight={700}
+            color="primary.main"
+            noWrap
+          >
             {lesson.title}
           </Typography>
           <Typography variant="caption" color="text.secondary" noWrap>
@@ -201,8 +206,12 @@ export function LessonCard({ lesson, listView = false }: LessonCardProps) {
     >
       <CardContent sx={{ flex: 1, pb: 1 }}>
         {/* Title */}
-        <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1, mb: 0.5 }}>
-          <BookIcon sx={{ color: "primary.main", fontSize: 18, mt: 0.3, flexShrink: 0 }} />
+        <Box
+          sx={{ display: "flex", alignItems: "flex-start", gap: 1, mb: 0.5 }}
+        >
+          <BookIcon
+            sx={{ color: "primary.main", fontSize: 18, mt: 0.3, flexShrink: 0 }}
+          />
           <Typography
             variant="body1"
             fontWeight={700}
@@ -265,7 +274,12 @@ export function LessonCard({ lesson, listView = false }: LessonCardProps) {
         </Box>
 
         {/* Created at */}
-        <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          display="block"
+          sx={{ mb: 1 }}
+        >
           Utworzona: {formatDate(lesson.createdAt)}
         </Typography>
 

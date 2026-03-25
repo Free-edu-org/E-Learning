@@ -148,29 +148,69 @@ export function TeacherDashboard() {
   };
 
   const pageBg =
-    theme.palette.mode === "light" ? "#e8eef7" : theme.palette.background.default;
+    theme.palette.mode === "light"
+      ? "#e8eef7"
+      : theme.palette.background.default;
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: pageBg, pb: 6 }}>
       <Container maxWidth="xl" sx={{ pt: 4, position: "relative" }}>
-
-      {/* ── TOP RIGHT BAR ── */}
-      <Box sx={{ position: { xs: "relative", md: "absolute" }, top: { md: 32 }, right: { md: 24 }, mb: { xs: 3, md: 0 }, display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 3, zIndex: 10 }}>
-        <Box sx={{ display: "flex", alignItems: "center" }}>
-           <LightModeIcon fontSize="small" sx={{ color: theme.palette.mode === 'light' ? 'primary.main' : 'text.disabled', mr: 0.5 }} />
-           <Switch size="small" checked={theme.palette.mode === 'dark'} onChange={toggleColorMode} />
-           <DarkModeIcon fontSize="small" sx={{ color: theme.palette.mode === 'dark' ? 'primary.main' : 'text.disabled', ml: 0.5 }} />
-        </Box>
-        <Button
-          variant="outlined"
-          size="small"
-          startIcon={<LogoutIcon />}
-          onClick={handleLogout}
-          sx={{ borderRadius: 2, textTransform: "none", fontWeight: 600, bgcolor: "background.paper" }}
+        {/* ── TOP RIGHT BAR ── */}
+        <Box
+          sx={{
+            position: { xs: "relative", md: "absolute" },
+            top: { md: 32 },
+            right: { md: 24 },
+            mb: { xs: 3, md: 0 },
+            display: "flex",
+            justifyContent: "flex-end",
+            alignItems: "center",
+            gap: 3,
+            zIndex: 10,
+          }}
         >
-          Wyloguj
-        </Button>
-      </Box>
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            <LightModeIcon
+              fontSize="small"
+              sx={{
+                color:
+                  theme.palette.mode === "light"
+                    ? "primary.main"
+                    : "text.disabled",
+                mr: 0.5,
+              }}
+            />
+            <Switch
+              size="small"
+              checked={theme.palette.mode === "dark"}
+              onChange={toggleColorMode}
+            />
+            <DarkModeIcon
+              fontSize="small"
+              sx={{
+                color:
+                  theme.palette.mode === "dark"
+                    ? "primary.main"
+                    : "text.disabled",
+                ml: 0.5,
+              }}
+            />
+          </Box>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<LogoutIcon />}
+            onClick={handleLogout}
+            sx={{
+              borderRadius: 2,
+              textTransform: "none",
+              fontWeight: 600,
+              bgcolor: "background.paper",
+            }}
+          >
+            Wyloguj
+          </Button>
+        </Box>
 
         {/* ── HEADER ── */}
         <Box
@@ -221,7 +261,12 @@ export function TeacherDashboard() {
         {loadingData ? (
           <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
             {[...Array(4)].map((_, i) => (
-              <Skeleton key={i} variant="rounded" height={90} sx={{ flex: 1, borderRadius: 3 }} />
+              <Skeleton
+                key={i}
+                variant="rounded"
+                height={90}
+                sx={{ flex: 1, borderRadius: 3 }}
+              />
             ))}
           </Box>
         ) : errorData ? (
@@ -236,8 +281,14 @@ export function TeacherDashboard() {
               value={stats?.activeLessons ?? 0}
               highlightColor={theme.palette.primary.main}
             />
-            <StatsCard label="Aktywni uczniowie" value={stats?.activeStudents ?? 0} />
-            <StatsCard label="Średnia wyników" value={`${stats?.avgScore ?? 0}%`} />
+            <StatsCard
+              label="Aktywni uczniowie"
+              value={stats?.activeStudents ?? 0}
+            />
+            <StatsCard
+              label="Średnia wyników"
+              value={`${stats?.avgScore ?? 0}%`}
+            />
           </Box>
         )}
 
@@ -290,14 +341,18 @@ export function TeacherDashboard() {
           <Grid container spacing={2}>
             {[...Array(8)].map((_, i) => (
               <Grid key={i} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
-                <Skeleton variant="rounded" height={220} sx={{ borderRadius: 3 }} />
+                <Skeleton
+                  variant="rounded"
+                  height={220}
+                  sx={{ borderRadius: 3 }}
+                />
               </Grid>
             ))}
           </Grid>
         ) : displayedLessons.length === 0 ? (
           <Alert severity="info" sx={{ borderRadius: 2 }}>
             {lessons.length === 0
-              ? "Nie masz jeszcze żadnych lekcji. Kliknij \"Utwórz lekcję\", aby dodać pierwszą."
+              ? 'Nie masz jeszcze żadnych lekcji. Kliknij "Utwórz lekcję", aby dodać pierwszą.'
               : "Brak lekcji pasujących do wybranych filtrów."}
           </Alert>
         ) : viewMode === "list" ? (

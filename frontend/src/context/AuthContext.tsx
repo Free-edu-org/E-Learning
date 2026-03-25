@@ -69,15 +69,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   if (isExpired) {
     return (
       <AuthContext.Provider value={{ token, role, login, logout }}>
-        <Container maxWidth="sm" sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', textAlign: 'center' }}>
-          <WarningOutlined sx={{ fontSize: 64, color: 'warning.main', mb: 2 }} />
+        <Container
+          maxWidth="sm"
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: "100vh",
+            textAlign: "center",
+          }}
+        >
+          <WarningOutlined
+            sx={{ fontSize: 64, color: "warning.main", mb: 2 }}
+          />
           <Typography variant="h5" fontWeight="bold" gutterBottom>
             Twoja sesja wygasła
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-            Ze względów bezpieczeństwa wylogowaliśmy Cię. Zaloguj się ponownie, aby kontynuować.
+            Ze względów bezpieczeństwa wylogowaliśmy Cię. Zaloguj się ponownie,
+            aby kontynuować.
           </Typography>
-          <Button variant="contained" size="large" onClick={() => setIsExpired(false)} sx={{ borderRadius: 2, px: 4, py: 1 }}>
+          <Button
+            variant="contained"
+            size="large"
+            onClick={() => setIsExpired(false)}
+            sx={{ borderRadius: 2, px: 4, py: 1 }}
+          >
             Wróć do logowania
           </Button>
         </Container>

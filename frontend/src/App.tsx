@@ -18,9 +18,7 @@ function RoleBasedRedirect() {
   // STUDENT fallback – placeholder until a student dashboard is built
   return (
     <Box sx={{ p: 4, textAlign: "center" }}>
-      <Typography variant="h5">
-        Panel ucznia – wkrótce dostępny
-      </Typography>
+      <Typography variant="h5">Panel ucznia – wkrótce dostępny</Typography>
     </Box>
   );
 }

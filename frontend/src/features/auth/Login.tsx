@@ -109,11 +109,36 @@ export function Login() {
       }}
     >
       {/* ── TOP RIGHT BAR ── */}
-      <Box sx={{ position: "absolute", top: 16, right: { xs: 16, md: 24 }, display: "flex", alignItems: "center", zIndex: 10 }}>
+      <Box
+        sx={{
+          position: "absolute",
+          top: 16,
+          right: { xs: 16, md: 24 },
+          display: "flex",
+          alignItems: "center",
+          zIndex: 10,
+        }}
+      >
         <Box sx={{ display: "flex", alignItems: "center" }}>
-           <LightModeIcon fontSize="small" sx={{ color: mode === 'light' ? 'primary.main' : 'text.disabled', mr: 0.5 }} />
-           <Switch size="small" checked={mode === 'dark'} onChange={toggleColorMode} />
-           <DarkModeIcon fontSize="small" sx={{ color: mode === 'dark' ? 'primary.main' : 'text.disabled', ml: 0.5 }} />
+          <LightModeIcon
+            fontSize="small"
+            sx={{
+              color: mode === "light" ? "primary.main" : "text.disabled",
+              mr: 0.5,
+            }}
+          />
+          <Switch
+            size="small"
+            checked={mode === "dark"}
+            onChange={toggleColorMode}
+          />
+          <DarkModeIcon
+            fontSize="small"
+            sx={{
+              color: mode === "dark" ? "primary.main" : "text.disabled",
+              ml: 0.5,
+            }}
+          />
         </Box>
       </Box>
 

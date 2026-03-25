@@ -107,7 +107,11 @@ export function LessonToolbar({
         }}
       />
 
-      <Divider orientation="vertical" flexItem sx={{ display: { xs: "none", sm: "block" } }} />
+      <Divider
+        orientation="vertical"
+        flexItem
+        sx={{ display: { xs: "none", sm: "block" } }}
+      />
 
       {/* ── Group Autocomplete ── */}
       <Autocomplete
@@ -138,14 +142,20 @@ export function LessonToolbar({
         renderInput={(params) => (
           <TextField
             {...params}
-            placeholder={selectedGroups.length === 0 ? "Filtruj grupy…" : undefined}
+            placeholder={
+              selectedGroups.length === 0 ? "Filtruj grupy…" : undefined
+            }
             sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
           />
         )}
         sx={{ minWidth: 190, flex: "1 1 190px" }}
       />
 
-      <Divider orientation="vertical" flexItem sx={{ display: { xs: "none", sm: "block" } }} />
+      <Divider
+        orientation="vertical"
+        flexItem
+        sx={{ display: { xs: "none", sm: "block" } }}
+      />
 
       {/* ── Status filter ── */}
       <ToggleButtonGroup
@@ -157,7 +167,11 @@ export function LessonToolbar({
       >
         <ToggleButton
           value="all"
-          sx={{ textTransform: "none", px: 1.5, borderRadius: "8px !important" }}
+          sx={{
+            textTransform: "none",
+            px: 1.5,
+            borderRadius: "8px !important",
+          }}
         >
           Wszystkie
         </ToggleButton>
@@ -169,7 +183,11 @@ export function LessonToolbar({
         </ToggleButton>
       </ToggleButtonGroup>
 
-      <Divider orientation="vertical" flexItem sx={{ display: { xs: "none", sm: "block" } }} />
+      <Divider
+        orientation="vertical"
+        flexItem
+        sx={{ display: { xs: "none", sm: "block" } }}
+      />
 
       {/* ── Sort ── */}
       <Select
@@ -188,7 +206,11 @@ export function LessonToolbar({
         <MenuItem value="title_za">Tytuł: Z→A</MenuItem>
       </Select>
 
-      <Divider orientation="vertical" flexItem sx={{ display: { xs: "none", sm: "block" } }} />
+      <Divider
+        orientation="vertical"
+        flexItem
+        sx={{ display: { xs: "none", sm: "block" } }}
+      />
 
       {/* ── View mode toggle ── */}
       <ToggleButtonGroup
@@ -198,7 +220,11 @@ export function LessonToolbar({
         size="small"
         sx={{ flexShrink: 0 }}
       >
-        <ToggleButton value="grid" aria-label="Widok siatki" sx={{ borderRadius: "8px !important" }}>
+        <ToggleButton
+          value="grid"
+          aria-label="Widok siatki"
+          sx={{ borderRadius: "8px !important" }}
+        >
           <GridIcon fontSize="small" />
         </ToggleButton>
         <ToggleButton value="list" aria-label="Widok listy">
