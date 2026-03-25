@@ -43,7 +43,7 @@ public class UserGroupController {
 	@Operation(summary = "Get all user groups")
 	@ApiResponse(responseCode = "200", description = "List of all user groups")
 	@GetMapping
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
 	@ResponseStatus(HttpStatus.OK)
 	public Flux<UserGroupResponse> getAll() {
 		return userGroupService.getAll();

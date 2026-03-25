@@ -4,28 +4,21 @@ import { AuthProvider } from "./context/AuthContext";
 import { useAuth } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Login } from "./features/auth/Login";
-import { Button, Box, Typography } from "@mui/material";
+import { TeacherDashboard } from "./features/teacher/TeacherDashboard";
+import { Box, Typography } from "@mui/material";
 
-// Placeholder for protected home
-function Home() {
-  const { logout, role } = useAuth();
+/** Redirects to the correct dashboard based on the user's role. */
+function RoleBasedRedirect() {
+  const { role } = useAuth();
 
+  if (role === "TEACHER" || role === "ADMIN") {
+    return <Navigate to="/teacher" replace />;
+  }
+
+  // STUDENT fallback – placeholder until a student dashboard is built
   return (
     <Box sx={{ p: 4, textAlign: "center" }}>
-      <Typography variant="h3" gutterBottom>
-        Witaj w FreeEdu!
-      </Typography>
-      <Typography variant="subtitle1" gutterBottom>
-        Jesteś pomyślnie zalogowany. Twoja rola to: {role}
-      </Typography>
-      <Button
-        variant="outlined"
-        color="primary"
-        onClick={logout}
-        sx={{ mt: 2 }}
-      >
-        Wyloguj się
-      </Button>
+      <Typography variant="h5">Panel ucznia – wkrótce dostępny</Typography>
     </Box>
   );
 }
@@ -39,7 +32,8 @@ function App() {
             <Route path="/login" element={<Login />} />
 
             <Route element={<ProtectedRoute />}>
-              <Route path="/" element={<Home />} />
+              <Route path="/" element={<RoleBasedRedirect />} />
+              <Route path="/teacher" element={<TeacherDashboard />} />
               {/* Add more protected routes here */}
             </Route>
 
