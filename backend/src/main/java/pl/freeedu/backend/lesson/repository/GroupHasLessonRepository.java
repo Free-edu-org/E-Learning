@@ -20,8 +20,8 @@ public interface GroupHasLessonRepository extends JpaRepository<GroupHasLesson, 
 	List<pl.freeedu.backend.lesson.dto.GroupDto> findGroupsForLesson(Integer lessonId);
 
 	@Query("SELECT ghl.lessonId FROM pl.freeedu.backend.lesson.model.GroupHasLesson ghl WHERE ghl.groupId = :groupId")
-	List<Long> findLessonIdsByGroupId(Integer groupId);
+	List<Integer> findLessonIdsByGroupId(Integer groupId);
 
 	@Query("SELECT ghl FROM pl.freeedu.backend.lesson.model.GroupHasLesson ghl WHERE ghl.lessonId IN :lessonIds")
-	List<GroupHasLesson> findByLessonIdIn(List<Long> lessonIds);
+	List<GroupHasLesson> findByLessonIdIn(List<Integer> lessonIds);
 }

@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -54,7 +55,7 @@ public class LessonController {
 			@ApiResponse(responseCode = "404", description = "Lesson not found")})
 	@PutMapping("/{id}")
 	@PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
-	public Mono<LessonResponse> updateLesson(@PathVariable Integer id, @RequestBody Mono<LessonRequest> lessonRequest) {
+	public Mono<LessonResponse> updateLesson(@PathVariable Integer id,@Valid @RequestBody Mono<LessonRequest> lessonRequest) {
 		return lessonService.updateLesson(id, lessonRequest);
 	}
 
@@ -66,7 +67,7 @@ public class LessonController {
 	@PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public Mono<Void> updateLessonStatus(@PathVariable Integer id,
-			@RequestBody Mono<LessonStatusRequest> statusRequest) {
+			@Valid @RequestBody Mono<LessonStatusRequest> statusRequest) {
 		return lessonService.updateLessonStatus(id, statusRequest);
 	}
 

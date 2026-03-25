@@ -391,7 +391,6 @@ Poniżej znajdziesz opis endpointów do zarządzania lekcjami. Ścieżka bazowa:
     "id": 12,
     "title": "Present Simple - lesson 1",
     "theme": "Grammar",
-    "description": "Intro to present simple",
     "isActive": true,
     "teacherId": 3,
     "createdAt": "2026-03-21T10:00:00",
@@ -405,7 +404,6 @@ Poniżej znajdziesz opis endpointów do zarządzania lekcjami. Ścieżka bazowa:
 | `id` | Inteager              | ID lekcji |
 | `title` | String                | Tytuł lekcji |
 | `theme` | String                | Temat kategorii lekcji |
-| `description` | String                | Opcjonalny opis |
 | `isActive` | Boolean               | Czy lekcja jest aktywna |
 | `teacherId` | Integer               | ID nauczyciela, który utworzył lekcję |
 | `createdAt` | String (ISO datetime) | Data utworzenia |
@@ -428,7 +426,6 @@ Poniżej znajdziesz opis endpointów do zarządzania lekcjami. Ścieżka bazowa:
 {
   "title": "Present Simple - lesson 1",
   "theme": "Grammar",
-  "description": "Intro to present simple",
   "groupIds": [1, 2]
 }
 ```

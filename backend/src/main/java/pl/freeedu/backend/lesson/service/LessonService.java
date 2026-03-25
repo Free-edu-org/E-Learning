@@ -59,7 +59,7 @@ public class LessonService {
 
 			// Jeśli groupId podane — tylko lessons powiązane z daną grupą
 			if (groupId != null) {
-				List<Long> lessonIdsForGroup = groupHasLessonRepository.findLessonIdsByGroupId(groupId);
+				List<Integer> lessonIdsForGroup = groupHasLessonRepository.findLessonIdsByGroupId(groupId);
 				filtered = filtered.stream().filter(l -> lessonIdsForGroup.contains(l.getId()))
 						.collect(Collectors.toList());
 			}
