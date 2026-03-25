@@ -1,15 +1,10 @@
-# Lessons API - example HTTP requests for testing
-
-# Set variables in your REST client or replace {{BASE_URL}} and {{TOKEN}} inline
-# Example: BASE_URL=http://localhost:8080
-
 ### Get list of lessons (supports filters)
-GET {{BASE_URL}}/api/v1/lessons?search=Present&groupId=1&status=true&sort=createdAt:desc
+GET http://localhost:8080/api/v1/lessons?search=Present&groupId=1&status=true&sort=createdAt:desc
 Authorization: Bearer {{TOKEN}}
 
 
 ### Create a new lesson (requires ROLE_TEACHER)
-POST {{BASE_URL}}/api/v1/lessons
+POST http://localhost:8080/api/v1/lessons
 Content-Type: application/json
 Authorization: Bearer {{TOKEN}}
 
@@ -22,7 +17,7 @@ Authorization: Bearer {{TOKEN}}
 
 
 ### Update lesson data (requires ROLE_TEACHER)
-PUT {{BASE_URL}}/api/v1/lessons/12
+PUT http://localhost:8080/api/v1/lessons/12
 Content-Type: application/json
 Authorization: Bearer {{TOKEN}}
 
@@ -35,7 +30,7 @@ Authorization: Bearer {{TOKEN}}
 
 
 ### Quick status change (isActive) (requires ROLE_TEACHER)
-PATCH {{BASE_URL}}/api/v1/lessons/12/status
+PATCH http://localhost:8080/api/v1/lessons/12/status
 Content-Type: application/json
 Authorization: Bearer {{TOKEN}}
 
@@ -43,7 +38,7 @@ Authorization: Bearer {{TOKEN}}
 
 
 ### Delete lesson (requires ROLE_TEACHER)
-DELETE {{BASE_URL}}/api/v1/lessons/12
+DELETE http://localhost:8080/api/v1/lessons/12
 Authorization: Bearer {{TOKEN}}
 
 
