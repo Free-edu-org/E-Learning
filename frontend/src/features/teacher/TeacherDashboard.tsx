@@ -5,10 +5,9 @@ import {
   Button,
   Container,
   Grid,
-  IconButton,
   Skeleton,
-  Tooltip,
   Typography,
+  Switch,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import {
@@ -111,9 +110,9 @@ export function TeacherDashboard() {
 
     // Status filter
     if (statusFilter === "active") {
-      result = result.filter((l) => l.is_active);
+      result = result.filter((l) => l.isActive);
     } else if (statusFilter === "inactive") {
-      result = result.filter((l) => !l.is_active);
+      result = result.filter((l) => !l.isActive);
     }
 
     // Group filter – lesson must have at least one selected group
@@ -128,9 +127,9 @@ export function TeacherDashboard() {
     result = [...result].sort((a, b) => {
       switch (sortMode) {
         case "date_asc":
-          return a.created_at.localeCompare(b.created_at);
+          return a.createdAt.localeCompare(b.createdAt);
         case "date_desc":
-          return b.created_at.localeCompare(a.created_at);
+          return b.createdAt.localeCompare(a.createdAt);
         case "title_az":
           return a.title.localeCompare(b.title, "pl");
         case "title_za":
@@ -153,7 +152,25 @@ export function TeacherDashboard() {
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: pageBg, pb: 6 }}>
-      <Container maxWidth="lg" sx={{ pt: 4 }}>
+      <Container maxWidth="xl" sx={{ pt: 4, position: "relative" }}>
+
+      {/* ── TOP RIGHT BAR ── */}
+      <Box sx={{ position: { xs: "relative", md: "absolute" }, top: { md: 32 }, right: { md: 24 }, mb: { xs: 3, md: 0 }, display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 3, zIndex: 10 }}>
+        <Box sx={{ display: "flex", alignItems: "center" }}>
+           <LightModeIcon fontSize="small" sx={{ color: theme.palette.mode === 'light' ? 'primary.main' : 'text.disabled', mr: 0.5 }} />
+           <Switch size="small" checked={theme.palette.mode === 'dark'} onChange={toggleColorMode} />
+           <DarkModeIcon fontSize="small" sx={{ color: theme.palette.mode === 'dark' ? 'primary.main' : 'text.disabled', ml: 0.5 }} />
+        </Box>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<LogoutIcon />}
+          onClick={handleLogout}
+          sx={{ borderRadius: 2, textTransform: "none", fontWeight: 600, bgcolor: "background.paper" }}
+        >
+          Wyloguj
+        </Button>
+      </Box>
 
         {/* ── HEADER ── */}
         <Box
@@ -191,32 +208,6 @@ export function TeacherDashboard() {
                 Panel nauczyciela
               </Typography>
             </Box>
-          </Box>
-
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Tooltip title={theme.palette.mode === "dark" ? "Tryb jasny" : "Tryb ciemny"}>
-              <IconButton
-                onClick={toggleColorMode}
-                size="small"
-                sx={{
-                  border: "1px solid",
-                  borderColor: "divider",
-                  borderRadius: 2,
-                  bgcolor: "background.paper",
-                }}
-              >
-                {theme.palette.mode === "dark" ? <LightModeIcon fontSize="small" /> : <DarkModeIcon fontSize="small" />}
-              </IconButton>
-            </Tooltip>
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<LogoutIcon />}
-              onClick={handleLogout}
-              sx={{ borderRadius: 2, textTransform: "none", fontWeight: 600 }}
-            >
-              Wyloguj
-            </Button>
           </Box>
         </Box>
 
@@ -297,8 +288,8 @@ export function TeacherDashboard() {
         {/* ── LESSON LIST ── */}
         {loadingData ? (
           <Grid container spacing={2}>
-            {[...Array(6)].map((_, i) => (
-              <Grid key={i} size={{ xs: 12, sm: 6, md: 4 }}>
+            {[...Array(8)].map((_, i) => (
+              <Grid key={i} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
                 <Skeleton variant="rounded" height={220} sx={{ borderRadius: 3 }} />
               </Grid>
             ))}
@@ -318,7 +309,7 @@ export function TeacherDashboard() {
         ) : (
           <Grid container spacing={2}>
             {displayedLessons.map((lesson) => (
-              <Grid key={lesson.id} size={{ xs: 12, sm: 6, md: 4 }}>
+              <Grid key={lesson.id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
                 <LessonCard lesson={lesson} />
               </Grid>
             ))}

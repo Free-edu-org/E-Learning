@@ -1,4 +1,4 @@
-﻿import type { FormEvent } from "react";
+import type { FormEvent } from "react";
 import { useState } from "react";
 import {
   Alert,
@@ -7,8 +7,8 @@ import {
   CircularProgress,
   Divider,
   Grow,
-  IconButton,
   Paper,
+  Switch,
   TextField,
   Typography,
 } from "@mui/material";
@@ -108,28 +108,13 @@ export function Login() {
         }),
       }}
     >
-      <Box
-        sx={{
-          position: "absolute",
-          top: 16,
-          right: 16,
-          bgcolor:
-            mode === "dark"
-              ? alpha(theme.palette.background.paper, 0.8)
-              : alpha(theme.palette.background.paper, 0.95),
-          borderRadius: "999px",
-          boxShadow: theme.shadows[4],
-        }}
-      >
-        <IconButton
-          onClick={toggleColorMode}
-          color="inherit"
-          sx={{
-            p: 1.25,
-          }}
-        >
-          {mode === "dark" ? <LightModeIcon /> : <DarkModeIcon />}
-        </IconButton>
+      {/* ── TOP RIGHT BAR ── */}
+      <Box sx={{ position: "absolute", top: 16, right: { xs: 16, md: 24 }, display: "flex", alignItems: "center", zIndex: 10 }}>
+        <Box sx={{ display: "flex", alignItems: "center" }}>
+           <LightModeIcon fontSize="small" sx={{ color: mode === 'light' ? 'primary.main' : 'text.disabled', mr: 0.5 }} />
+           <Switch size="small" checked={mode === 'dark'} onChange={toggleColorMode} />
+           <DarkModeIcon fontSize="small" sx={{ color: mode === 'dark' ? 'primary.main' : 'text.disabled', ml: 0.5 }} />
+        </Box>
       </Box>
 
       <Grow in timeout={500} style={{ transformOrigin: "top center" }}>

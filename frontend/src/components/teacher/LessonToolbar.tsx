@@ -1,6 +1,5 @@
 import {
   Autocomplete,
-  Box,
   TextField,
   ToggleButton,
   ToggleButtonGroup,

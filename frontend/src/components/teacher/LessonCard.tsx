@@ -128,7 +128,7 @@ export function LessonCard({ lesson, listView = false }: LessonCardProps) {
         }}
       >
         {/* Status dot */}
-        <StatusDot active={lesson.is_active} />
+        <StatusDot active={lesson.isActive} />
 
         {/* Title + theme */}
         <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -159,7 +159,7 @@ export function LessonCard({ lesson, listView = false }: LessonCardProps) {
           color="text.secondary"
           sx={{ flexShrink: 0, display: { xs: "none", sm: "block" } }}
         >
-          {formatDate(lesson.created_at)}
+          {formatDate(lesson.createdAt)}
         </Typography>
 
         {/* Actions */}
@@ -235,7 +235,7 @@ export function LessonCard({ lesson, listView = false }: LessonCardProps) {
             Status:
           </Typography>
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-            {lesson.is_active ? (
+            {lesson.isActive ? (
               <Chip
                 label="Aktywna"
                 size="small"
@@ -257,7 +257,7 @@ export function LessonCard({ lesson, listView = false }: LessonCardProps) {
             )}
             <Switch
               size="small"
-              checked={lesson.is_active}
+              checked={lesson.isActive}
               readOnly
               sx={{ pointerEvents: "none" }}
             />
@@ -266,7 +266,7 @@ export function LessonCard({ lesson, listView = false }: LessonCardProps) {
 
         {/* Created at */}
         <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
-          Utworzona: {formatDate(lesson.created_at)}
+          Utworzona: {formatDate(lesson.createdAt)}
         </Typography>
 
         {/* Groups */}

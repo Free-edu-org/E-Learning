@@ -243,7 +243,7 @@ Default local development base URL is `http://localhost:8080`
 ### 3.2. Get All User Groups
 - **URL**: `/api/v1/user-groups`
 - **Method**: `GET`
-- **Description**: Returns a list of all user groups. Requires `ADMIN` authority.
+- **Description**: Returns a list of all user groups. Requires `TEACHER` or `ADMIN` authority.
 
 **Success (200 OK):**
 ```json
@@ -260,7 +260,7 @@ Default local development base URL is `http://localhost:8080`
 
 **Known Errors:**
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
-- `FORBIDDEN` (403 Forbidden): Token is not an admin token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
 
 ---
 
@@ -501,7 +501,7 @@ Zwraca zaktualizowaną reprezentację `LessonResponse`.
 ### 5.1. Get Dashboard Statistics
 - **URL**: `/api/v1/teacher/stats`
 - **Method**: `GET`
-- **Description**: Returns aggregated dashboard statistics: total and active lesson counts, active student count, and average answer score. Requires `ADMIN` authority.
+- **Description**: Returns aggregated dashboard statistics: total and active lesson counts, active student count, and average answer score. Requires `TEACHER` or `ADMIN` authority.
 
 **Success (200 OK):**
 ```json
@@ -522,11 +522,26 @@ Zwraca zaktualizowaną reprezentację `LessonResponse`.
 
 **Known Errors:**
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
-- `FORBIDDEN` (403 Forbidden): Token is not an admin token (e.g. STUDENT role).
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
 
 ---
 
 ## Global Application Errors
+
+**1. Token Expiration**
+All endpoints secured by JWT may return a `401 Unauthorized` containing the `TOKEN_EXPIRED` code if the provided token has lived past its expiration time:
+```json
+{
+  "type": "about:blank",
+  "title": "Unauthorized",
+  "status": 401,
+  "detail": "Token expired",
+  "instance": "/api/v1/lessons",
+  "code": "TOKEN_EXPIRED"
+}
+```
+
+**2. Standard Application Errors**
 In case of internal server errors, validation failures, or other unforeseen errors, the API will respond using a JSON structure mimicking RFC-7807 standard (with an added `code` field corresponding to Java `ErrorCode`):
 ```json
 {
