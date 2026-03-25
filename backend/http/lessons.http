@@ -1,0 +1,36 @@
+### Get list of lessons (supports filters)
+GET http://localhost:8080/api/v1/lessons?search=Present&groupId=1&status=true&sort=createdAt=date_desc
+
+
+### Create a new lesson (requires ROLE_TEACHER)
+POST http://localhost:8080/api/v1/lessons
+Content-Type: application/json
+
+{
+  "title": "Present Simple - lesson 1",
+  "theme": "Grammar",
+  "groupIds": [1, 2]
+}
+
+
+### Update lesson data (requires ROLE_TEACHER)
+PUT http://localhost:8080/api/v1/lessons/1
+Content-Type: application/json
+
+{
+  "title": "Present Simple - lesson 1 (updated)",
+  "theme": "Grammar",
+  "groupIds": [1]
+}
+
+
+### Quick status change (isActive) (requires ROLE_TEACHER)
+PATCH http://localhost:8080/api/v1/lessons/1/status
+Content-Type: application/json
+
+{ "isActive": false }
+
+
+### Delete lesson (requires ROLE_TEACHER)
+DELETE http://localhost:8080/api/v1/lessons/1
+
