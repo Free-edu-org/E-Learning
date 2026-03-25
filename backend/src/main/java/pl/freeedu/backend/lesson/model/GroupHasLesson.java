@@ -13,16 +13,16 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class GroupHasLesson {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Integer id;
 
-    @Column(name = "group_id", nullable = false)
-    private Integer groupId;
+	@Column(name = "group_id", nullable = false)
+	private Integer groupId;
 
-    @Column(name = "lesson_id", nullable = false)
-    private Integer lessonId;
+	@Column(name = "lesson_id", nullable = false)
+	private Integer lessonId;
 
-    @Column(name = "created_at", insertable = false, updatable = false)
-    private LocalDateTime createdAt;
+	@Column(name = "created_at", insertable = false, updatable = false)
+	private LocalDateTime createdAt;
 }

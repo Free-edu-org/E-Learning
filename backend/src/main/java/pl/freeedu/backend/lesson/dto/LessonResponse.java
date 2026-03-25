@@ -14,13 +14,13 @@ import java.util.List;
 @AllArgsConstructor
 public class LessonResponse {
 
-    private Long id;
-    private String title;
-    private String theme;
-    private Boolean isActive;
-    private Integer teacherId;
-    private LocalDateTime createdAt;
+	private Long id;
+	private String title;
+	private String theme;
+	private Boolean isActive;
+	private Integer teacherId;
+	private LocalDateTime createdAt;
 
-    // aggregated groups assigned to lesson
-    private List<GroupDto> groups;
+	// aggregated groups assigned to lesson
+	private List<GroupDto> groups;
 }

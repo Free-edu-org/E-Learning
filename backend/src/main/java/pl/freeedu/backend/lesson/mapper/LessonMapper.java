@@ -8,6 +8,6 @@ import pl.freeedu.backend.lesson.model.Lesson;
 @Mapper(componentModel = "spring")
 public interface LessonMapper {
 
-    @Mapping(target = "groups", ignore = true)
-    LessonResponse toResponse(Lesson lesson);
+	@Mapping(target = "groups", ignore = true)
+	LessonResponse toResponse(Lesson lesson);
 }

@@ -14,12 +14,12 @@ import java.util.List;
 @AllArgsConstructor
 public class LessonRequest {
 
-    @NotBlank(message = "Title is required")
-    private String title;
+	@NotBlank(message = "Title is required")
+	private String title;
 
-    @NotBlank(message = "Theme is required")
-    private String theme;
+	@NotBlank(message = "Theme is required")
+	private String theme;
 
-    // optional list of group ids to assign this lesson to
-    private List<Integer> groupIds;
+	// optional list of group ids to assign this lesson to
+	private List<Integer> groupIds;
 }

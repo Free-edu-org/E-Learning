@@ -29,20 +29,18 @@ public class LessonController {
 	}
 
 	@Operation(summary = "Get list of lessons (with filters)")
-    @ApiResponse(responseCode = "200", description = "List of lessons")
+	@ApiResponse(responseCode = "200", description = "List of lessons")
 	@GetMapping
 	@PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
-	public Flux<LessonResponse> getLessons(
-			@RequestParam(required = false) String search,
-			@RequestParam(required = false) Integer groupId,
-			@RequestParam(required = false) Boolean status,
+	public Flux<LessonResponse> getLessons(@RequestParam(required = false) String search,
+			@RequestParam(required = false) Integer groupId, @RequestParam(required = false) Boolean status,
 			@RequestParam(required = false) String sort) {
 		return lessonService.getLessons(search, groupId, status, sort);
 	}
 
 	@Operation(summary = "Create a new lesson")
-    @ApiResponses(value = {@ApiResponse(responseCode = "201", description = "Lesson successfully created"),
-            @ApiResponse(responseCode = "400", description = "Invalid input data", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
+	@ApiResponses(value = {@ApiResponse(responseCode = "201", description = "Lesson successfully created"),
+			@ApiResponse(responseCode = "400", description = "Invalid input data", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PostMapping
 	@PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
 	@ResponseStatus(HttpStatus.CREATED)
@@ -51,33 +49,30 @@ public class LessonController {
 	}
 
 	@Operation(summary = "Update lesson data")
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Lesson successfully updated"),
-            @ApiResponse(responseCode = "400", description = "Invalid input data", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
-            @ApiResponse(responseCode = "404", description = "Lesson not found")})
+	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Lesson successfully updated"),
+			@ApiResponse(responseCode = "400", description = "Invalid input data", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "404", description = "Lesson not found")})
 	@PutMapping("/{id}")
 	@PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
-	public Mono<LessonResponse> updateLesson(
-			@PathVariable Integer id,
-			@RequestBody Mono<LessonRequest> lessonRequest) {
+	public Mono<LessonResponse> updateLesson(@PathVariable Integer id, @RequestBody Mono<LessonRequest> lessonRequest) {
 		return lessonService.updateLesson(id, lessonRequest);
 	}
 
 	@Operation(summary = "Quick status change (is_active)")
-    @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Lesson status updated"),
-            @ApiResponse(responseCode = "400", description = "Invalid input data", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
-            @ApiResponse(responseCode = "404", description = "Lesson not found")})
+	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Lesson status updated"),
+			@ApiResponse(responseCode = "400", description = "Invalid input data", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "404", description = "Lesson not found")})
 	@PatchMapping("/{id}/status")
 	@PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public Mono<Void> updateLessonStatus(
-			@PathVariable Integer id,
+	public Mono<Void> updateLessonStatus(@PathVariable Integer id,
 			@RequestBody Mono<LessonStatusRequest> statusRequest) {
 		return lessonService.updateLessonStatus(id, statusRequest);
 	}
 
 	@Operation(summary = "Delete lesson")
-    @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Lesson successfully deleted"),
-            @ApiResponse(responseCode = "404", description = "Lesson not found")})
+	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Lesson successfully deleted"),
+			@ApiResponse(responseCode = "404", description = "Lesson not found")})
 	@DeleteMapping("/{id}")
 	@PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
 	@ResponseStatus(HttpStatus.NO_CONTENT)

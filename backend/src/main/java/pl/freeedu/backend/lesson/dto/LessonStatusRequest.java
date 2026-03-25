@@ -12,6 +12,6 @@ import jakarta.validation.constraints.NotNull;
 @NoArgsConstructor
 @AllArgsConstructor
 public class LessonStatusRequest {
-    @NotNull
-    private Boolean isActive;
+	@NotNull
+	private Boolean isActive;
 }
