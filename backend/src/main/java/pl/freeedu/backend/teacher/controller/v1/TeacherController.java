@@ -27,7 +27,7 @@ public class TeacherController {
 	@Operation(summary = "Get dashboard statistics")
 	@ApiResponse(responseCode = "200", description = "Dashboard statistics")
 	@GetMapping("/stats")
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
 	@ResponseStatus(HttpStatus.OK)
 	public Mono<TeacherStatsResponse> getStats() {
 		return teacherService.getStats();
