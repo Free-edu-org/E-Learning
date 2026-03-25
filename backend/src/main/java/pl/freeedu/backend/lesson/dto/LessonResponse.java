@@ -17,7 +17,6 @@ public class LessonResponse {
     private Long id;
     private String title;
     private String theme;
-    private String description;
     private Boolean isActive;
     private Integer teacherId;
     private LocalDateTime createdAt;

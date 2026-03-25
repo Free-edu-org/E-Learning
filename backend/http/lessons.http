@@ -9,7 +9,6 @@ Content-Type: application/json
 {
   "title": "Present Simple - lesson 1",
   "theme": "Grammar",
-  "description": "Intro to present simple",
   "groupIds": [1, 2]
 }
 
@@ -21,7 +20,6 @@ Content-Type: application/json
 {
   "title": "Present Simple - lesson 1 (updated)",
   "theme": "Grammar",
-  "description": "Updated description",
   "groupIds": [1]
 }
 

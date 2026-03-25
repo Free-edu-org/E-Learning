@@ -20,8 +20,6 @@ public class LessonRequest {
     @NotBlank(message = "Theme is required")
     private String theme;
 
-    private String description;
-
     // optional list of group ids to assign this lesson to
     private List<Integer> groupIds;
 }
