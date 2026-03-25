@@ -33,8 +33,12 @@ function App() {
 
             <Route element={<ProtectedRoute />}>
               <Route path="/" element={<RoleBasedRedirect />} />
+            </Route>
+
+            {/* Zabezpieczenie na przyszlosc przed wejsciem na Panel przez zwyklego usera */}
+            <Route element={<ProtectedRoute allowedRoles={["TEACHER", "ADMIN"]} />}>
               <Route path="/teacher" element={<TeacherDashboard />} />
-              {/* Add more protected routes here */}
+              {/* Tutaj mozna dodac /admin/dashboard dla ADMIN */}
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />

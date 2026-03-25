@@ -19,6 +19,7 @@ public class LessonResponse {
 	private String theme;
 	private Boolean isActive;
 	private Integer teacherId;
+	private String teacherName;
 	private LocalDateTime createdAt;
 
 	// aggregated groups assigned to lesson

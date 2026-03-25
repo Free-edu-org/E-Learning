@@ -43,6 +43,18 @@ public class UserController {
 		return userService.createAdmin(request);
 	}
 
+	@Operation(summary = "Create a teacher user", description = "Allows an admin to create a new teacher.")
+	@ApiResponses(value = {@ApiResponse(responseCode = "201", description = "Teacher successfully created"),
+			@ApiResponse(responseCode = "400", description = "Bad Request"),
+			@ApiResponse(responseCode = "403", description = "Forbidden - requires ADMIN role"),
+			@ApiResponse(responseCode = "409", description = "Conflict - EMAIL_ALREADY_TAKEN or USERNAME_ALREADY_TAKEN")})
+	@PostMapping("/teacher")
+	@PreAuthorize("hasRole('ADMIN')")
+	@ResponseStatus(HttpStatus.CREATED)
+	public Mono<Void> createTeacher(@Valid @RequestBody Mono<RegisterUserRequest> request) {
+		return userService.createTeacher(request);
+	}
+
 	@Operation(summary = "Register a new student", description = "Allows an existing admin to register a new user as a student.")
 	@ApiResponses(value = {@ApiResponse(responseCode = "201", description = "Student user successfully registered"),
 			@ApiResponse(responseCode = "400", description = "Bad Request - VALIDATION_FAILED", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
@@ -50,7 +62,7 @@ public class UserController {
 			@ApiResponse(responseCode = "403", description = "Forbidden - requires ADMIN role", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "409", description = "Conflict - EMAIL_ALREADY_TAKEN or USERNAME_ALREADY_TAKEN", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PostMapping("/register")
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("hasRole('ADMIN') or hasRole('TEACHER')")
 	@ResponseStatus(HttpStatus.CREATED)
 	public Mono<Void> registerStudent(@Valid @RequestBody Mono<RegisterUserRequest> request) {
 		return userService.registerStudent(request);
@@ -62,7 +74,7 @@ public class UserController {
 			@ApiResponse(responseCode = "403", description = "Forbidden - lack of permissions", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "404", description = "Not Found - USER_NOT_FOUND", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@GetMapping("/{id}")
-	@PreAuthorize("@securityService.isOwnerOrAdmin(#id)")
+	@PreAuthorize("hasRole('ADMIN') or @securityService.isOwner(#id) or (hasRole('TEACHER') and @securityService.isStudent(#id))")
 	public Mono<UserResponse> getUser(@PathVariable Integer id) {
 		return userService.getUser(id);
 	}
@@ -86,7 +98,7 @@ public class UserController {
 			@ApiResponse(responseCode = "404", description = "Not Found - USER_NOT_FOUND", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "409", description = "Conflict - EMAIL_ALREADY_TAKEN or USERNAME_ALREADY_TAKEN", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PutMapping("/{id}")
-	@PreAuthorize("@securityService.isOwnerOrAdmin(#id)")
+	@PreAuthorize("hasRole('ADMIN') or @securityService.isOwner(#id)")
 	public Mono<UserResponse> updateUser(@PathVariable Integer id,
 			@Valid @RequestBody Mono<UpdateUserRequest> request) {
 		return userService.updateUser(id, request);
@@ -99,7 +111,7 @@ public class UserController {
 			@ApiResponse(responseCode = "403", description = "Forbidden - lack of permissions", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "404", description = "Not Found - USER_NOT_FOUND", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PutMapping("/{id}/password")
-	@PreAuthorize("@securityService.isOwnerOrAdmin(#id)")
+	@PreAuthorize("hasRole('ADMIN') or @securityService.isOwner(#id)")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public Mono<Void> changePassword(@PathVariable Integer id,
 			@Valid @RequestBody Mono<ChangePasswordRequest> request) {
@@ -112,7 +124,7 @@ public class UserController {
 			@ApiResponse(responseCode = "403", description = "Forbidden - lack of permissions", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "404", description = "Not Found - USER_NOT_FOUND", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@DeleteMapping("/{id}")
-	@PreAuthorize("@securityService.isOwnerOrAdmin(#id)")
+	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public Mono<Void> deleteUser(@PathVariable Integer id) {
 		return userService.deleteUser(id);

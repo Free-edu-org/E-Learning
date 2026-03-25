@@ -23,6 +23,10 @@ public interface UserMapper {
 	@Mapping(target = "password", source = "encodedPassword")
 	User toStudentUser(RegisterUserRequest request, String encodedPassword);
 
+	@Mapping(target = "role", constant = "TEACHER")
+	@Mapping(target = "password", source = "encodedPassword")
+	User toTeacherUser(RegisterUserRequest request, String encodedPassword);
+
 	@Mapping(target = "id", ignore = true)
 	@Mapping(target = "password", ignore = true)
 	@Mapping(target = "role", ignore = true)

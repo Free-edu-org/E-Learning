@@ -1,3 +1,39 @@
-http://localhost:8080/api/v1/user-groups
-http://localhost:8080/api/v1/user-groups/{id}
-http://localhost:8080/api/v1/user-groups/{id}/members/{userId}
+### Create a new user group (Requires Admin or Teacher)
+POST http://localhost:8080/api/v1/user-groups
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "name": "Nowa Grupa Testowa",
+  "description": "Opis grupy"
+}
+
+### Get all groups (Requires Admin or Teacher)
+GET http://localhost:8080/api/v1/user-groups
+Authorization: Bearer {{auth_token}}
+
+### Get specific group (Requires Admin or GroupOwner)
+GET http://localhost:8080/api/v1/user-groups/1
+Authorization: Bearer {{auth_token}}
+
+### Update group (Requires Admin or GroupOwner)
+PUT http://localhost:8080/api/v1/user-groups/1
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "name": "Zmieniona Nazwa",
+  "description": "Zmieniony opis"
+}
+
+### Add student to group (Requires Admin or GroupOwner)
+POST http://localhost:8080/api/v1/user-groups/1/members/2
+Authorization: Bearer {{auth_token}}
+
+### Remove student from group (Requires Admin or GroupOwner)
+DELETE http://localhost:8080/api/v1/user-groups/1/members/2
+Authorization: Bearer {{auth_token}}
+
+### Delete group (Requires Admin or GroupOwner)
+DELETE http://localhost:8080/api/v1/user-groups/1
+Authorization: Bearer {{auth_token}}

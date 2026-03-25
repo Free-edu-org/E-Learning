@@ -79,9 +79,9 @@ export function TeacherDashboard() {
   // ── Fetch stats, lessons, and available groups ──
   useEffect(() => {
     Promise.all([
-      lessonService.getStats(),
-      lessonService.getLessons(),
-      lessonService.getGroups(),
+      lessonService.getTeacherStats(),
+      lessonService.getTeacherLessons(),
+      lessonService.getTeacherGroups(),
     ])
       .then(([s, l, g]) => {
         setStats(s);

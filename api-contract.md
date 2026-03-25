@@ -113,7 +113,7 @@ Default local development base URL is `http://localhost:8080`
 ### 2.4. Get User Details
 - **URL**: `/api/v1/users/{id}`
 - **Method**: `GET`
-- **Description**: Retrieves user details. Requires `ADMIN` authority OR the requesting user ID must match the parameter ID.
+- **Description**: Retrieves user details. Requires `ADMIN` authority OR `TEACHER` authority (only if the requested user is a `STUDENT`), OR the requesting user ID must match the parameter ID.
 
 **Success (200 OK):**
 ```json
@@ -211,7 +211,7 @@ Default local development base URL is `http://localhost:8080`
 ### 3.1. Create User Group
 - **URL**: `/api/v1/user-groups`
 - **Method**: `POST`
-- **Description**: Creates a new user group. Group name must be unique. Requires `ADMIN` authority.
+- **Description**: Creates a new user group. Group name must be unique. Requires `ADMIN` or `TEACHER` authority.
 
 **Request Body (JSON):**
 ```json
@@ -267,7 +267,7 @@ Default local development base URL is `http://localhost:8080`
 ### 3.3. Get User Group by ID
 - **URL**: `/api/v1/user-groups/{id}`
 - **Method**: `GET`
-- **Description**: Returns a single user group by its ID. Requires `ADMIN` authority.
+- **Description**: Returns a single user group by its ID. Requires `ADMIN` or `TEACHER` authority.
 
 **Success (200 OK):**
 ```json
@@ -290,7 +290,7 @@ Default local development base URL is `http://localhost:8080`
 ### 3.4. Update User Group
 - **URL**: `/api/v1/user-groups/{id}`
 - **Method**: `PUT`
-- **Description**: Updates name and/or description of an existing group. Requires `ADMIN` authority.
+- **Description**: Updates name and/or description of an existing group. Requires `ADMIN` authority OR the requesting user must be the group owner (`TEACHER`).
 
 **Request Body (JSON):**
 ```json
@@ -323,7 +323,7 @@ Default local development base URL is `http://localhost:8080`
 ### 3.5. Delete User Group
 - **URL**: `/api/v1/user-groups/{id}`
 - **Method**: `DELETE`
-- **Description**: Deletes a user group and all member associations. Does not delete user accounts. Requires `ADMIN` authority.
+- **Description**: Deletes a user group and all member associations. Does not delete user accounts. Requires `ADMIN` authority OR the requesting user must be the group owner (`TEACHER`).
 
 **Success (204 No Content):**
 *(Empty Response Body)*
@@ -338,7 +338,7 @@ Default local development base URL is `http://localhost:8080`
 ### 3.6. Add Member to Group
 - **URL**: `/api/v1/user-groups/{id}/members/{userId}`
 - **Method**: `POST`
-- **Description**: Adds a student to a group. Only users with role `STUDENT` can be added. A student can belong to at most one group. Requires `ADMIN` authority.
+- **Description**: Adds a student to a group. Only users with role `STUDENT` can be added. A student can belong to at most one group. Requires `ADMIN` authority OR the requesting user must be the group owner (`TEACHER`).
 
 **Success (204 No Content):**
 *(Empty Response Body)*
@@ -356,7 +356,7 @@ Default local development base URL is `http://localhost:8080`
 ### 3.7. Remove Member from Group
 - **URL**: `/api/v1/user-groups/{id}/members/{userId}`
 - **Method**: `DELETE`
-- **Description**: Removes a student from a group. Does not delete the user account. Requires `ADMIN` authority.
+- **Description**: Removes a student from a group. Does not delete the user account. Requires `ADMIN` authority OR the requesting user must be the group owner (`TEACHER`).
 
 **Success (204 No Content):**
 *(Empty Response Body)*
@@ -496,7 +496,9 @@ Zwraca zaktualizowaną reprezentację `LessonResponse`.
 
 ---
 
-## 5. Teacher Stats (`/api/v1/teacher/stats`)
+## 5. Teacher Dashboard (`/api/v1/teacher`)
+
+Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela (Architektura BFF). Odfiltrowuje dane tylko do zakresu `currentUserId` nauczyciela autoryzowanego przez JWT.
 
 ### 5.1. Get Dashboard Statistics
 - **URL**: `/api/v1/teacher/stats`
@@ -515,14 +517,56 @@ Zwraca zaktualizowaną reprezentację `LessonResponse`.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `totalLessons` | Long | Total number of lessons in the system. |
-| `activeLessons` | Long | Number of lessons where `is_active = TRUE`. |
-| `activeStudents` | Long | Distinct students belonging to groups that have at least one lesson assigned. |
-| `avgScore` | Double | Average correctness score (0–100). Returns `0.0` when no answers exist (COALESCE guard). |
+| `totalLessons` | Long | Total number of lessons mapped to the requesting teacher. |
+| `activeLessons` | Long | Number of active lessons mapped to the requesting teacher. |
+| `activeStudents` | Long | Distinct students belonging to resolving groups. |
+| `avgScore` | Double | Average correctness score (0–100). |
 
 **Known Errors:**
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
 - `FORBIDDEN` (403 Forbidden): Token role does not permit access.
+
+---
+
+### 5.2. Get My Lessons
+- **URL**: `/api/v1/teacher/lessons`
+- **Method**: `GET`
+- **Description**: Pobiera listę lekcji wykreowanych i przypisanych WYŁĄCZNIE do odpytującego nauczyciela. Odciąża generyczny `LessonController` chroniąc przed dostępem do obcych materiałów.
+- **Authorization**: `TEACHER` lub `ADMIN`
+
+**Success (200 OK):** Zwraca macierz obiektów `LessonResponse` (odpowiednik standardowego 4.1. Get list of lessons).
+
+---
+
+### 5.3. Get My Groups
+- **URL**: `/api/v1/teacher/my-groups`
+- **Method**: `GET`
+- **Description**: Odtworzenie logiki UserGroup dedykowanej pulpitu Nauczyciela. Zwraca wszystkie grupy stworzone przez logującego się Nauczyciela (`teacherId = currentUserId`).
+- **Authorization**: `TEACHER` lub `ADMIN`
+
+**Success (200 OK):** Zwraca macierz elementów `UserGroupResponse` z wyliczoną ilością wpisanych do nich studentów.
+
+---
+
+## 6. Admin Dashboard (`/api/v1/admin`)
+
+Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
+
+### 6.1. Get Global Stats
+- **URL**: `/api/v1/admin/stats`
+- **Method**: `GET`
+- **Description**: Endpoint statystyk ogólnych dla panelu (placeholder). Wymaga `ADMIN`.
+
+---
+
+## 7. Student Dashboard (`/api/v1/student`)
+
+Warstwa BFF dla uczniów.
+
+### 7.1. Get Personal Progress
+- **URL**: `/api/v1/student/progress`
+- **Method**: `GET`
+- **Description**: Zwraca status lekcji, oceny i progres ucznia (placeholder). Wymaga `STUDENT` lub wyższej rangi.
 
 ---
 
