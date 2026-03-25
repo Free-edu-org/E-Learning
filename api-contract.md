@@ -16,7 +16,7 @@ Default local development base URL is `http://localhost:8080`
 **Request Body (JSON):**
 ```json
 {
-  "identifier": "user@example.com", // Can be username or email
+  "identifier": "user@example.com",
   "password": "strongPassword123"
 }
 ```
@@ -369,9 +369,136 @@ Default local development base URL is `http://localhost:8080`
 
 ---
 
-## 4. Teacher Stats (`/api/v1/teacher/stats`)
+# 4. Lessons (`/api/v1/lessons`)
 
-### 4.1. Get Dashboard Statistics
+Poniżej znajdziesz opis endpointów do zarządzania lekcjami. Ścieżka bazowa: `/api/v1/lessons`.
+
+### 4.1. Get list of lessons
+- **URL**: `/api/v1/lessons`
+- **Method**: `GET`
+- **Description**: Pobiera listę lekcji. Obsługuje filtry i sortowanie.
+- **Query params**:
+  - `search` (string, opcjonalne) — wyszukiwanie po tytule / temacie
+  - `groupId` (integer, opcjonalne) — filtr po przypisanej grupie
+  - `status` (boolean, opcjonalne) — filtr po polu `isActive`
+  - `sort` (string, opcjonalne) — np. `createdAt:desc` lub `title:asc`
+- **Authorization**: `TEACHER` lub `ADMIN`
+
+**Success (200 OK):**
+```json
+[
+  {
+    "id": 12,
+    "title": "Present Simple - lesson 1",
+    "theme": "Grammar",
+    "isActive": true,
+    "teacherId": 3,
+    "createdAt": "2026-03-21T10:00:00",
+    "groups": [ { "id": 1, "name": "Angielski A1" } ]
+  }
+]
+```
+
+| Field | Type                  | Description |
+|-------|-----------------------|-------------|
+| `id` | Inteager              | ID lekcji |
+| `title` | String                | Tytuł lekcji |
+| `theme` | String                | Temat kategorii lekcji |
+| `isActive` | Boolean               | Czy lekcja jest aktywna |
+| `teacherId` | Integer               | ID nauczyciela, który utworzył lekcję |
+| `createdAt` | String (ISO datetime) | Data utworzenia |
+| `groups` | List<GroupDto>        | Lista grup przypisanych do lekcji (id, name) |
+
+**Known Errors:**
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
+
+---
+
+### 4.2. Create a new lesson
+- **URL**: `/api/v1/lessons`
+- **Method**: `POST`
+- **Description**: Tworzy nową lekcję. Można jednocześnie przypisać lekcję do grup.
+- **Authorization**: `TEACHER`
+
+**Request Body (JSON):**
+```json
+{
+  "title": "Present Simple - lesson 1",
+  "theme": "Grammar",
+  "groupIds": [1, 2]
+}
+```
+
+**Success (201 Created):**
+Zwraca utworzoną reprezentację `LessonResponse` (jak w sekcji 4.1).
+
+**Known Errors:**
+- `VALIDATION_FAILED` (400 Bad Request): Brak wymaganych pól (`title`, `theme`) lub złe typy.
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit creation.
+
+---
+
+### 4.3. Update lesson data
+- **URL**: `/api/v1/lessons/{id}`
+- **Method**: `PUT`
+- **Description**: Aktualizuje pola lekcji (title, theme, description, group assignment). Wymaga uprawnień nauczyciela.
+- **Authorization**: `TEACHER`
+
+**Request Body (JSON):**
+Używa tego samego kształtu co `LessonRequest` (patrz 4.2).
+
+**Success (200 OK):**
+Zwraca zaktualizowaną reprezentację `LessonResponse`.
+
+**Known Errors:**
+- `VALIDATION_FAILED` (400 Bad Request): Złe dane wejściowe.
+- `USER_NOT_FOUND` / `LESSON_NOT_FOUND` (404 Not Found): Nie znaleziono lekcji (lub powiązanych zasobów).
+- `UNAUTHORIZED` (401 Unauthorized)
+- `FORBIDDEN` (403 Forbidden)
+
+---
+
+### 4.4. Quick status change (is_active)
+- **URL**: `/api/v1/lessons/{id}/status`
+- **Method**: `PATCH`
+- **Description**: Szybka zmiana flagi `isActive` (włącz/wyłącz lekcję).
+- **Authorization**: `TEACHER`
+
+**Request Body (JSON):**
+```json
+{ "isActive": true }
+```
+
+**Success (204 No Content):** *(Empty Response Body)*
+
+**Known Errors:**
+- `VALIDATION_FAILED` (400 Bad Request)
+- `LESSON_NOT_FOUND` (404 Not Found)
+- `UNAUTHORIZED` (401 Unauthorized)
+- `FORBIDDEN` (403 Forbidden)
+
+---
+
+### 4.5. Delete lesson
+- **URL**: `/api/v1/lessons/{id}`
+- **Method**: `DELETE`
+- **Description**: Usuwa lekcję. Wymaga roli `TEACHER`.
+- **Authorization**: `TEACHER`
+
+**Success (204 No Content):** *(Empty Response Body)*
+
+**Known Errors:**
+- `LESSON_NOT_FOUND` (404 Not Found)
+- `UNAUTHORIZED` (401 Unauthorized)
+- `FORBIDDEN` (403 Forbidden)
+
+---
+
+## 5. Teacher Stats (`/api/v1/teacher/stats`)
+
+### 5.1. Get Dashboard Statistics
 - **URL**: `/api/v1/teacher/stats`
 - **Method**: `GET`
 - **Description**: Returns aggregated dashboard statistics: total and active lesson counts, active student count, and average answer score. Requires `ADMIN` authority.

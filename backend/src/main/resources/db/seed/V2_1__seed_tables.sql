@@ -16,9 +16,9 @@ INSERT INTO achievements (name, description) VALUES
     ('Perfekcjonista', 'Uzyskano 100% poprawnych odpowiedzi w lekcji');
 
 -- Lekcje
-INSERT INTO lessons (title, theme, is_active) VALUES
-    ('Powitania', 'Podstawowe zwroty grzecznościowe', TRUE),
-    ('Czasowniki', 'Czas Present Simple', TRUE);
+INSERT INTO lessons (title, theme, is_active, teacher_id) VALUES
+    ('Powitania', 'Podstawowe zwroty grzecznościowe', TRUE, 1),
+    ('Czasowniki', 'Czas Present Simple', TRUE, 1);
 
 -- Zadania: Wybór (choose_tasks)
 INSERT INTO choose_tasks (lesson_id, task, possible_answers, correct_answer) VALUES
