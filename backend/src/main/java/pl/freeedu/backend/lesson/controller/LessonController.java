@@ -2,6 +2,11 @@ package pl.freeedu.backend.lesson.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -24,6 +29,7 @@ public class LessonController {
 	}
 
 	@Operation(summary = "Get list of lessons (with filters)")
+    @ApiResponse(responseCode = "200", description = "List of lessons")
 	@GetMapping
 	@PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
 	public Flux<LessonResponse> getLessons(
@@ -35,6 +41,8 @@ public class LessonController {
 	}
 
 	@Operation(summary = "Create a new lesson")
+    @ApiResponses(value = {@ApiResponse(responseCode = "201", description = "Lesson successfully created"),
+            @ApiResponse(responseCode = "400", description = "Invalid input data", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PostMapping
 	@PreAuthorize("hasRole('TEACHER')")
 	@ResponseStatus(HttpStatus.CREATED)
@@ -43,6 +51,9 @@ public class LessonController {
 	}
 
 	@Operation(summary = "Update lesson data")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Lesson successfully updated"),
+            @ApiResponse(responseCode = "400", description = "Invalid input data", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+            @ApiResponse(responseCode = "404", description = "Lesson not found")})
 	@PutMapping("/{id}")
 	@PreAuthorize("hasRole('TEACHER')")
 	public Mono<LessonResponse> updateLesson(
@@ -52,6 +63,9 @@ public class LessonController {
 	}
 
 	@Operation(summary = "Quick status change (is_active)")
+    @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Lesson status updated"),
+            @ApiResponse(responseCode = "400", description = "Invalid input data", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+            @ApiResponse(responseCode = "404", description = "Lesson not found")})
 	@PatchMapping("/{id}/status")
 	@PreAuthorize("hasRole('TEACHER')")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
@@ -62,6 +76,8 @@ public class LessonController {
 	}
 
 	@Operation(summary = "Delete lesson")
+    @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Lesson successfully deleted"),
+            @ApiResponse(responseCode = "404", description = "Lesson not found")})
 	@DeleteMapping("/{id}")
 	@PreAuthorize("hasRole('TEACHER')")
 	@ResponseStatus(HttpStatus.NO_CONTENT)

@@ -1,0 +1,49 @@
+# Lessons API - example HTTP requests for testing
+
+# Set variables in your REST client or replace {{BASE_URL}} and {{TOKEN}} inline
+# Example: BASE_URL=http://localhost:8080
+
+### Get list of lessons (supports filters)
+GET {{BASE_URL}}/api/v1/lessons?search=Present&groupId=1&status=true&sort=createdAt:desc
+Authorization: Bearer {{TOKEN}}
+
+
+### Create a new lesson (requires ROLE_TEACHER)
+POST {{BASE_URL}}/api/v1/lessons
+Content-Type: application/json
+Authorization: Bearer {{TOKEN}}
+
+{
+  "title": "Present Simple - lesson 1",
+  "theme": "Grammar",
+  "description": "Intro to present simple",
+  "groupIds": [1, 2]
+}
+
+
+### Update lesson data (requires ROLE_TEACHER)
+PUT {{BASE_URL}}/api/v1/lessons/12
+Content-Type: application/json
+Authorization: Bearer {{TOKEN}}
+
+{
+  "title": "Present Simple - lesson 1 (updated)",
+  "theme": "Grammar",
+  "description": "Updated description",
+  "groupIds": [1]
+}
+
+
+### Quick status change (isActive) (requires ROLE_TEACHER)
+PATCH {{BASE_URL}}/api/v1/lessons/12/status
+Content-Type: application/json
+Authorization: Bearer {{TOKEN}}
+
+{ "isActive": false }
+
+
+### Delete lesson (requires ROLE_TEACHER)
+DELETE {{BASE_URL}}/api/v1/lessons/12
+Authorization: Bearer {{TOKEN}}
+
+
