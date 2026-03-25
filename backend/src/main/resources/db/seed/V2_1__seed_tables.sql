@@ -2,12 +2,13 @@
 INSERT INTO users (email, username, password, role) VALUES
     ('admin@szkola.pl', 'admin_marek', '$2a$10$E76vPLy8/fTJ36cpmvYNBOGKxUB72aTb7rexqJgvHIuaQLE4vS1KC', 'ADMIN'),
     ('student1@edu.pl', 'jan_kowalski', '$2a$10$EfQqseEyw46zbJW75uREjeFG.SG5XK/OtIKrmxHMr0xyCmgS3N5f.', 'STUDENT'),
-    ('student2@edu.pl', 'anna_nowak', '$2a$10$KisRc079EPu5z5uFOV80m.h7jxAnUsJJStyNCR.Tiq.u/Z6s1cTCq', 'STUDENT');
+    ('student2@edu.pl', 'anna_nowak', '$2a$10$KisRc079EPu5z5uFOV80m.h7jxAnUsJJStyNCR.Tiq.u/Z6s1cTCq', 'STUDENT'),
+    ('teacher@szkola.pl', 'pan_tomasz', '$2a$10$E76vPLy8/fTJ36cpmvYNBOGKxUB72aTb7rexqJgvHIuaQLE4vS1KC', 'TEACHER');
 
 -- Grupy
-INSERT INTO user_groups (name, description) VALUES
-    ('Angielski A1', 'Grupa początkująca - semestr letni'),
-    ('Angielski B2', 'Grupa średniozaawansowana - przygotowanie do certyfikatu');
+INSERT INTO user_groups (name, description, teacher_id) VALUES
+    ('Angielski A1', 'Grupa początkująca - semestr letni', 4),
+    ('Angielski B2', 'Grupa średniozaawansowana - przygotowanie do certyfikatu', 4);
 
  -- Osiągnięcia (achievements)
 INSERT INTO achievements (name, description) VALUES
@@ -16,9 +17,9 @@ INSERT INTO achievements (name, description) VALUES
     ('Perfekcjonista', 'Uzyskano 100% poprawnych odpowiedzi w lekcji');
 
 -- Lekcje
-INSERT INTO lessons (title, theme, is_active) VALUES
-    ('Powitania', 'Podstawowe zwroty grzecznościowe', TRUE),
-    ('Czasowniki', 'Czas Present Simple', TRUE);
+INSERT INTO lessons (title, theme, is_active, teacher_id) VALUES
+    ('Powitania', 'Podstawowe zwroty grzecznościowe', TRUE, 4),
+    ('Czasowniki', 'Czas Present Simple', TRUE, 4);
 
 -- Zadania: Wybór (choose_tasks)
 INSERT INTO choose_tasks (lesson_id, task, possible_answers, correct_answer) VALUES

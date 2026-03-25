@@ -80,14 +80,18 @@ public class SecurityConfig {
 				.securityContextRepository(NoOpServerSecurityContextRepository.getInstance())
 				.authorizeExchange(exchanges -> exchanges.pathMatchers("/api/v1/auth/**").permitAll()
 						.pathMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**", "/webjars/**")
-						.permitAll().anyExchange().authenticated())
+						.permitAll().pathMatchers("/api/v1/admin/**").hasRole("ADMIN")
+						.pathMatchers("/api/v1/teacher/**").hasAnyRole("TEACHER", "ADMIN")
+						.pathMatchers("/api/v1/student/**").hasAnyRole("STUDENT", "TEACHER", "ADMIN").anyExchange()
+						.authenticated())
 				.addFilterAt(jwtAuthenticationFilter, SecurityWebFiltersOrder.AUTHENTICATION).build();
 	}
 
 	@Bean
 	public CorsConfigurationSource corsConfigurationSource() {
 		CorsConfiguration configuration = new CorsConfiguration();
-		configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "http://127.0.0.1:5173"));
+		configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "http://127.0.0.1:5173",
+				"http://localhost:5174", "http://127.0.0.1:5174"));
 		configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"));
 		configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept"));
 		configuration.setAllowCredentials(true);

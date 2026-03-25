@@ -25,7 +25,7 @@ CREATE TABLE user_in_group (
     user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     group_id INT NOT NULL REFERENCES user_groups(id) ON DELETE CASCADE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_user_in_group_user_group UNIQUE (user_id, group_id)
+    CONSTRAINT uq_user_in_group_user UNIQUE (user_id)
 );
 
 CREATE TABLE group_has_lesson (

@@ -36,6 +36,10 @@ public class UserService {
 		return registerUser(requestMono, (request, password) -> userMapper.toAdminUser(request, password));
 	}
 
+	public Mono<Void> createTeacher(Mono<RegisterUserRequest> requestMono) {
+		return registerUser(requestMono, (request, password) -> userMapper.toTeacherUser(request, password));
+	}
+
 	public Mono<Void> registerStudent(Mono<RegisterUserRequest> requestMono) {
 		return registerUser(requestMono, (request, password) -> userMapper.toStudentUser(request, password));
 	}

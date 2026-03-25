@@ -34,7 +34,7 @@ public class UserGroupController {
 			@ApiResponse(responseCode = "400", description = "Invalid input data", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "409", description = "Group name already exists", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PostMapping
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
 	@ResponseStatus(HttpStatus.CREATED)
 	public Mono<UserGroupResponse> create(@Valid @RequestBody Mono<UserGroupRequest> request) {
 		return userGroupService.create(request);
@@ -43,7 +43,7 @@ public class UserGroupController {
 	@Operation(summary = "Get all user groups")
 	@ApiResponse(responseCode = "200", description = "List of all user groups")
 	@GetMapping
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
 	@ResponseStatus(HttpStatus.OK)
 	public Flux<UserGroupResponse> getAll() {
 		return userGroupService.getAll();
@@ -53,7 +53,7 @@ public class UserGroupController {
 	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "User group found"),
 			@ApiResponse(responseCode = "404", description = "User group not found")})
 	@GetMapping("/{id}")
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
 	@ResponseStatus(HttpStatus.OK)
 	public Mono<UserGroupResponse> getById(@PathVariable Integer id) {
 		return userGroupService.getById(id);
@@ -64,7 +64,7 @@ public class UserGroupController {
 			@ApiResponse(responseCode = "400", description = "Invalid input data", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "404", description = "User group not found")})
 	@PutMapping("/{id}")
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("hasRole('ADMIN') or (hasRole('TEACHER') and @securityService.isGroupOwner(#id))")
 	@ResponseStatus(HttpStatus.OK)
 	public Mono<UserGroupResponse> update(@PathVariable Integer id,
 			@Valid @RequestBody Mono<UserGroupRequest> request) {
@@ -75,7 +75,7 @@ public class UserGroupController {
 	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "User group successfully deleted"),
 			@ApiResponse(responseCode = "404", description = "User group not found")})
 	@DeleteMapping("/{id}")
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("hasRole('ADMIN') or (hasRole('TEACHER') and @securityService.isGroupOwner(#id))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public Mono<Void> delete(@PathVariable Integer id) {
 		return userGroupService.delete(id);
@@ -87,7 +87,7 @@ public class UserGroupController {
 			@ApiResponse(responseCode = "404", description = "Group or user not found"),
 			@ApiResponse(responseCode = "409", description = "Student already assigned to a group")})
 	@PostMapping("/{id}/members/{userId}")
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("hasRole('ADMIN') or (hasRole('TEACHER') and @securityService.isGroupOwner(#id))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public Mono<Void> addMember(@PathVariable Integer id, @PathVariable Integer userId) {
 		return userGroupService.addMember(id, userId);
@@ -97,7 +97,7 @@ public class UserGroupController {
 	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Member removed from group"),
 			@ApiResponse(responseCode = "404", description = "Group or membership not found")})
 	@DeleteMapping("/{id}/members/{userId}")
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("hasRole('ADMIN') or (hasRole('TEACHER') and @securityService.isGroupOwner(#id))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public Mono<Void> removeMember(@PathVariable Integer id, @PathVariable Integer userId) {
 		return userGroupService.removeMember(id, userId);

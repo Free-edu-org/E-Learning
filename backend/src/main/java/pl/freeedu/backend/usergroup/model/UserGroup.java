@@ -25,4 +25,7 @@ public class UserGroup {
 
 	@Column(name = "created_at", insertable = false, updatable = false)
 	private LocalDateTime createdAt;
+
+	@Column(name = "teacher_id")
+	private Integer teacherId;
 }

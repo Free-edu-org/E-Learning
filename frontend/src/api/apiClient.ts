@@ -53,6 +53,11 @@ export async function fetchApi<T>(
         detail: "Wystąpił nieoczekiwany błąd. Spróbuj ponownie później.",
       };
     }
+
+    if (response.status === 401 && problem.code === "TOKEN_EXPIRED") {
+      window.dispatchEvent(new Event("auth:expired"));
+    }
+
     throw new ApiError(problem);
   }
 
