@@ -55,7 +55,8 @@ public class LessonController {
 			@ApiResponse(responseCode = "404", description = "Lesson not found")})
 	@PutMapping("/{id}")
 	@PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
-	public Mono<LessonResponse> updateLesson(@PathVariable Integer id,@Valid @RequestBody Mono<LessonRequest> lessonRequest) {
+	public Mono<LessonResponse> updateLesson(@PathVariable Integer id,
+			@Valid @RequestBody Mono<LessonRequest> lessonRequest) {
 		return lessonService.updateLesson(id, lessonRequest);
 	}
 
