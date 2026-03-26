@@ -206,6 +206,30 @@ Default local development base URL is `http://localhost:8080`
 
 ---
 
+### 2.8. List Students
+- **URL**: `/api/v1/users/students`
+- **Method**: `GET`
+- **Description**: Returns all users with role `STUDENT`. Requires `ADMIN` authority.
+
+**Success (200 OK):**
+```json
+[
+  {
+    "id": 2,
+    "email": "student1@edu.pl",
+    "username": "student1",
+    "role": "STUDENT",
+    "createdAt": "2026-03-02T21:00:00"
+  }
+]
+```
+
+**Known Errors:**
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token is not an admin token.
+
+---
+
 ## 3. User Groups (`/api/v1/user-groups`)
 
 ### 3.1. Create User Group
@@ -369,19 +393,17 @@ Default local development base URL is `http://localhost:8080`
 
 ---
 
-# 4. Lessons (`/api/v1/lessons`)
-
-Poniżej znajdziesz opis endpointów do zarządzania lekcjami. Ścieżka bazowa: `/api/v1/lessons`.
+## 4. Lessons (`/api/v1/lessons`)
 
 ### 4.1. Get list of lessons
 - **URL**: `/api/v1/lessons`
 - **Method**: `GET`
 - **Description**: Pobiera listę lekcji. Obsługuje filtry i sortowanie.
 - **Query params**:
-  - `search` (string, opcjonalne) — wyszukiwanie po tytule / temacie
-  - `groupId` (integer, opcjonalne) — filtr po przypisanej grupie
-  - `status` (boolean, opcjonalne) — filtr po polu `isActive`
-  - `sort` (string, opcjonalne) — np. `createdAt:desc` lub `title:asc`
+  - `search` (string, optional) - wyszukiwanie po tytule / temacie
+  - `groupId` (integer, optional) - filtr po przypisanej grupie
+  - `status` (boolean, optional) - filtr po polu `isActive`
+  - `sort` (string, optional) - np. `createdAt:desc` lub `title:asc`
 - **Authorization**: `TEACHER` lub `ADMIN`
 
 **Success (200 OK):**
@@ -394,20 +416,20 @@ Poniżej znajdziesz opis endpointów do zarządzania lekcjami. Ścieżka bazowa:
     "isActive": true,
     "teacherId": 3,
     "createdAt": "2026-03-21T10:00:00",
-    "groups": [ { "id": 1, "name": "Angielski A1" } ]
+    "groups": [{ "id": 1, "name": "Angielski A1" }]
   }
 ]
 ```
 
-| Field | Type                  | Description |
-|-------|-----------------------|-------------|
-| `id` | Inteager              | ID lekcji |
-| `title` | String                | Tytuł lekcji |
-| `theme` | String                | Temat kategorii lekcji |
-| `isActive` | Boolean               | Czy lekcja jest aktywna |
-| `teacherId` | Integer               | ID nauczyciela, który utworzył lekcję |
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | Integer | ID lekcji |
+| `title` | String | Tytul lekcji |
+| `theme` | String | Temat kategorii lekcji |
+| `isActive` | Boolean | Czy lekcja jest aktywna |
+| `teacherId` | Integer | ID nauczyciela, ktory utworzyl lekcje |
 | `createdAt` | String (ISO datetime) | Data utworzenia |
-| `groups` | List<GroupDto>        | Lista grup przypisanych do lekcji (id, name) |
+| `groups` | List<GroupDto> | Lista grup przypisanych do lekcji (`id`, `name`) |
 
 **Known Errors:**
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
@@ -418,8 +440,8 @@ Poniżej znajdziesz opis endpointów do zarządzania lekcjami. Ścieżka bazowa:
 ### 4.2. Create a new lesson
 - **URL**: `/api/v1/lessons`
 - **Method**: `POST`
-- **Description**: Tworzy nową lekcję. Można jednocześnie przypisać lekcję do grup.
-- **Authorization**: `TEACHER`
+- **Description**: Tworzy nowa lekcje. Mozna jednoczesnie przypisac lekcje do grup.
+- **Authorization**: `TEACHER` lub `ADMIN`
 
 **Request Body (JSON):**
 ```json
@@ -431,10 +453,10 @@ Poniżej znajdziesz opis endpointów do zarządzania lekcjami. Ścieżka bazowa:
 ```
 
 **Success (201 Created):**
-Zwraca utworzoną reprezentację `LessonResponse` (jak w sekcji 4.1).
+Zwraca utworzona reprezentacje `LessonResponse` (jak w sekcji 4.1).
 
 **Known Errors:**
-- `VALIDATION_FAILED` (400 Bad Request): Brak wymaganych pól (`title`, `theme`) lub złe typy.
+- `VALIDATION_FAILED` (400 Bad Request): Brak wymaganych pol (`title`, `theme`) lub zly format danych.
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
 - `FORBIDDEN` (403 Forbidden): Token role does not permit creation.
 
@@ -443,28 +465,34 @@ Zwraca utworzoną reprezentację `LessonResponse` (jak w sekcji 4.1).
 ### 4.3. Update lesson data
 - **URL**: `/api/v1/lessons/{id}`
 - **Method**: `PUT`
-- **Description**: Aktualizuje pola lekcji (title, theme, description, group assignment). Wymaga uprawnień nauczyciela.
-- **Authorization**: `TEACHER`
+- **Description**: Aktualizuje pola lekcji (`title`, `theme`, `groupIds`).
+- **Authorization**: `TEACHER` lub `ADMIN` (tylko wlasciciel lekcji)
 
 **Request Body (JSON):**
-Używa tego samego kształtu co `LessonRequest` (patrz 4.2).
+```json
+{
+  "title": "Present Simple - lesson 2",
+  "theme": "Grammar",
+  "groupIds": [1]
+}
+```
 
 **Success (200 OK):**
-Zwraca zaktualizowaną reprezentację `LessonResponse`.
+Zwraca zaktualizowana reprezentacje `LessonResponse`.
 
 **Known Errors:**
-- `VALIDATION_FAILED` (400 Bad Request): Złe dane wejściowe.
-- `USER_NOT_FOUND` / `LESSON_NOT_FOUND` (404 Not Found): Nie znaleziono lekcji (lub powiązanych zasobów).
-- `UNAUTHORIZED` (401 Unauthorized)
-- `FORBIDDEN` (403 Forbidden)
+- `VALIDATION_FAILED` (400 Bad Request): Zle dane wejsciowe.
+- `LESSON_NOT_FOUND` (404 Not Found): Nie znaleziono lekcji.
+- `NOT_LESSON_OWNER` (403 Forbidden): Uzytkownik nie jest wlascicielem lekcji.
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
 
 ---
 
-### 4.4. Quick status change (is_active)
+### 4.4. Quick status change (isActive)
 - **URL**: `/api/v1/lessons/{id}/status`
 - **Method**: `PATCH`
-- **Description**: Szybka zmiana flagi `isActive` (włącz/wyłącz lekcję).
-- **Authorization**: `TEACHER`
+- **Description**: Szybka zmiana flagi `isActive` (wlacz/wylacz lekcje).
+- **Authorization**: `TEACHER` lub `ADMIN` (tylko wlasciciel lekcji)
 
 **Request Body (JSON):**
 ```json
@@ -476,29 +504,333 @@ Zwraca zaktualizowaną reprezentację `LessonResponse`.
 **Known Errors:**
 - `VALIDATION_FAILED` (400 Bad Request)
 - `LESSON_NOT_FOUND` (404 Not Found)
+- `NOT_LESSON_OWNER` (403 Forbidden)
 - `UNAUTHORIZED` (401 Unauthorized)
-- `FORBIDDEN` (403 Forbidden)
 
 ---
 
 ### 4.5. Delete lesson
 - **URL**: `/api/v1/lessons/{id}`
 - **Method**: `DELETE`
-- **Description**: Usuwa lekcję. Wymaga roli `TEACHER`.
-- **Authorization**: `TEACHER`
+- **Description**: Usuwa lekcje.
+- **Authorization**: `TEACHER` lub `ADMIN` (tylko wlasciciel lekcji)
 
 **Success (204 No Content):** *(Empty Response Body)*
 
 **Known Errors:**
 - `LESSON_NOT_FOUND` (404 Not Found)
+- `NOT_LESSON_OWNER` (403 Forbidden)
 - `UNAUTHORIZED` (401 Unauthorized)
-- `FORBIDDEN` (403 Forbidden)
 
 ---
 
-## 5. Teacher Stats (`/api/v1/teacher/stats`)
+## 5. Student Lesson Access (`/api/v1/student`)
 
-### 5.1. Get Dashboard Statistics
+### 5.1. Get Student Lessons
+- **URL**: `/api/v1/student/lessons`
+- **Method**: `GET`
+- **Description**: Zwraca aktywne lekcje dostepne dla zalogowanego ucznia (przez grupe lub przypisanie bezposrednie).
+- **Authorization**: `STUDENT`
+
+**Success (200 OK):**
+```json
+[
+  {
+    "id": 12,
+    "title": "Present Simple - lesson 1",
+    "theme": "Grammar",
+    "status": null
+  }
+]
+```
+
+`status` moze przyjmowac wartosci: `null`, `IN_PROGRESS`, `COMPLETED`.
+
+**Known Errors:**
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Endpoint dostepny tylko dla roli `STUDENT`.
+
+---
+
+## 6. Tasks (`/api/v1/lessons/{lessonId}`)
+
+### 6.1. Get Lesson Tasks
+- **URL**: `/api/v1/lessons/{lessonId}/tasks`
+- **Method**: `GET`
+- **Description**: Zwraca zadania pogrupowane sekcjami dla lekcji.
+- **Authorization**: `STUDENT` lub `ADMIN`
+
+**Success (200 OK):**
+```json
+{
+  "lessonId": 12,
+  "lessonTitle": "Present Simple - lesson 1",
+  "status": "IN_PROGRESS",
+  "sections": {
+    "default": [
+      {
+        "id": 101,
+        "taskType": "choose_tasks",
+        "task": "Choose the correct form",
+        "hint": "Use 3rd person",
+        "section": "default",
+        "possibleAnswers": "goes|go",
+        "words": null,
+        "correctAnswerIndex": null,
+        "correctAnswerText": null
+      }
+    ]
+  }
+}
+```
+
+Uwagi:
+- Dla roli `STUDENT` pola `correctAnswerIndex` i `correctAnswerText` sa zawsze `null`.
+- Dla roli `ADMIN` endpoint zwraca poprawne odpowiedzi (pola uzupelnione).
+
+**Known Errors:**
+- `LESSON_NOT_FOUND` (404 Not Found)
+- `LESSON_NOT_ACCESSIBLE` (403 Forbidden)
+- `LESSON_ALREADY_COMPLETED` (403 Forbidden)
+- `UNAUTHORIZED` (401 Unauthorized)
+
+---
+
+### 6.2. Submit Lesson Answers
+- **URL**: `/api/v1/lessons/{lessonId}/submit`
+- **Method**: `POST`
+- **Description**: Wysyla odpowiedzi ucznia i dokonuje oceny.
+- **Authorization**: `STUDENT`
+
+**Request Body (JSON):**
+```json
+{
+  "answers": [
+    {
+      "taskId": 101,
+      "taskType": "choose_tasks",
+      "answer": "0"
+    },
+    {
+      "taskId": 205,
+      "taskType": "write_tasks",
+      "answer": "She goes to school"
+    }
+  ]
+}
+```
+
+**Success (200 OK):**
+```json
+{
+  "lessonId": 12,
+  "score": 7,
+  "maxScore": 10,
+  "status": "COMPLETED",
+  "results": [
+    {
+      "taskId": 101,
+      "taskType": "choose_tasks",
+      "isCorrect": true
+    }
+  ]
+}
+```
+
+**Known Errors:**
+- `VALIDATION_FAILED` (400 Bad Request)
+- `LESSON_NOT_FOUND` (404 Not Found)
+- `LESSON_NOT_ACCESSIBLE` (403 Forbidden)
+- `LESSON_NOT_STARTED` (400 Bad Request)
+- `ALREADY_SUBMITTED` (409 Conflict)
+- `INVALID_TASK_TYPE` (400 Bad Request)
+- `TASK_NOT_FOUND` (404 Not Found)
+- `UNAUTHORIZED` (401 Unauthorized)
+
+---
+
+## 7. Task Management (`/api/v1/lessons/{lessonId}`)
+
+Wszystkie endpointy w tej sekcji wymagaja roli `ADMIN` i dodatkowo wlascicielstwa lekcji (`NOT_LESSON_OWNER` gdy lekcja nie nalezy do zalogowanego uzytkownika).
+
+### 7.1. Create Task
+- **URL**:
+  - `/api/v1/lessons/{lessonId}/tasks/speak`
+  - `/api/v1/lessons/{lessonId}/tasks/choose`
+  - `/api/v1/lessons/{lessonId}/tasks/write`
+  - `/api/v1/lessons/{lessonId}/tasks/scatter`
+- **Method**: `POST`
+
+**Request Body examples:**
+```json
+{
+  "task": "Powtorz zdanie",
+  "hint": "Zwracaj uwage na wymowe",
+  "section": "speaking"
+}
+```
+
+```json
+{
+  "task": "Choose the correct form",
+  "possibleAnswers": "goes|go",
+  "correctAnswer": 0,
+  "hint": "3rd person",
+  "section": "grammar"
+}
+```
+
+```json
+{
+  "task": "Uloz zdanie",
+  "correctAnswer": "She goes to school",
+  "hint": "Present Simple",
+  "section": "writing"
+}
+```
+
+```json
+{
+  "task": "Uloz wyrazy we wlasciwej kolejnosci",
+  "words": "school|to|goes|she",
+  "correctAnswer": "she goes to school",
+  "hint": "Podmiot + czasownik + dopelnienie",
+  "section": "grammar"
+}
+```
+
+**Success (201 Created):**
+Zwraca `TaskResponse` (z uzupelnionymi polami poprawnych odpowiedzi dla admina).
+
+**Known Errors:**
+- `VALIDATION_FAILED` (400 Bad Request)
+- `LESSON_NOT_FOUND` (404 Not Found)
+- `NOT_LESSON_OWNER` (403 Forbidden)
+- `UNAUTHORIZED` (401 Unauthorized)
+- `FORBIDDEN` (403 Forbidden): Brak roli `ADMIN`.
+
+---
+
+### 7.2. Update Task
+- **URL**:
+  - `/api/v1/lessons/{lessonId}/tasks/speak/{taskId}`
+  - `/api/v1/lessons/{lessonId}/tasks/choose/{taskId}`
+  - `/api/v1/lessons/{lessonId}/tasks/write/{taskId}`
+  - `/api/v1/lessons/{lessonId}/tasks/scatter/{taskId}`
+- **Method**: `PUT`
+- **Request Body**: jak w sekcji 7.1 dla odpowiedniego typu zadania.
+
+**Success (200 OK):**
+Zwraca zaktualizowane `TaskResponse`.
+
+**Known Errors:**
+- `VALIDATION_FAILED` (400 Bad Request)
+- `LESSON_NOT_FOUND` (404 Not Found)
+- `TASK_NOT_FOUND` (404 Not Found)
+- `NOT_LESSON_OWNER` (403 Forbidden)
+- `UNAUTHORIZED` (401 Unauthorized)
+- `FORBIDDEN` (403 Forbidden): Brak roli `ADMIN`.
+
+---
+
+### 7.3. Delete Task
+- **URL**: `/api/v1/lessons/{lessonId}/tasks/{taskType}/{taskId}`
+- **Method**: `DELETE`
+- **Path param `taskType`**: `speak`, `choose`, `write`, `scatter`
+
+**Success (204 No Content):** *(Empty Response Body)*
+
+**Known Errors:**
+- `LESSON_NOT_FOUND` (404 Not Found)
+- `TASK_NOT_FOUND` (404 Not Found)
+- `INVALID_TASK_TYPE` (400 Bad Request)
+- `NOT_LESSON_OWNER` (403 Forbidden)
+- `UNAUTHORIZED` (401 Unauthorized)
+- `FORBIDDEN` (403 Forbidden): Brak roli `ADMIN`.
+
+---
+
+### 7.4. Reset Student Progress
+- **URL**: `/api/v1/lessons/{lessonId}/users/{userId}/reset`
+- **Method**: `POST`
+- **Description**: Usuwa odpowiedzi i status realizacji lekcji dla wskazanego ucznia.
+
+**Success (204 No Content):** *(Empty Response Body)*
+
+**Known Errors:**
+- `LESSON_NOT_FOUND` (404 Not Found)
+- `NOT_LESSON_OWNER` (403 Forbidden)
+- `UNAUTHORIZED` (401 Unauthorized)
+- `FORBIDDEN` (403 Forbidden): Brak roli `ADMIN`.
+
+---
+
+### 7.5. Get Assigned Students for Lesson
+- **URL**: `/api/v1/lessons/{lessonId}/students`
+- **Method**: `GET`
+- **Description**: Zwraca uczniow z dostepem do lekcji (przypisanie bezposrednie i przez grupy).
+
+**Success (200 OK):**
+```json
+[
+  {
+    "id": 2,
+    "username": "student1",
+    "email": "student1@edu.pl",
+    "accessType": "direct",
+    "groupName": null
+  },
+  {
+    "id": 3,
+    "username": "student2",
+    "email": "student2@edu.pl",
+    "accessType": "group",
+    "groupName": "Angielski A1"
+  }
+]
+```
+
+**Known Errors:**
+- `LESSON_NOT_FOUND` (404 Not Found)
+- `NOT_LESSON_OWNER` (403 Forbidden)
+- `UNAUTHORIZED` (401 Unauthorized)
+- `FORBIDDEN` (403 Forbidden): Brak roli `ADMIN`.
+
+---
+
+### 7.6. Assign Student Directly to Lesson
+- **URL**: `/api/v1/lessons/{lessonId}/students/{userId}`
+- **Method**: `POST`
+- **Description**: Przypisuje ucznia bezposrednio do lekcji.
+
+**Success (201 Created):** *(Empty Response Body)*
+
+**Known Errors:**
+- `LESSON_NOT_FOUND` (404 Not Found)
+- `NOT_LESSON_OWNER` (403 Forbidden)
+- `UNAUTHORIZED` (401 Unauthorized)
+- `FORBIDDEN` (403 Forbidden): Brak roli `ADMIN`.
+
+---
+
+### 7.7. Remove Direct Assignment from Lesson
+- **URL**: `/api/v1/lessons/{lessonId}/students/{userId}`
+- **Method**: `DELETE`
+- **Description**: Usuwa bezposrednie przypisanie ucznia do lekcji.
+
+**Success (204 No Content):** *(Empty Response Body)*
+
+**Known Errors:**
+- `LESSON_NOT_FOUND` (404 Not Found)
+- `NOT_LESSON_OWNER` (403 Forbidden)
+- `UNAUTHORIZED` (401 Unauthorized)
+- `FORBIDDEN` (403 Forbidden): Brak roli `ADMIN`.
+
+---
+
+## 8. Teacher Stats (`/api/v1/teacher/stats`)
+
+### 8.1. Get Dashboard Statistics
 - **URL**: `/api/v1/teacher/stats`
 - **Method**: `GET`
 - **Description**: Returns aggregated dashboard statistics: total and active lesson counts, active student count, and average answer score. Requires `TEACHER` or `ADMIN` authority.
@@ -518,7 +850,7 @@ Zwraca zaktualizowaną reprezentację `LessonResponse`.
 | `totalLessons` | Long | Total number of lessons in the system. |
 | `activeLessons` | Long | Number of lessons where `is_active = TRUE`. |
 | `activeStudents` | Long | Distinct students belonging to groups that have at least one lesson assigned. |
-| `avgScore` | Double | Average correctness score (0–100). Returns `0.0` when no answers exist (COALESCE guard). |
+| `avgScore` | Double | Average correctness score (0-100). Returns `0.0` when no answers exist (COALESCE guard). |
 
 **Known Errors:**
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
