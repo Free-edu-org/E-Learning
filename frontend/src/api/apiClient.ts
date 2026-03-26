@@ -61,8 +61,12 @@ export async function fetchApi<T>(
     throw new ApiError(problem);
   }
 
-  if (response.status === 204) {
-    return {} as T;
+  if (response.status === 204 || response.status === 201) {
+    const text = await response.text();
+    if (!text) {
+      return {} as T;
+    }
+    return JSON.parse(text);
   }
 
   return response.json();

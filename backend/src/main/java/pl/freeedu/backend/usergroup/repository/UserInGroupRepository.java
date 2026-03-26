@@ -16,12 +16,16 @@ public interface UserInGroupRepository extends JpaRepository<UserInGroup, Intege
 
 	boolean existsByUserId(Integer userId);
 
+	Optional<UserInGroup> findByUserId(Integer userId);
+
 	boolean existsByUserIdAndGroupId(Integer userId, Integer groupId);
 
 	Optional<UserInGroup> findByUserIdAndGroupId(Integer userId, Integer groupId);
 
 	@Transactional
 	void deleteByGroupId(Integer groupId);
+
+	List<UserInGroup> findByGroupIdIn(List<Integer> groupIds);
 
 	@Query("SELECT u.groupId as groupId, COUNT(u) as count FROM UserInGroup u GROUP BY u.groupId")
 	List<GroupCountProjection> countAllByGroupId();
