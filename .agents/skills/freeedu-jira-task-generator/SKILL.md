@@ -1,5 +1,5 @@
-﻿---
-name: FreeEdu Jira Task Generator
+---
+name: freeedu-jira-task-generator
 description: Produkuje ustandaryzowane techniczne opisy zadan do Jiry na podstawie analizy SWS i obecnego stanu bazy danych.
 ---
 

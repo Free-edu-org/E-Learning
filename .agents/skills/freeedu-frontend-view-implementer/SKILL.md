@@ -1,5 +1,5 @@
-﻿---
-name: FreeEdu Frontend View Implementer
+---
+name: freeedu-frontend-view-implementer
 description: Implementuje wskazany widok frontendowy na podstawie istniejącego kodu i stylu projektu; utrzymuje spojnosc UI/UX, mapuje integracje do api-contract i zgłasza brakujace endpointy backendu jako blokery.
 ---
 

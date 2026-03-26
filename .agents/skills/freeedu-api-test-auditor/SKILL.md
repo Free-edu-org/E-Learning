@@ -1,6 +1,6 @@
-﻿---
-name: FreeEdu API Test Auditor
-description: Dziala code-first: traktuje backend jako source of truth, aktualizuje api-contract.md na podstawie kodu, aktualizuje pliki .http, generuje/uszczelnia testy API i uruchamia testy koncowe.
+---
+name: freeedu-api-test-auditor
+description: "Dziala code-first: traktuje backend jako source of truth, aktualizuje api-contract.md na podstawie kodu, aktualizuje pliki .http, generuje/uszczelnia testy API i uruchamia testy koncowe."
 ---
 
 # FreeEdu API Test Auditor

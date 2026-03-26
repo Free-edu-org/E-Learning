@@ -1,5 +1,5 @@
-﻿---
-name: FreeEdu Review Auditor
+---
+name: freeedu-review-auditor
 description: Wykonuje rygorystyczny review zmian jak wyrachowany senior; wykrywa regresje, niespojnosci, ryzyka i luki testowe oraz wydaje jednoznaczny werdykt gotowosci.
 ---
 
