@@ -1,5 +1,39 @@
-http://localhost:8080/api/v1/users/admin
-http://localhost:8080/api/v1/users/register
-http://localhost:8080/api/v1/users/{id}
-http://localhost:8080/api/v1/users/me
-http://localhost:8080/api/v1/users/{id}/password
+### Register Student (Requires Admin)
+POST http://localhost:8080/api/v1/users/register
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "email": "student_test@example.com",
+  "username": "student_test",
+  "password": "password"
+}
+
+### Create Admin (Requires Admin)
+POST http://localhost:8080/api/v1/users/admin
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "email": "admin_test@example.com",
+  "username": "admin_test",
+  "password": "password"
+}
+
+### Get User Details (Requires Admin, Teacher for student, or Owner)
+GET http://localhost:8080/api/v1/users/1
+Authorization: Bearer {{auth_token}}
+
+### Get Current User Profile
+GET http://localhost:8080/api/v1/users/me
+Authorization: Bearer {{auth_token}}
+
+### Change User Password (Requires Admin or Owner)
+PUT http://localhost:8080/api/v1/users/1/password
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "oldPassword": "old",
+  "newPassword": "new"
+}

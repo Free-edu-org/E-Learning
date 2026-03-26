@@ -9,5 +9,7 @@ import pl.freeedu.backend.lesson.model.Lesson;
 public interface LessonMapper {
 
 	@Mapping(target = "groups", ignore = true)
+	@Mapping(source = "teacher.id", target = "teacherId")
+	@Mapping(source = "teacher.username", target = "teacherName")
 	LessonResponse toResponse(Lesson lesson);
 }

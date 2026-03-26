@@ -3,7 +3,7 @@ CREATE TABLE users (
     email VARCHAR(255) NOT NULL UNIQUE,
     username VARCHAR(255) NOT NULL UNIQUE,
     password TEXT NOT NULL,
-    role VARCHAR(20) NOT NULL, -- Enum: 'admin', 'student'
+    role ENUM('ADMIN', 'STUDENT', 'TEACHER') NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -16,6 +16,8 @@ CREATE TABLE lessons (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE INDEX idx_lesson_teacher_id ON lessons(teacher_id);
+
 CREATE TABLE achievements (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -25,7 +27,10 @@ CREATE TABLE achievements (
 
 CREATE TABLE user_groups (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    name TEXT NOT NULL,
+    name VARCHAR(255) NOT NULL UNIQUE,
     description TEXT NOT NULL,
+    teacher_id INT REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX idx_user_groups_teacher_id ON user_groups (teacher_id);

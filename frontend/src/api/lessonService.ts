@@ -10,6 +10,8 @@ export interface Lesson {
   title: string;
   theme: string;
   isActive: boolean;
+  teacherId?: number;
+  teacherName?: string;
   createdAt: string;
   groups: Group[];
 }

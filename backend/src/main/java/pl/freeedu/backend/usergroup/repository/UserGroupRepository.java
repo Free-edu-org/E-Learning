@@ -8,4 +8,6 @@ import pl.freeedu.backend.usergroup.model.UserGroup;
 public interface UserGroupRepository extends JpaRepository<UserGroup, Integer> {
 
 	boolean existsByName(String name);
+
+	java.util.List<UserGroup> findByTeacherId(Integer teacherId);
 }
