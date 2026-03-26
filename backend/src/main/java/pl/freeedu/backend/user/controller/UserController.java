@@ -11,6 +11,8 @@ import pl.freeedu.backend.user.dto.UserResponse;
 import pl.freeedu.backend.user.service.UserService;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -54,6 +56,13 @@ public class UserController {
 	@ResponseStatus(HttpStatus.CREATED)
 	public Mono<Void> registerStudent(@Valid @RequestBody Mono<RegisterUserRequest> request) {
 		return userService.registerStudent(request);
+	}
+
+	@Operation(summary = "List all students")
+	@GetMapping("/students")
+	@PreAuthorize("hasRole('ADMIN')")
+	public Mono<List<UserResponse>> getStudents() {
+		return userService.getStudents();
 	}
 
 	@Operation(summary = "Get user details", description = "Retrieve a user's details. Only available to the account owner or an admin.")

@@ -5,7 +5,9 @@ import { useAuth } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Login } from "./features/auth/Login";
 import { TeacherDashboard } from "./features/teacher/TeacherDashboard";
-import { Box, Typography } from "@mui/material";
+import { TeacherLessonTasks } from "./features/teacher/TeacherLessonTasks";
+import { StudentDashboard } from "./features/student/StudentDashboard";
+import { StudentLesson } from "./features/student/StudentLesson";
 
 /** Redirects to the correct dashboard based on the user's role. */
 function RoleBasedRedirect() {
@@ -15,12 +17,7 @@ function RoleBasedRedirect() {
     return <Navigate to="/teacher" replace />;
   }
 
-  // STUDENT fallback – placeholder until a student dashboard is built
-  return (
-    <Box sx={{ p: 4, textAlign: "center" }}>
-      <Typography variant="h5">Panel ucznia – wkrótce dostępny</Typography>
-    </Box>
-  );
+  return <Navigate to="/student" replace />;
 }
 
 function App() {
@@ -34,7 +31,15 @@ function App() {
             <Route element={<ProtectedRoute />}>
               <Route path="/" element={<RoleBasedRedirect />} />
               <Route path="/teacher" element={<TeacherDashboard />} />
-              {/* Add more protected routes here */}
+              <Route
+                path="/teacher/lesson/:lessonId/tasks"
+                element={<TeacherLessonTasks />}
+              />
+              <Route path="/student" element={<StudentDashboard />} />
+              <Route
+                path="/student/lesson/:lessonId"
+                element={<StudentLesson />}
+              />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />
