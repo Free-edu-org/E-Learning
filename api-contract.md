@@ -40,7 +40,7 @@ Default local development base URL is `http://localhost:8080`
 ### 2.1. Register Student
 - **URL**: `/api/v1/users/register`
 - **Method**: `POST`
-- **Description**: Registers a new user with the `STUDENT` role. Requires `ADMIN` authority.
+- **Description**: Registers a new user with the `STUDENT` role. Requires `ADMIN` or `TEACHER` authority. When created by `TEACHER`, backend automatically sets `teacherId` for that student.
 
 **Request Body (JSON):**
 ```json
@@ -59,7 +59,7 @@ Default local development base URL is `http://localhost:8080`
 - `USERNAME_ALREADY_TAKEN` (409 Conflict): Passed username is already in use.
 - `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
-- `FORBIDDEN` (403 Forbidden): Token is not an admin token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
 
 ---
 
@@ -84,7 +84,33 @@ Default local development base URL is `http://localhost:8080`
 - `USERNAME_ALREADY_TAKEN` (409 Conflict): Passed username is already in use.
 - `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
-- `FORBIDDEN` (403 Forbidden): Token is not an admin token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
+
+---
+
+### 2.2.1. Create Teacher
+- **URL**: `/api/v1/users/teacher`
+- **Method**: `POST`
+- **Description**: Registers a new user with the `TEACHER` role. Requires `ADMIN` authority.
+
+**Request Body (JSON):**
+```json
+{
+  "email": "teacher@example.com",
+  "username": "teacher1",
+  "password": "secureTeacherPassword"
+}
+```
+
+**Success (201 Created):**
+*(Empty Response Body)*
+
+**Known Errors:**
+- `EMAIL_ALREADY_TAKEN` (409 Conflict): Passed email is already in use.
+- `USERNAME_ALREADY_TAKEN` (409 Conflict): Passed username is already in use.
+- `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
 
 ---
 
@@ -113,7 +139,7 @@ Default local development base URL is `http://localhost:8080`
 ### 2.4. Get User Details
 - **URL**: `/api/v1/users/{id}`
 - **Method**: `GET`
-- **Description**: Retrieves user details. Requires `ADMIN` authority OR the requesting user ID must match the parameter ID.
+- **Description**: Retrieves user details. Requires `ADMIN` authority OR requester is the same user (`owner`) OR `TEACHER` authority with access only to students assigned to this teacher (`student.teacherId = currentTeacherId`).
 
 **Success (200 OK):**
 ```json
@@ -128,7 +154,7 @@ Default local development base URL is `http://localhost:8080`
 
 **Known Errors:**
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
-- `FORBIDDEN` (403 Forbidden): Lack of permissions (not an admin or owner).
+- `FORBIDDEN` (403 Forbidden): Lack of permissions (not admin, not owner, and no teacher-student relation).
 - `USER_NOT_FOUND` (404 Not Found): User does not exist.
 
 ---
@@ -162,7 +188,7 @@ Default local development base URL is `http://localhost:8080`
 - `USERNAME_ALREADY_TAKEN` (409 Conflict): Passed username is already in use.
 - `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
-- `FORBIDDEN` (403 Forbidden): Lack of permissions (not an admin or owner).
+- `FORBIDDEN` (403 Forbidden): Lack of permissions (not admin, not owner, and no teacher-student relation).
 - `USER_NOT_FOUND` (404 Not Found): User does not exist.
 
 ---
@@ -186,7 +212,7 @@ Default local development base URL is `http://localhost:8080`
 **Known Errors:**
 - `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
 - `INVALID_CREDENTIALS` (401 Unauthorized): Old password does not match or token is invalid.
-- `FORBIDDEN` (403 Forbidden): Lack of permissions (not an admin or owner).
+- `FORBIDDEN` (403 Forbidden): Lack of permissions (not admin, not owner, and no teacher-student relation).
 - `USER_NOT_FOUND` (404 Not Found): User does not exist.
 
 ---
@@ -201,7 +227,7 @@ Default local development base URL is `http://localhost:8080`
 
 **Known Errors:**
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
-- `FORBIDDEN` (403 Forbidden): Lack of permissions (not an admin or owner).
+- `FORBIDDEN` (403 Forbidden): Lack of permissions (not admin, not owner, and no teacher-student relation).
 - `USER_NOT_FOUND` (404 Not Found): User does not exist.
 
 ---
@@ -211,7 +237,7 @@ Default local development base URL is `http://localhost:8080`
 ### 3.1. Create User Group
 - **URL**: `/api/v1/user-groups`
 - **Method**: `POST`
-- **Description**: Creates a new user group. Group name must be unique. Requires `ADMIN` authority.
+- **Description**: Creates a new user group. Group name must be unique. Requires `ADMIN` or `TEACHER` authority.
 
 **Request Body (JSON):**
 ```json
@@ -236,14 +262,14 @@ Default local development base URL is `http://localhost:8080`
 - `GROUP_NAME_ALREADY_EXISTS` (409 Conflict): Group with this name already exists.
 - `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
-- `FORBIDDEN` (403 Forbidden): Token is not an admin token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
 
 ---
 
 ### 3.2. Get All User Groups
 - **URL**: `/api/v1/user-groups`
 - **Method**: `GET`
-- **Description**: Returns a list of all user groups. Requires `TEACHER` or `ADMIN` authority.
+- **Description**: Returns user groups visible to current user. `ADMIN` gets all groups, `TEACHER` gets only own groups (`teacher_id = currentUserId`).
 
 **Success (200 OK):**
 ```json
@@ -267,7 +293,7 @@ Default local development base URL is `http://localhost:8080`
 ### 3.3. Get User Group by ID
 - **URL**: `/api/v1/user-groups/{id}`
 - **Method**: `GET`
-- **Description**: Returns a single user group by its ID. Requires `ADMIN` authority.
+- **Description**: Returns a single user group by its ID. Requires `ADMIN` OR teacher who owns that group.
 
 **Success (200 OK):**
 ```json
@@ -283,14 +309,14 @@ Default local development base URL is `http://localhost:8080`
 **Known Errors:**
 - `USER_GROUP_NOT_FOUND` (404 Not Found): Group does not exist.
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
-- `FORBIDDEN` (403 Forbidden): Token is not an admin token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
 
 ---
 
 ### 3.4. Update User Group
 - **URL**: `/api/v1/user-groups/{id}`
 - **Method**: `PUT`
-- **Description**: Updates name and/or description of an existing group. Requires `ADMIN` authority.
+- **Description**: Updates name and/or description of an existing group. Requires `ADMIN` authority OR the requesting user must be the group owner (`TEACHER`).
 
 **Request Body (JSON):**
 ```json
@@ -316,14 +342,14 @@ Default local development base URL is `http://localhost:8080`
 - `GROUP_NAME_ALREADY_EXISTS` (409 Conflict): Another group with this name already exists.
 - `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
-- `FORBIDDEN` (403 Forbidden): Token is not an admin token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
 
 ---
 
 ### 3.5. Delete User Group
 - **URL**: `/api/v1/user-groups/{id}`
 - **Method**: `DELETE`
-- **Description**: Deletes a user group and all member associations. Does not delete user accounts. Requires `ADMIN` authority.
+- **Description**: Deletes a user group and all member associations. Does not delete user accounts. Requires `ADMIN` authority OR the requesting user must be the group owner (`TEACHER`).
 
 **Success (204 No Content):**
 *(Empty Response Body)*
@@ -331,14 +357,14 @@ Default local development base URL is `http://localhost:8080`
 **Known Errors:**
 - `USER_GROUP_NOT_FOUND` (404 Not Found): Group does not exist.
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
-- `FORBIDDEN` (403 Forbidden): Token is not an admin token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
 
 ---
 
 ### 3.6. Add Member to Group
 - **URL**: `/api/v1/user-groups/{id}/members/{userId}`
 - **Method**: `POST`
-- **Description**: Adds a student to a group. Only users with role `STUDENT` can be added. A student can belong to at most one group. Requires `ADMIN` authority.
+- **Description**: Adds a student to a group. Only users with role `STUDENT` can be added. A student can belong to at most one group. Requires `ADMIN` authority OR the requesting user must be the group owner (`TEACHER`).
 
 **Success (204 No Content):**
 *(Empty Response Body)*
@@ -349,14 +375,14 @@ Default local development base URL is `http://localhost:8080`
 - `INVALID_ROLE_FOR_GROUP` (400 Bad Request): User is not a student.
 - `STUDENT_ALREADY_IN_GROUP` (409 Conflict): Student is already assigned to a group.
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
-- `FORBIDDEN` (403 Forbidden): Token is not an admin token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
 
 ---
 
 ### 3.7. Remove Member from Group
 - **URL**: `/api/v1/user-groups/{id}/members/{userId}`
 - **Method**: `DELETE`
-- **Description**: Removes a student from a group. Does not delete the user account. Requires `ADMIN` authority.
+- **Description**: Removes a student from a group. Does not delete the user account. Requires `ADMIN` authority OR the requesting user must be the group owner (`TEACHER`).
 
 **Success (204 No Content):**
 *(Empty Response Body)*
@@ -365,7 +391,7 @@ Default local development base URL is `http://localhost:8080`
 - `USER_GROUP_NOT_FOUND` (404 Not Found): Group does not exist.
 - `MEMBER_NOT_IN_GROUP` (404 Not Found): User is not a member of this group.
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
-- `FORBIDDEN` (403 Forbidden): Token is not an admin token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
 
 ---
 
@@ -419,7 +445,7 @@ Poniżej znajdziesz opis endpointów do zarządzania lekcjami. Ścieżka bazowa:
 - **URL**: `/api/v1/lessons`
 - **Method**: `POST`
 - **Description**: Tworzy nową lekcję. Można jednocześnie przypisać lekcję do grup.
-- **Authorization**: `TEACHER`
+- **Authorization**: `TEACHER` lub `ADMIN`
 
 **Request Body (JSON):**
 ```json
@@ -444,7 +470,7 @@ Zwraca utworzoną reprezentację `LessonResponse` (jak w sekcji 4.1).
 - **URL**: `/api/v1/lessons/{id}`
 - **Method**: `PUT`
 - **Description**: Aktualizuje pola lekcji (title, theme, description, group assignment). Wymaga uprawnień nauczyciela.
-- **Authorization**: `TEACHER`
+- **Authorization**: `ADMIN` lub w�a�ciciel lekcji (`TEACHER`)
 
 **Request Body (JSON):**
 Używa tego samego kształtu co `LessonRequest` (patrz 4.2).
@@ -464,7 +490,7 @@ Zwraca zaktualizowaną reprezentację `LessonResponse`.
 - **URL**: `/api/v1/lessons/{id}/status`
 - **Method**: `PATCH`
 - **Description**: Szybka zmiana flagi `isActive` (włącz/wyłącz lekcję).
-- **Authorization**: `TEACHER`
+- **Authorization**: `ADMIN` lub w�a�ciciel lekcji (`TEACHER`)
 
 **Request Body (JSON):**
 ```json
@@ -484,8 +510,8 @@ Zwraca zaktualizowaną reprezentację `LessonResponse`.
 ### 4.5. Delete lesson
 - **URL**: `/api/v1/lessons/{id}`
 - **Method**: `DELETE`
-- **Description**: Usuwa lekcję. Wymaga roli `TEACHER`.
-- **Authorization**: `TEACHER`
+- **Description**: Usuwa lekcję. Dost�p dla `ADMIN` lub w�a�ciciela lekcji (`TEACHER`).
+- **Authorization**: `ADMIN` lub w�a�ciciel lekcji (`TEACHER`)
 
 **Success (204 No Content):** *(Empty Response Body)*
 
@@ -496,12 +522,14 @@ Zwraca zaktualizowaną reprezentację `LessonResponse`.
 
 ---
 
-## 5. Teacher Stats (`/api/v1/teacher/stats`)
+## 5. Teacher Dashboard (`/api/v1/teacher`)
+
+Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela (Architektura BFF). Odfiltrowuje dane tylko do zakresu `currentUserId` nauczyciela autoryzowanego przez JWT.
 
 ### 5.1. Get Dashboard Statistics
 - **URL**: `/api/v1/teacher/stats`
 - **Method**: `GET`
-- **Description**: Returns aggregated dashboard statistics: total and active lesson counts, active student count, and average answer score. Requires `TEACHER` or `ADMIN` authority.
+- **Description**: Returns aggregated dashboard statistics: total and active lesson counts, active student count, and average answer score. Requires `TEACHER` authority.
 
 **Success (200 OK):**
 ```json
@@ -515,14 +543,70 @@ Zwraca zaktualizowaną reprezentację `LessonResponse`.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `totalLessons` | Long | Total number of lessons in the system. |
-| `activeLessons` | Long | Number of lessons where `is_active = TRUE`. |
-| `activeStudents` | Long | Distinct students belonging to groups that have at least one lesson assigned. |
-| `avgScore` | Double | Average correctness score (0–100). Returns `0.0` when no answers exist (COALESCE guard). |
+| `totalLessons` | Long | Total number of lessons mapped to the requesting teacher. |
+| `activeLessons` | Long | Number of active lessons mapped to the requesting teacher. |
+| `activeStudents` | Long | Distinct students belonging to resolving groups. |
+| `avgScore` | Double | Average correctness score (0–100). |
 
 **Known Errors:**
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
 - `FORBIDDEN` (403 Forbidden): Token role does not permit access.
+
+---
+
+### 5.2. Get My Lessons
+- **URL**: `/api/v1/teacher/lessons`
+- **Method**: `GET`
+- **Description**: Pobiera listę lekcji wykreowanych i przypisanych WYŁĄCZNIE do odpytującego nauczyciela. Odciąża generyczny `LessonController` chroniąc przed dostępem do obcych materiałów.
+- **Authorization**: `TEACHER`
+
+**Success (200 OK):** Zwraca macierz obiektów `LessonResponse` (odpowiednik standardowego 4.1. Get list of lessons).
+
+---
+
+### 5.3. Get My Groups
+- **URL**: `/api/v1/teacher/my-groups`
+- **Method**: `GET`
+- **Description**: Odtworzenie logiki UserGroup dedykowanej pulpitu Nauczyciela. Zwraca wszystkie grupy stworzone przez logującego się Nauczyciela (`teacherId = currentUserId`).
+- **Authorization**: `TEACHER`
+
+**Success (200 OK):** Zwraca macierz elementów `UserGroupResponse` z wyliczoną ilością wpisanych do nich studentów.
+
+---
+
+### 5.4. Get My Students
+- **URL**: `/api/v1/teacher/students`
+- **Method**: `GET`
+- **Description**: Zwraca list� uczni�w przypisanych do aktualnie zalogowanego nauczyciela (`student.teacherId = currentTeacherId`).
+- **Authorization**: `TEACHER`
+
+**Success (200 OK):** Zwraca macierz element�w `UserResponse` (wy��cznie u�ytkownicy z rol� `STUDENT`).
+
+**Known Errors:**
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
+
+---
+
+## 6. Admin Dashboard (`/api/v1/admin`)
+
+Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
+
+### 6.1. Get Global Stats
+- **URL**: `/api/v1/admin/stats`
+- **Method**: `GET`
+- **Description**: Endpoint statystyk ogólnych dla panelu (placeholder). Wymaga `ADMIN`.
+
+---
+
+## 7. Student Dashboard (`/api/v1/student`)
+
+Warstwa BFF dla uczniów.
+
+### 7.1. Get Personal Progress
+- **URL**: `/api/v1/student/progress`
+- **Method**: `GET`
+- **Description**: Zwraca status lekcji, oceny i progres ucznia (placeholder). Wymaga `STUDENT`.
 
 ---
 
@@ -545,11 +629,11 @@ All endpoints secured by JWT may return a `401 Unauthorized` containing the `TOK
 In case of internal server errors, validation failures, or other unforeseen errors, the API will respond using a JSON structure mimicking RFC-7807 standard (with an added `code` field corresponding to Java `ErrorCode`):
 ```json
 {
-  "type": "/api/auth/register",
+  "type": "about:blank",
   "title": "Bad Request",
   "status": 400,
   "detail": "Validation failed: email: must not be blank",
-  "instance": "/api/auth/register",
+  "instance": "/api/v1/users/register",
   "code": "VALIDATION_FAILED"
 }
 ```
@@ -559,3 +643,6 @@ You can view and test the fully interactive endpoints using Swagger UI (provided
 Once the backend is running, navigate your browser to:
 - `http://localhost:8080/swagger-ui.html`
 Raw OpenAPI specs are also available at `http://localhost:8080/v3/api-docs`
+
+
+

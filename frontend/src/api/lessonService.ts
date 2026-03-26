@@ -10,6 +10,8 @@ export interface Lesson {
   title: string;
   theme: string;
   isActive: boolean;
+  teacherId?: number;
+  teacherName?: string;
   createdAt: string;
   groups: Group[];
 }
@@ -23,6 +25,7 @@ export interface TeacherStats {
 
 export const lessonService = {
   getLessons: () => fetchApi<Lesson[]>("/api/v1/lessons"),
-  getStats: () => fetchApi<TeacherStats>("/api/v1/teacher/stats"),
-  getGroups: () => fetchApi<Group[]>("/api/v1/user-groups"),
+  getTeacherLessons: () => fetchApi<Lesson[]>("/api/v1/teacher/lessons"),
+  getTeacherStats: () => fetchApi<TeacherStats>("/api/v1/teacher/stats"),
+  getTeacherGroups: () => fetchApi<Group[]>("/api/v1/teacher/my-groups"),
 };

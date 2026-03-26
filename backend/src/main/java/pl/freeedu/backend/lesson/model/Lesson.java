@@ -5,6 +5,8 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+import pl.freeedu.backend.user.model.User;
+
 @Entity
 @Table(name = "lessons")
 @Data
@@ -26,8 +28,9 @@ public class Lesson {
 	@Column(name = "is_active", nullable = false)
 	private Boolean isActive;
 
-	@Column(name = "teacher_id", nullable = false)
-	private Integer teacherId;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "teacher_id", nullable = false)
+	private User teacher;
 
 	@Column(name = "created_at", insertable = false, updatable = false)
 	private LocalDateTime createdAt;

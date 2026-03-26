@@ -68,6 +68,10 @@ export function TeacherDashboard() {
       .then(setUser)
       .catch((err: unknown) => {
         if (err instanceof ApiError) {
+          if (err.problem.status === 403) {
+            setErrorUser("Brak uprawnień do panelu nauczyciela.");
+            return;
+          }
           setErrorUser(err.problem.detail || "Nie udało się pobrać profilu.");
         } else {
           setErrorUser("Błąd połączenia z serwerem.");
@@ -79,16 +83,20 @@ export function TeacherDashboard() {
   // ── Fetch stats, lessons, and available groups ──
   useEffect(() => {
     Promise.all([
-      lessonService.getStats(),
-      lessonService.getLessons(),
-      lessonService.getGroups(),
+      lessonService.getTeacherStats(),
+      lessonService.getTeacherLessons(),
+      lessonService.getTeacherGroups(),
     ])
       .then(([s, l, g]) => {
         setStats(s);
         setLessons(l);
         setAvailableGroups(g);
       })
-      .catch(() => {
+      .catch((err: unknown) => {
+        if (err instanceof ApiError && err.problem.status === 403) {
+          setErrorData("Brak uprawnień do panelu nauczyciela.");
+          return;
+        }
         setErrorData("Nie udało się pobrać danych. Spróbuj ponownie.");
       })
       .finally(() => setLoadingData(false));

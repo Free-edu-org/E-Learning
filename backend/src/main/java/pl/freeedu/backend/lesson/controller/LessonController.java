@@ -45,7 +45,7 @@ public class LessonController {
 	@PostMapping
 	@PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
 	@ResponseStatus(HttpStatus.CREATED)
-	public Mono<LessonResponse> createLesson(@RequestBody Mono<LessonRequest> lessonRequest) {
+	public Mono<LessonResponse> createLesson(@Valid @RequestBody Mono<LessonRequest> lessonRequest) {
 		return lessonService.createLesson(lessonRequest);
 	}
 
@@ -54,7 +54,7 @@ public class LessonController {
 			@ApiResponse(responseCode = "400", description = "Invalid input data", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "404", description = "Lesson not found")})
 	@PutMapping("/{id}")
-	@PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
+	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #id))")
 	public Mono<LessonResponse> updateLesson(@PathVariable Integer id,
 			@Valid @RequestBody Mono<LessonRequest> lessonRequest) {
 		return lessonService.updateLesson(id, lessonRequest);
@@ -65,7 +65,7 @@ public class LessonController {
 			@ApiResponse(responseCode = "400", description = "Invalid input data", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "404", description = "Lesson not found")})
 	@PatchMapping("/{id}/status")
-	@PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
+	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #id))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public Mono<Void> updateLessonStatus(@PathVariable Integer id,
 			@Valid @RequestBody Mono<LessonStatusRequest> statusRequest) {
@@ -76,7 +76,7 @@ public class LessonController {
 	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Lesson successfully deleted"),
 			@ApiResponse(responseCode = "404", description = "Lesson not found")})
 	@DeleteMapping("/{id}")
-	@PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
+	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #id))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public Mono<Void> deleteLesson(@PathVariable Integer id) {
 		return lessonService.deleteLesson(id);

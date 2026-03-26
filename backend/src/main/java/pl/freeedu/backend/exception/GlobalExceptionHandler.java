@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.support.WebExchangeBindException;
 import org.springframework.web.server.ServerWebExchange;
 import pl.freeedu.backend.auth.exception.AuthException;
+import pl.freeedu.backend.lesson.exception.LessonException;
 import pl.freeedu.backend.user.exception.UserException;
 import pl.freeedu.backend.usergroup.exception.UserGroupException;
 import reactor.core.publisher.Mono;
@@ -42,6 +43,13 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(UserGroupException.class)
 	public Mono<ProblemDetail> handleUserGroupException(UserGroupException ex, ServerWebExchange exchange) {
 		log.warn("UserGroupException [{} {}]: {}", exchange.getRequest().getMethod(), exchange.getRequest().getPath(),
+				ex.getMessage());
+		return buildProblemDetail(ex.getErrorCode().getStatus(), ex.getMessage(), ex.getErrorCode().name(), exchange);
+	}
+
+	@ExceptionHandler(LessonException.class)
+	public Mono<ProblemDetail> handleLessonException(LessonException ex, ServerWebExchange exchange) {
+		log.warn("LessonException [{} {}]: {}", exchange.getRequest().getMethod(), exchange.getRequest().getPath(),
 				ex.getMessage());
 		return buildProblemDetail(ex.getErrorCode().getStatus(), ex.getMessage(), ex.getErrorCode().name(), exchange);
 	}
@@ -92,7 +100,7 @@ public class GlobalExceptionHandler {
 		ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(status, message);
 		problemDetail.setTitle(status.getReasonPhrase());
 		problemDetail.setProperty("code", code);
-		problemDetail.setType(URI.create(exchange.getRequest().getPath().value()));
+		problemDetail.setInstance(URI.create(exchange.getRequest().getPath().value()));
 		return Mono.just(problemDetail);
 	}
 }

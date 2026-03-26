@@ -16,6 +16,7 @@ import pl.freeedu.backend.usergroup.model.UserGroup;
 import pl.freeedu.backend.usergroup.model.UserInGroup;
 import pl.freeedu.backend.usergroup.repository.UserGroupRepository;
 import pl.freeedu.backend.usergroup.repository.UserInGroupRepository;
+import pl.freeedu.backend.security.service.SecurityService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -30,28 +31,32 @@ public class UserGroupService {
 	private final UserInGroupRepository userInGroupRepository;
 	private final UserRepository userRepository;
 	private final UserGroupMapper userGroupMapper;
+	private final SecurityService securityService;
 
 	public UserGroupService(UserGroupRepository userGroupRepository, UserInGroupRepository userInGroupRepository,
-			UserRepository userRepository, UserGroupMapper userGroupMapper) {
+			UserRepository userRepository, UserGroupMapper userGroupMapper, SecurityService securityService) {
 		this.userGroupRepository = userGroupRepository;
 		this.userInGroupRepository = userInGroupRepository;
 		this.userRepository = userRepository;
 		this.userGroupMapper = userGroupMapper;
+		this.securityService = securityService;
 	}
 
 	public Mono<UserGroupResponse> create(Mono<UserGroupRequest> requestMono) {
-		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
-			if (userGroupRepository.existsByName(request.getName())) {
-				throw new UserGroupException(UserGroupErrorCode.GROUP_NAME_ALREADY_EXISTS);
-			}
-			UserGroup userGroup = userGroupMapper.toUserGroup(request);
-			try {
-				UserGroup saved = userGroupRepository.save(userGroup);
-				return toResponseWithCount(saved);
-			} catch (DataIntegrityViolationException e) {
-				throw new UserGroupException(UserGroupErrorCode.GROUP_NAME_ALREADY_EXISTS);
-			}
-		}).subscribeOn(Schedulers.boundedElastic()));
+		return requestMono
+				.flatMap(request -> securityService.getCurrentUser().flatMap(currentUser -> Mono.fromCallable(() -> {
+					if (userGroupRepository.existsByName(request.getName())) {
+						throw new UserGroupException(UserGroupErrorCode.GROUP_NAME_ALREADY_EXISTS);
+					}
+					UserGroup userGroup = userGroupMapper.toUserGroup(request);
+					userGroup.setTeacherId(currentUser.getRole() == Role.TEACHER ? currentUser.getId() : null);
+					try {
+						UserGroup saved = userGroupRepository.save(userGroup);
+						return toResponseWithCount(saved);
+					} catch (DataIntegrityViolationException e) {
+						throw new UserGroupException(UserGroupErrorCode.GROUP_NAME_ALREADY_EXISTS);
+					}
+				}).subscribeOn(Schedulers.boundedElastic())));
 	}
 
 	public Mono<UserGroupResponse> getById(Integer id) {
@@ -68,6 +73,28 @@ public class UserGroupService {
 					.collect(Collectors.toMap(UserInGroupRepository.GroupCountProjection::getGroupId,
 							UserInGroupRepository.GroupCountProjection::getCount));
 			return userGroupRepository.findAll().stream().map(group -> toResponseWithCount(group, countMap)).toList();
+		}).subscribeOn(Schedulers.boundedElastic()).flatMapMany(Flux::fromIterable);
+	}
+
+	public Flux<UserGroupResponse> getVisibleGroups() {
+		return securityService.getCurrentUser().flatMapMany(user -> {
+			if (user.getRole() == Role.ADMIN) {
+				return getAll();
+			}
+			if (user.getRole() == Role.TEACHER) {
+				return getGroupsByTeacherId(user.getId());
+			}
+			return Flux.empty();
+		});
+	}
+
+	public Flux<UserGroupResponse> getGroupsByTeacherId(Integer teacherId) {
+		return Mono.fromCallable(() -> {
+			var countMap = userInGroupRepository.countAllByGroupId().stream()
+					.collect(Collectors.toMap(UserInGroupRepository.GroupCountProjection::getGroupId,
+							UserInGroupRepository.GroupCountProjection::getCount));
+			return userGroupRepository.findByTeacherId(teacherId).stream()
+					.map(group -> toResponseWithCount(group, countMap)).toList();
 		}).subscribeOn(Schedulers.boundedElastic()).flatMapMany(Flux::fromIterable);
 	}
 
@@ -93,6 +120,13 @@ public class UserGroupService {
 		return Mono.fromCallable(() -> {
 			UserGroup group = userGroupRepository.findById(id)
 					.orElseThrow(() -> new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND));
+			var memberIds = userInGroupRepository.findUserIdsByGroupId(id);
+			for (Integer memberId : memberIds) {
+				userRepository.findById(memberId).ifPresent(user -> {
+					user.setTeacherId(null);
+					userRepository.save(user);
+				});
+			}
 			userGroupRepository.delete(group);
 			return (Void) null;
 		}).subscribeOn(Schedulers.boundedElastic()).then();
@@ -100,9 +134,8 @@ public class UserGroupService {
 
 	public Mono<Void> addMember(Integer groupId, Integer userId) {
 		return Mono.fromCallable(() -> {
-			if (!userGroupRepository.existsById(groupId)) {
-				throw new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND);
-			}
+			UserGroup group = userGroupRepository.findById(groupId)
+					.orElseThrow(() -> new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND));
 			User user = userRepository.findById(userId)
 					.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 			if (user.getRole() != Role.STUDENT) {
@@ -113,6 +146,8 @@ public class UserGroupService {
 			}
 			try {
 				userInGroupRepository.save(UserInGroup.builder().userId(userId).groupId(groupId).build());
+				user.setTeacherId(group.getTeacherId());
+				userRepository.save(user);
 			} catch (DataIntegrityViolationException e) {
 				throw new UserGroupException(UserGroupErrorCode.STUDENT_ALREADY_IN_GROUP);
 			}
@@ -128,6 +163,10 @@ public class UserGroupService {
 			UserInGroup membership = userInGroupRepository.findByUserIdAndGroupId(userId, groupId)
 					.orElseThrow(() -> new UserGroupException(UserGroupErrorCode.MEMBER_NOT_IN_GROUP));
 			userInGroupRepository.delete(membership);
+			userRepository.findById(userId).ifPresent(user -> {
+				user.setTeacherId(null);
+				userRepository.save(user);
+			});
 			return (Void) null;
 		}).subscribeOn(Schedulers.boundedElastic()).then();
 	}

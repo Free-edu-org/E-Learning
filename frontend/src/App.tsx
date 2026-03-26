@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+﻿import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AppThemeProvider } from "./context/ThemeContext";
 import { AuthProvider } from "./context/AuthContext";
 import { useAuth } from "./context/AuthContext";
@@ -11,14 +11,24 @@ import { Box, Typography } from "@mui/material";
 function RoleBasedRedirect() {
   const { role } = useAuth();
 
-  if (role === "TEACHER" || role === "ADMIN") {
+  if (role === "TEACHER") {
     return <Navigate to="/teacher" replace />;
   }
 
-  // STUDENT fallback – placeholder until a student dashboard is built
+  if (role === "ADMIN") {
+    return (
+      <Box sx={{ p: 4, textAlign: "center" }}>
+        <Typography variant="h5">
+          Panel administratora - wkrótce dostępny
+        </Typography>
+      </Box>
+    );
+  }
+
+  // STUDENT fallback - placeholder until a student dashboard is built
   return (
     <Box sx={{ p: 4, textAlign: "center" }}>
-      <Typography variant="h5">Panel ucznia – wkrótce dostępny</Typography>
+      <Typography variant="h5">Panel ucznia - wkrótce dostępny</Typography>
     </Box>
   );
 }
@@ -33,8 +43,12 @@ function App() {
 
             <Route element={<ProtectedRoute />}>
               <Route path="/" element={<RoleBasedRedirect />} />
+            </Route>
+
+            {/* Zabezpieczenie przed wejściem na panel nauczyciela przez inne role */}
+            <Route element={<ProtectedRoute allowedRoles={["TEACHER"]} />}>
               <Route path="/teacher" element={<TeacherDashboard />} />
-              {/* Add more protected routes here */}
+              {/* Tutaj można dodać /admin/dashboard dla ADMIN */}
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />
