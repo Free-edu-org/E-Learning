@@ -1,47 +1,71 @@
 ---
-description: [zasady kodowania FreeEdu - zawsze stosuj w projekcie]
+description: [globalne zasady pracy agentow FreeEdu - stosuj zawsze]
 ---
 
-# Zasady deweloperskie i architektoniczne dla projektu FreeEdu - Wytyczne dla Antigravity
+# FreeEdu Engineering Agent Standard
 
-Zbiór nadrzędnych instrukcji definiujących, w jaki sposób jako asystent pracuję z kodem FreeEdu, by utrzymać narzucony przez Was wzorzec i zapewnić czystość projektu bez zbytecznych plików i refaktoryzacji, o którą nie było prośby.
+Ten dokument definiuje wspolne zasady pracy agentow w projekcie FreeEdu.
 
-## 1. Kodowanie Backendu (Java & Spring Boot)
+## 1. Zasada nadrzedna
 
-### Struktura logiczna i nazewnictwo (Pakiet `pl.freeedu.backend`):
-- **Wzorzec Warstwowy:** Kod bezwzględnie rygorystycznie należy dzielić na warstwy: `Controller` -> `Service` -> `Repository`. Nigdy nie wykonuj zapytań bazodanowych ani logiki biznesowej bezpośrednio w kontrolerach.
-- **Enity i Baza Danych:** Wszystkie tabele zarządzane we Flyway (`resources/db/migration`). Każda zmiana struktury bazy wymaga nowego pliku `V<X>_<Y>__nazwa_migracji.sql`. Nigdy nie edytuj wcześniej puszczonych plików migracji po za deweloperskim rollbackiem.
-- **DTOs:** Komunikacja API wyłącznie przez Data Transfer Objects z pakietu `dto`. Nigdy nie zwracaj ani nie przyjmuj obieków `@Entity` bezpośrednio z / do klienta. Narzucaj walidację używając paczki `jakarta.validation` (`@NotNull`, `@NotBlank`, itp.).
-- **Obsługa Błędów:** W kontrolerach używaj wyjątków i łap je globalnie, nie zwracaj ręcznie statusów z instrukcjami wewnątrz serwisów (używaj `GlobalExceptionHandler` korzystający np. z `@ControllerAdvice`). Szanuj typ wyjątków typu `ResourceNotFoundException`.
-- **Minimalizm zmian:** Edytuj tylko te pliki, które ewidentnie są celem taska. Zawsze sprawdzaj, czy dana metoda/helpernie istnieje już w aktualnych plikach klasy pobocznie (DRY).
+- `Code-first`: backend i frontend w repo sa zrodlem prawdy.
+- Dokumentacja i testy maja odzwierciedlac aktualny kod.
+- Agent ma dowozic wynik, nie tylko analize.
 
-### Operacje bazodanowe:
-- Korzystaj ze **Spring Data JPA**. Metody pomocnicze wydzielaj w `Repository` jako metody zadeklarowane z nazw, np. `findByUserIdAndLessonId(...)`.
-- Transakcje: Każdy proces zapisujący i oceniający wiele encji jednocześnie (np. Submity zadań ucznia) **MUSI** mieć adnotację `@Transactional` na poziomie Serwisu.
+## 2. Obowiazkowy flow pracy
 
-### Bezpieczeństwo i Autoryzacja:
-- Kod polega na Spring Security. Wszystkie endpointy należy bronić deklaratywnie, np. używając `@PreAuthorize("hasRole('TEACHER')")`. Weryfikuj prawa własności u użytkownika bezpośrednio w logice serwisu, czerpiąc z jego Tokenu via `SecurityContextHolder`.
+1. Analyze
+2. Plan
+3. Implement
+4. Verify
+5. Report
 
----
+Nie pomijaj `Verify`. Jezeli cos blokuje prace, zgloś blocker jawnie.
 
-## 2. Kodowanie Frontendu (React 19 & Vite & TS)
+## 3. Spojnosc zmian
 
-### Struktura komponentów (`src/`):
-- Aplikacja podzielona na logiczne funkcje - Feature-based architecture (katalogi `features/`, np. `features/lessons`, `features/tasks`).
-- Trzymaj się wyznaczonego ułożenia: wywołania z użyciem API umieszczaj w paczce `api/` (korzystając z Fetch/Axios), by oddzielić je od widoku.
-- Współdzielone elementy graficzne trzymaj w katalogu `components/`, a dane konfiguracyjne i autoryzację w `context/`.
+- Zmieniaj tylko to, co jest potrzebne do celu.
+- Zachowuj istniejące konwencje repo (nazwy, strukture plikow, styl kodu).
+- Nie wprowadzaj nowego wzorca architektonicznego bez wyraznej potrzeby.
 
-### Biblioteki widoku (MUI v7+):
-- **Material UI:** Interfejs jest zasilony biblioteką `@mui/material`. Nie twórz i nie wyciągaj natywnego CSS/HTML jeżeli do danego rozwiązania istnieje gotowy komponent z MUI (np. `Box`, `Button`, `TextField`, `Card`, `Modal`). Utrzymuj design system oparty o domyślny lub zastany Theme.
-- Stronnictwo (Routing) załatwiamy paczką `react-router-dom`. Dla asynchronicznych modyfikacji preferuj `useNavigate`. Dedykuj trasy jako odseparowane od siebie komponenty.
+## 4. Backend (Java/Spring)
 
-### Praktyki JS/TS:
-- Typowanie to mus - pisz jednoznaczne interfejsy `interface` bądź `type` na górze pliku dla wszystkich struktur danych wracających z Springa. 
-- Obsługuj stany ładowania (`isLoading` / `Spinner`) i błędów (`error` object / `Snackbar`), by frontend zachowywał się przewidywalnie podczas oczekiwania na żądania, i przestań renderować mocki dla już stworzonych i połączonych end-pointów z Backendem.
+- Trzymaj warstwy: `Controller -> Service -> Repository`.
+- Nie zwracaj encji bezposrednio do API; uzywaj DTO.
+- Zmiany schematu bazy tylko przez nowe migracje Flyway.
+- Security i role sprawdzaj deklaratywnie i logicznie (auth/authz + ownership).
 
----
+## 5. Frontend (React/TS/MUI)
 
-## 3. Złote Reguły Współpracy dla AI:
-1. **Zawsze stawiaj mniejsze kroki:** Nie przerabiaj kilkunastu plików naraz. Rozbuduj funkcjonalność precyzyjnie wykonując najpierw schemat danych z SQL'a, potem API backendu za jedną edycją, a na koniec odrębnie pracuj nad Frontendowym oknem.
-2. **Kompensacja (Nie łam tego, co działa):** Podczas pracy dopisuj rzeczy na spodzie, zachowując starsze metody kontrolerów jeżeli użytkownik nie żądał specyficznie ich usunięcia.
-3. **Nie wymyślaj kółka na nowo:** Kiedy użytkownik prosi o nowy endpoint albo widok React - sprawdź najpierw plik z aktualnymi endpointami i widokami aby pobrać konwencje logowania, uwierzytelniania, oraz kolorów, cieniowania i gridów UI, zamiast tworzyć sztywny kod odizolowany od spójnego obrazu marki FreeEdu.
+- Najpierw analizuj istniejace widoki i ich wzorce.
+- Zachowuj spojnosc UI/UX i style projektu.
+- Warstwa API w `frontend/src/api/*`; nie hardkoduj endpointow w widokach.
+- Obowiazkowe stany: loading, empty, error, success.
+
+## 6. API contract + testy
+
+- Najpierw aktualizuj `api-contract.md` na podstawie kodu.
+- Potem aktualizuj `.http`.
+- Potem aktualizuj/generuj testy.
+- Asercje testow maja byc precyzyjne (bez "moze byc X albo Y" bez dowodu).
+- Styl testow ma byc zgodny z istniejącymi testami w repo.
+
+## 7. Review standard
+
+- Najpierw findings, od najwiekszego ryzyka (`SEV-1 -> SEV-3`).
+- Kazdy finding: plik/linia, ryzyko, minimalny fix.
+- Potem `Verdict`: `APPROVE`, `APPROVE WITH CONDITIONS`, `REJECT`.
+
+## 8. Definition of Done
+
+- Kod zgodny z wymaganiem i spójny z repo.
+- Kontrakt i dokumentacja zaktualizowane.
+- Testy przechodza.
+- Znane luki/blokery jawnie zaraportowane.
+
+## 9. Aktywne skille i ich rola
+
+- `freeedu-jira-task-generator`: opisy zadan Jira.
+- `freeedu-api-test-auditor`: kontrakt + `.http` + testy API.
+- `freeedu-review-auditor`: rygorystyczny review i werdykt.
+- `freeedu-frontend-view-implementer`: implementacja/edycja widokow frontend.
