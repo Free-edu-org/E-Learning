@@ -44,7 +44,21 @@ public class UserService {
 	}
 
 	public Mono<Void> registerStudent(Mono<RegisterUserRequest> requestMono) {
-		return registerUser(requestMono, (request, password) -> userMapper.toStudentUser(request, password));
+		return requestMono
+				.flatMap(request -> securityService.getCurrentUser().flatMap(currentUser -> Mono.fromCallable(() -> {
+					if (userRepository.existsByEmail(request.getEmail())) {
+						throw new UserException(UserErrorCode.EMAIL_ALREADY_TAKEN);
+					}
+					if (userRepository.existsByUsername(request.getUsername())) {
+						throw new UserException(UserErrorCode.USERNAME_ALREADY_TAKEN);
+					}
+					User user = userMapper.toStudentUser(request, passwordEncoder.encode(request.getPassword()));
+					if (currentUser.getRole() == Role.TEACHER) {
+						user.setTeacherId(currentUser.getId());
+					}
+					userRepository.save(user);
+					return (Void) null;
+				}).subscribeOn(Schedulers.boundedElastic())));
 	}
 
 	private Mono<Void> registerUser(Mono<RegisterUserRequest> requestMono,

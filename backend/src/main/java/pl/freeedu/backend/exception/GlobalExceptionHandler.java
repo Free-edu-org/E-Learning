@@ -61,7 +61,6 @@ public class GlobalExceptionHandler {
 				ex.getMessage());
 		return buildProblemDetail(ex.getErrorCode().getStatus(), ex.getMessage(), ex.getErrorCode().name(), exchange);
 	}
-
 	@ExceptionHandler(WebExchangeBindException.class)
 	public Mono<ProblemDetail> handleValidationException(WebExchangeBindException ex, ServerWebExchange exchange) {
 		String errors = ex.getBindingResult().getFieldErrors().stream()
@@ -108,7 +107,7 @@ public class GlobalExceptionHandler {
 		ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(status, message);
 		problemDetail.setTitle(status.getReasonPhrase());
 		problemDetail.setProperty("code", code);
-		problemDetail.setType(URI.create(exchange.getRequest().getPath().value()));
+		problemDetail.setInstance(URI.create(exchange.getRequest().getPath().value()));
 		return Mono.just(problemDetail);
 	}
 }

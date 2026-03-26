@@ -74,7 +74,8 @@ describe('Users API (/api/v1/users)', () => {
             setAuthToken(staticStudent1Token); // Student trying to create user
             const dummyUser = { email: `test2${uniqueId}@example.com`, username: `test2${uniqueId}`, password: 'password123' };
             const response = await apiClient.post('/users/register', dummyUser);
-            expect([401, 403]).toContain(response.status); // Some frameworks return 401 instead of 403 for unauthorized paths
+            expect(response.status).toBe(403);
+            expect(response.data.code).toBe('FORBIDDEN');
         });
 
         it('should fail with EMAIL_ALREADY_TAKEN (409 Conflict)', async () => {
@@ -132,7 +133,8 @@ describe('Users API (/api/v1/users)', () => {
                 username: `adminAttempt${uniqueId}`,
                 password: 'password123'
             });
-            expect([401, 403]).toContain(response.status);
+            expect(response.status).toBe(403);
+            expect(response.data.code).toBe('FORBIDDEN');
         });
 
         it('should fail with EMAIL_ALREADY_TAKEN for admin creation (409 Conflict)', async () => {
@@ -211,7 +213,8 @@ describe('Users API (/api/v1/users)', () => {
             it('should deny access if ID does not match and not ADMIN (403 Forbidden)', async () => {
                 setAuthToken(staticStudent2Token); // Use student 2 to request student 1
                 const response = await apiClient.get(`/users/${newStudentId}`);
-                expect([403, 401]).toContain(response.status);
+                expect(response.status).toBe(403);
+                expect(response.data.code).toBe('FORBIDDEN');
             });
 
             it('should return 404 for non-existent user if ADMIN (404 NOT FOUND)', async () => {
@@ -246,7 +249,8 @@ describe('Users API (/api/v1/users)', () => {
                 setAuthToken(staticStudent2Token); // student2 token
                 const updateData = { email: `some.email.${uniqueId}@example.com`, username: `someUser${uniqueId}` };
                 const response = await apiClient.put(`/users/${newStudentId}`, updateData); // accessing newStudentId
-                expect([401, 403]).toContain(response.status);
+                expect(response.status).toBe(403);
+                expect(response.data.code).toBe('FORBIDDEN');
             });
 
             it('should fail with VALIDATION_FAILED for invalid input (400 Bad Request)', async () => {
@@ -315,7 +319,8 @@ describe('Users API (/api/v1/users)', () => {
             it('should deny student from changing another user password (403 Forbidden)', async () => {
                 setAuthToken(staticStudent2Token);
                 const response = await apiClient.put(`/users/${newStudentId}/password`, { oldPassword: '...', newPassword: '...' });
-                expect([401, 403]).toContain(response.status);
+                expect(response.status).toBe(403);
+                expect(response.data.code).toBe('FORBIDDEN');
             });
 
             it('should fail with INVALID_CREDENTIALS if old password is wrong (401 Unauthorized)', async () => {
@@ -362,7 +367,8 @@ describe('Users API (/api/v1/users)', () => {
             it('should deny student from deleting another user profile (403 Forbidden)', async () => {
                 setAuthToken(staticStudent2Token);
                 const response = await apiClient.delete(`/users/${tempUserId}`);
-                expect([401, 403]).toContain(response.status);
+                expect(response.status).toBe(403);
+                expect(response.data.code).toBe('FORBIDDEN');
             });
 
             it('should allow user self-delete (204 No Content)', async () => {
@@ -381,8 +387,8 @@ describe('Users API (/api/v1/users)', () => {
                 // Verify user is gone
                 setAuthToken(newStudentToken);
                 const meResponse = await apiClient.get('/users/me');
-                // Could be 401 if token is invalidated or 404
-                expect([404, 401]).toContain(meResponse.status);
+                expect(meResponse.status).toBe(401);
+                expect(meResponse.data === '' || meResponse.data == null).toBe(true);
             });
 
             it('should return 404 when deleting already deleted user (404 NOT FOUND)', async () => {

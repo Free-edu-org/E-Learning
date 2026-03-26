@@ -30,6 +30,9 @@ public interface UserInGroupRepository extends JpaRepository<UserInGroup, Intege
 	@Query("SELECT u.groupId as groupId, COUNT(u) as count FROM UserInGroup u GROUP BY u.groupId")
 	List<GroupCountProjection> countAllByGroupId();
 
+	@Query("SELECT u.userId FROM UserInGroup u WHERE u.groupId = :groupId")
+	List<Integer> findUserIdsByGroupId(Integer groupId);
+
 	interface GroupCountProjection {
 		Integer getGroupId();
 		Long getCount();

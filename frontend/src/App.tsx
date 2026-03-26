@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Box, Typography } from "@mui/material";
 import { AppThemeProvider } from "./context/ThemeContext";
 import { AuthProvider } from "./context/AuthContext";
 import { useAuth } from "./context/AuthContext";
@@ -13,8 +14,12 @@ import { StudentLesson } from "./features/student/StudentLesson";
 function RoleBasedRedirect() {
   const { role } = useAuth();
 
-  if (role === "TEACHER" || role === "ADMIN") {
+  if (role === "TEACHER") {
     return <Navigate to="/teacher" replace />;
+  }
+
+  if (role === "ADMIN") {
+    return <Navigate to="/admin" replace />;
   }
 
   return <Navigate to="/student" replace />;
@@ -32,17 +37,33 @@ function App() {
               <Route path="/" element={<RoleBasedRedirect />} />
             </Route>
 
-            {/* Zabezpieczenie na przyszlosc przed wejsciem na Panel przez zwyklego usera */}
-            <Route element={<ProtectedRoute allowedRoles={["TEACHER", "ADMIN"]} />}>
+            {/* Zabezpieczenie przed wejœciem na panel nauczyciela przez inne role */}
+            <Route element={<ProtectedRoute allowedRoles={["TEACHER"]} />}>
               <Route path="/teacher" element={<TeacherDashboard />} />
               <Route
                 path="/teacher/lesson/:lessonId/tasks"
                 element={<TeacherLessonTasks />}
               />
+            </Route>
+
+            <Route element={<ProtectedRoute allowedRoles={["STUDENT"]} />}>
               <Route path="/student" element={<StudentDashboard />} />
               <Route
                 path="/student/lesson/:lessonId"
                 element={<StudentLesson />}
+              />
+            </Route>
+
+            <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+              <Route
+                path="/admin"
+                element={
+                  <Box sx={{ p: 4, textAlign: "center" }}>
+                    <Typography variant="h5">
+                      Panel administratora - wkrótce dostêpny
+                    </Typography>
+                  </Box>
+                }
               />
             </Route>
 

@@ -50,11 +50,11 @@ Zatrzymanie kontenerów (bez usuwania danych z bazy MySQL ograniczonych do wolum
 docker-compose stop
 ```
 
-### User data in seed (for testing purposes):
-* Admin: admin@szkola.pl admin1
-* Students:
-* *  student1@edu.pl student1
-* *  student2@edu.pl student2
+### Dane testowe użytkowników (seed)
+- Admin: `username: admin_marek`, `email: admin@szkola.pl`, `hasło: admin1`
+- Teacher: `username: pan_tomasz`, `email: teacher@szkola.pl`, `hasło: admin1`
+- Student: `username: jan_kowalski`, `email: student1@edu.pl`, `hasło: student1`
+- Student: `username: anna_nowak`, `email: student2@edu.pl`, `hasło: student2`
 
 ---
 

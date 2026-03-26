@@ -130,7 +130,8 @@ describe('User Groups API (/api/v1/user-groups)', () => {
                 description: 'Student tries to create'
             });
 
-            expect([401, 403]).toContain(response.status);
+            expect(response.status).toBe(403);
+            expect(response.data.code).toBe('FORBIDDEN');
         });
     });
 
@@ -174,7 +175,8 @@ describe('User Groups API (/api/v1/user-groups)', () => {
             setAuthToken(studentToken);
             const response = await apiClient.get('/user-groups');
 
-            expect([401, 403]).toContain(response.status);
+            expect(response.status).toBe(403);
+            expect(response.data.code).toBe('FORBIDDEN');
         });
     });
 
@@ -221,7 +223,8 @@ describe('User Groups API (/api/v1/user-groups)', () => {
             setAuthToken(studentToken);
             const response = await apiClient.get(`/user-groups/${existingGroupId}`);
 
-            expect([401, 403]).toContain(response.status);
+            expect(response.status).toBe(403);
+            expect(response.data.code).toBe('FORBIDDEN');
         });
     });
 
@@ -327,7 +330,8 @@ describe('User Groups API (/api/v1/user-groups)', () => {
                 description: 'Student desc'
             });
 
-            expect([401, 403]).toContain(response.status);
+            expect(response.status).toBe(403);
+            expect(response.data.code).toBe('FORBIDDEN');
         });
     });
 
@@ -446,7 +450,8 @@ describe('User Groups API (/api/v1/user-groups)', () => {
             setAuthToken(studentToken);
             const response = await apiClient.post(`/user-groups/${testGroupId}/members/${newStudentId}`);
 
-            expect([401, 403]).toContain(response.status);
+            expect(response.status).toBe(403);
+            expect(response.data.code).toBe('FORBIDDEN');
         });
     });
 
@@ -499,7 +504,8 @@ describe('User Groups API (/api/v1/user-groups)', () => {
             setAuthToken(studentToken);
             const response = await apiClient.delete(`/user-groups/${testGroupId}/members/${removableStudentId}`);
 
-            expect([401, 403]).toContain(response.status);
+            expect(response.status).toBe(403);
+            expect(response.data.code).toBe('FORBIDDEN');
         });
 
         it('should fail for non-existent group (404 USER_GROUP_NOT_FOUND)', async () => {
@@ -597,7 +603,8 @@ describe('User Groups API (/api/v1/user-groups)', () => {
             setAuthToken(studentToken);
             const response = await apiClient.delete(`/user-groups/${groupToDeleteId}`);
 
-            expect([401, 403]).toContain(response.status);
+            expect(response.status).toBe(403);
+            expect(response.data.code).toBe('FORBIDDEN');
         });
 
         it('should delete group with members as ADMIN (204 No Content)', async () => {
@@ -691,16 +698,16 @@ describe('User Groups API (/api/v1/user-groups)', () => {
             expect(response.data.code).toBe('VALIDATION_FAILED');
         });
 
-        it('should handle creating groups with very long names', async () => {
+        it('should create group with a long unique name (boundary case)', async () => {
             setAuthToken(adminToken);
-            const longName = 'A'.repeat(255);
+            const longName = `${'A'.repeat(230)}${uniqueId}`;
             const response = await apiClient.post('/user-groups', {
                 name: longName,
                 description: 'Long name group'
             });
 
-            // Should either succeed (200/201) or fail gracefully (400/500) — not crash
-            expect([201, 400, 409, 500]).toContain(response.status);
+            expect(response.status).toBe(201);
+            expect(response.data.name).toBe(longName);
         });
 
         it('should return proper ProblemDetail structure on error', async () => {
@@ -708,7 +715,10 @@ describe('User Groups API (/api/v1/user-groups)', () => {
             const response = await apiClient.get('/user-groups/9999999');
 
             expect(response.status).toBe(404);
-            expect(response.data).toHaveProperty('type');
+            // `type` can be omitted by current backend serializer (about:blank default)
+            if (Object.prototype.hasOwnProperty.call(response.data, 'type')) {
+                expect(typeof response.data.type).toBe('string');
+            }
             expect(response.data).toHaveProperty('title');
             expect(response.data).toHaveProperty('status', 404);
             expect(response.data).toHaveProperty('detail');

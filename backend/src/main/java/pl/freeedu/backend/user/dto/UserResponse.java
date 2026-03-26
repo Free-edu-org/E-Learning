@@ -17,5 +17,6 @@ public class UserResponse {
 	private String email;
 	private String username;
 	private Role role;
+	private Integer teacherId;
 	private LocalDateTime createdAt;
 }
