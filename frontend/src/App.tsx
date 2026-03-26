@@ -18,7 +18,9 @@ function RoleBasedRedirect() {
   if (role === "ADMIN") {
     return (
       <Box sx={{ p: 4, textAlign: "center" }}>
-        <Typography variant="h5">Panel administratora - wkrótce dostępny</Typography>
+        <Typography variant="h5">
+          Panel administratora - wkrótce dostępny
+        </Typography>
       </Box>
     );
   }
