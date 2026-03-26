@@ -18,7 +18,9 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import java.util.*;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -40,12 +42,8 @@ public class LessonService {
 
 	public Flux<LessonResponse> getLessons(String search, Integer groupId, Boolean status, String sort) {
 		return Mono.fromCallable(() -> {
-			// Pobranie wszystkich lekcji, a następnie filtr i sort w Javie.
-			// To podejście proste i zgodne ze stylem projektu; można zmienić na zapytanie
-			// DB.
 			List<Lesson> all = lessonRepository.findAll();
 
-			// Filtry
 			Stream<Lesson> stream = all.stream();
 			if (search != null && !search.isBlank()) {
 				String s = search.toLowerCase();
@@ -54,32 +52,29 @@ public class LessonService {
 			}
 			if (status != null) {
 				stream = stream.filter(l -> Objects.equals(status, l.getIsActive()));
-				// simpler: stream = stream.filter(l -> status.equals(l.getIsActive()));
 			}
 			List<Lesson> filtered = stream.collect(Collectors.toList());
 
-			// Jeśli groupId podane — tylko lessons powiązane z daną grupą
 			if (groupId != null) {
 				List<Integer> lessonIdsForGroup = groupHasLessonRepository.findLessonIdsByGroupId(groupId);
 				filtered = filtered.stream().filter(l -> lessonIdsForGroup.contains(l.getId()))
 						.collect(Collectors.toList());
 			}
 
-			// Sortowanie
 			Comparator<Lesson> comparator = Comparator.comparing(Lesson::getCreatedAt,
-					Comparator.nullsLast(Comparator.naturalOrder()));
-			if ("date_desc".equalsIgnoreCase(sort) || sort == null) {
-				comparator = Comparator.comparing(Lesson::getCreatedAt,
-						Comparator.nullsLast(Comparator.reverseOrder()));
-			} else if ("date_asc".equalsIgnoreCase(sort)) {
+					Comparator.nullsLast(Comparator.reverseOrder()));
+			if ("date_asc".equalsIgnoreCase(sort) || "createdAt:asc".equalsIgnoreCase(sort)) {
 				comparator = Comparator.comparing(Lesson::getCreatedAt,
 						Comparator.nullsLast(Comparator.naturalOrder()));
-			} else if ("name_asc".equalsIgnoreCase(sort)) {
+			} else if ("name_asc".equalsIgnoreCase(sort) || "title:asc".equalsIgnoreCase(sort)) {
 				comparator = Comparator.comparing(Lesson::getTitle,
 						Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER));
-			} else if ("name_desc".equalsIgnoreCase(sort)) {
+			} else if ("name_desc".equalsIgnoreCase(sort) || "title:desc".equalsIgnoreCase(sort)) {
 				comparator = Comparator.comparing(Lesson::getTitle, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER))
 						.reversed();
+			} else if ("createdAt:desc".equalsIgnoreCase(sort)) {
+				comparator = Comparator.comparing(Lesson::getCreatedAt,
+						Comparator.nullsLast(Comparator.reverseOrder()));
 			}
 			filtered.sort(comparator);
 
@@ -87,7 +82,6 @@ public class LessonService {
 		}).subscribeOn(Schedulers.boundedElastic()).flatMapMany(Flux::fromIterable)
 				.flatMap(lesson -> Mono.fromCallable(() -> {
 					LessonResponse resp = lessonMapper.toResponse(lesson);
-					// pobierz grupy i ustaw
 					List<GroupDto> groups = groupHasLessonRepository.findGroupsForLesson(lesson.getId());
 					resp.setGroups(groups);
 					return resp;
@@ -98,12 +92,10 @@ public class LessonService {
 		return requestMono
 				.flatMap(request -> securityService.getCurrentUserId().flatMap(teacherId -> Mono.fromCallable(() -> {
 					User teacherRef = User.builder().id(teacherId).build();
-					Lesson l = Lesson.builder().title(request.getTitle()).theme(request.getTheme()).teacher(teacherRef)
-							.isActive(Boolean.FALSE) // default false as spec
-							.build();
-					Lesson saved = lessonRepository.save(l);
+					Lesson lesson = Lesson.builder().title(request.getTitle()).theme(request.getTheme())
+							.teacher(teacherRef).isActive(Boolean.FALSE).build();
+					Lesson saved = lessonRepository.save(lesson);
 
-					// przypisz do grup (opcjonalnie)
 					if (request.getGroupIds() != null && !request.getGroupIds().isEmpty()) {
 						List<GroupHasLesson> relations = request.getGroupIds().stream()
 								.map(gid -> GroupHasLesson.builder().groupId(gid).lessonId(saved.getId()).build())
@@ -121,68 +113,45 @@ public class LessonService {
 		return requestMono.flatMap(request -> Mono
 				.fromCallable(() -> lessonRepository.findById(id)
 						.orElseThrow(() -> new LessonException(LessonErrorCode.LESSON_NOT_FOUND)))
-				.subscribeOn(Schedulers.boundedElastic())
-				.flatMap(lesson -> securityService.isOwnerOrAdmin(lesson.getTeacher().getId()).flatMap(hasAccess -> {
-					if (!Boolean.TRUE.equals(hasAccess)) {
-						return Mono.error(new LessonException(LessonErrorCode.NOT_LESSON_OWNER));
+				.subscribeOn(Schedulers.boundedElastic()).flatMap(lesson -> Mono.fromCallable(() -> {
+					lesson.setTitle(request.getTitle());
+					lesson.setTheme(request.getTheme());
+					Lesson saved = lessonRepository.save(lesson);
+
+					if (request.getGroupIds() != null) {
+						groupHasLessonRepository.deleteByLessonId(saved.getId());
+						List<GroupHasLesson> relations = request.getGroupIds().stream()
+								.map(gid -> GroupHasLesson.builder().groupId(gid).lessonId(saved.getId()).build())
+								.collect(Collectors.toList());
+						groupHasLessonRepository.saveAll(relations);
 					}
-					return Mono.fromCallable(() -> {
-						lesson.setTitle(request.getTitle());
-						lesson.setTheme(request.getTheme());
-						Lesson saved = lessonRepository.save(lesson);
 
-						// opcjonalna zmiana relacji grup: jeżeli request.groupIds != null -> odśwież
-						// relacje
-						if (request.getGroupIds() != null) {
-							// usuń obecne relacje i zapisz nowe
-							groupHasLessonRepository.deleteByLessonId(saved.getId());
-							List<GroupHasLesson> relations = request.getGroupIds().stream()
-									.map(gid -> GroupHasLesson.builder().groupId(gid).lessonId(saved.getId()).build())
-									.collect(Collectors.toList());
-							groupHasLessonRepository.saveAll(relations);
-						}
-
-						LessonResponse resp = lessonMapper.toResponse(saved);
-						resp.setGroups(groupHasLessonRepository.findGroupsForLesson(saved.getId()));
-						return resp;
-					}).subscribeOn(Schedulers.boundedElastic());
-				})));
+					Lesson reloaded = lessonRepository.findById(saved.getId()).orElse(saved);
+					LessonResponse resp = lessonMapper.toResponse(reloaded);
+					resp.setGroups(groupHasLessonRepository.findGroupsForLesson(saved.getId()));
+					return resp;
+				}).subscribeOn(Schedulers.boundedElastic())));
 	}
 
 	public Mono<Void> updateLessonStatus(Integer id, Mono<LessonStatusRequest> statusMono) {
 		return statusMono.flatMap(statusReq -> Mono
 				.fromCallable(() -> lessonRepository.findById(id)
 						.orElseThrow(() -> new LessonException(LessonErrorCode.LESSON_NOT_FOUND)))
-				.subscribeOn(Schedulers.boundedElastic())
-				.flatMap(lesson -> securityService.isOwnerOrAdmin(lesson.getTeacher().getId()).flatMap(hasAccess -> {
-					if (!Boolean.TRUE.equals(hasAccess)) {
-						return Mono.error(new LessonException(LessonErrorCode.NOT_LESSON_OWNER));
-					}
-					return Mono.fromCallable(() -> {
-						lesson.setIsActive(statusReq.getIsActive());
-						lessonRepository.save(lesson);
-						return (Void) null;
-					}).subscribeOn(Schedulers.boundedElastic());
-				})));
+				.subscribeOn(Schedulers.boundedElastic()).flatMap(lesson -> Mono.fromCallable(() -> {
+					lesson.setIsActive(statusReq.getIsActive());
+					lessonRepository.save(lesson);
+					return (Void) null;
+				}).subscribeOn(Schedulers.boundedElastic())));
 	}
 
 	public Mono<Void> deleteLesson(Integer id) {
 		return Mono
 				.fromCallable(() -> lessonRepository.findById(id)
 						.orElseThrow(() -> new LessonException(LessonErrorCode.LESSON_NOT_FOUND)))
-				.subscribeOn(Schedulers.boundedElastic())
-				.flatMap(lesson -> securityService.isOwnerOrAdmin(lesson.getTeacher().getId()).flatMap(hasAccess -> {
-					if (!Boolean.TRUE.equals(hasAccess)) {
-						return Mono.error(new LessonException(LessonErrorCode.NOT_LESSON_OWNER));
-					}
-					return Mono.fromCallable(() -> {
-						// kasowanie kaskadowe z tabeli group_has_lesson powinno być zapewnione przez
-						// migracje DB,
-						// ale usuwamy explicite relacje tutaj, żeby być bezpiecznym:
-						groupHasLessonRepository.deleteByLessonId(id);
-						lessonRepository.delete(lesson);
-						return (Void) null;
-					}).subscribeOn(Schedulers.boundedElastic());
-				})).then();
+				.subscribeOn(Schedulers.boundedElastic()).flatMap(lesson -> Mono.fromCallable(() -> {
+					groupHasLessonRepository.deleteByLessonId(id);
+					lessonRepository.delete(lesson);
+					return (Void) null;
+				}).subscribeOn(Schedulers.boundedElastic())).then();
 	}
 }
