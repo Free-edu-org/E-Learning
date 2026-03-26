@@ -9,7 +9,8 @@ public enum UserErrorCode implements ErrorCode {
 	USER_NOT_FOUND("User not found", HttpStatus.NOT_FOUND), EMAIL_ALREADY_TAKEN("Email is already taken",
 			HttpStatus.CONFLICT), USERNAME_ALREADY_TAKEN("Username is already taken",
 					HttpStatus.CONFLICT), INVALID_TEACHER_ASSIGNMENT("Selected teacher must have role TEACHER",
-							HttpStatus.BAD_REQUEST);
+							HttpStatus.BAD_REQUEST), INVALID_STUDENT_ASSIGNMENT("Selected user must have role STUDENT",
+									HttpStatus.BAD_REQUEST);
 
 	private final String defaultMessage;
 	private final HttpStatus status;

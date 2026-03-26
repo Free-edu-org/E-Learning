@@ -17,6 +17,8 @@ describe('User Groups API (/api/v1/user-groups)', () => {
 
     let adminToken;
     let studentToken;
+    const createdGroupIds = new Set();
+    const createdUserIds = new Set();
 
     beforeAll(async () => {
         let res = await apiClient.post('/auth/login', {
@@ -32,6 +34,42 @@ describe('User Groups API (/api/v1/user-groups)', () => {
         studentToken = res.data.token;
     });
 
+    async function trackStudent(studentData) {
+        setAuthToken(adminToken);
+        let response = await apiClient.post('/users/register', studentData);
+        expect(response.status).toBe(201);
+
+        response = await apiClient.post('/auth/login', {
+            identifier: studentData.username,
+            password: studentData.password
+        });
+        expect(response.status).toBe(200);
+
+        setAuthToken(response.data.token);
+        response = await apiClient.get('/users/me');
+        createdUserIds.add(response.data.id);
+        return {
+            id: response.data.id,
+            token: response.data.token
+        };
+    }
+
+    afterAll(async () => {
+        setAuthToken(adminToken);
+
+        for (const groupId of createdGroupIds) {
+            const response = await apiClient.delete(`/user-groups/${groupId}`);
+            expect([204, 404]).toContain(response.status);
+        }
+
+        for (const userId of createdUserIds) {
+            const response = await apiClient.delete(`/users/${userId}`);
+            expect([204, 404]).toContain(response.status);
+        }
+
+        setAuthToken(null);
+    });
+
     // ─── 3.1 CREATE USER GROUP ────────────────────────────────────────
 
     describe('POST /api/v1/user-groups (Create)', () => {
@@ -41,6 +79,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
                 name: `TestGroup ${uniqueId}`,
                 description: 'Opis testowej grupy'
             });
+            createdGroupIds.add(response.data.id);
 
             expect(response.status).toBe(201);
             expect(response.data).toHaveProperty('id');
@@ -237,6 +276,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
                 description: 'Will be updated'
             });
             groupToUpdateId = res.data.id;
+            createdGroupIds.add(groupToUpdateId);
         });
 
         it('should update group name and description as ADMIN (200 OK)', async () => {
@@ -347,6 +387,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
                 description: 'Group for member tests'
             });
             testGroupId = groupRes.data.id;
+            createdGroupIds.add(testGroupId);
 
             // Create a new student who is NOT in any group
             const studentData = {
@@ -354,17 +395,9 @@ describe('User Groups API (/api/v1/user-groups)', () => {
                 username: `memberStudent${uniqueId}`,
                 password: 'password123'
             };
-            await apiClient.post('/users/register', studentData);
-
-            const loginRes = await apiClient.post('/auth/login', {
-                identifier: studentData.username,
-                password: studentData.password
-            });
-            newStudentToken = loginRes.data.token;
-
-            setAuthToken(newStudentToken);
-            const meRes = await apiClient.get('/users/me');
-            newStudentId = meRes.data.id;
+            const student = await trackStudent(studentData);
+            newStudentToken = student.token;
+            newStudentId = student.id;
 
             // Get admin user ID for INVALID_ROLE_FOR_GROUP test
             setAuthToken(adminToken);
@@ -405,6 +438,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
                 description: 'Second group'
             });
             const anotherGroupId = anotherGroupRes.data.id;
+            createdGroupIds.add(anotherGroupId);
 
             const response = await apiClient.post(`/user-groups/${anotherGroupId}/members/${newStudentId}`);
             expect(response.status).toBe(409);
@@ -465,6 +499,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
                 description: 'Group for removal tests'
             });
             testGroupId = groupRes.data.id;
+            createdGroupIds.add(testGroupId);
 
             // Create and add a student to the group
             const studentData = {
@@ -472,17 +507,8 @@ describe('User Groups API (/api/v1/user-groups)', () => {
                 username: `removeStudent${uniqueId}`,
                 password: 'password123'
             };
-            await apiClient.post('/users/register', studentData);
-
-            const loginRes = await apiClient.post('/auth/login', {
-                identifier: studentData.username,
-                password: studentData.password
-            });
-            const token = loginRes.data.token;
-
-            setAuthToken(token);
-            const meRes = await apiClient.get('/users/me');
-            removableStudentId = meRes.data.id;
+            const student = await trackStudent(studentData);
+            removableStudentId = student.id;
 
             setAuthToken(adminToken);
             await apiClient.post(`/user-groups/${testGroupId}/members/${removableStudentId}`);
@@ -566,6 +592,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
                 description: 'Group to be deleted'
             });
             groupToDeleteId = groupRes.data.id;
+            createdGroupIds.add(groupToDeleteId);
 
             // Create and add a student
             const studentData = {
@@ -573,14 +600,8 @@ describe('User Groups API (/api/v1/user-groups)', () => {
                 username: `deleteStudent${uniqueId}`,
                 password: 'password123'
             };
-            await apiClient.post('/users/register', studentData);
-            const loginRes = await apiClient.post('/auth/login', {
-                identifier: studentData.username,
-                password: studentData.password
-            });
-            setAuthToken(loginRes.data.token);
-            const meRes = await apiClient.get('/users/me');
-            memberStudentId = meRes.data.id;
+            const student = await trackStudent(studentData);
+            memberStudentId = student.id;
 
             setAuthToken(adminToken);
             await apiClient.post(`/user-groups/${groupToDeleteId}/members/${memberStudentId}`);
@@ -629,6 +650,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
                 name: `PostDelete ${uniqueId}`,
                 description: 'Group after deletion'
             });
+            createdGroupIds.add(groupRes.data.id);
 
             const response = await apiClient.post(`/user-groups/${groupRes.data.id}/members/${memberStudentId}`);
             expect(response.status).toBe(204);
@@ -701,6 +723,9 @@ describe('User Groups API (/api/v1/user-groups)', () => {
 
             // Should either succeed (200/201) or fail gracefully (400/500) — not crash
             expect([201, 400, 409, 500]).toContain(response.status);
+            if (response.status === 201 && response.data?.id) {
+                createdGroupIds.add(response.data.id);
+            }
         });
 
         it('should return proper ProblemDetail structure on error', async () => {
@@ -742,6 +767,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
                 description: 'Group with zero members'
             });
             emptyGroupId = emptyRes.data.id;
+            createdGroupIds.add(emptyGroupId);
 
             // Create a group for multi-member test
             const multiRes = await apiClient.post('/user-groups', {
@@ -749,6 +775,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
                 description: 'Group for multiple members'
             });
             multiGroupId = multiRes.data.id;
+            createdGroupIds.add(multiGroupId);
 
             // Create two new students for multi-member tests
             const studentAData = {
@@ -761,18 +788,11 @@ describe('User Groups API (/api/v1/user-groups)', () => {
                 username: `extraB${uniqueId}`,
                 password: 'password123'
             };
-            await apiClient.post('/users/register', studentAData);
-            await apiClient.post('/users/register', studentBData);
+            let student = await trackStudent(studentAData);
+            studentAId = student.id;
 
-            let loginRes = await apiClient.post('/auth/login', { identifier: studentAData.username, password: studentAData.password });
-            setAuthToken(loginRes.data.token);
-            let meRes = await apiClient.get('/users/me');
-            studentAId = meRes.data.id;
-
-            loginRes = await apiClient.post('/auth/login', { identifier: studentBData.username, password: studentBData.password });
-            setAuthToken(loginRes.data.token);
-            meRes = await apiClient.get('/users/me');
-            studentBId = meRes.data.id;
+            student = await trackStudent(studentBData);
+            studentBId = student.id;
 
             setAuthToken(adminToken);
         });

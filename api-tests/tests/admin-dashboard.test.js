@@ -132,6 +132,25 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
         });
     });
 
+    describe('PUT /api/v1/admin/students/{id}', () => {
+        it('should update student teacher and group for ADMIN', async () => {
+            setAuthToken(adminToken);
+            const response = await apiClient.put(`/admin/students/${createdStudentId}`, {
+                email: `admin.student.updated.${uniqueId}@example.com`,
+                username: `admin_student_updated_${uniqueId}`,
+                teacherId: seedTeacherId,
+                groupId: seedGroupId
+            });
+
+            expect(response.status).toBe(200);
+            expect(response.data.id).toBe(createdStudentId);
+            expect(response.data.teacherId).toBe(seedTeacherId);
+            expect(response.data.groupId).toBe(seedGroupId);
+            expect(response.data.teacherName).toBeTruthy();
+            expect(response.data.groupName).toBeTruthy();
+        });
+    });
+
     describe('GET /api/v1/admin/teachers and /students', () => {
         beforeAll(async () => {
             setAuthToken(adminToken);
@@ -197,6 +216,8 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
             response.data.forEach((user) => {
                 expect(user.role).toBe('STUDENT');
             });
+            const createdStudent = response.data.find((user) => user.id === createdStudentId);
+            expect(createdStudent.teacherName).toBeTruthy();
         });
 
         it('should increase stats after creating teacher and student', async () => {

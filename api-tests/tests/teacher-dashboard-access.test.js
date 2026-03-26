@@ -99,6 +99,37 @@ describe('Teacher Dashboard Access API (/api/v1/teacher/*)', () => {
         await apiClient.post(`/user-groups/${secondTeacherGroupId}/members/${foreignTeacherStudentId}`);
     });
 
+    afterAll(async () => {
+        setAuthToken(adminToken);
+
+        if (firstTeacherGroupId) {
+            const response = await apiClient.delete(`/user-groups/${firstTeacherGroupId}`);
+            expect([204, 404]).toContain(response.status);
+        }
+
+        if (secondTeacherGroupId) {
+            const response = await apiClient.delete(`/user-groups/${secondTeacherGroupId}`);
+            expect([204, 404]).toContain(response.status);
+        }
+
+        if (teacherStudentId) {
+            const response = await apiClient.delete(`/users/${teacherStudentId}`);
+            expect([204, 404]).toContain(response.status);
+        }
+
+        if (foreignTeacherStudentId) {
+            const response = await apiClient.delete(`/users/${foreignTeacherStudentId}`);
+            expect([204, 404]).toContain(response.status);
+        }
+
+        if (secondTeacherId) {
+            const response = await apiClient.delete(`/users/${secondTeacherId}`);
+            expect([204, 404]).toContain(response.status);
+        }
+
+        setAuthToken(null);
+    });
+
     it('should return 401 for /teacher/stats when unauthenticated', async () => {
         setAuthToken(null);
         const response = await apiClient.get('/teacher/stats');

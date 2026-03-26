@@ -656,6 +656,9 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
     "email": "user@example.com",
     "role": "STUDENT",
     "teacherId": 3,
+    "teacherName": "pan_tomasz",
+    "groupId": 1,
+    "groupName": "Angielski A1",
     "createdAt": "2026-03-02T21:00:00"
   }
 ]
@@ -699,6 +702,49 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
 - `INVALID_TEACHER_ASSIGNMENT` (400 Bad Request): Wskazany uzytkownik nie ma roli `TEACHER`.
 - `GROUP_TEACHER_MISMATCH` (400 Bad Request): Wybrana grupa nie nalezy do wskazanego nauczyciela.
 - `USER_NOT_FOUND` (404 Not Found): Teacher does not exist.
+- `USER_GROUP_NOT_FOUND` (404 Not Found): Group does not exist.
+- `EMAIL_ALREADY_TAKEN` (409 Conflict): Email already exists.
+- `USERNAME_ALREADY_TAKEN` (409 Conflict): Username already exists.
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
+
+---
+### 6.5. Update Student Assignment
+- **URL**: `/api/v1/admin/students/{id}`
+- **Method**: `PUT`
+- **Description**: Aktualizuje dane ucznia oraz zmienia przypisanego nauczyciela i opcjonalna grupe. Wymaga `ADMIN`.
+
+**Request Body (JSON):**
+```json
+{
+  "username": "updated_student",
+  "email": "updated.student@example.com",
+  "teacherId": 4,
+  "groupId": 2
+}
+```
+
+**Success (200 OK):**
+```json
+{
+  "id": 15,
+  "username": "updated_student",
+  "email": "updated.student@example.com",
+  "role": "STUDENT",
+  "teacherId": 4,
+  "teacherName": "pan_tomasz",
+  "groupId": 2,
+  "groupName": "Angielski B2",
+  "createdAt": "2026-03-26T20:15:00"
+}
+```
+
+**Known Errors:**
+- `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
+- `INVALID_STUDENT_ASSIGNMENT` (400 Bad Request): Wskazany uzytkownik nie ma roli `STUDENT`.
+- `INVALID_TEACHER_ASSIGNMENT` (400 Bad Request): Wskazany uzytkownik nie ma roli `TEACHER`.
+- `GROUP_TEACHER_MISMATCH` (400 Bad Request): Wybrana grupa nie nalezy do wskazanego nauczyciela.
+- `USER_NOT_FOUND` (404 Not Found): Student or teacher does not exist.
 - `USER_GROUP_NOT_FOUND` (404 Not Found): Group does not exist.
 - `EMAIL_ALREADY_TAKEN` (409 Conflict): Email already exists.
 - `USERNAME_ALREADY_TAKEN` (409 Conflict): Username already exists.

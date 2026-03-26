@@ -22,3 +22,15 @@ Content-Type: application/json
   "teacherId": 4,
   "groupId": 1
 }
+
+### Update admin student assignment
+PUT http://localhost:8080/api/v1/admin/students/15
+Authorization: Bearer {{admin_token}}
+Content-Type: application/json
+
+{
+  "username": "admin_student_modal",
+  "email": "admin.student.modal@example.com",
+  "teacherId": 4,
+  "groupId": 2
+}

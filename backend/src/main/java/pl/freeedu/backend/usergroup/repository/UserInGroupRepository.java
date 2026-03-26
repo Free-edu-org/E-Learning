@@ -18,6 +18,8 @@ public interface UserInGroupRepository extends JpaRepository<UserInGroup, Intege
 
 	boolean existsByUserIdAndGroupId(Integer userId, Integer groupId);
 
+	Optional<UserInGroup> findByUserId(Integer userId);
+
 	Optional<UserInGroup> findByUserIdAndGroupId(Integer userId, Integer groupId);
 
 	@Transactional
@@ -29,8 +31,16 @@ public interface UserInGroupRepository extends JpaRepository<UserInGroup, Intege
 	@Query("SELECT u.userId FROM UserInGroup u WHERE u.groupId = :groupId")
 	List<Integer> findUserIdsByGroupId(Integer groupId);
 
+	@Query("SELECT u.userId as userId, u.groupId as groupId FROM UserInGroup u")
+	List<UserMembershipProjection> findAllMemberships();
+
 	interface GroupCountProjection {
 		Integer getGroupId();
 		Long getCount();
+	}
+
+	interface UserMembershipProjection {
+		Integer getUserId();
+		Integer getGroupId();
 	}
 }

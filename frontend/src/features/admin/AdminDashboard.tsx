@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
   Card,
@@ -14,6 +15,7 @@ import {
   DialogContent,
   DialogTitle,
   Grid,
+  IconButton,
   InputAdornment,
   MenuItem,
   Paper,
@@ -29,10 +31,13 @@ import {
 } from "@mui/material";
 import {
   AddCircleOutline as AddCircleIcon,
+  AutoAwesomeOutlined as SparklesIcon,
   DarkMode as DarkModeIcon,
   DeleteOutline as DeleteIcon,
+  EditOutlined as EditIcon,
   GroupOutlined as GroupIcon,
   LightMode as LightModeIcon,
+  ListOutlined as ListIcon,
   LogoutOutlined as LogoutIcon,
   ManageAccountsOutlined as ManageAccountsIcon,
   PeopleOutline as PeopleIcon,
@@ -41,13 +46,16 @@ import {
   SaveOutlined as SaveIcon,
   SchoolOutlined as SchoolIcon,
   SearchOutlined as SearchIcon,
+  GridViewOutlined as GridIcon,
 } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
 import { useNavigate } from "react-router-dom";
 import {
   adminService,
   type AdminCreateStudentRequest,
+  type AdminStudentProfile,
   type AdminStats,
+  type AdminUpdateStudentRequest,
 } from "@/api/adminService";
 import { ApiError } from "@/api/apiClient";
 import { StatsCard } from "@/components/teacher/StatsCard";
@@ -64,6 +72,8 @@ import { useAppTheme } from "@/context/ThemeContext";
 type UserRole = "TEACHER" | "STUDENT";
 type UserFilter = "ALL" | UserRole;
 type AdminTab = "users" | "groups";
+type AdminListUser = UserProfile | AdminStudentProfile;
+type AdminViewMode = "grid" | "list";
 
 interface UserDraft {
   username: string;
@@ -82,11 +92,13 @@ interface DeleteDialogState {
   type: "user" | "group";
   id: number;
   label: string;
+  detail?: string | null;
 }
 
 interface MembershipDialogState {
   groupId: number;
   groupName: string;
+  teacherId?: number | null;
 }
 
 const emptyUserDraft: UserDraft = {
@@ -154,6 +166,49 @@ const outlinedChipSx = {
   },
 };
 
+const modalPaperSx = {
+  borderRadius: 4,
+  overflow: "hidden",
+  boxShadow: "0 24px 64px rgba(15, 23, 42, 0.18)",
+};
+
+const modalHeaderSx = {
+  px: 3,
+  py: 2.5,
+  borderBottom: "1px solid",
+  borderColor: "divider",
+  background:
+    "linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(241,245,249,0.96) 100%)",
+};
+
+const bottomIconButtonSx = {
+  width: 38,
+  height: 38,
+  borderRadius: 2.5,
+  border: "1px solid",
+  borderColor: "divider",
+  bgcolor: "background.paper",
+  boxShadow: "0 8px 18px rgba(15, 23, 42, 0.08)",
+  transition: "transform 0.15s ease, box-shadow 0.15s ease",
+  "&:hover": {
+    transform: "translateY(-1px)",
+    boxShadow: "0 12px 24px rgba(15, 23, 42, 0.12)",
+  },
+};
+
+const listRowPaperSx = {
+  p: 2,
+  borderRadius: 3,
+  border: "1px solid",
+  borderColor: "divider",
+  bgcolor: "background.paper",
+  transition: "box-shadow 0.2s, transform 0.15s",
+  "&:hover": {
+    boxShadow: 3,
+    transform: "translateY(-1px)",
+  },
+};
+
 export function AdminDashboard() {
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -164,6 +219,13 @@ export function AdminDashboard() {
   const [userFilter, setUserFilter] = useState<UserFilter>("ALL");
   const [userSearch, setUserSearch] = useState("");
   const [groupSearch, setGroupSearch] = useState("");
+  const [viewMode, setViewMode] = useState<AdminViewMode>("grid");
+  const [selectedTeacherFilters, setSelectedTeacherFilters] = useState<
+    UserProfile[]
+  >([]);
+  const [selectedGroupFilters, setSelectedGroupFilters] = useState<UserGroup[]>(
+    [],
+  );
 
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [currentUserError, setCurrentUserError] = useState<string | null>(null);
@@ -171,7 +233,7 @@ export function AdminDashboard() {
   const [statsError, setStatsError] = useState<string | null>(null);
 
   const [teachers, setTeachers] = useState<UserProfile[]>([]);
-  const [students, setStudents] = useState<UserProfile[]>([]);
+  const [students, setStudents] = useState<AdminStudentProfile[]>([]);
   const [usersLoading, setUsersLoading] = useState(true);
   const [usersError, setUsersError] = useState<string | null>(null);
 
@@ -189,13 +251,9 @@ export function AdminDashboard() {
     "create",
   );
   const [userDialogRole, setUserDialogRole] = useState<UserRole>("TEACHER");
-  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
+  const [selectedUser, setSelectedUser] = useState<AdminListUser | null>(null);
   const [userDraft, setUserDraft] = useState<UserDraft>(emptyUserDraft);
   const [userDialogLoading, setUserDialogLoading] = useState(false);
-  const [userLookupId, setUserLookupId] = useState("");
-  const [userLookupLoading, setUserLookupLoading] = useState(false);
-  const [userLookupError, setUserLookupError] = useState<string | null>(null);
-
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [groupDialogMode, setGroupDialogMode] = useState<"create" | "edit">(
     "create",
@@ -211,25 +269,53 @@ export function AdminDashboard() {
 
   const [membershipDialog, setMembershipDialog] =
     useState<MembershipDialogState | null>(null);
-  const [membershipMode, setMembershipMode] = useState<"add" | "remove">(
-    "add",
+  const [membershipStudentId, setMembershipStudentId] = useState<number | "">(
+    "",
   );
-  const [membershipUserId, setMembershipUserId] = useState("");
   const [membershipLoading, setMembershipLoading] = useState(false);
 
   const allUsers = useMemo(
-    () => [
-      ...teachers.map((user) => ({ ...user, role: "TEACHER" as const })),
-      ...students.map((user) => ({ ...user, role: "STUDENT" as const })),
-    ],
+    () =>
+      [
+        ...teachers.map((user) => ({ ...user, role: "TEACHER" as const })),
+        ...students.map((user) => ({ ...user, role: "STUDENT" as const })),
+      ] as AdminListUser[],
     [teachers, students],
   );
 
   const filteredUsers = useMemo(() => {
     const normalizedQuery = userSearch.trim().toLowerCase();
+    const selectedTeacherIds = new Set(selectedTeacherFilters.map((t) => t.id));
+    const selectedGroupIds = new Set(selectedGroupFilters.map((g) => g.id));
+
     return allUsers.filter((user) => {
       if (userFilter !== "ALL" && user.role !== userFilter) {
         return false;
+      }
+
+      if (selectedTeacherIds.size > 0) {
+        if (user.role === "TEACHER") {
+          if (!selectedTeacherIds.has(user.id)) {
+            return false;
+          }
+        } else if (!selectedTeacherIds.has(user.teacherId ?? -1)) {
+          return false;
+        }
+      }
+
+      if (selectedGroupIds.size > 0) {
+        if (user.role === "TEACHER") {
+          const ownsSelectedGroup = selectedGroupFilters.some(
+            (group) => group.teacherId === user.id,
+          );
+          if (!ownsSelectedGroup) {
+            return false;
+          }
+        } else {
+          if (!("groupId" in user) || !selectedGroupIds.has(user.groupId ?? -1)) {
+            return false;
+          }
+        }
       }
 
       if (!normalizedQuery) {
@@ -242,11 +328,22 @@ export function AdminDashboard() {
         String(user.id).includes(normalizedQuery)
       );
     });
-  }, [allUsers, userFilter, userSearch]);
+  }, [
+    allUsers,
+    selectedGroupFilters,
+    selectedTeacherFilters,
+    userFilter,
+    userSearch,
+  ]);
 
   const filteredGroups = useMemo(() => {
     const normalizedQuery = groupSearch.trim().toLowerCase();
+    const selectedTeacherIds = new Set(selectedTeacherFilters.map((t) => t.id));
     return groups.filter((group) => {
+      if (selectedTeacherIds.size > 0 && !selectedTeacherIds.has(group.teacherId ?? -1)) {
+        return false;
+      }
+
       if (!normalizedQuery) {
         return true;
       }
@@ -257,7 +354,7 @@ export function AdminDashboard() {
         String(group.id).includes(normalizedQuery)
       );
     });
-  }, [groupSearch, groups]);
+  }, [groupSearch, groups, selectedTeacherFilters]);
 
   const assignableGroups = useMemo(() => {
     if (userDraft.teacherId === "") {
@@ -266,6 +363,40 @@ export function AdminDashboard() {
 
     return groups.filter((group) => group.teacherId === userDraft.teacherId);
   }, [groups, userDraft.teacherId]);
+
+  const currentMembershipStudents = useMemo(() => {
+    if (!membershipDialog) {
+      return [];
+    }
+
+    return students.filter((student) => student.groupId === membershipDialog.groupId);
+  }, [membershipDialog, students]);
+
+  const availableMembershipStudents = useMemo(() => {
+    if (!membershipDialog) {
+      return [];
+    }
+
+    return students.filter(
+      (student) =>
+        student.teacherId === membershipDialog.teacherId &&
+        (student.groupId == null || student.groupId === membershipDialog.groupId),
+    );
+  }, [membershipDialog, students]);
+
+  const teacherNameById = useMemo(
+    () => new Map(teachers.map((teacher) => [teacher.id, teacher.username])),
+    [teachers],
+  );
+
+  const groupFilterOptions = useMemo(() => {
+    if (selectedTeacherFilters.length === 0) {
+      return groups;
+    }
+
+    const selectedTeacherIds = new Set(selectedTeacherFilters.map((teacher) => teacher.id));
+    return groups.filter((group) => selectedTeacherIds.has(group.teacherId ?? -1));
+  }, [groups, selectedTeacherFilters]);
 
   const loadAdminStats = async () => {
     try {
@@ -339,10 +470,9 @@ export function AdminDashboard() {
     setSelectedUser(null);
     setUserDraft(emptyUserDraft);
     setUserDialogOpen(true);
-    setUserLookupError(null);
   };
 
-  const openEditUserDialog = (user: UserProfile) => {
+  const openEditUserDialog = (user: AdminListUser) => {
     setUserDialogMode("edit");
     setUserDialogRole(user.role as UserRole);
     setSelectedUser(user);
@@ -351,44 +481,18 @@ export function AdminDashboard() {
       email: user.email,
       password: "",
       teacherId: user.teacherId ?? "",
-      groupId: "",
+      groupId: "groupId" in user ? (user.groupId ?? "") : "",
     });
     setUserDialogOpen(true);
-    setUserLookupError(null);
   };
 
   const closeUserDialog = () => {
-    if (userDialogLoading || userLookupLoading) {
+    if (userDialogLoading) {
       return;
     }
     setUserDialogOpen(false);
     setSelectedUser(null);
     setUserDraft(emptyUserDraft);
-    setUserLookupId("");
-    setUserLookupError(null);
-  };
-
-  const handleLookupUser = async () => {
-    const parsedId = Number(userLookupId);
-    if (!Number.isInteger(parsedId) || parsedId <= 0) {
-      setUserLookupError("Podaj poprawne dodatnie ID uzytkownika.");
-      return;
-    }
-
-    setUserLookupLoading(true);
-    setUserLookupError(null);
-    try {
-      const user = await userService.getUserById(parsedId);
-      openEditUserDialog(user);
-      setUserDialogOpen(true);
-      setUserLookupId(String(user.id));
-    } catch (error) {
-      setUserLookupError(
-        getErrorMessage(error, "Nie udalo sie pobrac uzytkownika po ID."),
-      );
-    } finally {
-      setUserLookupLoading(false);
-    }
   };
 
   const submitUserDialog = async () => {
@@ -425,11 +529,29 @@ export function AdminDashboard() {
           showToast("success", "Uczen zostal utworzony.");
         }
       } else if (selectedUser) {
-        const payload: UpdateUserRequest = {
-          username: userDraft.username,
-          email: userDraft.email,
-        };
-        const updated = await userService.updateUser(selectedUser.id, payload);
+        let updated: AdminListUser;
+
+        if (selectedUser.role === "STUDENT") {
+          if (userDraft.teacherId === "") {
+            showToast("error", "Wybierz nauczyciela dla ucznia.");
+            return;
+          }
+
+          const payload: AdminUpdateStudentRequest = {
+            username: userDraft.username,
+            email: userDraft.email,
+            teacherId: userDraft.teacherId,
+            ...(userDraft.groupId !== "" ? { groupId: userDraft.groupId } : {}),
+          };
+          updated = await adminService.updateStudent(selectedUser.id, payload);
+        } else {
+          const payload: UpdateUserRequest = {
+            username: userDraft.username,
+            email: userDraft.email,
+          };
+          updated = await userService.updateUser(selectedUser.id, payload);
+        }
+
         setSelectedUser(updated);
         showToast("success", "Dane konta zostaly zapisane.");
       }
@@ -543,13 +665,13 @@ export function AdminDashboard() {
     }
   };
 
-  const openMembershipDialog = (
-    group: UserGroup,
-    mode: "add" | "remove",
-  ) => {
-    setMembershipDialog({ groupId: group.id, groupName: group.name });
-    setMembershipMode(mode);
-    setMembershipUserId("");
+  const openMembershipDialog = (group: UserGroup) => {
+    setMembershipDialog({
+      groupId: group.id,
+      groupName: group.name,
+      teacherId: group.teacherId,
+    });
+    setMembershipStudentId("");
   };
 
   const closeMembershipDialog = () => {
@@ -557,37 +679,47 @@ export function AdminDashboard() {
       return;
     }
     setMembershipDialog(null);
-    setMembershipUserId("");
+    setMembershipStudentId("");
   };
 
-  const submitMembershipDialog = async () => {
-    if (!membershipDialog) {
+  const addMembershipStudent = async () => {
+    if (!membershipDialog || membershipLoading) {
       return;
     }
-    if (membershipLoading) {
-      return;
-    }
-
-    const parsedId = Number(membershipUserId);
-    if (!Number.isInteger(parsedId) || parsedId <= 0) {
-      showToast("error", "Podaj poprawne ID ucznia.");
+    if (membershipStudentId === "") {
+      showToast("error", "Wybierz ucznia z listy.");
       return;
     }
 
     setMembershipLoading(true);
     try {
-      if (membershipMode === "add") {
-        await userGroupService.addStudentToGroup(membershipDialog.groupId, parsedId);
-        showToast("success", `Uczen ${parsedId} zostal dodany do grupy.`);
-      } else {
-        await userGroupService.removeStudentFromGroup(
-          membershipDialog.groupId,
-          parsedId,
-        );
-        showToast("success", `Uczen ${parsedId} zostal usuniety z grupy.`);
-      }
-      await loadGroups();
-      closeMembershipDialog();
+      await userGroupService.addStudentToGroup(
+        membershipDialog.groupId,
+        membershipStudentId,
+      );
+      showToast("success", "Uczen zostal dodany do grupy.");
+      await Promise.all([loadGroups(), loadUsers()]);
+      setMembershipStudentId("");
+    } catch (error) {
+      showToast(
+        "error",
+        getErrorMessage(error, "Nie udalo sie zmienic skladu grupy."),
+      );
+    } finally {
+      setMembershipLoading(false);
+    }
+  };
+
+  const removeMembershipStudent = async (studentId: number) => {
+    if (!membershipDialog || membershipLoading) {
+      return;
+    }
+
+    setMembershipLoading(true);
+    try {
+      await userGroupService.removeStudentFromGroup(membershipDialog.groupId, studentId);
+      showToast("success", "Uczen zostal usuniety z grupy.");
+      await Promise.all([loadGroups(), loadUsers()]);
     } catch (error) {
       showToast(
         "error",
@@ -781,6 +913,7 @@ export function AdminDashboard() {
                   >
                     <Button
                       variant="outlined"
+                      size="small"
                       startIcon={<RefreshIcon />}
                       onClick={loadUsers}
                       disabled={usersLoading}
@@ -790,6 +923,7 @@ export function AdminDashboard() {
                     </Button>
                     <Button
                       variant="contained"
+                      size="small"
                       startIcon={<AddCircleIcon />}
                       onClick={() => openCreateUserDialog("TEACHER")}
                       sx={topToolbarButtonSx}
@@ -798,6 +932,7 @@ export function AdminDashboard() {
                     </Button>
                     <Button
                       variant="contained"
+                      size="small"
                       startIcon={<AddCircleIcon />}
                       onClick={() => openCreateUserDialog("STUDENT")}
                       sx={topToolbarButtonSx}
@@ -808,13 +943,12 @@ export function AdminDashboard() {
                 </Stack>
 
                 {usersError && <Alert severity="warning">{usersError}</Alert>}
-                {userLookupError && <Alert severity="warning">{userLookupError}</Alert>}
 
                 <Paper
                   elevation={0}
                   sx={{
                     display: "flex",
-                    flexWrap: { xs: "wrap", lg: "nowrap" },
+                    flexWrap: "wrap",
                     alignItems: "center",
                     gap: 1.5,
                     p: 1.5,
@@ -844,14 +978,110 @@ export function AdminDashboard() {
                     sx={{
                       ...toolbarFieldSx,
                       minWidth: { xs: "100%", sm: 260, lg: 320 },
-                      flex: { xs: "1 1 100%", lg: "1 1 320px" },
+                      flex: { xs: "1 1 100%", md: "1.5 1 280px" },
                     }}
                   />
 
                   <Divider
                     orientation="vertical"
                     flexItem
-                    sx={{ display: { xs: "none", lg: "block" } }}
+                    sx={{ display: { xs: "none", md: "block" } }}
+                  />
+
+                  <Autocomplete
+                    multiple
+                    size="small"
+                    options={teachers}
+                    value={selectedTeacherFilters}
+                    onChange={(_, value) => setSelectedTeacherFilters(value)}
+                    getOptionLabel={(option) => option.username}
+                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                    disableCloseOnSelect
+                    limitTags={1}
+                    noOptionsText="Brak nauczycieli"
+                    renderTags={(tagValue, getTagProps) =>
+                      tagValue.map((option, index) => {
+                        const { key, ...rest } = getTagProps({ index });
+                        return (
+                          <Chip
+                            key={key}
+                            label={option.username}
+                            size="small"
+                            sx={{ fontSize: "0.7rem", height: 20 }}
+                            {...rest}
+                          />
+                        );
+                      })
+                    }
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        placeholder={
+                          selectedTeacherFilters.length === 0
+                            ? "Filtruj nauczycieli..."
+                            : undefined
+                        }
+                      />
+                    )}
+                    sx={{
+                      ...toolbarFieldSx,
+                      minWidth: { xs: "100%", sm: 220 },
+                      flex: { xs: "1 1 100%", lg: "1 1 230px" },
+                    }}
+                  />
+
+                  <Divider
+                    orientation="vertical"
+                    flexItem
+                    sx={{ display: { xs: "none", md: "block" } }}
+                  />
+
+                  <Autocomplete
+                    multiple
+                    size="small"
+                    options={groupFilterOptions}
+                    value={selectedGroupFilters}
+                    onChange={(_, value) => setSelectedGroupFilters(value)}
+                    getOptionLabel={(option) => option.name}
+                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                    disableCloseOnSelect
+                    limitTags={1}
+                    noOptionsText="Brak grup"
+                    renderTags={(tagValue, getTagProps) =>
+                      tagValue.map((option, index) => {
+                        const { key, ...rest } = getTagProps({ index });
+                        return (
+                          <Chip
+                            key={key}
+                            label={option.name}
+                            size="small"
+                            sx={{ fontSize: "0.7rem", height: 20 }}
+                            {...rest}
+                          />
+                        );
+                      })
+                    }
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        placeholder={
+                          selectedGroupFilters.length === 0
+                            ? "Filtruj grupy..."
+                            : undefined
+                        }
+                      />
+                    )}
+                    sx={{
+                      ...toolbarFieldSx,
+                      minWidth: { xs: "100%", sm: 220 },
+                      flex: { xs: "1 1 100%", lg: "1 1 230px" },
+                    }}
+                  />
+
+                  <Divider
+                    orientation="vertical"
+                    flexItem
+                    sx={{ display: { xs: "none", md: "block" } }}
                   />
 
                   <ToggleButtonGroup
@@ -871,20 +1101,20 @@ export function AdminDashboard() {
                       sx={{
                         textTransform: "none",
                         px: 1.5,
-                        borderRadius: "8px !important",
+                        borderRadius: 2,
                       }}
                     >
                       Wszyscy
                     </ToggleButton>
                     <ToggleButton
                       value="TEACHER"
-                      sx={{ textTransform: "none", px: 1.5 }}
+                      sx={{ textTransform: "none", px: 1.5, borderRadius: 2 }}
                     >
                       Nauczyciele
                     </ToggleButton>
                     <ToggleButton
                       value="STUDENT"
-                      sx={{ textTransform: "none", px: 1.5 }}
+                      sx={{ textTransform: "none", px: 1.5, borderRadius: 2 }}
                     >
                       Uczniowie
                     </ToggleButton>
@@ -893,51 +1123,31 @@ export function AdminDashboard() {
                   <Divider
                     orientation="vertical"
                     flexItem
-                    sx={{ display: { xs: "none", lg: "block" } }}
+                    sx={{ display: { xs: "none", md: "block" } }}
                   />
 
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 1,
-                      flex: { xs: "1 1 100%", lg: "0 0 auto" },
-                      width: { xs: "100%", lg: "auto" },
-                    }}
-                  >
-                    <TextField
-                      label="ID"
-                      size="small"
-                      value={userLookupId}
-                      onChange={(event) => setUserLookupId(event.target.value)}
-                      sx={{
-                        width: { xs: "100%", sm: 112 },
-                        "& .MuiOutlinedInput-root": {
-                          borderRadius: 2,
-                          minHeight: 40,
-                        },
-                      }}
-                    />
-                    <Button
-                      variant="outlined"
-                      startIcon={
-                        userLookupLoading ? (
-                          <CircularProgress size={14} />
-                        ) : (
-                          <SearchIcon />
-                        )
+                  <ToggleButtonGroup
+                    value={viewMode}
+                    exclusive
+                    onChange={(_, value: AdminViewMode | null) => {
+                      if (value) {
+                        setViewMode(value);
                       }
-                      onClick={handleLookupUser}
-                      disabled={userLookupLoading}
-                      sx={{
-                        ...topToolbarButtonSx,
-                        minWidth: 116,
-                        alignSelf: "stretch",
-                      }}
+                    }}
+                    size="small"
+                    sx={{ flexShrink: 0 }}
+                  >
+                    <ToggleButton
+                      value="grid"
+                      aria-label="Widok siatki"
+                      sx={{ borderRadius: "8px !important" }}
                     >
-                      Otworz
-                    </Button>
-                  </Box>
+                      <GridIcon fontSize="small" />
+                    </ToggleButton>
+                    <ToggleButton value="list" aria-label="Widok listy">
+                      <ListIcon fontSize="small" />
+                    </ToggleButton>
+                  </ToggleButtonGroup>
                 </Paper>
 
                 {usersLoading ? (
@@ -955,6 +1165,130 @@ export function AdminDashboard() {
                   <Alert severity="info">
                     Brak kont pasujacych do wybranych filtrow.
                   </Alert>
+                ) : viewMode === "list" ? (
+                  <Stack spacing={1.25}>
+                    {filteredUsers.map((user) => (
+                      <Paper key={`${user.role}-${user.id}`} elevation={0} sx={listRowPaperSx}>
+                        <Stack
+                          direction={{ xs: "column", md: "row" }}
+                          spacing={2}
+                          justifyContent="space-between"
+                          alignItems={{ xs: "flex-start", md: "center" }}
+                        >
+                          <Stack spacing={1} sx={{ minWidth: 0, flex: 1 }}>
+                            <Stack
+                              direction={{ xs: "column", sm: "row" }}
+                              spacing={1}
+                              alignItems={{ xs: "flex-start", sm: "center" }}
+                              flexWrap="wrap"
+                              useFlexGap
+                            >
+                              <Typography
+                                variant="body1"
+                                fontWeight={700}
+                                color="primary.main"
+                                sx={{ overflowWrap: "anywhere" }}
+                              >
+                                {user.username}
+                              </Typography>
+                              <Chip
+                                color={user.role === "TEACHER" ? "info" : "success"}
+                                icon={
+                                  user.role === "TEACHER" ? <SchoolIcon /> : <PersonIcon />
+                                }
+                                label={
+                                  user.role === "TEACHER" ? "Nauczyciel" : "Uczen"
+                                }
+                                size="small"
+                              />
+                              <Chip
+                                label={`ID ${user.id}`}
+                                size="small"
+                                variant="outlined"
+                                sx={outlinedChipSx}
+                              />
+                            </Stack>
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{ overflowWrap: "anywhere" }}
+                            >
+                              {user.email}
+                            </Typography>
+                            {user.role === "STUDENT" && (
+                              <Stack
+                                direction={{ xs: "column", sm: "row" }}
+                                spacing={1.25}
+                                flexWrap="wrap"
+                                useFlexGap
+                              >
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                  sx={{ overflowWrap: "anywhere" }}
+                                >
+                                  Nauczyciel:{" "}
+                                  <Box component="span" sx={{ fontWeight: 700, color: "text.primary" }}>
+                                    {"teacherName" in user && user.teacherName
+                                      ? user.teacherName
+                                      : "Brak przypisania"}
+                                  </Box>
+                                </Typography>
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                  sx={{ overflowWrap: "anywhere" }}
+                                >
+                                  Grupa:{" "}
+                                  <Box component="span" sx={{ fontWeight: 700, color: "text.primary" }}>
+                                    {"groupName" in user && user.groupName
+                                      ? user.groupName
+                                      : "Bez grupy"}
+                                  </Box>
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                  Utworzono {formatDate(user.createdAt)}
+                                </Typography>
+                              </Stack>
+                            )}
+                          </Stack>
+
+                          <Stack
+                            direction="row"
+                            spacing={1}
+                            alignSelf={{ xs: "flex-end", md: "center" }}
+                          >
+                            <IconButton
+                              aria-label={`Edytuj ${user.username}`}
+                              onClick={() => openEditUserDialog(user)}
+                              sx={{ ...bottomIconButtonSx, color: "primary.main" }}
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton
+                              aria-label={`Usun ${user.username}`}
+                              onClick={() =>
+                                openDeleteDialog({
+                                  type: "user",
+                                  id: user.id,
+                                  label: user.username,
+                                  detail:
+                                    user.role === "STUDENT" &&
+                                    "teacherName" in user &&
+                                    user.teacherName
+                                      ? `Uczen przypisany do ${user.teacherName}`
+                                      : user.email,
+                                })
+                              }
+                              sx={{ ...bottomIconButtonSx, color: "error.main" }}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Stack>
+                        </Stack>
+                      </Paper>
+                    ))}
+                  </Stack>
                 ) : (
                   <Grid container spacing={2}>
                     {filteredUsers.map((user) => (
@@ -1017,6 +1351,41 @@ export function AdminDashboard() {
                                 />
                               </Stack>
 
+                              {user.role === "STUDENT" && (
+                                <Stack spacing={1}>
+                                  <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                    sx={{ overflowWrap: "anywhere" }}
+                                  >
+                                    Nauczyciel:{" "}
+                                    <Box
+                                      component="span"
+                                      sx={{ fontWeight: 700, color: "text.primary" }}
+                                    >
+                                      {"teacherName" in user && user.teacherName
+                                        ? user.teacherName
+                                        : "Brak przypisania"}
+                                    </Box>
+                                  </Typography>
+                                  <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                    sx={{ overflowWrap: "anywhere" }}
+                                  >
+                                    Grupa:{" "}
+                                    <Box
+                                      component="span"
+                                      sx={{ fontWeight: 700, color: "text.primary" }}
+                                    >
+                                      {"groupName" in user && user.groupName
+                                        ? user.groupName
+                                        : "Bez grupy"}
+                                    </Box>
+                                  </Typography>
+                                </Stack>
+                              )}
+
                               <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                                 <Chip
                                   label={`ID ${user.id}`}
@@ -1030,45 +1399,49 @@ export function AdminDashboard() {
                                   variant="outlined"
                                   sx={outlinedChipSx}
                                 />
-                                {user.role === "STUDENT" && (
-                                  <Chip
-                                    label={`Teacher ID: ${user.teacherId ?? "brak"}`}
-                                    size="small"
-                                    variant="outlined"
-                                    sx={outlinedChipSx}
-                                  />
-                                )}
                               </Stack>
 
-                              <Divider />
-
-                              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                                <Button
-                                  variant="contained"
-                                  size="small"
-                                  startIcon={<SaveIcon />}
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  justifyContent: "flex-end",
+                                  gap: 1,
+                                  pt: 0.5,
+                                }}
+                              >
+                                <IconButton
+                                  aria-label={`Edytuj ${user.username}`}
                                   onClick={() => openEditUserDialog(user)}
-                                  sx={actionButtonSx}
+                                  sx={{
+                                    ...bottomIconButtonSx,
+                                    color: "primary.main",
+                                  }}
                                 >
-                                  Edytuj
-                                </Button>
-                                <Button
-                                  variant="outlined"
-                                  color="error"
-                                  size="small"
-                                  startIcon={<DeleteIcon />}
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                                <IconButton
+                                  aria-label={`Usun ${user.username}`}
                                   onClick={() =>
                                     openDeleteDialog({
                                       type: "user",
                                       id: user.id,
                                       label: user.username,
+                                      detail:
+                                        user.role === "STUDENT" &&
+                                        "teacherName" in user &&
+                                        user.teacherName
+                                          ? `Uczen przypisany do ${user.teacherName}`
+                                          : user.email,
                                     })
                                   }
-                                  sx={actionButtonSx}
+                                  sx={{
+                                    ...bottomIconButtonSx,
+                                    color: "error.main",
+                                  }}
                                 >
-                                  Usun
-                                </Button>
-                              </Stack>
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </Box>
                             </Stack>
                           </CardContent>
                         </Card>
@@ -1097,6 +1470,7 @@ export function AdminDashboard() {
                   <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
                     <Button
                       variant="outlined"
+                      size="small"
                       startIcon={<RefreshIcon />}
                       onClick={loadGroups}
                       disabled={groupsLoading}
@@ -1106,6 +1480,7 @@ export function AdminDashboard() {
                     </Button>
                     <Button
                       variant="contained"
+                      size="small"
                       startIcon={<AddCircleIcon />}
                       onClick={openCreateGroupDialog}
                       sx={topToolbarButtonSx}
@@ -1148,8 +1523,89 @@ export function AdminDashboard() {
                         ),
                       },
                     }}
-                    sx={{ ...toolbarFieldSx, flex: "1 1 260px" }}
+                    sx={{
+                      ...toolbarFieldSx,
+                      minWidth: { xs: "100%", sm: 260, lg: 320 },
+                      flex: { xs: "1 1 100%", md: "1.4 1 280px" },
+                    }}
                   />
+
+                  <Divider
+                    orientation="vertical"
+                    flexItem
+                    sx={{ display: { xs: "none", md: "block" } }}
+                  />
+
+                  <Autocomplete
+                    multiple
+                    size="small"
+                    options={teachers}
+                    value={selectedTeacherFilters}
+                    onChange={(_, value) => setSelectedTeacherFilters(value)}
+                    getOptionLabel={(option) => option.username}
+                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                    disableCloseOnSelect
+                    limitTags={1}
+                    noOptionsText="Brak nauczycieli"
+                    renderTags={(tagValue, getTagProps) =>
+                      tagValue.map((option, index) => {
+                        const { key, ...rest } = getTagProps({ index });
+                        return (
+                          <Chip
+                            key={key}
+                            label={option.username}
+                            size="small"
+                            sx={{ fontSize: "0.7rem", height: 20 }}
+                            {...rest}
+                          />
+                        );
+                      })
+                    }
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        placeholder={
+                          selectedTeacherFilters.length === 0
+                            ? "Filtruj nauczycieli..."
+                            : undefined
+                        }
+                      />
+                    )}
+                    sx={{
+                      ...toolbarFieldSx,
+                      minWidth: { xs: "100%", sm: 220 },
+                      flex: { xs: "1 1 100%", lg: "1 1 230px" },
+                    }}
+                  />
+
+                  <Divider
+                    orientation="vertical"
+                    flexItem
+                    sx={{ display: { xs: "none", md: "block" } }}
+                  />
+
+                  <ToggleButtonGroup
+                    value={viewMode}
+                    exclusive
+                    onChange={(_, value: AdminViewMode | null) => {
+                      if (value) {
+                        setViewMode(value);
+                      }
+                    }}
+                    size="small"
+                    sx={{ flexShrink: 0 }}
+                  >
+                    <ToggleButton
+                      value="grid"
+                      aria-label="Widok siatki"
+                      sx={{ borderRadius: "8px !important" }}
+                    >
+                      <GridIcon fontSize="small" />
+                    </ToggleButton>
+                    <ToggleButton value="list" aria-label="Widok listy">
+                      <ListIcon fontSize="small" />
+                    </ToggleButton>
+                  </ToggleButtonGroup>
                 </Paper>
 
                 {groupsLoading ? (
@@ -1167,6 +1623,116 @@ export function AdminDashboard() {
                   <Alert severity="info">
                     Brak grup pasujacych do aktualnych filtrow.
                   </Alert>
+                ) : viewMode === "list" ? (
+                  <Stack spacing={1.25}>
+                    {filteredGroups.map((group) => (
+                      <Paper key={group.id} elevation={0} sx={listRowPaperSx}>
+                        <Stack
+                          direction={{ xs: "column", md: "row" }}
+                          spacing={2}
+                          justifyContent="space-between"
+                          alignItems={{ xs: "flex-start", md: "center" }}
+                        >
+                          <Stack spacing={1} sx={{ minWidth: 0, flex: 1 }}>
+                            <Stack
+                              direction={{ xs: "column", sm: "row" }}
+                              spacing={1}
+                              alignItems={{ xs: "flex-start", sm: "center" }}
+                              flexWrap="wrap"
+                              useFlexGap
+                            >
+                              <Typography
+                                variant="body1"
+                                fontWeight={700}
+                                color="primary.main"
+                                sx={{ overflowWrap: "anywhere" }}
+                              >
+                                {group.name}
+                              </Typography>
+                              <Chip
+                                icon={<GroupIcon />}
+                                label={`${group.studentCount} uczniow`}
+                                color="warning"
+                                size="small"
+                              />
+                              <Chip
+                                label={`ID ${group.id}`}
+                                size="small"
+                                variant="outlined"
+                                sx={outlinedChipSx}
+                              />
+                            </Stack>
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{ overflowWrap: "anywhere" }}
+                            >
+                              {group.description || "Brak opisu grupy."}
+                            </Typography>
+                            <Stack
+                              direction={{ xs: "column", sm: "row" }}
+                              spacing={1.25}
+                              flexWrap="wrap"
+                              useFlexGap
+                            >
+                              <Typography variant="body2" color="text.secondary">
+                                Wlasciciel:{" "}
+                                <Box component="span" sx={{ fontWeight: 700, color: "text.primary" }}>
+                                  {teacherNameById.get(group.teacherId ?? -1) ?? "Brak danych"}
+                                </Box>
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                Utworzono {formatDate(group.createdAt)}
+                              </Typography>
+                            </Stack>
+                          </Stack>
+
+                          <Stack
+                            direction={{ xs: "column", sm: "row" }}
+                            spacing={1}
+                            alignItems={{ xs: "stretch", sm: "center" }}
+                          >
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              startIcon={<SchoolIcon />}
+                              onClick={() => openMembershipDialog(group)}
+                              sx={actionButtonSx}
+                            >
+                              Sklad grupy
+                            </Button>
+                            <Stack
+                              direction="row"
+                              spacing={1}
+                              alignSelf={{ xs: "flex-end", sm: "center" }}
+                            >
+                              <IconButton
+                                aria-label={`Edytuj ${group.name}`}
+                                onClick={() => openEditGroupDialog(group)}
+                                sx={{ ...bottomIconButtonSx, color: "primary.main" }}
+                              >
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                              <IconButton
+                                aria-label={`Usun ${group.name}`}
+                                onClick={() =>
+                                  openDeleteDialog({
+                                    type: "group",
+                                    id: group.id,
+                                    label: group.name,
+                                    detail: group.description,
+                                  })
+                                }
+                                sx={{ ...bottomIconButtonSx, color: "error.main" }}
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Stack>
+                          </Stack>
+                        </Stack>
+                      </Paper>
+                    ))}
+                  </Stack>
                 ) : (
                   <Grid container spacing={2}>
                     {filteredGroups.map((group) => (
@@ -1213,6 +1779,20 @@ export function AdminDashboard() {
                                   >
                                     {group.description || "Brak opisu grupy."}
                                   </Typography>
+                                  <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                    sx={{ mt: 1, overflowWrap: "anywhere" }}
+                                  >
+                                    Wlasciciel:{" "}
+                                    <Box
+                                      component="span"
+                                      sx={{ fontWeight: 700, color: "text.primary" }}
+                                    >
+                                      {teacherNameById.get(group.teacherId ?? -1) ??
+                                        "Brak danych"}
+                                    </Box>
+                                  </Typography>
                                 </Box>
                                 <Chip
                                   icon={<GroupIcon />}
@@ -1240,49 +1820,55 @@ export function AdminDashboard() {
 
                               <Divider />
 
-                              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                                <Button
-                                  variant="contained"
-                                  size="small"
-                                  startIcon={<SaveIcon />}
-                                  onClick={() => openEditGroupDialog(group)}
-                                  sx={actionButtonSx}
-                                >
-                                  Edytuj
-                                </Button>
-                                <Button
-                                  variant="outlined"
-                                  size="small"
-                                  startIcon={<SchoolIcon />}
-                                  onClick={() => openMembershipDialog(group, "add")}
-                                  sx={actionButtonSx}
-                                >
-                                  Dodaj ucznia
-                                </Button>
-                                <Button
-                                  variant="outlined"
-                                  size="small"
-                                  onClick={() => openMembershipDialog(group, "remove")}
-                                  sx={actionButtonSx}
-                                >
-                                  Usun ucznia
-                                </Button>
-                                <Button
-                                  variant="outlined"
-                                  color="error"
-                                  size="small"
-                                  startIcon={<DeleteIcon />}
-                                  onClick={() =>
-                                    openDeleteDialog({
-                                      type: "group",
-                                      id: group.id,
-                                      label: group.name,
-                                    })
-                                  }
-                                  sx={actionButtonSx}
-                                >
-                                  Usun
-                                </Button>
+                              <Stack
+                                direction="row"
+                                spacing={1}
+                                alignItems="center"
+                                justifyContent="space-between"
+                                flexWrap="wrap"
+                                useFlexGap
+                              >
+                                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                                  <Button
+                                    variant="outlined"
+                                    size="small"
+                                    startIcon={<SchoolIcon />}
+                                    onClick={() => openMembershipDialog(group)}
+                                    sx={actionButtonSx}
+                                  >
+                                    Sklad grupy
+                                  </Button>
+                                </Stack>
+
+                                <Box sx={{ display: "flex", gap: 1, ml: "auto" }}>
+                                  <IconButton
+                                    aria-label={`Edytuj ${group.name}`}
+                                    onClick={() => openEditGroupDialog(group)}
+                                    sx={{
+                                      ...bottomIconButtonSx,
+                                      color: "primary.main",
+                                    }}
+                                  >
+                                    <EditIcon fontSize="small" />
+                                  </IconButton>
+                                  <IconButton
+                                    aria-label={`Usun ${group.name}`}
+                                    onClick={() =>
+                                      openDeleteDialog({
+                                        type: "group",
+                                        id: group.id,
+                                        label: group.name,
+                                        detail: group.description,
+                                      })
+                                    }
+                                    sx={{
+                                      ...bottomIconButtonSx,
+                                      color: "error.main",
+                                    }}
+                                  >
+                                    <DeleteIcon fontSize="small" />
+                                  </IconButton>
+                                </Box>
                               </Stack>
                             </Stack>
                           </CardContent>
@@ -1301,16 +1887,46 @@ export function AdminDashboard() {
           onClose={closeUserDialog}
           fullWidth
           maxWidth="sm"
+          PaperProps={{ sx: modalPaperSx }}
         >
-          <DialogTitle>
-            {userDialogMode === "create"
-              ? userDialogRole === "TEACHER"
-                ? "Nowe konto nauczyciela"
-                : "Nowe konto ucznia"
-              : `Edycja konta ${selectedUser?.username ?? ""}`}
+          <DialogTitle sx={modalHeaderSx}>
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              <Box
+                sx={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: 2.5,
+                  bgcolor: "background.paper",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: "0 10px 24px rgba(15, 23, 42, 0.08)",
+                }}
+              >
+                {userDialogMode === "create" ? (
+                  <SparklesIcon sx={{ color: "primary.main" }} />
+                ) : (
+                  <EditIcon sx={{ color: "primary.main" }} />
+                )}
+              </Box>
+              <Box>
+                <Typography variant="h6" fontWeight={800}>
+                  {userDialogMode === "create"
+                    ? userDialogRole === "TEACHER"
+                      ? "Nowe konto nauczyciela"
+                      : "Nowe konto ucznia"
+                    : `Edycja konta ${selectedUser?.username ?? ""}`}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {userDialogRole === "TEACHER"
+                    ? "Utworz lub zaktualizuj konto nauczyciela."
+                    : "Zarzadzaj danymi ucznia, nauczycielem i grupa."}
+                </Typography>
+              </Box>
+            </Stack>
           </DialogTitle>
-          <DialogContent>
-            <Stack spacing={2.5} sx={{ pt: 1 }}>
+          <DialogContent sx={{ px: 3, py: 3 }}>
+            <Stack spacing={2.5}>
               {selectedUser && userDialogMode === "edit" && (
                 <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                   <Chip label={`ID ${selectedUser.id}`} size="small" />
@@ -1322,10 +1938,24 @@ export function AdminDashboard() {
                     color={selectedUser.role === "TEACHER" ? "info" : "success"}
                   />
                   {selectedUser.role === "STUDENT" && (
-                    <Chip
-                      label={`Teacher ID: ${selectedUser.teacherId ?? "brak"}`}
-                      size="small"
-                    />
+                    <>
+                      <Chip
+                        label={
+                          "teacherName" in selectedUser && selectedUser.teacherName
+                            ? `Nauczyciel: ${selectedUser.teacherName}`
+                            : "Nauczyciel: brak"
+                        }
+                        size="small"
+                      />
+                      <Chip
+                        label={
+                          "groupName" in selectedUser && selectedUser.groupName
+                            ? `Grupa: ${selectedUser.groupName}`
+                            : "Grupa: bez przypisania"
+                        }
+                        size="small"
+                      />
+                    </>
                   )}
                 </Stack>
               )}
@@ -1353,20 +1983,22 @@ export function AdminDashboard() {
                 }
                 fullWidth
               />
-              {userDialogMode === "create" && (
+              {(userDialogMode === "create" || userDialogRole === "STUDENT") && (
                 <>
-                  <TextField
-                    label="Haslo"
-                    type="password"
-                    value={userDraft.password}
-                    onChange={(event) =>
-                      setUserDraft((current) => ({
-                        ...current,
-                        password: event.target.value,
-                      }))
-                    }
-                    fullWidth
-                  />
+                  {userDialogMode === "create" && (
+                    <TextField
+                      label="Haslo"
+                      type="password"
+                      value={userDraft.password}
+                      onChange={(event) =>
+                        setUserDraft((current) => ({
+                          ...current,
+                          password: event.target.value,
+                        }))
+                      }
+                      fullWidth
+                    />
+                  )}
 
                   {userDialogRole === "STUDENT" && (
                     <>
@@ -1444,17 +2076,18 @@ export function AdminDashboard() {
             </Stack>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 3 }}>
-            <Button onClick={closeUserDialog}>Anuluj</Button>
+            <Button onClick={closeUserDialog} sx={actionButtonSx}>
+              Anuluj
+            </Button>
             <Button
               variant="contained"
               startIcon={<SaveIcon />}
               onClick={submitUserDialog}
               disabled={
                 userDialogLoading ||
-                (userDialogMode === "create" &&
-                  userDialogRole === "STUDENT" &&
-                  userDraft.teacherId === "")
+                (userDialogRole === "STUDENT" && userDraft.teacherId === "")
               }
+              sx={actionButtonSx}
             >
               {userDialogLoading ? "Zapisywanie..." : "Zapisz"}
             </Button>
@@ -1466,12 +2099,36 @@ export function AdminDashboard() {
           onClose={closeGroupDialog}
           fullWidth
           maxWidth="sm"
+          PaperProps={{ sx: modalPaperSx }}
         >
-          <DialogTitle>
-            {groupDialogMode === "create" ? "Nowa grupa" : "Edycja grupy"}
+          <DialogTitle sx={modalHeaderSx}>
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              <Box
+                sx={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: 2.5,
+                  bgcolor: "background.paper",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: "0 10px 24px rgba(15, 23, 42, 0.08)",
+                }}
+              >
+                <GroupIcon sx={{ color: "primary.main" }} />
+              </Box>
+              <Box>
+                <Typography variant="h6" fontWeight={800}>
+                  {groupDialogMode === "create" ? "Nowa grupa" : "Edycja grupy"}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Utrzymaj czytelny opis i nazwe zgodna z przeznaczeniem grupy.
+                </Typography>
+              </Box>
+            </Stack>
           </DialogTitle>
-          <DialogContent>
-            <Stack spacing={2.5} sx={{ pt: 1 }}>
+          <DialogContent sx={{ px: 3, py: 3 }}>
+            <Stack spacing={2.5}>
               <TextField
                 label="Nazwa grupy"
                 value={groupDraft.name}
@@ -1499,12 +2156,15 @@ export function AdminDashboard() {
             </Stack>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 3 }}>
-            <Button onClick={closeGroupDialog}>Anuluj</Button>
+            <Button onClick={closeGroupDialog} sx={actionButtonSx}>
+              Anuluj
+            </Button>
             <Button
               variant="contained"
               startIcon={<SaveIcon />}
               onClick={submitGroupDialog}
               disabled={groupDialogLoading}
+              sx={actionButtonSx}
             >
               {groupDialogLoading ? "Zapisywanie..." : "Zapisz"}
             </Button>
@@ -1516,28 +2176,74 @@ export function AdminDashboard() {
           onClose={closeDeleteDialog}
           fullWidth
           maxWidth="xs"
+          PaperProps={{ sx: modalPaperSx }}
         >
-          <DialogTitle>
-            {deleteDialog?.type === "user" ? "Usun konto" : "Usun grupe"}
+          <DialogTitle sx={modalHeaderSx}>
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              <Box
+                sx={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: 2.5,
+                  bgcolor: "rgba(220, 38, 38, 0.08)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <DeleteIcon sx={{ color: "error.main" }} />
+              </Box>
+              <Box>
+                <Typography variant="h6" fontWeight={800}>
+                  {deleteDialog?.type === "user" ? "Usun konto" : "Usun grupe"}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Ta operacja jest nieodwracalna.
+                </Typography>
+              </Box>
+            </Stack>
           </DialogTitle>
-          <DialogContent>
-            <Typography variant="body1">
+          <DialogContent sx={{ px: 3, py: 3 }}>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2,
+                borderRadius: 3,
+                border: "1px solid",
+                borderColor: "divider",
+                bgcolor: "background.paper",
+              }}
+            >
+              <Typography variant="body1" fontWeight={700} sx={{ mb: 0.5 }}>
+                {deleteDialog?.label}
+              </Typography>
+              {deleteDialog?.detail && (
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ overflowWrap: "anywhere" }}
+                >
+                  {deleteDialog.detail}
+                </Typography>
+              )}
+            </Paper>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
               {deleteDialog?.type === "user"
-                ? `Czy na pewno chcesz usunac konto "${deleteDialog?.label}"?`
-                : `Czy na pewno chcesz usunac grupe "${deleteDialog?.label}"?`}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              Operacji nie da sie cofnac.
+                ? "Usuniecie konta skasuje dostep tego uzytkownika do systemu."
+                : "Usuniecie grupy wyczysci tez jej sklad i przypisania."}
             </Typography>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 3 }}>
-            <Button onClick={closeDeleteDialog}>Anuluj</Button>
+            <Button onClick={closeDeleteDialog} sx={actionButtonSx}>
+              Anuluj
+            </Button>
             <Button
               color="error"
               variant="contained"
               startIcon={<DeleteIcon />}
               onClick={confirmDelete}
               disabled={deleteLoading}
+              sx={actionButtonSx}
             >
               {deleteLoading ? "Usuwanie..." : "Potwierdz usuniecie"}
             </Button>
@@ -1548,36 +2254,165 @@ export function AdminDashboard() {
           open={Boolean(membershipDialog)}
           onClose={closeMembershipDialog}
           fullWidth
-          maxWidth="xs"
+          maxWidth="sm"
+          PaperProps={{ sx: modalPaperSx }}
         >
-          <DialogTitle>
-            {membershipMode === "add" ? "Dodaj ucznia" : "Usun ucznia"}
+          <DialogTitle sx={modalHeaderSx}>
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              <Box
+                sx={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: 2.5,
+                  bgcolor: "background.paper",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: "0 10px 24px rgba(15, 23, 42, 0.08)",
+                }}
+              >
+                <SchoolIcon sx={{ color: "primary.main" }} />
+              </Box>
+              <Box>
+                <Typography variant="h6" fontWeight={800}>
+                  Zarzadzaj skladem grupy
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Aktualny sklad widzisz od razu, a nowych uczniow dodajesz z listy
+                  przypisanego nauczyciela.
+                </Typography>
+              </Box>
+            </Stack>
           </DialogTitle>
-          <DialogContent>
-            <Stack spacing={2} sx={{ pt: 1 }}>
-              <Typography variant="body2" color="text.secondary">
-                Grupa: {membershipDialog?.groupName}
-              </Typography>
-              <TextField
-                label="ID ucznia"
-                value={membershipUserId}
-                onChange={(event) => setMembershipUserId(event.target.value)}
-                fullWidth
-              />
+          <DialogContent sx={{ px: 3, py: 3 }}>
+            <Stack spacing={2.5}>
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2,
+                  borderRadius: 3,
+                  border: "1px solid",
+                  borderColor: "divider",
+                  bgcolor: "background.paper",
+                }}
+              >
+                <Stack spacing={0.75}>
+                  <Typography variant="body1" fontWeight={700}>
+                    {membershipDialog?.groupName}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Wlasciciel:{" "}
+                    <Box component="span" sx={{ fontWeight: 700, color: "text.primary" }}>
+                      {teacherNameById.get(membershipDialog?.teacherId ?? -1) ??
+                        "Brak danych"}
+                    </Box>
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Uczniowie w grupie: {currentMembershipStudents.length}
+                  </Typography>
+                </Stack>
+              </Paper>
+
+              <Stack spacing={1.25}>
+                <Typography variant="subtitle2" fontWeight={800}>
+                  Aktualni czlonkowie
+                </Typography>
+                {currentMembershipStudents.length === 0 ? (
+                  <Alert severity="info">Ta grupa nie ma jeszcze zadnych uczniow.</Alert>
+                ) : (
+                  <Stack spacing={1}>
+                    {currentMembershipStudents.map((student) => (
+                      <Paper
+                        key={student.id}
+                        elevation={0}
+                        sx={{
+                          p: 1.5,
+                          borderRadius: 3,
+                          border: "1px solid",
+                          borderColor: "divider",
+                          bgcolor: "background.paper",
+                        }}
+                      >
+                        <Stack
+                          direction="row"
+                          spacing={1.5}
+                          justifyContent="space-between"
+                          alignItems="center"
+                        >
+                          <Box sx={{ minWidth: 0, flex: 1 }}>
+                            <Typography
+                              variant="body2"
+                              fontWeight={700}
+                              sx={{ overflowWrap: "anywhere" }}
+                            >
+                              {student.username}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{ overflowWrap: "anywhere" }}
+                            >
+                              {student.email}
+                            </Typography>
+                          </Box>
+                          <IconButton
+                            aria-label={`Usun ${student.username} z grupy`}
+                            onClick={() => removeMembershipStudent(student.id)}
+                            disabled={membershipLoading}
+                            sx={{ ...bottomIconButtonSx, color: "error.main" }}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Stack>
+                      </Paper>
+                    ))}
+                  </Stack>
+                )}
+              </Stack>
+
+              <Divider />
+
+              <Stack spacing={1.25}>
+                <Typography variant="subtitle2" fontWeight={800}>
+                  Dodaj ucznia
+                </Typography>
+                <Autocomplete
+                  size="small"
+                  options={availableMembershipStudents.filter(
+                    (student) => student.groupId !== membershipDialog?.groupId,
+                  )}
+                  value={
+                    availableMembershipStudents.find(
+                      (student) => student.id === membershipStudentId,
+                    ) ?? null
+                  }
+                  onChange={(_, value) => setMembershipStudentId(value?.id ?? "")}
+                  getOptionLabel={(option) => `${option.username} (${option.email})`}
+                  isOptionEqualToValue={(option, value) => option.id === value.id}
+                  noOptionsText="Brak wolnych uczniow dla tego nauczyciela"
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Wybierz ucznia"
+                      helperText="Pokazujemy tylko uczniow przypisanych do wlasciciela tej grupy."
+                    />
+                  )}
+                />
+              </Stack>
             </Stack>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 3 }}>
-            <Button onClick={closeMembershipDialog}>Anuluj</Button>
+            <Button onClick={closeMembershipDialog} sx={actionButtonSx}>
+              Anuluj
+            </Button>
             <Button
               variant="contained"
-              onClick={submitMembershipDialog}
+              startIcon={<AddCircleIcon />}
+              onClick={addMembershipStudent}
               disabled={membershipLoading}
+              sx={actionButtonSx}
             >
-              {membershipLoading
-                ? "Zapisywanie..."
-                : membershipMode === "add"
-                  ? "Dodaj"
-                  : "Usun"}
+              {membershipLoading ? "Zapisywanie..." : "Dodaj ucznia"}
             </Button>
           </DialogActions>
         </Dialog>
