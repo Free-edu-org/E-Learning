@@ -10,11 +10,14 @@ import pl.freeedu.backend.user.dto.RegisterUserRequest;
 import pl.freeedu.backend.user.dto.ChangePasswordRequest;
 import pl.freeedu.backend.user.dto.UpdateUserRequest;
 import pl.freeedu.backend.user.dto.UserResponse;
+import pl.freeedu.backend.user.model.Role;
 import pl.freeedu.backend.user.model.User;
 import pl.freeedu.backend.user.repository.UserRepository;
 import pl.freeedu.backend.security.service.SecurityService;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+
+import java.util.List;
 
 @Service
 public class UserService {
@@ -108,5 +111,10 @@ public class UserService {
 			userRepository.delete(user);
 			return (Void) null;
 		}).subscribeOn(Schedulers.boundedElastic()).then();
+	}
+
+	public Mono<List<UserResponse>> getStudents() {
+		return Mono.fromCallable(() -> userRepository.findByRole(Role.STUDENT).stream().map(userMapper::toUserResponse)
+				.collect(java.util.stream.Collectors.toList())).subscribeOn(Schedulers.boundedElastic());
 	}
 }
