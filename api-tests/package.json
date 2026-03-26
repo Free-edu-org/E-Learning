@@ -1,7 +1,7 @@
 {
   "name": "api-tests",
   "version": "1.0.0",
-  "description": "",
+  "description": "Integration API tests for E-Learning backend",
   "main": "index.js",
   "scripts": {
     "test": "jest"
