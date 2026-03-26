@@ -22,4 +22,6 @@ public class UserGroupResponse {
 	private Integer studentCount;
 
 	private LocalDateTime createdAt;
+
+	private Integer teacherId;
 }

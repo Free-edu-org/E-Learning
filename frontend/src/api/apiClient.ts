@@ -65,5 +65,10 @@ export async function fetchApi<T>(
     return {} as T;
   }
 
-  return response.json();
+  const rawBody = await response.text();
+  if (!rawBody.trim()) {
+    return {} as T;
+  }
+
+  return JSON.parse(rawBody) as T;
 }

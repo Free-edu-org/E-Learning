@@ -99,6 +99,7 @@ public class GlobalExceptionHandler {
 			ServerWebExchange exchange) {
 		ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(status, message);
 		problemDetail.setTitle(status.getReasonPhrase());
+		problemDetail.setType(URI.create("about:blank"));
 		problemDetail.setProperty("code", code);
 		problemDetail.setInstance(URI.create(exchange.getRequest().getPath().value()));
 		return Mono.just(problemDetail);

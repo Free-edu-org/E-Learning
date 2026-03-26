@@ -14,5 +14,6 @@ public interface UserGroupMapper {
 	UserGroup toUserGroup(UserGroupRequest request);
 
 	@Mapping(target = "studentCount", ignore = true)
+	@Mapping(target = "teacherId", source = "teacherId")
 	UserGroupResponse toUserGroupResponse(UserGroup userGroup);
 }

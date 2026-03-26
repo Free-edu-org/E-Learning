@@ -254,6 +254,7 @@ Default local development base URL is `http://localhost:8080`
   "name": "Angielski A1",
   "description": "Grupa początkująca - semestr letni",
   "studentCount": 0,
+  "teacherId": 4,
   "createdAt": "2026-03-21T10:00:00"
 }
 ```
@@ -279,6 +280,7 @@ Default local development base URL is `http://localhost:8080`
     "name": "Angielski A1",
     "description": "Grupa początkująca - semestr letni",
     "studentCount": 2,
+    "teacherId": 4,
     "createdAt": "2026-03-21T10:00:00"
   }
 ]
@@ -302,6 +304,7 @@ Default local development base URL is `http://localhost:8080`
   "name": "Angielski A1",
   "description": "Grupa początkująca - semestr letni",
   "studentCount": 2,
+  "teacherId": 4,
   "createdAt": "2026-03-21T10:00:00"
 }
 ```
@@ -595,10 +598,114 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
 ### 6.1. Get Global Stats
 - **URL**: `/api/v1/admin/stats`
 - **Method**: `GET`
-- **Description**: Endpoint statystyk ogólnych dla panelu (placeholder). Wymaga `ADMIN`.
+- **Description**: Zwraca zagregowane statystyki systemowe dla panelu administratora. Wymaga `ADMIN`.
+
+**Success (200 OK):**
+```json
+{
+  "totalUsers": 14,
+  "totalAdmins": 1,
+  "totalTeachers": 3,
+  "totalStudents": 10,
+  "totalGroups": 6
+}
+```
+
+**Known Errors:**
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
 
 ---
 
+### 6.2. Get All Teachers
+- **URL**: `/api/v1/admin/teachers`
+- **Method**: `GET`
+- **Description**: Zwraca list? wszystkich kont nauczycieli widocznych dla administratora. Wymaga `ADMIN`.
+
+**Success (200 OK):**
+```json
+[
+  {
+    "id": 3,
+    "username": "teacher1",
+    "email": "teacher@example.com",
+    "role": "TEACHER",
+    "teacherId": null,
+    "createdAt": "2026-03-02T21:00:00"
+  }
+]
+```
+
+**Known Errors:**
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
+
+---
+
+### 6.3. Get All Students
+- **URL**: `/api/v1/admin/students`
+- **Method**: `GET`
+- **Description**: Zwraca list? wszystkich kont uczni?w widocznych dla administratora. Wymaga `ADMIN`.
+
+**Success (200 OK):**
+```json
+[
+  {
+    "id": 8,
+    "username": "student1",
+    "email": "user@example.com",
+    "role": "STUDENT",
+    "teacherId": 3,
+    "createdAt": "2026-03-02T21:00:00"
+  }
+]
+```
+
+**Known Errors:**
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
+
+---
+### 6.4. Create Student With Assignment
+- **URL**: `/api/v1/admin/students`
+- **Method**: `POST`
+- **Description**: Tworzy konto ucznia przypisane do wskazanego nauczyciela oraz opcjonalnie do grupy nalezacej do tego nauczyciela. Wymaga `ADMIN`.
+
+**Request Body (JSON):**
+```json
+{
+  "username": "new_student",
+  "email": "new.student@example.com",
+  "password": "password123",
+  "teacherId": 4,
+  "groupId": 1
+}
+```
+
+**Success (201 Created):**
+```json
+{
+  "id": 15,
+  "username": "new_student",
+  "email": "new.student@example.com",
+  "role": "STUDENT",
+  "teacherId": 4,
+  "createdAt": "2026-03-26T20:15:00"
+}
+```
+
+**Known Errors:**
+- `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
+- `INVALID_TEACHER_ASSIGNMENT` (400 Bad Request): Wskazany uzytkownik nie ma roli `TEACHER`.
+- `GROUP_TEACHER_MISMATCH` (400 Bad Request): Wybrana grupa nie nalezy do wskazanego nauczyciela.
+- `USER_NOT_FOUND` (404 Not Found): Teacher does not exist.
+- `USER_GROUP_NOT_FOUND` (404 Not Found): Group does not exist.
+- `EMAIL_ALREADY_TAKEN` (409 Conflict): Email already exists.
+- `USERNAME_ALREADY_TAKEN` (409 Conflict): Username already exists.
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
+
+---
 ## 7. Student Dashboard (`/api/v1/student`)
 
 Warstwa BFF dla uczniów.

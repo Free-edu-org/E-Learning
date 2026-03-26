@@ -1,0 +1,24 @@
+### Admin stats
+GET http://localhost:8080/api/v1/admin/stats
+Authorization: Bearer {{admin_token}}
+
+### Admin teachers
+GET http://localhost:8080/api/v1/admin/teachers
+Authorization: Bearer {{admin_token}}
+
+### Admin students
+GET http://localhost:8080/api/v1/admin/students
+Authorization: Bearer {{admin_token}}
+
+### Create admin student with teacher and optional group
+POST http://localhost:8080/api/v1/admin/students
+Authorization: Bearer {{admin_token}}
+Content-Type: application/json
+
+{
+  "username": "admin_student_modal",
+  "email": "admin.student.modal@example.com",
+  "password": "password123",
+  "teacherId": 4,
+  "groupId": 1
+}

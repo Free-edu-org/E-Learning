@@ -5,6 +5,7 @@ import { useAuth } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Login } from "./features/auth/Login";
 import { TeacherDashboard } from "./features/teacher/TeacherDashboard";
+import { AdminDashboard } from "./features/admin/AdminDashboard";
 import { Box, Typography } from "@mui/material";
 
 /** Redirects to the correct dashboard based on the user's role. */
@@ -16,13 +17,7 @@ function RoleBasedRedirect() {
   }
 
   if (role === "ADMIN") {
-    return (
-      <Box sx={{ p: 4, textAlign: "center" }}>
-        <Typography variant="h5">
-          Panel administratora - wkrótce dostępny
-        </Typography>
-      </Box>
-    );
+    return <Navigate to="/admin" replace />;
   }
 
   // STUDENT fallback - placeholder until a student dashboard is built
@@ -48,7 +43,10 @@ function App() {
             {/* Zabezpieczenie przed wejściem na panel nauczyciela przez inne role */}
             <Route element={<ProtectedRoute allowedRoles={["TEACHER"]} />}>
               <Route path="/teacher" element={<TeacherDashboard />} />
-              {/* Tutaj można dodać /admin/dashboard dla ADMIN */}
+            </Route>
+
+            <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+              <Route path="/admin" element={<AdminDashboard />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />
