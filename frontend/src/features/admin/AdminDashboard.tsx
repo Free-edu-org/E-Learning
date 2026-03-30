@@ -296,8 +296,15 @@ export function AdminDashboard() {
           if (!selectedTeacherIds.has(user.id)) {
             return false;
           }
-        } else if (!selectedTeacherIds.has(user.teacherId ?? -1)) {
-          return false;
+        } else {
+          // Students: check if their group belongs to any selected teacher
+          const studentGroupId = "groupId" in user ? (user as AdminStudentProfile).groupId : null;
+          const teacherGroupIds = new Set(
+            groups.filter((g) => selectedTeacherIds.has(g.teacherId ?? -1)).map((g) => g.id),
+          );
+          if (studentGroupId == null || !teacherGroupIds.has(studentGroupId)) {
+            return false;
+          }
         }
       }
 
@@ -328,6 +335,7 @@ export function AdminDashboard() {
     });
   }, [
     allUsers,
+    groups,
     selectedGroupFilters,
     selectedTeacherFilters,
     userFilter,
@@ -503,16 +511,11 @@ export function AdminDashboard() {
           await userService.createTeacher(payload);
           showToast("success", "Nauczyciel zostal utworzony.");
         } else {
-          if (userDraft.groupId === "") {
-            showToast("error", "Wybierz grupe dla nowego ucznia.");
-            return;
-          }
-
           const payload: AdminCreateStudentRequest = {
             username: userDraft.username,
             email: userDraft.email,
             password: userDraft.password,
-            groupId: userDraft.groupId,
+            groupId: userDraft.groupId === "" ? null : userDraft.groupId,
           };
 
           await adminService.createStudent(payload);
@@ -522,15 +525,10 @@ export function AdminDashboard() {
         let updated: AdminListUser;
 
         if (selectedUser.role === "STUDENT") {
-          if (userDraft.groupId === "") {
-            showToast("error", "Wybierz grupe dla ucznia.");
-            return;
-          }
-
           const payload: AdminUpdateStudentRequest = {
             username: userDraft.username,
             email: userDraft.email,
-            groupId: userDraft.groupId,
+            groupId: userDraft.groupId === "" ? null : userDraft.groupId,
           };
           updated = await adminService.updateStudent(selectedUser.id, payload);
         } else {
@@ -1218,8 +1216,8 @@ export function AdminDashboard() {
                                 >
                                   Nauczyciel:{" "}
                                   <Box component="span" sx={{ fontWeight: 700, color: "text.primary" }}>
-                                    {"teacherName" in user && user.teacherName
-                                      ? user.teacherName
+                                    {"groupId" in user && user.groupId != null
+                                      ? teacherNameById.get(groups.find((g) => g.id === (user as AdminStudentProfile).groupId)?.teacherId ?? -1) ?? "Brak danych"
                                       : "Brak przypisania"}
                                   </Box>
                                 </Typography>
@@ -1263,9 +1261,9 @@ export function AdminDashboard() {
                                   label: user.username,
                                   detail:
                                     user.role === "STUDENT" &&
-                                    "teacherName" in user &&
-                                    user.teacherName
-                                      ? `Uczen przypisany do ${user.teacherName}`
+                                    "groupName" in user &&
+                                    user.groupName
+                                      ? `Uczen w grupie ${user.groupName}`
                                       : user.email,
                                 })
                               }
@@ -1352,8 +1350,8 @@ export function AdminDashboard() {
                                       component="span"
                                       sx={{ fontWeight: 700, color: "text.primary" }}
                                     >
-                                      {"teacherName" in user && user.teacherName
-                                        ? user.teacherName
+                                      {"groupId" in user && user.groupId != null
+                                        ? teacherNameById.get(groups.find((g) => g.id === (user as AdminStudentProfile).groupId)?.teacherId ?? -1) ?? "Brak danych"
                                         : "Brak przypisania"}
                                     </Box>
                                   </Typography>
@@ -1417,9 +1415,9 @@ export function AdminDashboard() {
                                       label: user.username,
                                       detail:
                                         user.role === "STUDENT" &&
-                                        "teacherName" in user &&
-                                        user.teacherName
-                                          ? `Uczen przypisany do ${user.teacherName}`
+                                        "groupName" in user &&
+                                        user.groupName
+                                          ? `Uczen w grupie ${user.groupName}`
                                           : user.email,
                                     })
                                   }
@@ -1930,8 +1928,8 @@ export function AdminDashboard() {
                     <>
                       <Chip
                         label={
-                          "teacherName" in selectedUser && selectedUser.teacherName
-                            ? `Nauczyciel: ${selectedUser.teacherName}`
+                          "groupId" in selectedUser && selectedUser.groupId != null
+                            ? `Nauczyciel: ${teacherNameById.get(groups.find((g) => g.id === (selectedUser as AdminStudentProfile).groupId)?.teacherId ?? -1) ?? "brak danych"}`
                             : "Nauczyciel: brak"
                         }
                         size="small"
@@ -2005,11 +2003,10 @@ export function AdminDashboard() {
                           }))
                         }
                         fullWidth
-                        required
                         helperText={
                           assignableGroups.length === 0
-                            ? "Brak dostepnych grup. Utworz grupe najpierw."
-                            : "Wybierz grupe do ktorej chcesz przypisac ucznia."
+                            ? "Brak grup do wyboru"
+                            : "Wybór grupy (opcjonalny)"
                         }
                       >
                         <MenuItem value="">Bez grupy</MenuItem>
@@ -2033,10 +2030,7 @@ export function AdminDashboard() {
               variant="contained"
               startIcon={<SaveIcon />}
               onClick={submitUserDialog}
-              disabled={
-                userDialogLoading ||
-                (userDialogRole === "STUDENT" && userDraft.groupId === "")
-              }
+              disabled={userDialogLoading}
               sx={actionButtonSx}
             >
               {userDialogLoading ? "Zapisywanie..." : "Zapisz"}

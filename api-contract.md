@@ -40,7 +40,7 @@ Default local development base URL is `http://localhost:8080`
 ### 2.1. Register Student
 - **URL**: `/api/v1/users/register`
 - **Method**: `POST`
-- **Description**: Registers a new user with the `STUDENT` role. Requires `ADMIN` or `TEACHER` authority. When created by `TEACHER`, backend automatically sets `teacherId` for that student.
+- **Description**: Registers a new user with the `STUDENT` role. Requires `ADMIN` authority.
 
 **Request Body (JSON):**
 ```json
@@ -126,7 +126,6 @@ Default local development base URL is `http://localhost:8080`
   "username": "student1",
   "email": "user@example.com",
   "role": "STUDENT",
-  "teacherId": null,
   "createdAt": "2026-03-02T21:00:00"
 }
 ```
@@ -149,7 +148,6 @@ Default local development base URL is `http://localhost:8080`
   "username": "student1",
   "email": "user@example.com",
   "role": "STUDENT",
-  "teacherId": 3,
   "createdAt": "2026-03-02T21:00:00"
 }
 ```
@@ -181,7 +179,6 @@ Default local development base URL is `http://localhost:8080`
   "username": "newUsername",
   "email": "new.email@example.com",
   "role": "STUDENT",
-  "teacherId": null,
   "createdAt": "2026-03-02T21:00:00"
 }
 ```
@@ -585,12 +582,50 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
 ### 5.4. Get My Students
 - **URL**: `/api/v1/teacher/students`
 - **Method**: `GET`
-- **Description**: Zwraca list� uczni�w przypisanych do aktualnie zalogowanego nauczyciela (`student.teacherId = currentTeacherId`).
+- **Description**: Zwraca listę uczniów przypisanych do grup aktualnie zalogowanego nauczyciela (poprzez tabelę `UserInGroup` i `UserGroup.teacherId`).
 - **Authorization**: `TEACHER`
 
-**Success (200 OK):** Zwraca macierz element�w `UserResponse` (wy��cznie u�ytkownicy z rol� `STUDENT`).
+**Success (200 OK):** Zwraca macierz elementów `UserResponse` (wyłącznie użytkownicy z rolą `STUDENT`).
 
 **Known Errors:**
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
+
+---
+
+### 5.5. Create Student (Teacher API)
+- **URL**: `/api/v1/teacher/students`
+- **Method**: `POST`
+- **Description**: Tworzy konto ucznia i od razu przypisuje go do wskazanej grupy należącej do aktualnie zalogowanego nauczyciela. Pole `groupId` jest **wymagane**.
+- **Authorization**: `TEACHER`
+
+**Request Body (JSON):**
+```json
+{
+  "username": "new_student",
+  "email": "new.student@example.com",
+  "password": "password123",
+  "groupId": 1
+}
+```
+
+**Success (201 Created):**
+```json
+{
+  "id": 15,
+  "username": "new_student",
+  "email": "new.student@example.com",
+  "role": "STUDENT",
+  "createdAt": "2026-03-30T20:15:00"
+}
+```
+
+**Known Errors:**
+- `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid (w tym brak `groupId`).
+- `INVALID_ROLE_FOR_GROUP` (400 Bad Request): Wskazana grupa nie należy do aktualnego nauczyciela.
+- `USER_GROUP_NOT_FOUND` (404 Not Found): Grupa o podanym ID nie istnieje.
+- `EMAIL_ALREADY_TAKEN` (409 Conflict): Email already exists.
+- `USERNAME_ALREADY_TAKEN` (409 Conflict): Username already exists.
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
 - `FORBIDDEN` (403 Forbidden): Token role does not permit access.
 
@@ -625,7 +660,7 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
 ### 6.2. Get All Teachers
 - **URL**: `/api/v1/admin/teachers`
 - **Method**: `GET`
-- **Description**: Zwraca list? wszystkich kont nauczycieli widocznych dla administratora. Wymaga `ADMIN`.
+- **Description**: Zwraca listę wszystkich kont nauczycieli widocznych dla administratora. Wymaga `ADMIN`.
 
 **Success (200 OK):**
 ```json
@@ -635,7 +670,6 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
     "username": "teacher1",
     "email": "teacher@example.com",
     "role": "TEACHER",
-    "teacherId": null,
     "createdAt": "2026-03-02T21:00:00"
   }
 ]
@@ -650,7 +684,7 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
 ### 6.3. Get All Students
 - **URL**: `/api/v1/admin/students`
 - **Method**: `GET`
-- **Description**: Zwraca list? wszystkich kont uczni?w widocznych dla administratora. Wymaga `ADMIN`.
+- **Description**: Zwraca listę wszystkich kont uczniów widocznych dla administratora. Wymaga `ADMIN`.
 
 **Success (200 OK):**
 ```json
@@ -660,8 +694,6 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
     "username": "student1",
     "email": "user@example.com",
     "role": "STUDENT",
-    "teacherId": 3,
-    "teacherName": "pan_tomasz",
     "groupId": 1,
     "groupName": "Angielski A1",
     "createdAt": "2026-03-02T21:00:00"
@@ -674,10 +706,10 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
 - `FORBIDDEN` (403 Forbidden): Token role does not permit access.
 
 ---
-### 6.4. Create Student With Assignment
+### 6.4. Create Student (Admin API)
 - **URL**: `/api/v1/admin/students`
 - **Method**: `POST`
-- **Description**: Tworzy konto ucznia przypisane do wskazanego nauczyciela oraz opcjonalnie do grupy nalezacej do tego nauczyciela. Wymaga `ADMIN`.
+- **Description**: Tworzy konto ucznia. Opcjonalnie przypisuje do grupy. Wymaga `ADMIN`.
 
 **Request Body (JSON):**
 ```json
@@ -685,10 +717,10 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
   "username": "new_student",
   "email": "new.student@example.com",
   "password": "password123",
-  "teacherId": 4,
   "groupId": 1
 }
 ```
+> `groupId` jest opcjonalne. Jeśli nie podano, uczeń zostaje stworzony bez przypisania do grupy.
 
 **Success (201 Created):**
 ```json
@@ -697,16 +729,12 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
   "username": "new_student",
   "email": "new.student@example.com",
   "role": "STUDENT",
-  "teacherId": 4,
   "createdAt": "2026-03-26T20:15:00"
 }
 ```
 
 **Known Errors:**
 - `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
-- `INVALID_TEACHER_ASSIGNMENT` (400 Bad Request): Wskazany uzytkownik nie ma roli `TEACHER`.
-- `GROUP_TEACHER_MISMATCH` (400 Bad Request): Wybrana grupa nie nalezy do wskazanego nauczyciela.
-- `USER_NOT_FOUND` (404 Not Found): Teacher does not exist.
 - `USER_GROUP_NOT_FOUND` (404 Not Found): Group does not exist.
 - `EMAIL_ALREADY_TAKEN` (409 Conflict): Email already exists.
 - `USERNAME_ALREADY_TAKEN` (409 Conflict): Username already exists.
@@ -714,20 +742,20 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
 - `FORBIDDEN` (403 Forbidden): Token role does not permit access.
 
 ---
-### 6.5. Update Student Assignment
+### 6.5. Update Student (Admin API)
 - **URL**: `/api/v1/admin/students/{id}`
 - **Method**: `PUT`
-- **Description**: Aktualizuje dane ucznia oraz zmienia przypisanego nauczyciela i opcjonalna grupe. Wymaga `ADMIN`.
+- **Description**: Aktualizuje dane ucznia (username, email) oraz opcjonalnie zmienia przypisanie do grupy. Wymaga `ADMIN`.
 
 **Request Body (JSON):**
 ```json
 {
   "username": "updated_student",
   "email": "updated.student@example.com",
-  "teacherId": 4,
   "groupId": 2
 }
 ```
+> Jeśli `groupId` jest `null` lub pominięte, dotychczasowe powiązanie z grupą zostaje usunięte.
 
 **Success (200 OK):**
 ```json
@@ -736,8 +764,6 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
   "username": "updated_student",
   "email": "updated.student@example.com",
   "role": "STUDENT",
-  "teacherId": 4,
-  "teacherName": "pan_tomasz",
   "groupId": 2,
   "groupName": "Angielski B2",
   "createdAt": "2026-03-26T20:15:00"
@@ -746,10 +772,8 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
 
 **Known Errors:**
 - `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
-- `INVALID_STUDENT_ASSIGNMENT` (400 Bad Request): Wskazany uzytkownik nie ma roli `STUDENT`.
-- `INVALID_TEACHER_ASSIGNMENT` (400 Bad Request): Wskazany uzytkownik nie ma roli `TEACHER`.
-- `GROUP_TEACHER_MISMATCH` (400 Bad Request): Wybrana grupa nie nalezy do wskazanego nauczyciela.
-- `USER_NOT_FOUND` (404 Not Found): Student or teacher does not exist.
+- `INVALID_STUDENT_ASSIGNMENT` (400 Bad Request): Wskazany użytkownik nie ma roli `STUDENT`.
+- `USER_NOT_FOUND` (404 Not Found): Student does not exist.
 - `USER_GROUP_NOT_FOUND` (404 Not Found): Group does not exist.
 - `EMAIL_ALREADY_TAKEN` (409 Conflict): Email already exists.
 - `USERNAME_ALREADY_TAKEN` (409 Conflict): Username already exists.

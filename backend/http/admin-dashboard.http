@@ -10,27 +10,68 @@ Authorization: Bearer {{admin_token}}
 GET http://localhost:8080/api/v1/admin/students
 Authorization: Bearer {{admin_token}}
 
-### Create admin student with teacher and optional group
+### Create admin student WITHOUT group (groupId optional)
 POST http://localhost:8080/api/v1/admin/students
 Authorization: Bearer {{admin_token}}
 Content-Type: application/json
 
 {
-  "username": "admin_student_modal",
-  "email": "admin.student.modal@example.com",
+  "username": "admin_student_no_group",
+  "email": "admin.student.nogroup@example.com",
+  "password": "password123"
+}
+
+### Create admin student WITH group
+POST http://localhost:8080/api/v1/admin/students
+Authorization: Bearer {{admin_token}}
+Content-Type: application/json
+
+{
+  "username": "admin_student_with_group",
+  "email": "admin.student.withgroup@example.com",
   "password": "password123",
-  "teacherId": 4,
   "groupId": 1
 }
 
-### Update admin student assignment
+### Create admin student - validation fail (bad email)
+POST http://localhost:8080/api/v1/admin/students
+Authorization: Bearer {{admin_token}}
+Content-Type: application/json
+
+{
+  "username": "",
+  "email": "invalid",
+  "password": ""
+}
+
+### Update admin student assignment (with group)
 PUT http://localhost:8080/api/v1/admin/students/15
 Authorization: Bearer {{admin_token}}
 Content-Type: application/json
 
 {
-  "username": "admin_student_modal",
-  "email": "admin.student.modal@example.com",
-  "teacherId": 4,
+  "username": "admin_student_updated",
+  "email": "admin.student.updated@example.com",
   "groupId": 2
+}
+
+### Update admin student - unassign from group (null groupId)
+PUT http://localhost:8080/api/v1/admin/students/15
+Authorization: Bearer {{admin_token}}
+Content-Type: application/json
+
+{
+  "username": "admin_student_updated",
+  "email": "admin.student.updated@example.com",
+  "groupId": null
+}
+
+### Update admin student - forbidden (TEACHER token)
+PUT http://localhost:8080/api/v1/admin/students/15
+Authorization: Bearer {{teacher_token}}
+Content-Type: application/json
+
+{
+  "username": "hacker_attempt",
+  "email": "hacker@example.com"
 }

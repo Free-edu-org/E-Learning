@@ -14,6 +14,8 @@ import pl.freeedu.backend.teacher.dto.TeacherStatsResponse;
 import pl.freeedu.backend.teacher.service.TeacherService;
 import pl.freeedu.backend.user.dto.UserResponse;
 import pl.freeedu.backend.usergroup.dto.UserGroupResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import org.springframework.web.bind.annotation.PostMapping;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -62,5 +64,19 @@ public class TeacherDashboardController {
 	@ResponseStatus(HttpStatus.OK)
 	public Flux<UserResponse> getMyStudents() {
 		return teacherService.getMyStudents();
+	}
+
+	@Operation(summary = "Create a student assigned to the teacher's group")
+	@ApiResponses(value = {@ApiResponse(responseCode = "201", description = "Student successfully created"),
+			@ApiResponse(responseCode = "400", description = "Bad Request"),
+			@ApiResponse(responseCode = "403", description = "Forbidden - requires TEACHER role"),
+			@ApiResponse(responseCode = "404", description = "Group not found"),
+			@ApiResponse(responseCode = "409", description = "Conflict - EMAIL_ALREADY_TAKEN or USERNAME_ALREADY_TAKEN")})
+	@PostMapping("/students")
+	@PreAuthorize("hasRole('TEACHER')")
+	@ResponseStatus(HttpStatus.CREATED)
+	public Mono<UserResponse> createStudent(
+			@jakarta.validation.Valid @org.springframework.web.bind.annotation.RequestBody Mono<pl.freeedu.backend.teacher.dto.TeacherCreateStudentRequest> request) {
+		return teacherService.createStudent(request);
 	}
 }

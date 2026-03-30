@@ -80,20 +80,17 @@ public class AdminService {
 				throw new UserException(UserErrorCode.USERNAME_ALREADY_TAKEN);
 			}
 
-			if (request.getGroupId() == null) {
-				throw new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND);
-			}
-
-			UserGroup group = userGroupRepository.findById(request.getGroupId())
-					.orElseThrow(() -> new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND));
-
 			User student = User.builder().email(request.getEmail()).username(request.getUsername())
 					.password(passwordEncoder.encode(request.getPassword())).role(Role.STUDENT).build();
 
 			try {
 				User savedStudent = userRepository.save(student);
-				userInGroupRepository
-						.save(UserInGroup.builder().userId(savedStudent.getId()).groupId(group.getId()).build());
+				if (request.getGroupId() != null) {
+					UserGroup group = userGroupRepository.findById(request.getGroupId())
+							.orElseThrow(() -> new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND));
+					userInGroupRepository
+							.save(UserInGroup.builder().userId(savedStudent.getId()).groupId(group.getId()).build());
+				}
 				return userMapper.toUserResponse(savedStudent);
 			} catch (DataIntegrityViolationException ex) {
 				if (userRepository.existsByEmail(request.getEmail())) {
@@ -123,24 +120,27 @@ public class AdminService {
 				throw new UserException(UserErrorCode.USERNAME_ALREADY_TAKEN);
 			}
 
-			if (request.getGroupId() == null) {
-				throw new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND);
-			}
-
-			UserGroup group = userGroupRepository.findById(request.getGroupId())
-					.orElseThrow(() -> new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND));
-
 			student.setUsername(request.getUsername());
 			student.setEmail(request.getEmail());
 			User savedStudent = userRepository.save(student);
 
 			userInGroupRepository.findByUserId(savedStudent.getId()).ifPresent(userInGroupRepository::delete);
-			userInGroupRepository
-					.save(UserInGroup.builder().userId(savedStudent.getId()).groupId(group.getId()).build());
+
+			Integer finalGroupId = null;
+			String finalGroupName = null;
+
+			if (request.getGroupId() != null) {
+				UserGroup group = userGroupRepository.findById(request.getGroupId())
+						.orElseThrow(() -> new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND));
+				userInGroupRepository
+						.save(UserInGroup.builder().userId(savedStudent.getId()).groupId(group.getId()).build());
+				finalGroupId = group.getId();
+				finalGroupName = group.getName();
+			}
 
 			return AdminStudentResponse.builder().id(savedStudent.getId()).email(savedStudent.getEmail())
-					.username(savedStudent.getUsername()).role(savedStudent.getRole()).groupId(group.getId())
-					.groupName(group.getName()).createdAt(savedStudent.getCreatedAt()).build();
+					.username(savedStudent.getUsername()).role(savedStudent.getRole()).groupId(finalGroupId)
+					.groupName(finalGroupName).createdAt(savedStudent.getCreatedAt()).build();
 		}).subscribeOn(Schedulers.boundedElastic());
 	}
 

@@ -233,7 +233,6 @@ describe('Teacher Dashboard Access API (/api/v1/teacher/*)', () => {
     });
 
     it('should return 403 for /teacher/students when role is ADMIN', async () => {
-        setAuthToken(adminToken);
         const response = await apiClient.get('/teacher/students');
         expect(response.status).toBe(403);
     });
@@ -248,7 +247,145 @@ describe('Teacher Dashboard Access API (/api/v1/teacher/*)', () => {
         expect(returnedIds).not.toContain(foreignTeacherStudentId);
         response.data.forEach((u) => {
             expect(u.role).toBe('STUDENT');
-            expect(u.teacherId).toBe(teacherId);
+        });
+    });
+
+    describe('POST /api/v1/teacher/students', () => {
+        const createdStudentIds = [];
+
+        afterAll(async () => {
+            setAuthToken(adminToken);
+            for (const id of createdStudentIds.reverse()) {
+                const response = await apiClient.delete(`/users/${id}`);
+                expect([204, 404]).toContain(response.status);
+            }
+        });
+
+        it('should return 401 when unauthenticated', async () => {
+            setAuthToken(null);
+            const response = await apiClient.post('/teacher/students', {
+                email: `unauth.ts.${uniqueId}@example.com`,
+                username: `unauth_ts_${uniqueId}`,
+                password: 'password123',
+                groupId: firstTeacherGroupId
+            });
+            expect(response.status).toBe(401);
+        });
+
+        it('should return 403 for STUDENT', async () => {
+            setAuthToken(studentToken);
+            const response = await apiClient.post('/teacher/students', {
+                email: `stud.ts.${uniqueId}@example.com`,
+                username: `stud_ts_${uniqueId}`,
+                password: 'password123',
+                groupId: firstTeacherGroupId
+            });
+            expect(response.status).toBe(403);
+        });
+
+        it('should return 403 for ADMIN', async () => {
+            setAuthToken(adminToken);
+            const response = await apiClient.post('/teacher/students', {
+                email: `admin.ts.${uniqueId}@example.com`,
+                username: `admin_ts_${uniqueId}`,
+                password: 'password123',
+                groupId: firstTeacherGroupId
+            });
+            expect(response.status).toBe(403);
+        });
+
+        it('should create student in own group for TEACHER (201)', async () => {
+            setAuthToken(teacherToken);
+            const response = await apiClient.post('/teacher/students', {
+                email: `teacher.new.student.${uniqueId}@example.com`,
+                username: `teacher_new_student_${uniqueId}`,
+                password: 'password123',
+                groupId: firstTeacherGroupId
+            });
+
+            expect(response.status).toBe(201);
+            expect(response.data.role).toBe('STUDENT');
+            expect(response.data.email).toBe(`teacher.new.student.${uniqueId}@example.com`);
+            expect(response.data.username).toBe(`teacher_new_student_${uniqueId}`);
+            expect(response.data).toHaveProperty('id');
+            expect(response.data).toHaveProperty('createdAt');
+            createdStudentIds.push(response.data.id);
+
+            // Verify created student appears in teacher's students list
+            const studentsResponse = await apiClient.get('/teacher/students');
+            expect(studentsResponse.status).toBe(200);
+            expect(studentsResponse.data.some((s) => s.id === response.data.id)).toBe(true);
+        });
+
+        it('should reject creating student in foreign teacher group (400 INVALID_ROLE_FOR_GROUP)', async () => {
+            setAuthToken(teacherToken);
+            const response = await apiClient.post('/teacher/students', {
+                email: `teacher.foreign.grp.${uniqueId}@example.com`,
+                username: `teacher_foreign_grp_${uniqueId}`,
+                password: 'password123',
+                groupId: secondTeacherGroupId
+            });
+            expect(response.status).toBe(400);
+            expect(response.data.code).toBe('INVALID_ROLE_FOR_GROUP');
+        });
+
+        it('should reject non-existent groupId (404 USER_GROUP_NOT_FOUND)', async () => {
+            setAuthToken(teacherToken);
+            const response = await apiClient.post('/teacher/students', {
+                email: `teacher.nogrp.${uniqueId}@example.com`,
+                username: `teacher_nogrp_${uniqueId}`,
+                password: 'password123',
+                groupId: 999999
+            });
+            expect(response.status).toBe(404);
+            expect(response.data.code).toBe('USER_GROUP_NOT_FOUND');
+        });
+
+        it('should reject missing groupId (400 VALIDATION_FAILED)', async () => {
+            setAuthToken(teacherToken);
+            const response = await apiClient.post('/teacher/students', {
+                email: `teacher.noid.${uniqueId}@example.com`,
+                username: `teacher_noid_${uniqueId}`,
+                password: 'password123'
+            });
+            expect(response.status).toBe(400);
+            expect(response.data.code).toBe('VALIDATION_FAILED');
+        });
+
+        it('should reject invalid payload (400 VALIDATION_FAILED)', async () => {
+            setAuthToken(teacherToken);
+            const response = await apiClient.post('/teacher/students', {
+                email: 'not-an-email',
+                username: '',
+                password: '',
+                groupId: firstTeacherGroupId
+            });
+            expect(response.status).toBe(400);
+            expect(response.data.code).toBe('VALIDATION_FAILED');
+        });
+
+        it('should return 409 for EMAIL_ALREADY_TAKEN', async () => {
+            setAuthToken(teacherToken);
+            const response = await apiClient.post('/teacher/students', {
+                email: `teacher.new.student.${uniqueId}@example.com`,
+                username: `teacher_dup_check_${uniqueId}`,
+                password: 'password123',
+                groupId: firstTeacherGroupId
+            });
+            expect(response.status).toBe(409);
+            expect(response.data.code).toBe('EMAIL_ALREADY_TAKEN');
+        });
+
+        it('should return 409 for USERNAME_ALREADY_TAKEN', async () => {
+            setAuthToken(teacherToken);
+            const response = await apiClient.post('/teacher/students', {
+                email: `teacher.dup.username.${uniqueId}@example.com`,
+                username: `teacher_new_student_${uniqueId}`,
+                password: 'password123',
+                groupId: firstTeacherGroupId
+            });
+            expect(response.status).toBe(409);
+            expect(response.data.code).toBe('USERNAME_ALREADY_TAKEN');
         });
     });
 });

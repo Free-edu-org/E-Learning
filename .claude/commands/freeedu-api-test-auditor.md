@@ -58,7 +58,6 @@ Uzyj tego skilla, gdy celem jest utrzymanie dokumentacji i testow API 1:1 z aktu
 - brak tokena (401)
 - niepoprawna rola (403)
 - owner vs non-owner
-- teacher->student relation (`teacherId`)
 - admin-only i teacher-only endpoints
 
 6. Pokryj edge/corner cases:

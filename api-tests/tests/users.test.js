@@ -71,11 +71,20 @@ describe('Users API (/api/v1/users)', () => {
             expect(response.status).toBe(401);
         });
 
-        it('should fail if not an admin (403 Forbidden)', async () => {
-            setAuthToken(staticStudent1Token); // Student trying to create user
+        it('should fail if role is STUDENT (403 Forbidden)', async () => {
+            setAuthToken(staticStudent1Token);
             const dummyUser = { email: `test2${uniqueId}@example.com`, username: `test2${uniqueId}`, password: 'password123' };
             const response = await apiClient.post('/users/register', dummyUser);
-            expect([401, 403]).toContain(response.status); // Some frameworks return 401 instead of 403 for unauthorized paths
+            expect(response.status).toBe(403);
+        });
+
+        it('should fail if role is TEACHER (403 Forbidden)', async () => {
+            const teacherCreds = { identifier: 'pan_tomasz', password: 'admin1' };
+            const loginRes = await apiClient.post('/auth/login', teacherCreds);
+            setAuthToken(loginRes.data.token);
+            const dummyUser = { email: `test3${uniqueId}@example.com`, username: `test3${uniqueId}`, password: 'password123' };
+            const response = await apiClient.post('/users/register', dummyUser);
+            expect(response.status).toBe(403);
         });
 
         it('should fail with EMAIL_ALREADY_TAKEN (409 Conflict)', async () => {

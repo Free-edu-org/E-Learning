@@ -13,13 +13,13 @@ export interface AdminCreateStudentRequest {
   username: string;
   email: string;
   password: string;
-  groupId: number;
+  groupId: number | null;
 }
 
 export interface AdminUpdateStudentRequest {
   username: string;
   email: string;
-  groupId: number;
+  groupId: number | null;
 }
 
 export interface AdminStudentProfile extends UserProfile {

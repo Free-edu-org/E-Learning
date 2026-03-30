@@ -62,7 +62,7 @@ public class UserController {
 			@ApiResponse(responseCode = "403", description = "Forbidden - requires ADMIN or TEACHER role", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "409", description = "Conflict - EMAIL_ALREADY_TAKEN or USERNAME_ALREADY_TAKEN", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PostMapping("/register")
-	@PreAuthorize("hasRole('ADMIN') or hasRole('TEACHER')")
+	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseStatus(HttpStatus.CREATED)
 	public Mono<Void> registerStudent(@Valid @RequestBody Mono<RegisterUserRequest> request) {
 		return userService.registerStudent(request);

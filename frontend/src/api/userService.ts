@@ -5,7 +5,6 @@ export interface UserProfile {
   username: string;
   email: string;
   role: string;
-  teacherId?: number | null;
   createdAt: string;
 }
 

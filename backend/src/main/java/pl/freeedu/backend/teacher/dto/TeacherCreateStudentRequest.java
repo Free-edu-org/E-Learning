@@ -1,8 +1,8 @@
-package pl.freeedu.backend.admin.dto;
+package pl.freeedu.backend.teacher.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AdminUpdateStudentRequest {
+public class TeacherCreateStudentRequest {
 
 	@NotBlank(message = "Username is required")
 	private String username;
@@ -21,5 +21,9 @@ public class AdminUpdateStudentRequest {
 	@Email(message = "Invalid email format")
 	private String email;
 
+	@NotBlank(message = "Password is required")
+	private String password;
+
+	@NotNull(message = "Group ID is required")
 	private Integer groupId;
 }
