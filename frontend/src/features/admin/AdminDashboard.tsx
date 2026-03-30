@@ -45,6 +45,7 @@ import {
   GridViewOutlined as GridIcon,
 } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
+import type { SxProps, Theme } from "@mui/material/styles";
 import { useNavigate } from "react-router-dom";
 import {
   adminService,
@@ -448,6 +449,8 @@ export function AdminDashboard() {
     () => new Map(teachers.map((teacher) => [teacher.id, teacher.username])),
     [teachers],
   );
+
+  const quickActionTileSx = [panelSurfaceSx, panelSurfaceActionSx, { flex: 1, minWidth: 210 }] as SxProps<Theme>;
 
   const groupFilterOptions = useMemo(() => {
     if (selectedTeacherFilters.length === 0) {
@@ -990,11 +993,7 @@ export function AdminDashboard() {
           <Paper
             elevation={0}
             onClick={() => openCreateUserDialog("TEACHER")}
-            sx={[
-              panelSurfaceSx as any,
-              panelSurfaceActionSx as any,
-              { flex: 1, minWidth: 210 },
-            ]}
+            sx={quickActionTileSx}
           >
             <Box sx={{ color: "info.main", mb: 0.5 }}>
               <SchoolIcon sx={{ fontSize: 30 }} />
@@ -1009,11 +1008,7 @@ export function AdminDashboard() {
           <Paper
             elevation={0}
             onClick={() => openCreateUserDialog("STUDENT")}
-            sx={[
-              panelSurfaceSx as any,
-              panelSurfaceActionSx as any,
-              { flex: 1, minWidth: 210 },
-            ]}
+            sx={quickActionTileSx}
           >
             <Box sx={{ color: "success.main", mb: 0.5 }}>
               <PersonIcon sx={{ fontSize: 30 }} />
@@ -1028,11 +1023,7 @@ export function AdminDashboard() {
           <Paper
             elevation={0}
             onClick={openCreateGroupDialog}
-            sx={[
-              panelSurfaceSx as any,
-              panelSurfaceActionSx as any,
-              { flex: 1, minWidth: 210 },
-            ]}
+            sx={quickActionTileSx}
           >
             <Box sx={{ color: "warning.main", mb: 0.5 }}>
               <GroupIcon sx={{ fontSize: 30 }} />
