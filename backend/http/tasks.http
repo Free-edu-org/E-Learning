@@ -1,0 +1,152 @@
+### Get all tasks for a lesson (STUDENT/TEACHER/ADMIN)
+GET http://localhost:8080/api/v1/lessons/1/tasks
+Authorization: Bearer {{auth_token}}
+
+### Create choose task (ADMIN or lesson owner TEACHER)
+POST http://localhost:8080/api/v1/lessons/1/tasks/choose
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "task": "What is 2+2?",
+  "possibleAnswers": "3|4|5|6",
+  "correctAnswer": 1,
+  "hint": "Basic math",
+  "section": "Math"
+}
+
+### Update choose task
+PUT http://localhost:8080/api/v1/lessons/1/tasks/choose/1
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "task": "What is 3+3?",
+  "possibleAnswers": "5|6|7|8",
+  "correctAnswer": 1,
+  "hint": "Updated",
+  "section": "Math"
+}
+
+### Delete choose task
+DELETE http://localhost:8080/api/v1/lessons/1/tasks/choose/1
+Authorization: Bearer {{auth_token}}
+
+### Create write task
+POST http://localhost:8080/api/v1/lessons/1/tasks/write
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "task": "Write the past tense of 'go'",
+  "correctAnswer": "went",
+  "hint": "Irregular verb",
+  "section": "Grammar"
+}
+
+### Update write task
+PUT http://localhost:8080/api/v1/lessons/1/tasks/write/1
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "task": "Write the past tense of 'run'",
+  "correctAnswer": "ran",
+  "hint": "Also irregular",
+  "section": "Grammar"
+}
+
+### Delete write task
+DELETE http://localhost:8080/api/v1/lessons/1/tasks/write/1
+Authorization: Bearer {{auth_token}}
+
+### Create scatter task
+POST http://localhost:8080/api/v1/lessons/1/tasks/scatter
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "task": "Arrange the words",
+  "words": "is|cat|the|big",
+  "correctAnswer": "the cat is big",
+  "hint": "Subject first",
+  "section": "Grammar"
+}
+
+### Update scatter task
+PUT http://localhost:8080/api/v1/lessons/1/tasks/scatter/1
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "task": "Arrange updated",
+  "words": "is|dog|the|small",
+  "correctAnswer": "the dog is small",
+  "hint": "Subject first"
+}
+
+### Delete scatter task
+DELETE http://localhost:8080/api/v1/lessons/1/tasks/scatter/1
+Authorization: Bearer {{auth_token}}
+
+### Create speak task
+POST http://localhost:8080/api/v1/lessons/1/tasks/speak
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "task": "Say hello in English",
+  "hint": "Greeting",
+  "section": "Speaking"
+}
+
+### Update speak task
+PUT http://localhost:8080/api/v1/lessons/1/tasks/speak/1
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "task": "Say goodbye in English",
+  "hint": "Farewell"
+}
+
+### Delete speak task
+DELETE http://localhost:8080/api/v1/lessons/1/tasks/speak/1
+Authorization: Bearer {{auth_token}}
+
+### Submit lesson answers (STUDENT only)
+POST http://localhost:8080/api/v1/lessons/1/submit
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "answers": [
+    { "taskId": 1, "taskType": "choose", "answer": "1" },
+    { "taskId": 2, "taskType": "write", "answer": "went" }
+  ]
+}
+
+### Reset user progress (ADMIN or lesson owner TEACHER)
+POST http://localhost:8080/api/v1/lessons/1/users/1/reset
+Authorization: Bearer {{auth_token}}
+
+### Create choose task without auth (expect 401)
+POST http://localhost:8080/api/v1/lessons/1/tasks/choose
+Content-Type: application/json
+
+{
+  "task": "No auth",
+  "possibleAnswers": "a|b",
+  "correctAnswer": 0
+}
+
+### Create choose task with invalid payload (expect 400)
+POST http://localhost:8080/api/v1/lessons/1/tasks/choose
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "task": "",
+  "possibleAnswers": "",
+  "correctAnswer": null
+}
