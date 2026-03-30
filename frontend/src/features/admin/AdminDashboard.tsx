@@ -450,7 +450,11 @@ export function AdminDashboard() {
     [teachers],
   );
 
-  const quickActionTileSx = [panelSurfaceSx, panelSurfaceActionSx, { flex: 1, minWidth: 210 }] as SxProps<Theme>;
+  const quickActionTileSx = [
+    panelSurfaceSx,
+    panelSurfaceActionSx,
+    { flex: 1, minWidth: 210 },
+  ] as SxProps<Theme>;
 
   const groupFilterOptions = useMemo(() => {
     if (selectedTeacherFilters.length === 0) {

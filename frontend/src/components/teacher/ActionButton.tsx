@@ -18,14 +18,14 @@ export function ActionButton({
   subtitle,
   onClick,
 }: ActionButtonProps) {
-  const actionTileSx = [panelSurfaceSx, panelSurfaceActionSx, { flex: 1 }] as SxProps<Theme>;
+  const actionTileSx = [
+    panelSurfaceSx,
+    panelSurfaceActionSx,
+    { flex: 1 },
+  ] as SxProps<Theme>;
 
   return (
-    <Paper
-      elevation={0}
-      onClick={onClick}
-      sx={actionTileSx}
-    >
+    <Paper elevation={0} onClick={onClick} sx={actionTileSx}>
       <Box sx={{ color: "primary.main", mb: 0.5 }}>{icon}</Box>
       <Typography variant="body1" fontWeight={700} align="center">
         {title}
