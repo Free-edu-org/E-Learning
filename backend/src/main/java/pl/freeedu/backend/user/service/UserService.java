@@ -1,5 +1,6 @@
 package pl.freeedu.backend.user.service;
 
+import java.util.function.BiFunction;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import pl.freeedu.backend.auth.exception.AuthErrorCode;
@@ -56,7 +57,7 @@ public class UserService {
 	}
 
 	private Mono<Void> registerUser(Mono<RegisterUserRequest> requestMono,
-			java.util.function.BiFunction<RegisterUserRequest, String, User> mapperFunction) {
+			BiFunction<RegisterUserRequest, String, User> mapperFunction) {
 		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
 			if (userRepository.existsByEmail(request.getEmail())) {
 				throw new UserException(UserErrorCode.EMAIL_ALREADY_TAKEN);

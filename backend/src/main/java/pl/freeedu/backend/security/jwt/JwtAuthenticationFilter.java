@@ -1,6 +1,10 @@
 package pl.freeedu.backend.security.jwt;
 
+import java.nio.charset.StandardCharsets;
+import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.web.server.ServerWebExchange;
@@ -48,12 +52,11 @@ public class JwtAuthenticationFilter implements WebFilter {
 						.switchIfEmpty(Mono.defer(() -> chain.filter(exchange).then(Mono.just(true)))).then();
 			}
 		} catch (io.jsonwebtoken.ExpiredJwtException e) {
-			exchange.getResponse().setStatusCode(org.springframework.http.HttpStatus.UNAUTHORIZED);
-			exchange.getResponse().getHeaders().setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+			exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+			exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
 			String body = "{\"type\":\"about:blank\",\"title\":\"Unauthorized\",\"status\":401,\"detail\":\"Token expired\",\"instance\":\""
 					+ exchange.getRequest().getPath().value() + "\",\"code\":\"TOKEN_EXPIRED\"}";
-			org.springframework.core.io.buffer.DataBuffer buffer = exchange.getResponse().bufferFactory()
-					.wrap(body.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+			DataBuffer buffer = exchange.getResponse().bufferFactory().wrap(body.getBytes(StandardCharsets.UTF_8));
 			return exchange.getResponse().writeWith(Mono.just(buffer));
 		} catch (Exception e) {
 			// Token invalid or other error

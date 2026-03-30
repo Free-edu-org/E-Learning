@@ -1,21 +1,24 @@
 package pl.freeedu.backend.teacher.controller.v1;
 
+import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import pl.freeedu.backend.lesson.dto.LessonResponse;
+import pl.freeedu.backend.teacher.dto.TeacherCreateStudentRequest;
 import pl.freeedu.backend.teacher.dto.TeacherStatsResponse;
 import pl.freeedu.backend.teacher.service.TeacherService;
 import pl.freeedu.backend.user.dto.UserResponse;
 import pl.freeedu.backend.usergroup.dto.UserGroupResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import org.springframework.web.bind.annotation.PostMapping;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -76,7 +79,7 @@ public class TeacherDashboardController {
 	@PreAuthorize("hasRole('TEACHER')")
 	@ResponseStatus(HttpStatus.CREATED)
 	public Mono<UserResponse> createStudent(
-			@jakarta.validation.Valid @org.springframework.web.bind.annotation.RequestBody Mono<pl.freeedu.backend.teacher.dto.TeacherCreateStudentRequest> request) {
+			@Valid @RequestBody Mono<TeacherCreateStudentRequest> request) {
 		return teacherService.createStudent(request);
 	}
 }

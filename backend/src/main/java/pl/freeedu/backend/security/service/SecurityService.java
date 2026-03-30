@@ -4,6 +4,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.stereotype.Service;
+import java.util.Objects;
 import pl.freeedu.backend.security.principal.CustomUserDetails;
 import pl.freeedu.backend.user.model.Role;
 import pl.freeedu.backend.lesson.repository.LessonRepository;
@@ -28,7 +29,7 @@ public class SecurityService {
 
 	public Mono<Integer> getCurrentUserId() {
 		return ReactiveSecurityContextHolder.getContext().map(SecurityContext::getAuthentication)
-				.filter(java.util.Objects::nonNull).filter(Authentication::isAuthenticated)
+				.filter(Objects::nonNull).filter(Authentication::isAuthenticated)
 				.map(Authentication::getPrincipal).ofType(CustomUserDetails.class).map(CustomUserDetails::getId);
 	}
 
@@ -103,7 +104,7 @@ public class SecurityService {
 
 	public Mono<CustomUserDetails> getCurrentUser() {
 		return ReactiveSecurityContextHolder.getContext().map(SecurityContext::getAuthentication)
-				.filter(java.util.Objects::nonNull).filter(Authentication::isAuthenticated)
+				.filter(Objects::nonNull).filter(Authentication::isAuthenticated)
 				.map(Authentication::getPrincipal).filter(principal -> principal instanceof CustomUserDetails)
 				.cast(CustomUserDetails.class);
 	}
