@@ -27,6 +27,7 @@ describe('Users API (/api/v1/users)', () => {
     let newStudentId;
     let newStudentToken;
     let newAdminId; // Used for created admin
+    let createdAdminToken;
 
     const newStudentData = {
         email: `student.new.${uniqueId}@example.com`,
@@ -87,6 +88,14 @@ describe('Users API (/api/v1/users)', () => {
             const response = await apiClient.post('/users/register', duplicateEmailUser);
             expect(response.status).toBe(409);
             expect(response.data.code).toBe('EMAIL_ALREADY_TAKEN');
+
+            setAuthToken(null);
+            const loginResponse = await apiClient.post('/auth/login', {
+                identifier: duplicateEmailUser.username,
+                password: duplicateEmailUser.password
+            });
+            expect(loginResponse.status).toBe(401);
+            expect(loginResponse.data.code).toBe('INVALID_CREDENTIALS');
         });
 
         it('should fail with USERNAME_ALREADY_TAKEN (409 Conflict)', async () => {
@@ -99,6 +108,14 @@ describe('Users API (/api/v1/users)', () => {
             const response = await apiClient.post('/users/register', duplicateUsernameUser);
             expect(response.status).toBe(409);
             expect(response.data.code).toBe('USERNAME_ALREADY_TAKEN');
+
+            setAuthToken(null);
+            const loginResponse = await apiClient.post('/auth/login', {
+                identifier: duplicateUsernameUser.email,
+                password: duplicateUsernameUser.password
+            });
+            expect(loginResponse.status).toBe(401);
+            expect(loginResponse.data.code).toBe('INVALID_CREDENTIALS');
         });
 
         it('should fail with VALIDATION_FAILED for invalid input (400 Bad Request)', async () => {
@@ -117,12 +134,26 @@ describe('Users API (/api/v1/users)', () => {
     describe('POST /api/v1/users/admin (Create Admin)', () => {
         it('should allow admin to create an admin (201 Created)', async () => {
             setAuthToken(staticAdminToken);
-            const response = await apiClient.post('/users/admin', {
+            const createdAdmin = {
                 email: `admin.success.${uniqueId}@example.com`,
                 username: `adminSuccess${uniqueId}`,
                 password: 'password123'
-            });
+            };
+            const response = await apiClient.post('/users/admin', createdAdmin);
             expect(response.status).toBe(201);
+
+            setAuthToken(null);
+            const loginResponse = await apiClient.post('/auth/login', {
+                identifier: createdAdmin.username,
+                password: createdAdmin.password
+            });
+            expect(loginResponse.status).toBe(200);
+            createdAdminToken = loginResponse.data.token;
+
+            setAuthToken(createdAdminToken);
+            const meResponse = await apiClient.get('/users/me');
+            expect(meResponse.status).toBe(200);
+            newAdminId = meResponse.data.id;
         });
 
         it('should deny student from creating an admin (403 Forbidden)', async () => {
@@ -391,5 +422,16 @@ describe('Users API (/api/v1/users)', () => {
                 expect(response.status).toBe(404);
             });
         });
+    });
+
+    afterAll(async () => {
+        setAuthToken(staticAdminToken);
+
+        if (newAdminId) {
+            const response = await apiClient.delete(`/users/${newAdminId}`);
+            expect([204, 404]).toContain(response.status);
+        }
+
+        setAuthToken(null);
     });
 });

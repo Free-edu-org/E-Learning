@@ -8,6 +8,7 @@ import org.springframework.web.bind.support.WebExchangeBindException;
 import org.springframework.web.server.ServerWebExchange;
 import pl.freeedu.backend.auth.exception.AuthException;
 import pl.freeedu.backend.lesson.exception.LessonException;
+import pl.freeedu.backend.task.exception.TaskException;
 import pl.freeedu.backend.user.exception.UserException;
 import pl.freeedu.backend.usergroup.exception.UserGroupException;
 import reactor.core.publisher.Mono;
@@ -50,6 +51,13 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(LessonException.class)
 	public Mono<ProblemDetail> handleLessonException(LessonException ex, ServerWebExchange exchange) {
 		log.warn("LessonException [{} {}]: {}", exchange.getRequest().getMethod(), exchange.getRequest().getPath(),
+				ex.getMessage());
+		return buildProblemDetail(ex.getErrorCode().getStatus(), ex.getMessage(), ex.getErrorCode().name(), exchange);
+	}
+
+	@ExceptionHandler(TaskException.class)
+	public Mono<ProblemDetail> handleTaskException(TaskException ex, ServerWebExchange exchange) {
+		log.warn("TaskException [{} {}]: {}", exchange.getRequest().getMethod(), exchange.getRequest().getPath(),
 				ex.getMessage());
 		return buildProblemDetail(ex.getErrorCode().getStatus(), ex.getMessage(), ex.getErrorCode().name(), exchange);
 	}

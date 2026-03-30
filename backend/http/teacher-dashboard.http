@@ -9,3 +9,7 @@ Authorization: Bearer {{auth_token}}
 ### Get Teacher's own groups (Requires Teacher or Admin)
 GET http://localhost:8080/api/v1/teacher/my-groups
 Authorization: Bearer {{auth_token}}
+
+### Get Teacher's own students (Requires Teacher)
+GET http://localhost:8080/api/v1/teacher/students
+Authorization: Bearer {{auth_token}}

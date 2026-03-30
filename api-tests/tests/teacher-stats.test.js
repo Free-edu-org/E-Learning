@@ -2,9 +2,11 @@ const { apiClient, setAuthToken } = require('../utils/apiClient');
 
 describe('Teacher Stats API (/api/v1/teacher/stats)', () => {
     const staticAdmin = { username: 'admin_marek', password: 'admin1' };
+    const staticTeacher = { username: 'pan_tomasz', password: 'admin1' };
     const staticStudent = { username: 'jan_kowalski', password: 'student1' };
 
     let adminToken;
+    let teacherToken;
     let studentToken;
 
     beforeAll(async () => {
@@ -13,6 +15,12 @@ describe('Teacher Stats API (/api/v1/teacher/stats)', () => {
             password: staticAdmin.password,
         });
         adminToken = res.data.token;
+
+        res = await apiClient.post('/auth/login', {
+            identifier: staticTeacher.username,
+            password: staticTeacher.password,
+        });
+        teacherToken = res.data.token;
 
         res = await apiClient.post('/auth/login', {
             identifier: staticStudent.username,
@@ -24,15 +32,15 @@ describe('Teacher Stats API (/api/v1/teacher/stats)', () => {
     // ─── HAPPY PATH ───────────────────────────────────────────────────
 
     describe('Happy Path', () => {
-        it('should return 200 OK for authenticated ADMIN', async () => {
-            setAuthToken(adminToken);
+        it('should return 200 OK for authenticated TEACHER', async () => {
+            setAuthToken(teacherToken);
             const response = await apiClient.get('/teacher/stats');
 
             expect(response.status).toBe(200);
         });
 
         it('should return Content-Type application/json', async () => {
-            setAuthToken(adminToken);
+            setAuthToken(teacherToken);
             const response = await apiClient.get('/teacher/stats');
 
             expect(response.headers['content-type']).toMatch(/application\/json/);
@@ -45,7 +53,7 @@ describe('Teacher Stats API (/api/v1/teacher/stats)', () => {
         let stats;
 
         beforeAll(async () => {
-            setAuthToken(adminToken);
+            setAuthToken(teacherToken);
             const response = await apiClient.get('/teacher/stats');
             stats = response.data;
         });
@@ -113,7 +121,7 @@ describe('Teacher Stats API (/api/v1/teacher/stats)', () => {
         let stats;
 
         beforeAll(async () => {
-            setAuthToken(adminToken);
+            setAuthToken(teacherToken);
             const response = await apiClient.get('/teacher/stats');
             stats = response.data;
         });
@@ -157,7 +165,7 @@ describe('Teacher Stats API (/api/v1/teacher/stats)', () => {
         });
 
         it('endpoint should return consistent results on repeated calls', async () => {
-            setAuthToken(adminToken);
+            setAuthToken(teacherToken);
             const r1 = await apiClient.get('/teacher/stats');
             const r2 = await apiClient.get('/teacher/stats');
 
@@ -216,6 +224,13 @@ describe('Teacher Stats API (/api/v1/teacher/stats)', () => {
     // ─── SECURITY — AUTHORIZATION ────────────────────────────────────
 
     describe('Security: Authorization', () => {
+        it('should return 403 for an ADMIN role token', async () => {
+            setAuthToken(adminToken);
+            const response = await apiClient.get('/teacher/stats');
+
+            expect(response.status).toBe(403);
+        });
+
         it('should return 403 for a STUDENT role token', async () => {
             setAuthToken(studentToken);
             const response = await apiClient.get('/teacher/stats');
@@ -228,21 +243,21 @@ describe('Teacher Stats API (/api/v1/teacher/stats)', () => {
 
     describe('HTTP Method Enforcement', () => {
         it('should reject POST method (405 or 404 or 500)', async () => {
-            setAuthToken(adminToken);
+            setAuthToken(teacherToken);
             const response = await apiClient.post('/teacher/stats');
 
             expect([404, 405, 500]).toContain(response.status);
         });
 
         it('should reject PUT method (405 or 404 or 500)', async () => {
-            setAuthToken(adminToken);
+            setAuthToken(teacherToken);
             const response = await apiClient.put('/teacher/stats', {});
 
             expect([404, 405, 500]).toContain(response.status);
         });
 
         it('should reject DELETE method (405 or 404 or 500)', async () => {
-            setAuthToken(adminToken);
+            setAuthToken(teacherToken);
             const response = await apiClient.delete('/teacher/stats');
 
             expect([404, 405, 500]).toContain(response.status);

@@ -10,6 +10,7 @@ import pl.freeedu.backend.user.model.User;
 import pl.freeedu.backend.user.repository.UserRepository;
 import pl.freeedu.backend.lesson.repository.LessonRepository;
 import pl.freeedu.backend.usergroup.repository.UserGroupRepository;
+import pl.freeedu.backend.usergroup.repository.UserInGroupRepository;
 import reactor.core.publisher.Mono;
 import org.springframework.context.annotation.Lazy;
 
@@ -19,12 +20,14 @@ public class SecurityService {
 	private final UserRepository userRepository;
 	private final UserGroupRepository userGroupRepository;
 	private final LessonRepository lessonRepository;
+	private final UserInGroupRepository userInGroupRepository;
 
 	public SecurityService(@Lazy UserRepository userRepository, @Lazy UserGroupRepository userGroupRepository,
-			@Lazy LessonRepository lessonRepository) {
+			@Lazy LessonRepository lessonRepository, @Lazy UserInGroupRepository userInGroupRepository) {
 		this.userRepository = userRepository;
 		this.userGroupRepository = userGroupRepository;
 		this.lessonRepository = lessonRepository;
+		this.userInGroupRepository = userInGroupRepository;
 	}
 
 	public Mono<Integer> getCurrentUserId() {
@@ -91,6 +94,17 @@ public class SecurityService {
 		User student = userRepository.findById(studentId).orElse(null);
 		return student != null && student.getRole() == Role.STUDENT
 				&& userDetails.getId().equals(student.getTeacherId());
+	}
+
+	public boolean hasStudentAccessToLesson(Authentication authentication, Integer lessonId) {
+		if (authentication == null || !authentication.isAuthenticated()) {
+			return false;
+		}
+		Object principal = authentication.getPrincipal();
+		if (!(principal instanceof CustomUserDetails userDetails)) {
+			return false;
+		}
+		return userInGroupRepository.hasAccessToLesson(userDetails.getId(), lessonId);
 	}
 
 	public Mono<CustomUserDetails> getCurrentUser() {

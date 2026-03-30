@@ -10,6 +10,7 @@ describe('Lessons API Authorization (/api/v1/lessons)', () => {
     let teacherToken;
     let studentToken;
     let secondTeacherToken;
+    let secondTeacherId;
     let ownLessonId;
 
     beforeAll(async () => {
@@ -34,6 +35,10 @@ describe('Lessons API Authorization (/api/v1/lessons)', () => {
             password: secondTeacher.password
         });
         secondTeacherToken = res.data.token;
+
+        setAuthToken(secondTeacherToken);
+        res = await apiClient.get('/users/me');
+        secondTeacherId = res.data.id;
 
         setAuthToken(teacherToken);
         res = await apiClient.post('/lessons', {
@@ -104,5 +109,21 @@ describe('Lessons API Authorization (/api/v1/lessons)', () => {
         expect(response.status).toBe(200);
         expect(response.data.id).toBe(ownLessonId);
         expect(response.data.title).toBe(`Admin Updated ${uniqueId}`);
+    });
+
+    afterAll(async () => {
+        setAuthToken(adminToken);
+
+        if (ownLessonId) {
+            const response = await apiClient.delete(`/lessons/${ownLessonId}`);
+            expect([204, 404]).toContain(response.status);
+        }
+
+        if (secondTeacherId) {
+            const response = await apiClient.delete(`/users/${secondTeacherId}`);
+            expect([204, 404]).toContain(response.status);
+        }
+
+        setAuthToken(null);
     });
 });

@@ -1,10 +1,11 @@
 ### Get list of lessons (supports filters)
-GET http://localhost:8080/api/v1/lessons?search=Present&groupId=1&status=true&sort=createdAt=date_desc
+GET http://localhost:8080/api/v1/lessons?search=Present&groupId=1&status=true&sort=createdAt:desc
+Authorization: Bearer {{auth_token}}
 
-
-### Create a new lesson (requires ROLE_TEACHER)
+### Create a new lesson (requires ROLE_TEACHER or ADMIN)
 POST http://localhost:8080/api/v1/lessons
 Content-Type: application/json
+Authorization: Bearer {{auth_token}}
 
 {
   "title": "Present Simple - lesson 1",
@@ -12,10 +13,10 @@ Content-Type: application/json
   "groupIds": [1, 2]
 }
 
-
-### Update lesson data (requires ROLE_TEACHER)
+### Update lesson data (requires ADMIN or lesson owner TEACHER)
 PUT http://localhost:8080/api/v1/lessons/1
 Content-Type: application/json
+Authorization: Bearer {{auth_token}}
 
 {
   "title": "Present Simple - lesson 1 (updated)",
@@ -23,14 +24,32 @@ Content-Type: application/json
   "groupIds": [1]
 }
 
-
-### Quick status change (isActive) (requires ROLE_TEACHER)
+### Quick status change (isActive) (requires ADMIN or lesson owner TEACHER)
 PATCH http://localhost:8080/api/v1/lessons/1/status
 Content-Type: application/json
+Authorization: Bearer {{auth_token}}
 
 { "isActive": false }
 
-
-### Delete lesson (requires ROLE_TEACHER)
+### Delete lesson (requires ADMIN or lesson owner TEACHER)
 DELETE http://localhost:8080/api/v1/lessons/1
+Authorization: Bearer {{auth_token}}
 
+### Create lesson with invalid payload (expect 400)
+POST http://localhost:8080/api/v1/lessons
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "title": "",
+  "theme": ""
+}
+
+### Create lesson without auth (expect 401)
+POST http://localhost:8080/api/v1/lessons
+Content-Type: application/json
+
+{
+  "title": "No auth",
+  "theme": "Test"
+}

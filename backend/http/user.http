@@ -37,3 +37,28 @@ Authorization: Bearer {{auth_token}}
   "oldPassword": "old",
   "newPassword": "new"
 }
+
+### Create Teacher (Requires Admin)
+POST http://localhost:8080/api/v1/users/teacher
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "email": "teacher_test@example.com",
+  "username": "teacher_test",
+  "password": "password"
+}
+
+### Update User Profile (Requires Admin or Owner)
+PUT http://localhost:8080/api/v1/users/1
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "email": "updated@example.com",
+  "username": "updated_user"
+}
+
+### Delete User (Requires Admin or Owner)
+DELETE http://localhost:8080/api/v1/users/1
+Authorization: Bearer {{auth_token}}
