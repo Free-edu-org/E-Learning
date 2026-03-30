@@ -99,22 +99,24 @@ public class UserGroupService {
 	}
 
 	public Mono<UserGroupResponse> update(Integer id, Mono<UserGroupRequest> requestMono) {
-		return requestMono.flatMap(request -> securityService.getCurrentUser().flatMap(currentUser -> Mono.fromCallable(() -> {
-			UserGroup group = userGroupRepository.findById(id)
-					.orElseThrow(() -> new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND));
-			if (!group.getName().equals(request.getName()) && userGroupRepository.existsByName(request.getName())) {
-				throw new UserGroupException(UserGroupErrorCode.GROUP_NAME_ALREADY_EXISTS);
-			}
-			group.setName(request.getName());
-			group.setDescription(request.getDescription());
-			group.setTeacherId(resolveTeacherId(currentUser, request.getTeacherId(), group.getTeacherId()));
-			try {
-				UserGroup saved = userGroupRepository.save(group);
-				return toResponseWithCount(saved);
-			} catch (DataIntegrityViolationException e) {
-				throw new UserGroupException(UserGroupErrorCode.GROUP_NAME_ALREADY_EXISTS);
-			}
-		}).subscribeOn(Schedulers.boundedElastic())));
+		return requestMono
+				.flatMap(request -> securityService.getCurrentUser().flatMap(currentUser -> Mono.fromCallable(() -> {
+					UserGroup group = userGroupRepository.findById(id)
+							.orElseThrow(() -> new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND));
+					if (!group.getName().equals(request.getName())
+							&& userGroupRepository.existsByName(request.getName())) {
+						throw new UserGroupException(UserGroupErrorCode.GROUP_NAME_ALREADY_EXISTS);
+					}
+					group.setName(request.getName());
+					group.setDescription(request.getDescription());
+					group.setTeacherId(resolveTeacherId(currentUser, request.getTeacherId(), group.getTeacherId()));
+					try {
+						UserGroup saved = userGroupRepository.save(group);
+						return toResponseWithCount(saved);
+					} catch (DataIntegrityViolationException e) {
+						throw new UserGroupException(UserGroupErrorCode.GROUP_NAME_ALREADY_EXISTS);
+					}
+				}).subscribeOn(Schedulers.boundedElastic())));
 	}
 
 	public Mono<Void> delete(Integer id) {

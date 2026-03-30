@@ -19,6 +19,7 @@ import type { Lesson } from "@/api/lessonService";
 import {
   outlinedMetaChipSx,
   panelCardFooterSx,
+  panelFooterButtonSx,
   panelGridCardContentSx,
   panelGridCardSx,
   panelListRowSx,
@@ -139,10 +140,18 @@ export function LessonCard({ lesson, listView = false }: LessonCardProps) {
         </Typography>
 
         <Box sx={{ display: "flex", gap: 0.5, flexShrink: 0 }}>
-          <Button size="small" startIcon={<EditIcon fontSize="small" />} sx={{ textTransform: "none", fontWeight: 600, minWidth: 0 }}>
+          <Button
+            size="small"
+            startIcon={<EditIcon fontSize="small" />}
+            sx={{ ...panelFooterButtonSx, color: "primary.main" }}
+          >
             Edytuj
           </Button>
-          <Button size="small" startIcon={<BarChartIcon fontSize="small" />} sx={{ textTransform: "none", fontWeight: 600, minWidth: 0 }}>
+          <Button
+            size="small"
+            startIcon={<BarChartIcon fontSize="small" />}
+            sx={{ ...panelFooterButtonSx, color: "primary.main" }}
+          >
             Wyniki
           </Button>
         </Box>
@@ -151,8 +160,8 @@ export function LessonCard({ lesson, listView = false }: LessonCardProps) {
   }
 
   return (
-    <Card elevation={0} sx={panelGridCardSx}>
-      <CardContent sx={{ ...panelGridCardContentSx, pb: 1 }}>
+    <Card elevation={0} sx={{ ...panelGridCardSx, display: "flex", flexDirection: "column" }}>
+      <CardContent sx={{ ...panelGridCardContentSx, flex: "1 1 auto", height: "auto", pb: 1 }}>
         <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1, mb: 0.5 }}>
           <BookIcon sx={{ color: "primary.main", fontSize: 18, mt: 0.3, flexShrink: 0 }} />
           <Typography variant="body1" fontWeight={700} color="primary.main" sx={{ lineHeight: 1.4 }}>
@@ -191,13 +200,29 @@ export function LessonCard({ lesson, listView = false }: LessonCardProps) {
 
       <Divider />
 
-      <CardActions sx={{ ...panelCardFooterSx, px: 2, py: 1, gap: 1 }}>
-        <Button size="small" variant="outlined" startIcon={<EditIcon fontSize="small" />} fullWidth sx={{ borderRadius: 2, textTransform: "none", fontWeight: 600 }}>
-          Edytuj
-        </Button>
-        <Button size="small" variant="outlined" startIcon={<BarChartIcon fontSize="small" />} fullWidth sx={{ borderRadius: 2, textTransform: "none", fontWeight: 600 }}>
-          Wyniki
-        </Button>
+      <CardActions sx={{ ...panelCardFooterSx, px: 2, py: 1, gap: 1, mt: 0 }}>
+        <Box sx={{ display: "flex", width: "100%", gap: 1, flexWrap: "nowrap" }}>
+          <Button
+            size="small"
+            variant="outlined"
+            color="primary"
+            startIcon={<EditIcon fontSize="small" />}
+            fullWidth
+            sx={panelFooterButtonSx}
+          >
+            Edytuj
+          </Button>
+          <Button
+            size="small"
+            variant="outlined"
+            color="primary"
+            startIcon={<BarChartIcon fontSize="small" />}
+            fullWidth
+            sx={panelFooterButtonSx}
+          >
+            Wyniki
+          </Button>
+        </Box>
       </CardActions>
     </Card>
   );

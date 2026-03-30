@@ -12,8 +12,8 @@ export const uiTokens = {
     iconButtonSize: 38,
   },
   modal: {
-    compactWidth: 540,
-    comfortableWidth: 620,
+    compactWidth: 520,
+    comfortableWidth: 600,
     headerPaddingX: 3,
     headerPaddingY: 2.5,
     bodyPaddingX: 3.5,
@@ -35,4 +35,3 @@ export const uiTokens = {
     footerPaddingTop: 1.5,
   },
 } as const;
-

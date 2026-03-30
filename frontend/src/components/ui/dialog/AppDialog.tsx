@@ -1,4 +1,5 @@
 import {
+  Alert,
   Box,
   Dialog,
   DialogActions,
@@ -157,4 +158,27 @@ export function AppDialogBody({ children }: { children: ReactNode }) {
 
 export function AppDialogFooter({ children }: { children: ReactNode }) {
   return <DialogActions sx={dialogFooterSx}>{children}</DialogActions>;
+}
+
+type AppDialogStatusProps = {
+  severity: "success" | "error" | "info" | "warning";
+  children: ReactNode;
+};
+
+export function AppDialogStatus({ severity, children }: AppDialogStatusProps) {
+  return (
+    <Alert
+      severity={severity}
+      sx={{
+        mb: 2.5,
+        borderRadius: 3,
+        alignItems: "flex-start",
+        "& .MuiAlert-message": {
+          width: "100%",
+        },
+      }}
+    >
+      {children}
+    </Alert>
+  );
 }

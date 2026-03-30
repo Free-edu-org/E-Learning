@@ -5,6 +5,7 @@ import {
   Box,
   Button,
   Card,
+  CardActions,
   CardContent,
   Chip,
   CircularProgress,
@@ -15,7 +16,6 @@ import {
   InputAdornment,
   MenuItem,
   Paper,
-  Snackbar,
   Stack,
   Switch,
   Tab,
@@ -67,18 +67,23 @@ import {
   AppDialogBody,
   AppDialogFooter,
   AppDialogHeader,
+  AppDialogStatus,
 } from "@/components/ui/dialog/AppDialog";
 import { getRoleAccountLabel, getRoleChipColor, getRoleLabel } from "@/components/ui/chips/roleLabels";
 import { FormActions, FormField, FormSection } from "@/components/ui/form/FormLayout";
 import {
   outlinedMetaChipSx,
-  panelActionClusterSx,
   panelCardFooterSx,
+  panelDeleteButtonSx,
+  panelFooterButtonsSx,
+  panelFooterButtonSx,
   panelGridCardContentSx,
   panelGridCardSx,
   panelIconButtonSx,
+  panelInlineActionsSx,
   panelListRowSx,
   panelSingleLineSx,
+  panelSurfaceActionSx,
   panelSurfaceSx,
   panelToolbarSx,
   panelTitleSx,
@@ -118,6 +123,11 @@ interface MembershipDialogState {
   groupId: number;
   groupName: string;
   teacherId?: number | null;
+}
+
+interface DialogFeedbackState {
+  severity: "success" | "error";
+  message: string;
 }
 
 const emptyUserDraft: UserDraft = {
@@ -219,43 +229,6 @@ const toolbarFieldSx = {
   },
 };
 
-const actionButtonSx = {
-  borderRadius: 2,
-  textTransform: "none",
-  fontWeight: 600,
-};
-
-const topToolbarButtonSx = {
-  ...actionButtonSx,
-  minHeight: 36,
-  minWidth: { xs: "100%", sm: 132 },
-  px: 1.75,
-  whiteSpace: "nowrap",
-  fontSize: "0.875rem",
-};
-
-const teacherCreateButtonSx = {
-  ...topToolbarButtonSx,
-  bgcolor: "info.light",
-  color: "info.contrastText",
-  boxShadow: "none",
-  "&:hover": {
-    bgcolor: "info.main",
-    boxShadow: "0 8px 16px rgba(2, 132, 199, 0.28)",
-  },
-};
-
-const studentCreateButtonSx = {
-  ...topToolbarButtonSx,
-  bgcolor: "success.light",
-  color: "success.contrastText",
-  boxShadow: "none",
-  "&:hover": {
-    bgcolor: "success.main",
-    boxShadow: "0 8px 16px rgba(22, 163, 74, 0.28)",
-  },
-};
-
 export function AdminDashboard() {
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -289,11 +262,6 @@ export function AdminDashboard() {
   const [groupsLoading, setGroupsLoading] = useState(true);
   const [groupsError, setGroupsError] = useState<string | null>(null);
 
-  const [toast, setToast] = useState<{
-    severity: "success" | "error";
-    message: string;
-  } | null>(null);
-
   const [userDialogOpen, setUserDialogOpen] = useState(false);
   const [userDialogMode, setUserDialogMode] = useState<"create" | "edit">(
     "create",
@@ -302,6 +270,7 @@ export function AdminDashboard() {
   const [selectedUser, setSelectedUser] = useState<AdminListUser | null>(null);
   const [userDraft, setUserDraft] = useState<UserDraft>(emptyUserDraft);
   const [userDialogLoading, setUserDialogLoading] = useState(false);
+  const [userDialogFeedback, setUserDialogFeedback] = useState<DialogFeedbackState | null>(null);
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [groupDialogMode, setGroupDialogMode] = useState<"create" | "edit">(
     "create",
@@ -309,11 +278,13 @@ export function AdminDashboard() {
   const [selectedGroup, setSelectedGroup] = useState<UserGroup | null>(null);
   const [groupDraft, setGroupDraft] = useState<GroupDraft>(emptyGroupDraft);
   const [groupDialogLoading, setGroupDialogLoading] = useState(false);
+  const [groupDialogFeedback, setGroupDialogFeedback] = useState<DialogFeedbackState | null>(null);
 
   const [deleteDialog, setDeleteDialog] = useState<DeleteDialogState | null>(
     null,
   );
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteDialogFeedback, setDeleteDialogFeedback] = useState<DialogFeedbackState | null>(null);
 
   const [membershipDialog, setMembershipDialog] =
     useState<MembershipDialogState | null>(null);
@@ -321,6 +292,7 @@ export function AdminDashboard() {
     "",
   );
   const [membershipLoading, setMembershipLoading] = useState(false);
+  const [membershipDialogFeedback, setMembershipDialogFeedback] = useState<DialogFeedbackState | null>(null);
 
   const allUsers = useMemo(
     () =>
@@ -464,7 +436,7 @@ export function AdminDashboard() {
       setStatsError(null);
     } catch (error) {
       setStatsError(
-        getErrorMessage(error, "Nie udalo sie pobrac danych panelu admina."),
+        getErrorMessage(error, "Nie udało się pobrać danych panelu admina."),
       );
     }
   };
@@ -494,7 +466,7 @@ export function AdminDashboard() {
     try {
       setGroups(await userGroupService.getGroups());
     } catch (error) {
-      setGroupsError(getErrorMessage(error, "Nie udalo sie pobrac listy grup."));
+      setGroupsError(getErrorMessage(error, "Nie udało się pobrać listy grup."));
     } finally {
       setGroupsLoading(false);
     }
@@ -506,7 +478,7 @@ export function AdminDashboard() {
       .then(setCurrentUser)
       .catch((error) =>
         setCurrentUserError(
-          getErrorMessage(error, "Nie udalo sie pobrac danych administratora."),
+          getErrorMessage(error, "Nie udało się pobrać danych administratora."),
         ),
       );
 
@@ -520,8 +492,10 @@ export function AdminDashboard() {
     navigate("/login");
   };
 
-  const showToast = (severity: "success" | "error", message: string) => {
-    setToast({ severity, message });
+  const closeDialogWithSuccessDelay = (closeFn: () => void) => {
+    window.setTimeout(() => {
+      closeFn();
+    }, 900);
   };
 
   const openCreateUserDialog = (role: UserRole) => {
@@ -529,6 +503,7 @@ export function AdminDashboard() {
     setUserDialogRole(role);
     setSelectedUser(null);
     setUserDraft(emptyUserDraft);
+    setUserDialogFeedback(null);
     setUserDialogOpen(true);
   };
 
@@ -542,6 +517,7 @@ export function AdminDashboard() {
       password: "",
       groupId: "groupId" in user ? (user.groupId ?? "") : "",
     });
+    setUserDialogFeedback(null);
     setUserDialogOpen(true);
   };
 
@@ -550,6 +526,7 @@ export function AdminDashboard() {
     setUserDraft(emptyUserDraft);
     setUserDialogRole("TEACHER");
     setUserDialogMode("create");
+    setUserDialogFeedback(null);
   };
 
   const closeUserDialog = () => {
@@ -564,6 +541,7 @@ export function AdminDashboard() {
       return;
     }
 
+    setUserDialogFeedback(null);
     setUserDialogLoading(true);
     try {
       if (userDialogMode === "create") {
@@ -574,7 +552,7 @@ export function AdminDashboard() {
             password: userDraft.password,
           };
           await userService.createTeacher(payload);
-          showToast("success", "Nauczyciel został utworzony.");
+          setUserDialogFeedback({ severity: "success", message: "Nauczyciel został utworzony." });
         } else {
           const payload: AdminCreateStudentRequest = {
             username: userDraft.username,
@@ -584,7 +562,7 @@ export function AdminDashboard() {
           };
 
           await adminService.createStudent(payload);
-          showToast("success", "Uczeń został utworzony.");
+          setUserDialogFeedback({ severity: "success", message: "Uczeń został utworzony." });
         }
       } else if (selectedUser) {
         let updated: AdminListUser;
@@ -605,16 +583,16 @@ export function AdminDashboard() {
         }
 
         setSelectedUser(updated);
-        showToast("success", "Dane konta zostały zapisane.");
+        setUserDialogFeedback({ severity: "success", message: "Dane konta zostały zapisane." });
       }
 
       await Promise.all([loadUsers(), loadAdminStats()]);
-      closeUserDialog();
+      closeDialogWithSuccessDelay(closeUserDialog);
     } catch (error) {
-      showToast(
-        "error",
-        getErrorMessage(error, "Nie udało się zapisać zmian konta."),
-      );
+      setUserDialogFeedback({
+        severity: "error",
+        message: getErrorMessage(error, "Nie udało się zapisać zmian konta."),
+      });
     } finally {
       setUserDialogLoading(false);
     }
@@ -627,6 +605,7 @@ export function AdminDashboard() {
       ...emptyGroupDraft,
       teacherId: teachers.length === 1 ? teachers[0].id : "",
     });
+    setGroupDialogFeedback(null);
     setGroupDialogOpen(true);
   };
 
@@ -638,6 +617,7 @@ export function AdminDashboard() {
       description: group.description,
       teacherId: group.teacherId ?? "",
     });
+    setGroupDialogFeedback(null);
     setGroupDialogOpen(true);
   };
 
@@ -648,6 +628,7 @@ export function AdminDashboard() {
     setGroupDialogOpen(false);
     setSelectedGroup(null);
     setGroupDraft(emptyGroupDraft);
+    setGroupDialogFeedback(null);
   };
 
   const submitGroupDialog = async () => {
@@ -655,6 +636,7 @@ export function AdminDashboard() {
       return;
     }
 
+    setGroupDialogFeedback(null);
     setGroupDialogLoading(true);
     try {
       const payload = {
@@ -665,25 +647,26 @@ export function AdminDashboard() {
 
       if (groupDialogMode === "create") {
         await userGroupService.createGroup(payload);
-        showToast("success", "Grupa została utworzona.");
+        setGroupDialogFeedback({ severity: "success", message: "Grupa została utworzona." });
       } else if (selectedGroup) {
         await userGroupService.updateGroup(selectedGroup.id, payload);
-        showToast("success", "Zmiany grupy zostały zapisane.");
+        setGroupDialogFeedback({ severity: "success", message: "Zmiany grupy zostały zapisane." });
       }
 
       await Promise.all([loadGroups(), loadAdminStats()]);
-      closeGroupDialog();
+      closeDialogWithSuccessDelay(closeGroupDialog);
     } catch (error) {
-      showToast(
-        "error",
-        getErrorMessage(error, "Nie udało się zapisać zmian grupy."),
-      );
+      setGroupDialogFeedback({
+        severity: "error",
+        message: getErrorMessage(error, "Nie udało się zapisać zmian grupy."),
+      });
     } finally {
       setGroupDialogLoading(false);
     }
   };
 
   const openDeleteDialog = (payload: DeleteDialogState) => {
+    setDeleteDialogFeedback(null);
     setDeleteDialog(payload);
   };
 
@@ -691,6 +674,7 @@ export function AdminDashboard() {
     if (deleteLoading) {
       return;
     }
+    setDeleteDialogFeedback(null);
     setDeleteDialog(null);
   };
 
@@ -702,6 +686,7 @@ export function AdminDashboard() {
       return;
     }
 
+    setDeleteDialogFeedback(null);
     setDeleteLoading(true);
     try {
       if (deleteDialog.type === "user") {
@@ -710,24 +695,25 @@ export function AdminDashboard() {
           setSelectedUser(null);
         }
         await Promise.all([loadUsers(), loadAdminStats()]);
-        showToast("success", "Konto zostało usunięte.");
+        setDeleteDialogFeedback({ severity: "success", message: "Konto zostało usunięte." });
       } else {
         await userGroupService.deleteGroup(deleteDialog.id);
         await Promise.all([loadGroups(), loadAdminStats()]);
-        showToast("success", "Grupa została usunięta.");
+        setDeleteDialogFeedback({ severity: "success", message: "Grupa została usunięta." });
       }
-      closeDeleteDialog();
+      closeDialogWithSuccessDelay(closeDeleteDialog);
     } catch (error) {
-      showToast(
-        "error",
-        getErrorMessage(error, "Nie udało się usunąć wskazanego elementu."),
-      );
+      setDeleteDialogFeedback({
+        severity: "error",
+        message: getErrorMessage(error, "Nie udało się usunąć wskazanego elementu."),
+      });
     } finally {
       setDeleteLoading(false);
     }
   };
 
   const openMembershipDialog = (group: UserGroup) => {
+    setMembershipDialogFeedback(null);
     setMembershipDialog({
       groupId: group.id,
       groupName: group.name,
@@ -742,6 +728,7 @@ export function AdminDashboard() {
     }
     setMembershipDialog(null);
     setMembershipStudentId("");
+    setMembershipDialogFeedback(null);
   };
 
   const addMembershipStudent = async () => {
@@ -749,24 +736,25 @@ export function AdminDashboard() {
       return;
     }
     if (membershipStudentId === "") {
-      showToast("error", "Wybierz ucznia z listy.");
+      setMembershipDialogFeedback({ severity: "error", message: "Wybierz ucznia z listy." });
       return;
     }
 
+    setMembershipDialogFeedback(null);
     setMembershipLoading(true);
     try {
       await userGroupService.addStudentToGroup(
         membershipDialog.groupId,
         membershipStudentId,
       );
-      showToast("success", "Uczeń został dodany do grupy.");
+      setMembershipDialogFeedback({ severity: "success", message: "Uczeń został dodany do grupy." });
       await Promise.all([loadGroups(), loadUsers()]);
       setMembershipStudentId("");
     } catch (error) {
-      showToast(
-        "error",
-        getErrorMessage(error, "Nie udało się zmienić składu grupy."),
-      );
+      setMembershipDialogFeedback({
+        severity: "error",
+        message: getErrorMessage(error, "Nie udało się zmienić składu grupy."),
+      });
     } finally {
       setMembershipLoading(false);
     }
@@ -777,16 +765,17 @@ export function AdminDashboard() {
       return;
     }
 
+    setMembershipDialogFeedback(null);
     setMembershipLoading(true);
     try {
       await userGroupService.removeStudentFromGroup(membershipDialog.groupId, studentId);
-      showToast("success", "Uczeń został usunięty z grupy.");
+      setMembershipDialogFeedback({ severity: "success", message: "Uczeń został usunięty z grupy." });
       await Promise.all([loadGroups(), loadUsers()]);
     } catch (error) {
-      showToast(
-        "error",
-        getErrorMessage(error, "Nie udało się zmienić składu grupy."),
-      );
+      setMembershipDialogFeedback({
+        severity: "error",
+        message: getErrorMessage(error, "Nie udało się zmienić składu grupy."),
+      });
     } finally {
       setMembershipLoading(false);
     }
@@ -922,6 +911,54 @@ export function AdminDashboard() {
           </Box>
         )}
 
+        <Box sx={{ display: "flex", gap: 2, mb: 4, flexWrap: "wrap" }}>
+          <Paper
+            elevation={0}
+            onClick={() => openCreateUserDialog("TEACHER")}
+            sx={[panelSurfaceSx as any, panelSurfaceActionSx as any, { flex: 1, minWidth: 210 }]}
+          >
+            <Box sx={{ color: "info.main", mb: 0.5 }}>
+              <SchoolIcon sx={{ fontSize: 30 }} />
+            </Box>
+            <Typography variant="body1" fontWeight={700} align="center">
+              Nowy nauczyciel
+            </Typography>
+            <Typography variant="caption" color="text.secondary" align="center">
+              Dodaj konto i od razu nadaj dostęp
+            </Typography>
+          </Paper>
+          <Paper
+            elevation={0}
+            onClick={() => openCreateUserDialog("STUDENT")}
+            sx={[panelSurfaceSx as any, panelSurfaceActionSx as any, { flex: 1, minWidth: 210 }]}
+          >
+            <Box sx={{ color: "success.main", mb: 0.5 }}>
+              <PersonIcon sx={{ fontSize: 30 }} />
+            </Box>
+            <Typography variant="body1" fontWeight={700} align="center">
+              Nowy uczeń
+            </Typography>
+            <Typography variant="caption" color="text.secondary" align="center">
+              Utwórz konto ucznia i przypisz grupę
+            </Typography>
+          </Paper>
+          <Paper
+            elevation={0}
+            onClick={openCreateGroupDialog}
+            sx={[panelSurfaceSx as any, panelSurfaceActionSx as any, { flex: 1, minWidth: 210 }]}
+          >
+            <Box sx={{ color: "warning.main", mb: 0.5 }}>
+              <GroupIcon sx={{ fontSize: 30 }} />
+            </Box>
+            <Typography variant="body1" fontWeight={700} align="center">
+              Nowa grupa
+            </Typography>
+            <Typography variant="caption" color="text.secondary" align="center">
+              Zbuduj grupę i ustaw właściciela
+            </Typography>
+          </Paper>
+        </Box>
+
         <Card
           elevation={0}
           sx={panelSurfaceSx}
@@ -958,7 +995,7 @@ export function AdminDashboard() {
                       Konta nauczycieli i uczniów
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Filtruj liste, wyszukuj po nazwie lub emailu i otwieraj edycje w
+                      Filtruj listę, wyszukuj po nazwie lub emailu i otwieraj edycje w
                       modalach.
                     </Typography>
                   </Stack>
@@ -968,34 +1005,14 @@ export function AdminDashboard() {
                     spacing={1.5}
                     alignItems={{ sm: "center" }}
                   >
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      startIcon={<RefreshIcon />}
+                    <IconButton
+                      aria-label="Odśwież użytkowników"
                       onClick={loadUsers}
                       disabled={usersLoading}
-                      sx={topToolbarButtonSx}
+                      sx={{ ...panelIconButtonSx, color: "text.secondary" }}
                     >
-                      Odśwież
-                    </Button>
-                    <Button
-                      variant="contained"
-                      size="small"
-                      startIcon={<AddCircleIcon />}
-                      onClick={() => openCreateUserDialog("TEACHER")}
-                      sx={teacherCreateButtonSx}
-                    >
-                      Nauczyciel
-                    </Button>
-                    <Button
-                      variant="contained"
-                      size="small"
-                      startIcon={<AddCircleIcon />}
-                      onClick={() => openCreateUserDialog("STUDENT")}
-                      sx={studentCreateButtonSx}
-                    >
-                      Uczeń
-                    </Button>
+                      <RefreshIcon fontSize="small" />
+                    </IconButton>
                   </Stack>
                 </Stack>
 
@@ -1296,20 +1313,18 @@ export function AdminDashboard() {
                             )}
                           </Stack>
 
-                          <Stack
-                            direction="row"
-                            spacing={1}
-                            alignSelf={{ xs: "flex-end", md: "center" }}
-                          >
-                            <IconButton
-                              aria-label={`Edytuj ${user.username}`}
+                          <Box sx={panelInlineActionsSx}>
+                            <Button
+                              size="small"
+                              startIcon={<EditIcon fontSize="small" />}
                               onClick={() => openEditUserDialog(user)}
-                              sx={{ ...panelIconButtonSx, color: "primary.main" }}
+                              sx={panelFooterButtonSx}
                             >
-                              <EditIcon fontSize="small" />
-                            </IconButton>
-                            <IconButton
-                              aria-label={`Usuń ${user.username}`}
+                              Edytuj
+                            </Button>
+                            <Button
+                              size="small"
+                              startIcon={<DeleteIcon fontSize="small" />}
                               onClick={() =>
                                 openDeleteDialog({
                                   type: "user",
@@ -1323,11 +1338,11 @@ export function AdminDashboard() {
                                       : user.email,
                                 })
                               }
-                              sx={{ ...panelIconButtonSx, color: "error.main" }}
+                              sx={panelDeleteButtonSx}
                             >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Stack>
+                              Usuń
+                            </Button>
+                          </Box>
                         </Stack>
                       </Paper>
                     ))}
@@ -1336,8 +1351,13 @@ export function AdminDashboard() {
                   <Grid container spacing={2}>
                     {filteredUsers.map((user) => (
                       <Grid key={`${user.role}-${user.id}`} size={{ xs: 12, md: 6, xl: 4 }}>
-                        <Card elevation={0} sx={panelGridCardSx}>
-                          <CardContent sx={panelGridCardContentSx}>
+                        <Card
+                          elevation={0}
+                          sx={{ ...panelGridCardSx, display: "flex", flexDirection: "column" }}
+                        >
+                          <CardContent
+                            sx={{ ...panelGridCardContentSx, flex: "1 1 auto", height: "auto", pb: 1 }}
+                          >
                             <Stack spacing={1.5} sx={{ width: "100%", minHeight: "100%" }}>
                               <Stack
                                 direction="row"
@@ -1413,48 +1433,44 @@ export function AdminDashboard() {
                                   sx={outlinedMetaChipSx}
                                 />
                               </Stack>
-
-                              <Box sx={panelCardFooterSx}>
-                                <Typography variant="caption" color="text.secondary">
-                                  Akcje konta
-                                </Typography>
-                                <Box sx={panelActionClusterSx}>
-                                  <IconButton
-                                    aria-label={`Edytuj ${user.username}`}
-                                    onClick={() => openEditUserDialog(user)}
-                                    sx={{
-                                      ...panelIconButtonSx,
-                                      color: "primary.main",
-                                    }}
-                                  >
-                                    <EditIcon fontSize="small" />
-                                  </IconButton>
-                                  <IconButton
-                                    aria-label={`Usuń ${user.username}`}
-                                    onClick={() =>
-                                      openDeleteDialog({
-                                        type: "user",
-                                        id: user.id,
-                                        label: user.username,
-                                        detail:
-                                          user.role === "STUDENT" &&
-                                          "groupName" in user &&
-                                          user.groupName
-                                            ? `Uczeń w grupie ${user.groupName}`
-                                            : user.email,
-                                      })
-                                    }
-                                    sx={{
-                                      ...panelIconButtonSx,
-                                      color: "error.main",
-                                    }}
-                                  >
-                                    <DeleteIcon fontSize="small" />
-                                  </IconButton>
-                                </Box>
-                              </Box>
                             </Stack>
                           </CardContent>
+                          <CardActions sx={{ ...panelCardFooterSx, px: 1.75, pb: 1.5, mt: 0 }}>
+                            <Box sx={{ ...panelFooterButtonsSx, flexWrap: "nowrap" }}>
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                startIcon={<EditIcon fontSize="small" />}
+                                fullWidth
+                                onClick={() => openEditUserDialog(user)}
+                                sx={panelFooterButtonSx}
+                              >
+                                Edytuj
+                              </Button>
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                startIcon={<DeleteIcon fontSize="small" />}
+                                fullWidth
+                                onClick={() =>
+                                  openDeleteDialog({
+                                    type: "user",
+                                    id: user.id,
+                                    label: user.username,
+                                    detail:
+                                      user.role === "STUDENT" &&
+                                      "groupName" in user &&
+                                      user.groupName
+                                        ? `Uczeń w grupie ${user.groupName}`
+                                        : user.email,
+                                  })
+                                }
+                                sx={panelDeleteButtonSx}
+                              >
+                                Usuń
+                              </Button>
+                            </Box>
+                          </CardActions>
                         </Card>
                       </Grid>
                     ))}
@@ -1483,25 +1499,14 @@ export function AdminDashboard() {
                     spacing={1.5}
                     alignItems={{ sm: "center" }}
                   >
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      startIcon={<RefreshIcon />}
+                    <IconButton
+                      aria-label="Odśwież grupy"
                       onClick={loadGroups}
                       disabled={groupsLoading}
-                      sx={topToolbarButtonSx}
+                      sx={{ ...panelIconButtonSx, color: "text.secondary" }}
                     >
-                      Odśwież
-                    </Button>
-                    <Button
-                      variant="contained"
-                      size="small"
-                      startIcon={<AddCircleIcon />}
-                      onClick={openCreateGroupDialog}
-                      sx={topToolbarButtonSx}
-                    >
-                      Nowa grupa
-                    </Button>
+                      <RefreshIcon fontSize="small" />
+                    </IconButton>
                   </Stack>
                 </Stack>
 
@@ -1698,26 +1703,26 @@ export function AdminDashboard() {
                             alignItems={{ xs: "stretch", sm: "center" }}
                           >
                             <Button
-                                  variant="outlined"
-                                  size="small"
-                                  startIcon={<SchoolIcon />}
-                                  onClick={() => openMembershipDialog(group)}
-                                  sx={actionButtonSx}
-                                >Skład grupy</Button>
-                            <Stack
-                              direction="row"
-                              spacing={1}
-                              alignSelf={{ xs: "flex-end", sm: "center" }}
+                              variant="outlined"
+                              size="small"
+                              startIcon={<SchoolIcon />}
+                              onClick={() => openMembershipDialog(group)}
+                              sx={panelFooterButtonSx}
                             >
-                              <IconButton
-                                aria-label={`Edytuj ${group.name}`}
+                              Skład grupy
+                            </Button>
+                            <Box sx={panelInlineActionsSx}>
+                              <Button
+                                size="small"
+                                startIcon={<EditIcon fontSize="small" />}
                                 onClick={() => openEditGroupDialog(group)}
-                                sx={{ ...panelIconButtonSx, color: "primary.main" }}
+                                sx={panelFooterButtonSx}
                               >
-                                <EditIcon fontSize="small" />
-                              </IconButton>
-                              <IconButton
-                                aria-label={`Usuń ${group.name}`}
+                                Edytuj
+                              </Button>
+                              <Button
+                                size="small"
+                                startIcon={<DeleteIcon fontSize="small" />}
                                 onClick={() =>
                                   openDeleteDialog({
                                     type: "group",
@@ -1726,11 +1731,11 @@ export function AdminDashboard() {
                                     detail: group.description,
                                   })
                                 }
-                                sx={{ ...panelIconButtonSx, color: "error.main" }}
+                                sx={panelDeleteButtonSx}
                               >
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </Stack>
+                                Usuń
+                              </Button>
+                            </Box>
                           </Stack>
                         </Stack>
                       </Paper>
@@ -1740,8 +1745,13 @@ export function AdminDashboard() {
                   <Grid container spacing={2}>
                     {filteredGroups.map((group) => (
                       <Grid key={group.id} size={{ xs: 12, md: 6, xl: 4 }}>
-                        <Card elevation={0} sx={panelGridCardSx}>
-                          <CardContent sx={panelGridCardContentSx}>
+                        <Card
+                          elevation={0}
+                          sx={{ ...panelGridCardSx, display: "flex", flexDirection: "column" }}
+                        >
+                          <CardContent
+                            sx={{ ...panelGridCardContentSx, flex: "1 1 auto", height: "auto", pb: 1 }}
+                          >
                             <Stack spacing={1.5} sx={{ width: "100%", minHeight: "100%" }}>
                               <Stack
                                 direction="row"
@@ -1797,49 +1807,49 @@ export function AdminDashboard() {
                                   sx={outlinedMetaChipSx}
                                 />
                               </Stack>
-
-                              <Box sx={panelCardFooterSx}>
-                                <Box>
-                                  <Button
-                                    variant="outlined"
-                                    size="small"
-                                    startIcon={<SchoolIcon />}
-                                    onClick={() => openMembershipDialog(group)}
-                                    sx={actionButtonSx}
-                                  >Skład grupy</Button>
-                                </Box>
-                                <Box sx={panelActionClusterSx}>
-                                  <IconButton
-                                    aria-label={`Edytuj ${group.name}`}
-                                    onClick={() => openEditGroupDialog(group)}
-                                    sx={{
-                                      ...panelIconButtonSx,
-                                      color: "primary.main",
-                                    }}
-                                  >
-                                    <EditIcon fontSize="small" />
-                                  </IconButton>
-                                  <IconButton
-                                    aria-label={`Usuń ${group.name}`}
-                                    onClick={() =>
-                                      openDeleteDialog({
-                                        type: "group",
-                                        id: group.id,
-                                        label: group.name,
-                                        detail: group.description,
-                                      })
-                                    }
-                                    sx={{
-                                      ...panelIconButtonSx,
-                                      color: "error.main",
-                                    }}
-                                  >
-                                    <DeleteIcon fontSize="small" />
-                                  </IconButton>
-                                </Box>
-                              </Box>
                             </Stack>
                           </CardContent>
+                          <CardActions sx={{ ...panelCardFooterSx, px: 1.75, pb: 1.5, mt: 0 }}>
+                            <Box sx={{ ...panelFooterButtonsSx, flexWrap: "nowrap" }}>
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                startIcon={<SchoolIcon fontSize="small" />}
+                                fullWidth
+                                onClick={() => openMembershipDialog(group)}
+                                sx={panelFooterButtonSx}
+                              >
+                                Skład grupy
+                              </Button>
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                startIcon={<EditIcon fontSize="small" />}
+                                fullWidth
+                                onClick={() => openEditGroupDialog(group)}
+                                sx={panelFooterButtonSx}
+                              >
+                                Edytuj
+                              </Button>
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                startIcon={<DeleteIcon fontSize="small" />}
+                                fullWidth
+                                onClick={() =>
+                                  openDeleteDialog({
+                                    type: "group",
+                                    id: group.id,
+                                    label: group.name,
+                                    detail: group.description,
+                                  })
+                                }
+                                sx={panelDeleteButtonSx}
+                              >
+                                Usuń
+                              </Button>
+                            </Box>
+                          </CardActions>
                         </Card>
                       </Grid>
                     ))}
@@ -1892,6 +1902,11 @@ export function AdminDashboard() {
             }
           />
           <AppDialogBody>
+            {userDialogFeedback && (
+              <AppDialogStatus severity={userDialogFeedback.severity}>
+                {userDialogFeedback.message}
+              </AppDialogStatus>
+            )}
             <Stack spacing={2.25}>
               <FormSection>
                 <Stack spacing={2.25}>
@@ -1980,7 +1995,7 @@ export function AdminDashboard() {
           </AppDialogBody>
           <AppDialogFooter>
             <FormActions>
-              <Button onClick={closeUserDialog} sx={{ ...actionButtonSx, color: "text.secondary" }}>
+              <Button onClick={closeUserDialog} sx={{ ...panelFooterButtonSx, color: "text.secondary" }}>
                 Anuluj
               </Button>
               <Button
@@ -1988,7 +2003,7 @@ export function AdminDashboard() {
                 startIcon={<SaveIcon />}
                 onClick={submitUserDialog}
                 disabled={userDialogLoading}
-                sx={actionButtonSx}
+                sx={panelFooterButtonSx}
               >
                 {userDialogLoading ? "Zapisywanie..." : "Zapisz zmiany"}
               </Button>
@@ -2016,6 +2031,11 @@ export function AdminDashboard() {
             }
           />
           <AppDialogBody>
+            {groupDialogFeedback && (
+              <AppDialogStatus severity={groupDialogFeedback.severity}>
+                {groupDialogFeedback.message}
+              </AppDialogStatus>
+            )}
             <FormSection>
               <Stack spacing={2.25}>
               <FormField>
@@ -2076,7 +2096,7 @@ export function AdminDashboard() {
           </AppDialogBody>
           <AppDialogFooter>
             <FormActions>
-              <Button onClick={closeGroupDialog} sx={{ ...actionButtonSx, color: "text.secondary" }}>
+              <Button onClick={closeGroupDialog} sx={{ ...panelFooterButtonSx, color: "text.secondary" }}>
                 Anuluj
               </Button>
               <Button
@@ -2084,7 +2104,7 @@ export function AdminDashboard() {
                 startIcon={<SaveIcon />}
                 onClick={submitGroupDialog}
                 disabled={groupDialogLoading}
-                sx={actionButtonSx}
+                sx={panelFooterButtonSx}
               >
                 {groupDialogLoading ? "Zapisywanie..." : "Zapisz zmiany"}
               </Button>
@@ -2100,6 +2120,11 @@ export function AdminDashboard() {
             badge={<Chip label="Ostrzeżenie" size="small" color="error" sx={{ fontWeight: 700 }} />}
           />
           <AppDialogBody>
+            {deleteDialogFeedback && (
+              <AppDialogStatus severity={deleteDialogFeedback.severity}>
+                {deleteDialogFeedback.message}
+              </AppDialogStatus>
+            )}
             <FormSection>
               <Typography variant="body1" fontWeight={700} sx={{ mb: 0.5 }}>
                 {deleteDialog?.label}
@@ -2122,7 +2147,7 @@ export function AdminDashboard() {
           </AppDialogBody>
           <AppDialogFooter>
             <FormActions>
-              <Button onClick={closeDeleteDialog} sx={{ ...actionButtonSx, color: "text.secondary" }}>
+              <Button onClick={closeDeleteDialog} sx={{ ...panelFooterButtonSx, color: "text.secondary" }}>
                 Anuluj
               </Button>
               <Button
@@ -2131,7 +2156,7 @@ export function AdminDashboard() {
                 startIcon={<DeleteIcon />}
                 onClick={confirmDelete}
                 disabled={deleteLoading}
-                sx={actionButtonSx}
+                sx={panelDeleteButtonSx}
               >
                 {deleteLoading ? "Usuwanie..." : "Potwierdź usunięcie"}
               </Button>
@@ -2152,6 +2177,11 @@ export function AdminDashboard() {
             badge={<Chip label="Członkowie" size="small" color="primary" sx={{ fontWeight: 700 }} />}
           />
           <AppDialogBody>
+            {membershipDialogFeedback && (
+              <AppDialogStatus severity={membershipDialogFeedback.severity}>
+                {membershipDialogFeedback.message}
+              </AppDialogStatus>
+            )}
             <Stack spacing={3}>
               <FormSection>
                 <Stack spacing={0.75}>
@@ -2181,11 +2211,9 @@ export function AdminDashboard() {
                         key={student.id}
                         elevation={0}
                         sx={{
+                          ...panelSurfaceSx,
                           p: 1.5,
                           borderRadius: 3,
-                          border: "1px solid",
-                          borderColor: "divider",
-                          bgcolor: "background.paper",
                         }}
                       >
                         <Stack
@@ -2210,14 +2238,16 @@ export function AdminDashboard() {
                               {student.email}
                             </Typography>
                           </Box>
-                          <IconButton
-                            aria-label={`Usuń ${student.username} z grupy`}
+                          <Button
+                            size="small"
+                            color="error"
+                            startIcon={<DeleteIcon fontSize="small" />}
                             onClick={() => removeMembershipStudent(student.id)}
                             disabled={membershipLoading}
-                            sx={{ ...panelIconButtonSx, color: "error.main" }}
+                            sx={panelDeleteButtonSx}
                           >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
+                            Usuń
+                          </Button>
                         </Stack>
                       </Paper>
                     ))}
@@ -2227,7 +2257,7 @@ export function AdminDashboard() {
 
               <FormSection
                 title="Dodaj ucznia"
-                description="Lista pokazuje tylko uczni?w przypisanych do w?a?ciciela tej grupy."
+                description="Lista pokazuje tylko uczniów przypisanych do właściciela tej grupy."
               >
                 <Autocomplete
                   size="small"
@@ -2242,12 +2272,12 @@ export function AdminDashboard() {
                   onChange={(_, value) => setMembershipStudentId(value?.id ?? "")}
                   getOptionLabel={(option) => `${option.username} (${option.email})`}
                   isOptionEqualToValue={(option, value) => option.id === value.id}
-                  noOptionsText="Brak wolnych uczni?w dla tego nauczyciela"
+                  noOptionsText="Brak wolnych uczniów dla tego nauczyciela"
                   renderInput={(params) => (
                     <TextField
                       {...params}
                       label="Wybierz ucznia"
-                      helperText="Wyb?r ucznia od razu przygotuje go do dodania do tej grupy."
+                      helperText="Wybór ucznia od razu przygotuje go do dodania do tej grupy."
                     />
                   )}
                 />
@@ -2256,7 +2286,7 @@ export function AdminDashboard() {
           </AppDialogBody>
           <AppDialogFooter>
             <FormActions>
-              <Button onClick={closeMembershipDialog} sx={{ ...actionButtonSx, color: "text.secondary" }}>
+              <Button onClick={closeMembershipDialog} sx={{ ...panelFooterButtonSx, color: "text.secondary" }}>
                 Anuluj
               </Button>
               <Button
@@ -2264,30 +2294,14 @@ export function AdminDashboard() {
                 startIcon={<AddCircleIcon />}
                 onClick={addMembershipStudent}
                 disabled={membershipLoading}
-                sx={actionButtonSx}
+                sx={panelFooterButtonSx}
               >
                 {membershipLoading ? "Zapisywanie..." : "Dodaj ucznia"}
               </Button>
             </FormActions>
           </AppDialogFooter>
         </AppDialog>
-
-        <Snackbar
-          open={Boolean(toast)}
-          autoHideDuration={4000}
-          onClose={() => setToast(null)}
-          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-        >
-          <Alert
-            onClose={() => setToast(null)}
-            severity={toast?.severity ?? "success"}
-            sx={{ width: "100%" }}
-          >
-            {toast?.message}
-          </Alert>
-        </Snackbar>
       </Container>
     </Box>
   );
 }
-

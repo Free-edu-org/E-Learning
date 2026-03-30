@@ -82,6 +82,62 @@ export const panelActionClusterSx: SxProps<Theme> = {
   gap: 1,
 };
 
+export const panelInlineActionsSx: SxProps<Theme> = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "flex-end",
+  gap: 0.75,
+  flexWrap: "wrap",
+};
+
+export const panelFooterButtonsSx: SxProps<Theme> = {
+  width: "100%",
+  display: "flex",
+  alignItems: "stretch",
+  gap: 1,
+  flexWrap: "wrap",
+};
+
+export const panelFooterButtonSx: SxProps<Theme> = {
+  borderRadius: 2,
+  textTransform: "none",
+  fontWeight: 600,
+  minWidth: 0,
+  boxShadow: "none",
+};
+
+export const panelDeleteButtonSx: SxProps<Theme> = {
+  ...panelFooterButtonSx,
+  color: "error.main",
+  border: "1px solid",
+  borderColor: "error.main",
+};
+
+export const panelToolbarButtonSx: SxProps<Theme> = {
+  ...panelFooterButtonSx,
+  minHeight: 34,
+  minWidth: { xs: "100%", sm: 124 },
+  px: 1.5,
+  whiteSpace: "nowrap",
+  fontSize: "0.84rem",
+};
+
+export const panelSurfaceActionSx: SxProps<Theme> = {
+  p: 2.25,
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 0.5,
+  cursor: "pointer",
+  transition: "box-shadow 0.2s, border-color 0.2s, transform 0.15s",
+  "&:hover": {
+    boxShadow: "0 18px 34px rgba(15, 23, 42, 0.14)",
+    borderColor: "primary.main",
+    transform: "translateY(-2px)",
+  },
+};
+
 export const panelTitleSx: SxProps<Theme> = {
   lineHeight: 1.3,
   overflow: "hidden",
