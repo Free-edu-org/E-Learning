@@ -13,4 +13,3 @@ export function getRoleAccountLabel(role: AppUserRole) {
 export function getRoleChipColor(role: AppUserRole): ChipProps["color"] {
   return role === "TEACHER" ? "info" : "success";
 }
-

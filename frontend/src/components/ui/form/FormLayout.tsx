@@ -22,7 +22,11 @@ type FormSectionProps = {
   children: ReactNode;
 };
 
-export function FormSection({ title, description, children }: FormSectionProps) {
+export function FormSection({
+  title,
+  description,
+  children,
+}: FormSectionProps) {
   return (
     <Box
       sx={{
@@ -32,9 +36,16 @@ export function FormSection({ title, description, children }: FormSectionProps) 
         py: 1.5,
         borderRadius: uiTokens.radius.section,
         bgcolor: (theme) =>
-          alpha(theme.palette.common.white, theme.palette.mode === "dark" ? 0.015 : 0.38),
+          alpha(
+            theme.palette.common.white,
+            theme.palette.mode === "dark" ? 0.015 : 0.38,
+          ),
         border: "1px solid",
-        borderColor: (theme) => alpha(theme.palette.divider, theme.palette.mode === "dark" ? 0.22 : 0.32),
+        borderColor: (theme) =>
+          alpha(
+            theme.palette.divider,
+            theme.palette.mode === "dark" ? 0.22 : 0.32,
+          ),
       }}
     >
       {(title || description) && (
@@ -45,7 +56,11 @@ export function FormSection({ title, description, children }: FormSectionProps) 
             </Typography>
           )}
           {description && (
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ mt: 0.75 }}
+            >
               {description}
             </Typography>
           )}

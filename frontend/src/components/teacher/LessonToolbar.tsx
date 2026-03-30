@@ -91,7 +91,11 @@ export function LessonToolbar({
         }}
       />
 
-      <Divider orientation="vertical" flexItem sx={{ display: { xs: "none", sm: "block" } }} />
+      <Divider
+        orientation="vertical"
+        flexItem
+        sx={{ display: { xs: "none", sm: "block" } }}
+      />
 
       <Autocomplete
         multiple
@@ -121,17 +125,36 @@ export function LessonToolbar({
         renderInput={(params) => (
           <TextField
             {...params}
-            placeholder={selectedGroups.length === 0 ? "Filtruj grupy..." : undefined}
+            placeholder={
+              selectedGroups.length === 0 ? "Filtruj grupy..." : undefined
+            }
             sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
           />
         )}
         sx={{ minWidth: 190, flex: "1 1 190px" }}
       />
 
-      <Divider orientation="vertical" flexItem sx={{ display: { xs: "none", sm: "block" } }} />
+      <Divider
+        orientation="vertical"
+        flexItem
+        sx={{ display: { xs: "none", sm: "block" } }}
+      />
 
-      <ToggleButtonGroup value={statusFilter} exclusive onChange={handleStatusChange} size="small" sx={{ flexShrink: 0 }}>
-        <ToggleButton value="all" sx={{ textTransform: "none", px: 1.5, borderRadius: "8px !important" }}>
+      <ToggleButtonGroup
+        value={statusFilter}
+        exclusive
+        onChange={handleStatusChange}
+        size="small"
+        sx={{ flexShrink: 0 }}
+      >
+        <ToggleButton
+          value="all"
+          sx={{
+            textTransform: "none",
+            px: 1.5,
+            borderRadius: "8px !important",
+          }}
+        >
           Wszystkie
         </ToggleButton>
         <ToggleButton value="active" sx={{ textTransform: "none", px: 1.5 }}>
@@ -142,13 +165,21 @@ export function LessonToolbar({
         </ToggleButton>
       </ToggleButtonGroup>
 
-      <Divider orientation="vertical" flexItem sx={{ display: { xs: "none", sm: "block" } }} />
+      <Divider
+        orientation="vertical"
+        flexItem
+        sx={{ display: { xs: "none", sm: "block" } }}
+      />
 
       <Select
         size="small"
         value={sortMode}
         onChange={handleSortChange}
-        sx={{ minWidth: 170, borderRadius: 2, "& .MuiSelect-select": { py: "6.5px" } }}
+        sx={{
+          minWidth: 170,
+          borderRadius: 2,
+          "& .MuiSelect-select": { py: "6.5px" },
+        }}
       >
         <MenuItem value="date_desc">Data: Najnowsze</MenuItem>
         <MenuItem value="date_asc">Data: Najstarsze</MenuItem>
@@ -156,10 +187,24 @@ export function LessonToolbar({
         <MenuItem value="title_za">Tytuł: Z-A</MenuItem>
       </Select>
 
-      <Divider orientation="vertical" flexItem sx={{ display: { xs: "none", sm: "block" } }} />
+      <Divider
+        orientation="vertical"
+        flexItem
+        sx={{ display: { xs: "none", sm: "block" } }}
+      />
 
-      <ToggleButtonGroup value={viewMode} exclusive onChange={handleViewChange} size="small" sx={{ flexShrink: 0 }}>
-        <ToggleButton value="grid" aria-label="Widok siatki" sx={{ borderRadius: "8px !important" }}>
+      <ToggleButtonGroup
+        value={viewMode}
+        exclusive
+        onChange={handleViewChange}
+        size="small"
+        sx={{ flexShrink: 0 }}
+      >
+        <ToggleButton
+          value="grid"
+          aria-label="Widok siatki"
+          sx={{ borderRadius: "8px !important" }}
+        >
           <GridIcon fontSize="small" />
         </ToggleButton>
         <ToggleButton value="list" aria-label="Widok listy">

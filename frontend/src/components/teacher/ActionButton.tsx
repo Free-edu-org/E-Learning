@@ -1,5 +1,8 @@
 import { Paper, Typography, Box } from "@mui/material";
-import { panelSurfaceActionSx, panelSurfaceSx } from "@/components/ui/panel/panelStyles";
+import {
+  panelSurfaceActionSx,
+  panelSurfaceSx,
+} from "@/components/ui/panel/panelStyles";
 
 interface ActionButtonProps {
   icon: React.ReactElement;

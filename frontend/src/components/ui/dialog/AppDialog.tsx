@@ -50,7 +50,11 @@ const dialogBodySx: SxProps<Theme> = {
   "& .MuiOutlinedInput-root": {
     minHeight: uiTokens.control.minHeight,
     borderRadius: uiTokens.radius.control,
-    bgcolor: (theme) => alpha(theme.palette.common.white, theme.palette.mode === "dark" ? 0.02 : 0.58),
+    bgcolor: (theme) =>
+      alpha(
+        theme.palette.common.white,
+        theme.palette.mode === "dark" ? 0.02 : 0.58,
+      ),
   },
   "& .MuiInputBase-input": {
     py: 1.375,
@@ -82,7 +86,9 @@ export function AppDialog({
   maxWidth = "sm",
   paperSx,
 }: AppDialogProps) {
-  const resolvedPaperSx = (paperSx ? [dialogPaperSx, paperSx] : dialogPaperSx) as SxProps<Theme>;
+  const resolvedPaperSx = (
+    paperSx ? [dialogPaperSx, paperSx] : dialogPaperSx
+  ) as SxProps<Theme>;
 
   return (
     <Dialog
@@ -113,8 +119,18 @@ export function AppDialogHeader({
 }: AppDialogHeaderProps) {
   return (
     <DialogTitle sx={dialogHeaderSx}>
-      <Stack direction="row" spacing={1.5} justifyContent="space-between" alignItems="flex-start">
-        <Stack direction="row" spacing={1.25} alignItems="flex-start" sx={{ minWidth: 0, flex: 1 }}>
+      <Stack
+        direction="row"
+        spacing={1.5}
+        justifyContent="space-between"
+        alignItems="flex-start"
+      >
+        <Stack
+          direction="row"
+          spacing={1.25}
+          alignItems="flex-start"
+          sx={{ minWidth: 0, flex: 1 }}
+        >
           <Box
             sx={{
               width: 38,
@@ -125,8 +141,13 @@ export function AppDialogHeader({
               justifyContent: "center",
               flexShrink: 0,
               color: "primary.main",
-              bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.14 : 0.1),
-              boxShadow: (theme) => `inset 0 1px 0 ${alpha(theme.palette.common.white, 0.05)}`,
+              bgcolor: (theme) =>
+                alpha(
+                  theme.palette.primary.main,
+                  theme.palette.mode === "dark" ? 0.14 : 0.1,
+                ),
+              boxShadow: (theme) =>
+                `inset 0 1px 0 ${alpha(theme.palette.common.white, 0.05)}`,
             }}
           >
             {icon}
@@ -136,17 +157,17 @@ export function AppDialogHeader({
               {title}
             </Typography>
             {subtitle && (
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75, lineHeight: 1.45 }}>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ mt: 0.75, lineHeight: 1.45 }}
+              >
                 {subtitle}
               </Typography>
             )}
           </Box>
         </Stack>
-        {badge && (
-          <Box sx={{ pt: 0.375, pl: 1, flexShrink: 0 }}>
-            {badge}
-          </Box>
-        )}
+        {badge && <Box sx={{ pt: 0.375, pl: 1, flexShrink: 0 }}>{badge}</Box>}
       </Stack>
     </DialogTitle>
   );

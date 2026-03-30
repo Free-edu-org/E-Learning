@@ -146,7 +146,10 @@ export function TeacherDashboard() {
     navigate("/login");
   };
 
-  const pageBg = theme.palette.mode === "light" ? "#e8eef7" : theme.palette.background.default;
+  const pageBg =
+    theme.palette.mode === "light"
+      ? "#e8eef7"
+      : theme.palette.background.default;
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: pageBg, pb: 6 }}>
@@ -168,15 +171,25 @@ export function TeacherDashboard() {
             <LightModeIcon
               fontSize="small"
               sx={{
-                color: theme.palette.mode === "light" ? "primary.main" : "text.disabled",
+                color:
+                  theme.palette.mode === "light"
+                    ? "primary.main"
+                    : "text.disabled",
                 mr: 0.5,
               }}
             />
-            <Switch size="small" checked={theme.palette.mode === "dark"} onChange={toggleColorMode} />
+            <Switch
+              size="small"
+              checked={theme.palette.mode === "dark"}
+              onChange={toggleColorMode}
+            />
             <DarkModeIcon
               fontSize="small"
               sx={{
-                color: theme.palette.mode === "dark" ? "primary.main" : "text.disabled",
+                color:
+                  theme.palette.mode === "dark"
+                    ? "primary.main"
+                    : "text.disabled",
                 ml: 0.5,
               }}
             />
@@ -186,13 +199,25 @@ export function TeacherDashboard() {
             size="small"
             startIcon={<LogoutIcon />}
             onClick={handleLogout}
-            sx={{ borderRadius: 2, textTransform: "none", fontWeight: 600, bgcolor: "background.paper" }}
+            sx={{
+              borderRadius: 2,
+              textTransform: "none",
+              fontWeight: 600,
+              bgcolor: "background.paper",
+            }}
           >
             Wyloguj
           </Button>
         </Box>
 
-        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 4 }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            mb: 4,
+          }}
+        >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
             <Box
               sx={{
@@ -231,7 +256,12 @@ export function TeacherDashboard() {
         {loadingData ? (
           <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
             {[...Array(4)].map((_, i) => (
-              <Skeleton key={i} variant="rounded" height={90} sx={{ flex: 1, borderRadius: 3 }} />
+              <Skeleton
+                key={i}
+                variant="rounded"
+                height={90}
+                sx={{ flex: 1, borderRadius: 3 }}
+              />
             ))}
           </Box>
         ) : errorData ? (
@@ -241,19 +271,46 @@ export function TeacherDashboard() {
         ) : (
           <Box sx={{ display: "flex", gap: 2, mb: 3, flexWrap: "wrap" }}>
             <StatsCard label="Liczba lekcji" value={stats?.totalLessons ?? 0} />
-            <StatsCard label="Aktywne lekcje" value={stats?.activeLessons ?? 0} highlightColor={theme.palette.primary.main} />
-            <StatsCard label="Aktywni uczniowie" value={stats?.activeStudents ?? 0} />
-            <StatsCard label="Średnia wyników" value={`${stats?.avgScore ?? 0}%`} />
+            <StatsCard
+              label="Aktywne lekcje"
+              value={stats?.activeLessons ?? 0}
+              highlightColor={theme.palette.primary.main}
+            />
+            <StatsCard
+              label="Aktywni uczniowie"
+              value={stats?.activeStudents ?? 0}
+            />
+            <StatsCard
+              label="Średnia wyników"
+              value={`${stats?.avgScore ?? 0}%`}
+            />
           </Box>
         )}
 
         <Box sx={{ display: "flex", gap: 2, mb: 4, flexWrap: "wrap" }}>
-          <ActionButton icon={<PersonAddIcon sx={{ fontSize: 32 }} />} title="Zarządzaj uczniami" subtitle="Dodaj, edytuj, archiwizuj" />
-          <ActionButton icon={<GroupIcon sx={{ fontSize: 32 }} />} title="Zarządzaj grupami" subtitle="Twórz grupy i przydzielaj uczniów" />
-          <ActionButton icon={<AddIcon sx={{ fontSize: 32 }} />} title="Utwórz lekcję" subtitle="Nowa lekcja z zadaniami" />
+          <ActionButton
+            icon={<PersonAddIcon sx={{ fontSize: 32 }} />}
+            title="Zarządzaj uczniami"
+            subtitle="Dodaj, edytuj, archiwizuj"
+          />
+          <ActionButton
+            icon={<GroupIcon sx={{ fontSize: 32 }} />}
+            title="Zarządzaj grupami"
+            subtitle="Twórz grupy i przydzielaj uczniów"
+          />
+          <ActionButton
+            icon={<AddIcon sx={{ fontSize: 32 }} />}
+            title="Utwórz lekcję"
+            subtitle="Nowa lekcja z zadaniami"
+          />
         </Box>
 
-        <Typography variant="subtitle1" fontWeight={700} color="primary.main" sx={{ mb: 1.5 }}>
+        <Typography
+          variant="subtitle1"
+          fontWeight={700}
+          color="primary.main"
+          sx={{ mb: 1.5 }}
+        >
           Moje lekcje
         </Typography>
 
@@ -275,7 +332,11 @@ export function TeacherDashboard() {
           <Grid container spacing={2}>
             {[...Array(8)].map((_, i) => (
               <Grid key={i} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
-                <Skeleton variant="rounded" height={220} sx={{ borderRadius: 3 }} />
+                <Skeleton
+                  variant="rounded"
+                  height={220}
+                  sx={{ borderRadius: 3 }}
+                />
               </Grid>
             ))}
           </Grid>
