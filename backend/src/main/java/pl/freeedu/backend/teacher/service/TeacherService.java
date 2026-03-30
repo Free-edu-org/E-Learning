@@ -1,6 +1,7 @@
 package pl.freeedu.backend.teacher.service;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 import pl.freeedu.backend.lesson.dto.LessonResponse;
 import pl.freeedu.backend.lesson.mapper.LessonMapper;
 import pl.freeedu.backend.lesson.repository.LessonRepository;
@@ -43,12 +44,13 @@ public class TeacherService {
 	private final PasswordEncoder passwordEncoder;
 	private final UserGroupRepository userGroupRepository;
 	private final UserInGroupRepository userInGroupRepository;
+	private final TransactionTemplate transactionTemplate;
 
 	public TeacherService(TeacherStatsRepository teacherStatsRepository, LessonRepository lessonRepository,
 			GroupHasLessonRepository groupHasLessonRepository, LessonMapper lessonMapper,
 			SecurityService securityService, UserGroupService userGroupService, UserRepository userRepository,
 			UserMapper userMapper, PasswordEncoder passwordEncoder, UserGroupRepository userGroupRepository,
-			UserInGroupRepository userInGroupRepository) {
+			UserInGroupRepository userInGroupRepository, TransactionTemplate transactionTemplate) {
 		this.teacherStatsRepository = teacherStatsRepository;
 		this.lessonRepository = lessonRepository;
 		this.groupHasLessonRepository = groupHasLessonRepository;
@@ -60,6 +62,7 @@ public class TeacherService {
 		this.passwordEncoder = passwordEncoder;
 		this.userGroupRepository = userGroupRepository;
 		this.userInGroupRepository = userInGroupRepository;
+		this.transactionTemplate = transactionTemplate;
 	}
 
 	public Mono<TeacherStatsResponse> getStats() {
@@ -96,8 +99,8 @@ public class TeacherService {
 	}
 
 	public Mono<UserResponse> createStudent(Mono<TeacherCreateStudentRequest> requestMono) {
-		return requestMono
-				.flatMap(request -> securityService.getCurrentUserId().flatMap(teacherId -> Mono.fromCallable(() -> {
+		return requestMono.flatMap(request -> securityService.getCurrentUserId()
+				.flatMap(teacherId -> Mono.fromCallable(() -> transactionTemplate.execute(status -> {
 					if (userRepository.existsByEmail(request.getEmail())) {
 						throw new UserException(UserErrorCode.EMAIL_ALREADY_TAKEN);
 					}
@@ -129,6 +132,6 @@ public class TeacherService {
 						}
 						throw ex;
 					}
-				}).subscribeOn(Schedulers.boundedElastic())));
+				})).subscribeOn(Schedulers.boundedElastic())));
 	}
 }

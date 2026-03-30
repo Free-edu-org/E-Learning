@@ -1,6 +1,6 @@
 ---
 name: freeedu-api-test-auditor
-description: "Dziala code-first: traktuje backend jako source of truth, aktualizuje api-contract.md na podstawie kodu, aktualizuje pliki .http, generuje/uszczelnia testy API i uruchamia testy koncowe."
+description: "Dziala strict code-first: traktuje backend jako source of truth, aktualizuje api-contract.md i pliki .http na podstawie realnego kodu, uszczelnia testy API oraz pilnuje cleanupu danych testowych na wspoldzielonej bazie developerskiej."
 ---
 
 # FreeEdu API Test Auditor
@@ -10,7 +10,7 @@ Uzyj tego skilla, gdy celem jest utrzymanie dokumentacji i testow API 1:1 z aktu
 ## Zasada glowna (Code-First)
 
 - Backend jest zrodlem prawdy.
-- `api-contract.md` ma byc aktualizowany na podstawie kodu (kontrolery, security, wyjatki, DTO).
+- `api-contract.md` ma byc pochodna realnego kodu backendu (kontrolery, security, wyjatki, DTO, serwisy).
 - Testy i pliki `.http` maja byc aktualizowane na podstawie finalnego kontraktu wynikajacego z kodu.
 - Po zmianach uruchom testy i potwierdz wynik.
 
@@ -28,6 +28,7 @@ Uzyj tego skilla, gdy celem jest utrzymanie dokumentacji i testow API 1:1 z aktu
 - endpoint
 - metoda
 - auth/authz (rola, owner, relacje)
+- uwzglednij aktualne relacje domenowe, np. teacher->student przez grupy, a nie historyczne pola typu `student.teacherId`
 - sukces (status + shape)
 - bledy (status + code)
 

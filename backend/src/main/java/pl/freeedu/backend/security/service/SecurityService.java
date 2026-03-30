@@ -29,8 +29,8 @@ public class SecurityService {
 
 	public Mono<Integer> getCurrentUserId() {
 		return ReactiveSecurityContextHolder.getContext().map(SecurityContext::getAuthentication)
-				.filter(Objects::nonNull).filter(Authentication::isAuthenticated)
-				.map(Authentication::getPrincipal).ofType(CustomUserDetails.class).map(CustomUserDetails::getId);
+				.filter(Objects::nonNull).filter(Authentication::isAuthenticated).map(Authentication::getPrincipal)
+				.ofType(CustomUserDetails.class).map(CustomUserDetails::getId);
 	}
 
 	public boolean isOwner(Authentication authentication, Integer targetUserId) {
@@ -104,8 +104,7 @@ public class SecurityService {
 
 	public Mono<CustomUserDetails> getCurrentUser() {
 		return ReactiveSecurityContextHolder.getContext().map(SecurityContext::getAuthentication)
-				.filter(Objects::nonNull).filter(Authentication::isAuthenticated)
-				.map(Authentication::getPrincipal).filter(principal -> principal instanceof CustomUserDetails)
-				.cast(CustomUserDetails.class);
+				.filter(Objects::nonNull).filter(Authentication::isAuthenticated).map(Authentication::getPrincipal)
+				.filter(principal -> principal instanceof CustomUserDetails).cast(CustomUserDetails.class);
 	}
 }

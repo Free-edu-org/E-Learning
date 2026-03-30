@@ -71,12 +71,12 @@ public class AdminDashboardController {
 		return adminService.getStudents();
 	}
 
-	@Operation(summary = "Create a student with assigned teacher and optional group")
+	@Operation(summary = "Create a student with an optional group assignment")
 	@ApiResponses(value = {@ApiResponse(responseCode = "201", description = "Student account successfully created"),
-			@ApiResponse(responseCode = "400", description = "Bad Request - VALIDATION_FAILED, INVALID_TEACHER_ASSIGNMENT or GROUP_TEACHER_MISMATCH", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "400", description = "Bad Request - VALIDATION_FAILED", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "401", description = "Unauthorized - invalid token", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden - requires ADMIN role", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
-			@ApiResponse(responseCode = "404", description = "Not Found - USER_NOT_FOUND or USER_GROUP_NOT_FOUND", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "404", description = "Not Found - USER_GROUP_NOT_FOUND", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "409", description = "Conflict - EMAIL_ALREADY_TAKEN or USERNAME_ALREADY_TAKEN", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PostMapping("/students")
 	@PreAuthorize("hasRole('ADMIN')")
@@ -85,9 +85,9 @@ public class AdminDashboardController {
 		return request.flatMap(adminService::createStudent);
 	}
 
-	@Operation(summary = "Update student profile, teacher assignment and optional group")
+	@Operation(summary = "Update student profile and optional group assignment")
 	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Student account successfully updated"),
-			@ApiResponse(responseCode = "400", description = "Bad Request - VALIDATION_FAILED, INVALID_STUDENT_ASSIGNMENT, INVALID_TEACHER_ASSIGNMENT or GROUP_TEACHER_MISMATCH", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "400", description = "Bad Request - VALIDATION_FAILED or INVALID_STUDENT_ASSIGNMENT", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "401", description = "Unauthorized - invalid token", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden - requires ADMIN role", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "404", description = "Not Found - USER_NOT_FOUND or USER_GROUP_NOT_FOUND", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),

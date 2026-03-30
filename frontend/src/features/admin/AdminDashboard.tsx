@@ -152,6 +152,7 @@ const actionButtonSx = {
 const topToolbarButtonSx = {
   ...actionButtonSx,
   minHeight: 40,
+  minWidth: { xs: "100%", sm: 148 },
   px: 2,
   whiteSpace: "nowrap",
 };
@@ -205,6 +206,13 @@ const listRowPaperSx = {
     boxShadow: 3,
     transform: "translateY(-1px)",
   },
+};
+
+const cardActionIconsSx = {
+  display: "flex",
+  justifyContent: "flex-end",
+  gap: 1,
+  minWidth: 88,
 };
 
 export function AdminDashboard() {
@@ -946,6 +954,7 @@ export function AdminDashboard() {
                   }}
                 >
                   <TextField
+                    id="admin-users-search"
                     size="small"
                     placeholder="Szukaj po nazwie, emailu lub ID"
                     value={userSearch}
@@ -976,6 +985,7 @@ export function AdminDashboard() {
                   />
 
                   <Autocomplete
+                    id="admin-users-teacher-filter"
                     multiple
                     size="small"
                     options={teachers}
@@ -1003,6 +1013,7 @@ export function AdminDashboard() {
                     renderInput={(params) => (
                       <TextField
                         {...params}
+                        id="admin-users-teacher-filter-input"
                         placeholder={
                           selectedTeacherFilters.length === 0
                             ? "Filtruj nauczycieli..."
@@ -1024,6 +1035,7 @@ export function AdminDashboard() {
                   />
 
                   <Autocomplete
+                    id="admin-users-group-filter"
                     multiple
                     size="small"
                     options={groupFilterOptions}
@@ -1051,6 +1063,7 @@ export function AdminDashboard() {
                     renderInput={(params) => (
                       <TextField
                         {...params}
+                        id="admin-users-group-filter-input"
                         placeholder={
                           selectedGroupFilters.length === 0
                             ? "Filtruj grupy..."
@@ -1214,18 +1227,6 @@ export function AdminDashboard() {
                                   color="text.secondary"
                                   sx={{ overflowWrap: "anywhere" }}
                                 >
-                                  Nauczyciel:{" "}
-                                  <Box component="span" sx={{ fontWeight: 700, color: "text.primary" }}>
-                                    {"groupId" in user && user.groupId != null
-                                      ? teacherNameById.get(groups.find((g) => g.id === (user as AdminStudentProfile).groupId)?.teacherId ?? -1) ?? "Brak danych"
-                                      : "Brak przypisania"}
-                                  </Box>
-                                </Typography>
-                                <Typography
-                                  variant="body2"
-                                  color="text.secondary"
-                                  sx={{ overflowWrap: "anywhere" }}
-                                >
                                   Grupa:{" "}
                                   <Box component="span" sx={{ fontWeight: 700, color: "text.primary" }}>
                                     {"groupName" in user && user.groupName
@@ -1284,6 +1285,7 @@ export function AdminDashboard() {
                           elevation={0}
                           sx={{
                             height: "100%",
+                            minHeight: 300,
                             borderRadius: 3,
                             border: "1px solid",
                             borderColor: "divider",
@@ -1295,8 +1297,8 @@ export function AdminDashboard() {
                             },
                           }}
                         >
-                          <CardContent sx={{ height: "100%" }}>
-                            <Stack spacing={2}>
+                          <CardContent sx={{ height: "100%", display: "flex" }}>
+                            <Stack spacing={2} sx={{ width: "100%", minHeight: "100%" }}>
                               <Stack
                                 direction="row"
                                 justifyContent="space-between"
@@ -1345,21 +1347,6 @@ export function AdminDashboard() {
                                     color="text.secondary"
                                     sx={{ overflowWrap: "anywhere" }}
                                   >
-                                    Nauczyciel:{" "}
-                                    <Box
-                                      component="span"
-                                      sx={{ fontWeight: 700, color: "text.primary" }}
-                                    >
-                                      {"groupId" in user && user.groupId != null
-                                        ? teacherNameById.get(groups.find((g) => g.id === (user as AdminStudentProfile).groupId)?.teacherId ?? -1) ?? "Brak danych"
-                                        : "Brak przypisania"}
-                                    </Box>
-                                  </Typography>
-                                  <Typography
-                                    variant="body2"
-                                    color="text.secondary"
-                                    sx={{ overflowWrap: "anywhere" }}
-                                  >
                                     Grupa:{" "}
                                     <Box
                                       component="span"
@@ -1390,10 +1377,9 @@ export function AdminDashboard() {
 
                               <Box
                                 sx={{
-                                  display: "flex",
-                                  justifyContent: "flex-end",
-                                  gap: 1,
-                                  pt: 0.5,
+                                  ...cardActionIconsSx,
+                                  mt: "auto",
+                                  pt: 1,
                                 }}
                               >
                                 <IconButton
@@ -1454,7 +1440,11 @@ export function AdminDashboard() {
                     </Typography>
                   </Stack>
 
-                  <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
+                  <Stack
+                    direction={{ xs: "column", sm: "row" }}
+                    spacing={1.5}
+                    alignItems={{ sm: "center" }}
+                  >
                     <Button
                       variant="outlined"
                       size="small"
@@ -1494,6 +1484,7 @@ export function AdminDashboard() {
                   }}
                 >
                   <TextField
+                    id="admin-groups-search"
                     size="small"
                     placeholder="Filtruj grupy po nazwie, opisie lub ID"
                     value={groupSearch}
@@ -1524,6 +1515,7 @@ export function AdminDashboard() {
                   />
 
                   <Autocomplete
+                    id="admin-groups-teacher-filter"
                     multiple
                     size="small"
                     options={teachers}
@@ -1551,6 +1543,7 @@ export function AdminDashboard() {
                     renderInput={(params) => (
                       <TextField
                         {...params}
+                        id="admin-groups-teacher-filter-input"
                         placeholder={
                           selectedTeacherFilters.length === 0
                             ? "Filtruj nauczycieli..."
@@ -1728,6 +1721,7 @@ export function AdminDashboard() {
                           elevation={0}
                           sx={{
                             height: "100%",
+                            minHeight: 320,
                             borderRadius: 3,
                             border: "1px solid",
                             borderColor: "divider",
@@ -1739,8 +1733,8 @@ export function AdminDashboard() {
                             },
                           }}
                         >
-                          <CardContent sx={{ height: "100%" }}>
-                            <Stack spacing={2}>
+                          <CardContent sx={{ height: "100%", display: "flex" }}>
+                            <Stack spacing={2} sx={{ width: "100%", minHeight: "100%" }}>
                               <Stack
                                 direction="row"
                                 justifyContent="space-between"
@@ -1812,10 +1806,9 @@ export function AdminDashboard() {
                                 spacing={1}
                                 alignItems="center"
                                 justifyContent="space-between"
-                                flexWrap="wrap"
-                                useFlexGap
+                                sx={{ mt: "auto" }}
                               >
-                                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                                <Stack direction="row" spacing={1}>
                                   <Button
                                     variant="outlined"
                                     size="small"
@@ -1827,7 +1820,7 @@ export function AdminDashboard() {
                                   </Button>
                                 </Stack>
 
-                                <Box sx={{ display: "flex", gap: 1, ml: "auto" }}>
+                                <Box sx={cardActionIconsSx}>
                                   <IconButton
                                     aria-label={`Edytuj ${group.name}`}
                                     onClick={() => openEditGroupDialog(group)}
@@ -1928,14 +1921,6 @@ export function AdminDashboard() {
                     <>
                       <Chip
                         label={
-                          "groupId" in selectedUser && selectedUser.groupId != null
-                            ? `Nauczyciel: ${teacherNameById.get(groups.find((g) => g.id === (selectedUser as AdminStudentProfile).groupId)?.teacherId ?? -1) ?? "brak danych"}`
-                            : "Nauczyciel: brak"
-                        }
-                        size="small"
-                      />
-                      <Chip
-                        label={
                           "groupName" in selectedUser && selectedUser.groupName
                             ? `Grupa: ${selectedUser.groupName}`
                             : "Grupa: bez przypisania"
@@ -1948,6 +1933,7 @@ export function AdminDashboard() {
               )}
 
               <TextField
+                id="admin-user-username"
                 label="Nazwa uzytkownika"
                 value={userDraft.username}
                 onChange={(event) =>
@@ -1959,6 +1945,7 @@ export function AdminDashboard() {
                 fullWidth
               />
               <TextField
+                id="admin-user-email"
                 label="Email"
                 type="email"
                 value={userDraft.email}
@@ -1974,6 +1961,7 @@ export function AdminDashboard() {
                 <>
                   {userDialogMode === "create" && (
                     <TextField
+                      id="admin-user-password"
                       label="Haslo"
                       type="password"
                       value={userDraft.password}
@@ -1990,6 +1978,7 @@ export function AdminDashboard() {
                   {userDialogRole === "STUDENT" && (
                     <>
                       <TextField
+                        id="admin-user-group"
                         select
                         label="Grupa"
                         value={userDraft.groupId}
@@ -2074,6 +2063,7 @@ export function AdminDashboard() {
           <DialogContent sx={{ px: 3, py: 3 }}>
             <Stack spacing={2.5}>
               <TextField
+                id="admin-group-name"
                 label="Nazwa grupy"
                 value={groupDraft.name}
                 onChange={(event) =>
@@ -2085,6 +2075,7 @@ export function AdminDashboard() {
                 fullWidth
               />
               <TextField
+                id="admin-group-description"
                 label="Opis"
                 value={groupDraft.description}
                 onChange={(event) =>
@@ -2321,6 +2312,7 @@ export function AdminDashboard() {
                   Dodaj ucznia
                 </Typography>
                 <Autocomplete
+                  id="admin-membership-student"
                   size="small"
                   options={availableMembershipStudents.filter(
                     (student) => student.groupId !== membershipDialog?.groupId,
@@ -2337,6 +2329,7 @@ export function AdminDashboard() {
                   renderInput={(params) => (
                     <TextField
                       {...params}
+                      id="admin-membership-student-input"
                       label="Wybierz ucznia"
                       helperText="Pokazujemy tylko uczniow przypisanych do wlasciciela tej grupy."
                     />

@@ -98,8 +98,7 @@ public class TaskService {
 	public Mono<ChooseTaskResponse> updateChooseTask(Integer lessonId, Integer taskId,
 			Mono<ChooseTaskRequest> requestMono) {
 		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
-			ChooseTask task = chooseTaskRepository.findById(taskId)
-					.orElseThrow(() -> new TaskException(TaskErrorCode.TASK_NOT_FOUND));
+			ChooseTask task = getChooseTaskForLesson(lessonId, taskId);
 			task.setTask(request.getTask());
 			task.setPossibleAnswers(request.getPossibleAnswers());
 			task.setCorrectAnswer(request.getCorrectAnswer());
@@ -112,7 +111,7 @@ public class TaskService {
 
 	public Mono<Void> deleteChooseTask(Integer lessonId, Integer taskId) {
 		return Mono.fromCallable(() -> {
-			chooseTaskRepository.findById(taskId).orElseThrow(() -> new TaskException(TaskErrorCode.TASK_NOT_FOUND));
+			getChooseTaskForLesson(lessonId, taskId);
 			chooseTaskRepository.deleteById(taskId);
 			return (Void) null;
 		}).subscribeOn(Schedulers.boundedElastic()).then();
@@ -134,8 +133,7 @@ public class TaskService {
 	public Mono<WriteTaskResponse> updateWriteTask(Integer lessonId, Integer taskId,
 			Mono<WriteTaskRequest> requestMono) {
 		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
-			WriteTask task = writeTaskRepository.findById(taskId)
-					.orElseThrow(() -> new TaskException(TaskErrorCode.TASK_NOT_FOUND));
+			WriteTask task = getWriteTaskForLesson(lessonId, taskId);
 			task.setTask(request.getTask());
 			task.setCorrectAnswer(request.getCorrectAnswer());
 			task.setHint(request.getHint());
@@ -147,7 +145,7 @@ public class TaskService {
 
 	public Mono<Void> deleteWriteTask(Integer lessonId, Integer taskId) {
 		return Mono.fromCallable(() -> {
-			writeTaskRepository.findById(taskId).orElseThrow(() -> new TaskException(TaskErrorCode.TASK_NOT_FOUND));
+			getWriteTaskForLesson(lessonId, taskId);
 			writeTaskRepository.deleteById(taskId);
 			return (Void) null;
 		}).subscribeOn(Schedulers.boundedElastic()).then();
@@ -169,8 +167,7 @@ public class TaskService {
 	public Mono<ScatterTaskResponse> updateScatterTask(Integer lessonId, Integer taskId,
 			Mono<ScatterTaskRequest> requestMono) {
 		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
-			ScatterTask task = scatterTaskRepository.findById(taskId)
-					.orElseThrow(() -> new TaskException(TaskErrorCode.TASK_NOT_FOUND));
+			ScatterTask task = getScatterTaskForLesson(lessonId, taskId);
 			task.setTask(request.getTask());
 			task.setWords(request.getWords());
 			task.setCorrectAnswer(request.getCorrectAnswer());
@@ -183,7 +180,7 @@ public class TaskService {
 
 	public Mono<Void> deleteScatterTask(Integer lessonId, Integer taskId) {
 		return Mono.fromCallable(() -> {
-			scatterTaskRepository.findById(taskId).orElseThrow(() -> new TaskException(TaskErrorCode.TASK_NOT_FOUND));
+			getScatterTaskForLesson(lessonId, taskId);
 			scatterTaskRepository.deleteById(taskId);
 			return (Void) null;
 		}).subscribeOn(Schedulers.boundedElastic()).then();
@@ -204,8 +201,7 @@ public class TaskService {
 	public Mono<SpeakTaskResponse> updateSpeakTask(Integer lessonId, Integer taskId,
 			Mono<SpeakTaskRequest> requestMono) {
 		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
-			SpeakTask task = speakTaskRepository.findById(taskId)
-					.orElseThrow(() -> new TaskException(TaskErrorCode.TASK_NOT_FOUND));
+			SpeakTask task = getSpeakTaskForLesson(lessonId, taskId);
 			task.setTask(request.getTask());
 			task.setHint(request.getHint());
 			task.setSection(request.getSection());
@@ -216,7 +212,7 @@ public class TaskService {
 
 	public Mono<Void> deleteSpeakTask(Integer lessonId, Integer taskId) {
 		return Mono.fromCallable(() -> {
-			speakTaskRepository.findById(taskId).orElseThrow(() -> new TaskException(TaskErrorCode.TASK_NOT_FOUND));
+			getSpeakTaskForLesson(lessonId, taskId);
 			speakTaskRepository.deleteById(taskId);
 			return (Void) null;
 		}).subscribeOn(Schedulers.boundedElastic()).then();
@@ -227,6 +223,12 @@ public class TaskService {
 	public Mono<SubmitResponse> submitLesson(Integer lessonId, Mono<SubmitRequest> requestMono) {
 		return requestMono
 				.flatMap(request -> securityService.getCurrentUserId().flatMap(userId -> Mono.fromCallable(() -> {
+					lessonRepository.findById(lessonId)
+							.orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_FOUND));
+					if (!userInGroupRepository.hasAccessToLesson(userId, lessonId)) {
+						throw new TaskException(TaskErrorCode.STUDENT_NO_ACCESS);
+					}
+
 					UserLesson userLesson = userLessonRepository.findByUserIdAndLessonId(userId, lessonId)
 							.orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_STARTED));
 
@@ -245,27 +247,25 @@ public class TaskService {
 
 						switch (item.getTaskType()) {
 							case "choose" -> {
-								ChooseTask ct = chooseTaskRepository.findById(item.getTaskId())
-										.orElseThrow(() -> new TaskException(TaskErrorCode.TASK_NOT_FOUND));
+								ChooseTask ct = getChooseTaskForLesson(lessonId, item.getTaskId());
 								correctAnswer = String.valueOf(ct.getCorrectAnswer());
 								correct = item.getAnswer().trim().equals(correctAnswer);
 								maxScore++;
 							}
 							case "write" -> {
-								WriteTask wt = writeTaskRepository.findById(item.getTaskId())
-										.orElseThrow(() -> new TaskException(TaskErrorCode.TASK_NOT_FOUND));
+								WriteTask wt = getWriteTaskForLesson(lessonId, item.getTaskId());
 								correctAnswer = wt.getCorrectAnswer();
 								correct = item.getAnswer().trim().equalsIgnoreCase(correctAnswer.trim());
 								maxScore++;
 							}
 							case "scatter" -> {
-								ScatterTask st = scatterTaskRepository.findById(item.getTaskId())
-										.orElseThrow(() -> new TaskException(TaskErrorCode.TASK_NOT_FOUND));
+								ScatterTask st = getScatterTaskForLesson(lessonId, item.getTaskId());
 								correctAnswer = st.getCorrectAnswer();
 								correct = item.getAnswer().trim().equalsIgnoreCase(correctAnswer.trim());
 								maxScore++;
 							}
 							case "speak" -> {
+								getSpeakTaskForLesson(lessonId, item.getTaskId());
 								correct = true;
 								correctAnswer = null;
 								maxScore++;
@@ -299,6 +299,7 @@ public class TaskService {
 
 	public Mono<Void> resetUserProgress(Integer lessonId, Integer userId) {
 		return Mono.fromCallable(() -> {
+			lessonRepository.findById(lessonId).orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_FOUND));
 			userAnswerRepository.deleteByUserIdAndLessonId(userId, lessonId);
 			userLessonRepository.deleteByUserIdAndLessonId(userId, lessonId);
 			return (Void) null;
@@ -315,6 +316,42 @@ public class TaskService {
 			case "speak" -> "speak_tasks";
 			default -> throw new TaskException(TaskErrorCode.INVALID_TASK_TYPE);
 		};
+	}
+
+	private ChooseTask getChooseTaskForLesson(Integer lessonId, Integer taskId) {
+		ChooseTask task = chooseTaskRepository.findById(taskId)
+				.orElseThrow(() -> new TaskException(TaskErrorCode.TASK_NOT_FOUND));
+		if (!lessonId.equals(task.getLessonId())) {
+			throw new TaskException(TaskErrorCode.TASK_NOT_FOUND);
+		}
+		return task;
+	}
+
+	private WriteTask getWriteTaskForLesson(Integer lessonId, Integer taskId) {
+		WriteTask task = writeTaskRepository.findById(taskId)
+				.orElseThrow(() -> new TaskException(TaskErrorCode.TASK_NOT_FOUND));
+		if (!lessonId.equals(task.getLessonId())) {
+			throw new TaskException(TaskErrorCode.TASK_NOT_FOUND);
+		}
+		return task;
+	}
+
+	private ScatterTask getScatterTaskForLesson(Integer lessonId, Integer taskId) {
+		ScatterTask task = scatterTaskRepository.findById(taskId)
+				.orElseThrow(() -> new TaskException(TaskErrorCode.TASK_NOT_FOUND));
+		if (!lessonId.equals(task.getLessonId())) {
+			throw new TaskException(TaskErrorCode.TASK_NOT_FOUND);
+		}
+		return task;
+	}
+
+	private SpeakTask getSpeakTaskForLesson(Integer lessonId, Integer taskId) {
+		SpeakTask task = speakTaskRepository.findById(taskId)
+				.orElseThrow(() -> new TaskException(TaskErrorCode.TASK_NOT_FOUND));
+		if (!lessonId.equals(task.getLessonId())) {
+			throw new TaskException(TaskErrorCode.TASK_NOT_FOUND);
+		}
+		return task;
 	}
 
 	private LessonTasksResponse buildLessonTasksResponse(Integer lessonId, String status, List<ChooseTask> chooseTasks,

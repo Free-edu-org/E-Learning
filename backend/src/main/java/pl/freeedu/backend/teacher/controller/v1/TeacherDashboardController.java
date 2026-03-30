@@ -78,8 +78,7 @@ public class TeacherDashboardController {
 	@PostMapping("/students")
 	@PreAuthorize("hasRole('TEACHER')")
 	@ResponseStatus(HttpStatus.CREATED)
-	public Mono<UserResponse> createStudent(
-			@Valid @RequestBody Mono<TeacherCreateStudentRequest> request) {
+	public Mono<UserResponse> createStudent(@Valid @RequestBody Mono<TeacherCreateStudentRequest> request) {
 		return teacherService.createStudent(request);
 	}
 }

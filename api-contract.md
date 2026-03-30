@@ -139,7 +139,7 @@ Default local development base URL is `http://localhost:8080`
 ### 2.4. Get User Details
 - **URL**: `/api/v1/users/{id}`
 - **Method**: `GET`
-- **Description**: Retrieves user details. Requires `ADMIN` authority OR requester is the same user (`owner`) OR `TEACHER` authority with access only to students assigned to this teacher (`student.teacherId = currentTeacherId`).
+- **Description**: Retrieves user details. Requires `ADMIN` authority OR requester is the same user (`owner`) OR `TEACHER` authority with access only to students assigned to one of the current teacher's groups.
 
 **Success (200 OK):**
 ```json
@@ -154,7 +154,7 @@ Default local development base URL is `http://localhost:8080`
 
 **Known Errors:**
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
-- `FORBIDDEN` (403 Forbidden): Lack of permissions (not admin, not owner, and no teacher-student relation).
+- `FORBIDDEN` (403 Forbidden): Lack of permissions (not admin, not owner, and no teacher-group-student relation).
 - `USER_NOT_FOUND` (404 Not Found): User does not exist.
 
 ---
@@ -188,7 +188,7 @@ Default local development base URL is `http://localhost:8080`
 - `USERNAME_ALREADY_TAKEN` (409 Conflict): Passed username is already in use.
 - `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
-- `FORBIDDEN` (403 Forbidden): Lack of permissions (not admin, not owner, and no teacher-student relation).
+- `FORBIDDEN` (403 Forbidden): Lack of permissions (not admin and not owner).
 - `USER_NOT_FOUND` (404 Not Found): User does not exist.
 
 ---
@@ -212,7 +212,7 @@ Default local development base URL is `http://localhost:8080`
 **Known Errors:**
 - `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
 - `INVALID_CREDENTIALS` (401 Unauthorized): Old password does not match or token is invalid.
-- `FORBIDDEN` (403 Forbidden): Lack of permissions (not admin, not owner, and no teacher-student relation).
+- `FORBIDDEN` (403 Forbidden): Lack of permissions (not admin and not owner).
 - `USER_NOT_FOUND` (404 Not Found): User does not exist.
 
 ---
@@ -227,7 +227,7 @@ Default local development base URL is `http://localhost:8080`
 
 **Known Errors:**
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
-- `FORBIDDEN` (403 Forbidden): Lack of permissions (not admin, not owner, and no teacher-student relation).
+- `FORBIDDEN` (403 Forbidden): Lack of permissions (not admin and not owner).
 - `USER_NOT_FOUND` (404 Not Found): User does not exist.
 
 ---
@@ -582,7 +582,7 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
 ### 5.4. Get My Students
 - **URL**: `/api/v1/teacher/students`
 - **Method**: `GET`
-- **Description**: Zwraca listę uczniów przypisanych do grup aktualnie zalogowanego nauczyciela (poprzez tabelę `UserInGroup` i `UserGroup.teacherId`).
+- **Description**: Zwraca listę uczniów przypisanych do grup aktualnie zalogowanego nauczyciela (relacja przez `UserInGroup` oraz `UserGroup.teacherId`).
 - **Authorization**: `TEACHER`
 
 **Success (200 OK):** Zwraca macierz elementów `UserResponse` (wyłącznie użytkownicy z rolą `STUDENT`).
@@ -788,7 +788,16 @@ Warstwa BFF dla uczniów.
 ### 7.1. Get Personal Progress
 - **URL**: `/api/v1/student/progress`
 - **Method**: `GET`
-- **Description**: Zwraca status lekcji, oceny i progres ucznia (placeholder). Wymaga `STUDENT`.
+- **Description**: Zwraca tymczasowy tekstowy placeholder postępu ucznia. Endpoint jest przygotowany jako BFF pod przyszłą implementację DTO, ale obecnie zwraca `text/plain` jako zwykły string w body. Wymaga `STUDENT`.
+
+**Success (200 OK):**
+```text
+Student progress placeholder (e.g. marks, upcoming lessons)
+```
+
+**Known Errors:**
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
 
 ---
 
@@ -1094,6 +1103,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 - `LESSON_NOT_STARTED` (400 Bad Request): Lesson not started yet (no prior GET /tasks call).
 - `LESSON_ALREADY_COMPLETED` (403 Forbidden): Lesson already submitted.
 - `STUDENT_NO_ACCESS` (403 Forbidden): Student's group does not have access.
+- `TASK_NOT_FOUND` (404 Not Found): At least one referenced task does not exist or does not belong to the lesson from the path.
 - `INVALID_TASK_TYPE` (400 Bad Request): Unknown task type in answers.
 - `UNAUTHORIZED` (401), `FORBIDDEN` (403)
 
@@ -1108,6 +1118,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 **Success (204 No Content):** *(Empty Response Body)*
 
 **Known Errors:**
+- `LESSON_NOT_FOUND` (404 Not Found): Lesson does not exist.
 - `UNAUTHORIZED` (401), `FORBIDDEN` (403)
 
 ---

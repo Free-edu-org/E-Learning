@@ -1,6 +1,6 @@
 ---
 name: freeedu-backend-gap-implementer
-description: Implementuje brakujace elementy backendu FreeEdu, gdy frontend lub kontrakt ujawnia realny Backend Gap. Uzyj, gdy brakuje endpointu, DTO, logiki serwisowej, security, walidacji, error code lub testow po stronie backendu i trzeba to dowiezc zgodnie z istniejaca architektura WebFlux, zasadami security i stylem projektu.
+description: Implementuje realne Backend Gapy w FreeEdu, gdy frontend, review lub audit kontraktu ujawnia brakujacy endpoint, DTO, logike serwisowa, security, ownership check, walidacje, error code albo testy. Uzyj, gdy trzeba dowiezc backend zgodnie z obecna architektura WebFlux, zasadami security i kontraktem wynikajacym z kodu.
 ---
 
 # FreeEdu Backend Gap Implementer
@@ -20,7 +20,7 @@ Dowiezc brakujacy backend tak, aby:
 - Najpierw analizuj istniejacy backend, dopiero potem implementuj.
 - Nie wymyslaj nowego wzorca, jesli w repo juz istnieje odpowiedni.
 - Uprawnienia sa czescia funkcjonalnosci, nie dodatkiem na koncu.
-- Jesli frontend potrzebuje nowego endpointu, doprowadz tez kontrakt, bledy i testy do stanu spojnego z kodem.
+- Jesli frontend potrzebuje nowego endpointu lub audit wykrywa dryf, doprowadz tez kontrakt, bledy, `.http` i testy do stanu spojnego z kodem.
 
 ## Wejscie
 
@@ -55,7 +55,7 @@ Dowiezc brakujacy backend tak, aby:
 - `hasRole('ADMIN')`
 - `hasRole('TEACHER')`
 - owner-only
-- role + relation check, np. teacher->student albo group owner
+- role + relation check, np. teacher->student przez grupy albo group owner
 - jesli potrzebny jest nowy warunek domenowy, rozszerz `securityService` zamiast duplikowac logike w serwisie lub kontrolerze
 - upewnij sie, ze endpoint nie ujawnia danych roli, ktora nie powinna ich zobaczyc
 

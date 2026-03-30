@@ -1,52 +1,69 @@
 ---
 name: freeedu-jira-task-generator
-description: Produkuje ustandaryzowane techniczne opisy zadan do Jiry na podstawie analizy SWS i obecnego stanu bazy danych.
+description: Generuje ustandaryzowane techniczne opisy zadan do Jiry na podstawie SWS, aktualnego kodu backend/frontend, kontraktu API oraz obecnego modelu danych projektu FreeEdu.
 ---
 
 # FreeEdu Jira Task Generator
 
-Ten skill sluzy do automatycznego generowania precyzyjnych, technicznych opisow zadan do Jiry dla projektu FreeEdu.
+Uzyj tego skilla, gdy uzytkownik prosi o przygotowanie technicznego opisu zadania do Jiry dla FreeEdu.
 
-## Kiedy uzywac
+## Cel
 
-Gdy uzytkownik prosi o przygotowanie opisu zadania do Jiry, rozpiske zadania lub specyfikacje implementacyjna na podstawie wymagan i obecnej architektury.
+Dowiezc task do Jiry, ktory jest konkretny, implementowalny i osadzony w realnej architekturze projektu, a nie w historycznych zalozeniach.
 
-## Kroki
+## Workflow
 
-1. Przeanalizuj wymagania z `tmp_sws.txt` lub wskazanych sekcji SWS.
-2. Sprawdz migracje i aktualna strukture danych w `backend/src/main/resources/db/migration`.
-3. Przejrzyj aktualna implementacje backend/frontend dla wskazanego obszaru.
-4. Przygotuj opis po polsku wedlug szablonu.
+1. Przeanalizuj wymagania
+- przeczytaj wskazana sekcje SWS lub `tmp_sws.txt`
+- ustal cel biznesowy i zakres funkcjonalny
 
-### Szablon zadania Jira
+2. Zbierz aktualny stan projektu
+- sprawdz kod backendu i frontendu dla wskazanego obszaru
+- sprawdz `api-contract.md`, jesli temat dotyczy API
+- sprawdz migracje i model danych w `backend/src/main/resources/db/migration`
+
+3. Zidentyfikuj realne luki i ograniczenia
+- odroznij to, co juz istnieje, od tego, co trzeba doimplementowac
+- uwzglednij aktualne reguly security, ownership i relacje domenowe
+
+4. Przygotuj opis zadania
+- po polsku
+- technicznie i konkretnie
+- z rozdzieleniem na backend, frontend, API, DB i testy, jesli to potrzebne
+
+## Szablon
 
 **Cel zadania:** [krotki opis biznesowo-techniczny]
 
 #### Zarys aktualnej architektury wzgledem zadania
 - **Co jest (obecny stan):** [...]
-- **Co brakuje:** [...]
-- **Co poprawic (refactoring):** [...]
-- **Nice to have:** [...]
+- **Czego brakuje:** [...]
+- **Ryzyka / ograniczenia:** [...]
+- **Zakres implementacji:** [...]
 
 #### 1. Zmiany w bazie danych
-- **[Tabela/Akcja]:** [...]
-- **[Relacje/Statusy]:** [...]
+- **Tabele / relacje:** [...]
+- **Migracje:** [...]
 
-#### 2. Specyfikacja endpointow (REST API)
-**A. [Nazwa akcji]**
-- **URL:** [...]
-- **Metoda:** [...]
-- **Uprawnienia:** [...]
-- **Request body / parametry:** [...]
-- **Logika:** [...]
-- **Zabezpieczenia:** [...]
-- **Odpowiedz JSON:** [...]
+#### 2. API / kontrakt
+- **Endpointy:** [...]
+- **Request / response:** [...]
+- **Auth / authz / ownership:** [...]
+- **Error codes:** [...]
 
-**B. [Nazwa akcji]**
-- Powtorz format.
+#### 3. Backend
+- **Moduly / serwisy / repozytoria:** [...]
+- **Walidacja i logika biznesowa:** [...]
+
+#### 4. Frontend
+- **Widoki / flow / integracja API:** [...]
+
+#### 5. Testy i walidacja
+- **Testy backendowe / API / frontendowe:** [...]
+- **Cleanup danych testowych:** [...]
 
 ## Zasady
 
 - Uzywaj stylu technicznego, konkretnego i bez ogolnikow.
-- Odnos sie do realnych warunkow technologicznych projektu (MySQL, Spring Boot, React).
+- Opieraj sie na aktualnym kodzie projektu, nie na starych zalozeniach.
 - Jesli brakuje kontekstu, najpierw zbadaj projekt.

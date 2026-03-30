@@ -3,6 +3,7 @@ package pl.freeedu.backend.admin.service;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 import pl.freeedu.backend.admin.dto.AdminCreateStudentRequest;
 import pl.freeedu.backend.admin.dto.AdminStudentResponse;
 import pl.freeedu.backend.admin.dto.AdminStatsResponse;
@@ -36,14 +37,17 @@ public class AdminService {
 	private final UserInGroupRepository userInGroupRepository;
 	private final UserMapper userMapper;
 	private final PasswordEncoder passwordEncoder;
+	private final TransactionTemplate transactionTemplate;
 
 	public AdminService(UserRepository userRepository, UserGroupRepository userGroupRepository,
-			UserInGroupRepository userInGroupRepository, UserMapper userMapper, PasswordEncoder passwordEncoder) {
+			UserInGroupRepository userInGroupRepository, UserMapper userMapper, PasswordEncoder passwordEncoder,
+			TransactionTemplate transactionTemplate) {
 		this.userRepository = userRepository;
 		this.userGroupRepository = userGroupRepository;
 		this.userInGroupRepository = userInGroupRepository;
 		this.userMapper = userMapper;
 		this.passwordEncoder = passwordEncoder;
+		this.transactionTemplate = transactionTemplate;
 	}
 
 	public Mono<AdminStatsResponse> getStats() {
@@ -72,7 +76,7 @@ public class AdminService {
 	}
 
 	public Mono<UserResponse> createStudent(AdminCreateStudentRequest request) {
-		return Mono.fromCallable(() -> {
+		return Mono.fromCallable(() -> transactionTemplate.execute(status -> {
 			if (userRepository.existsByEmail(request.getEmail())) {
 				throw new UserException(UserErrorCode.EMAIL_ALREADY_TAKEN);
 			}
@@ -80,14 +84,18 @@ public class AdminService {
 				throw new UserException(UserErrorCode.USERNAME_ALREADY_TAKEN);
 			}
 
+			UserGroup group = null;
+			if (request.getGroupId() != null) {
+				group = userGroupRepository.findById(request.getGroupId())
+						.orElseThrow(() -> new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND));
+			}
+
 			User student = User.builder().email(request.getEmail()).username(request.getUsername())
 					.password(passwordEncoder.encode(request.getPassword())).role(Role.STUDENT).build();
 
 			try {
 				User savedStudent = userRepository.save(student);
-				if (request.getGroupId() != null) {
-					UserGroup group = userGroupRepository.findById(request.getGroupId())
-							.orElseThrow(() -> new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND));
+				if (group != null) {
 					userInGroupRepository
 							.save(UserInGroup.builder().userId(savedStudent.getId()).groupId(group.getId()).build());
 				}
@@ -101,11 +109,11 @@ public class AdminService {
 				}
 				throw ex;
 			}
-		}).subscribeOn(Schedulers.boundedElastic());
+		})).subscribeOn(Schedulers.boundedElastic());
 	}
 
 	public Mono<AdminStudentResponse> updateStudent(Integer id, AdminUpdateStudentRequest request) {
-		return Mono.fromCallable(() -> {
+		return Mono.fromCallable(() -> transactionTemplate.execute(status -> {
 			User student = userRepository.findById(id)
 					.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 			if (student.getRole() != Role.STUDENT) {
@@ -120,6 +128,12 @@ public class AdminService {
 				throw new UserException(UserErrorCode.USERNAME_ALREADY_TAKEN);
 			}
 
+			UserGroup group = null;
+			if (request.getGroupId() != null) {
+				group = userGroupRepository.findById(request.getGroupId())
+						.orElseThrow(() -> new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND));
+			}
+
 			student.setUsername(request.getUsername());
 			student.setEmail(request.getEmail());
 			User savedStudent = userRepository.save(student);
@@ -129,9 +143,7 @@ public class AdminService {
 			Integer finalGroupId = null;
 			String finalGroupName = null;
 
-			if (request.getGroupId() != null) {
-				UserGroup group = userGroupRepository.findById(request.getGroupId())
-						.orElseThrow(() -> new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND));
+			if (group != null) {
 				userInGroupRepository
 						.save(UserInGroup.builder().userId(savedStudent.getId()).groupId(group.getId()).build());
 				finalGroupId = group.getId();
@@ -141,7 +153,7 @@ public class AdminService {
 			return AdminStudentResponse.builder().id(savedStudent.getId()).email(savedStudent.getEmail())
 					.username(savedStudent.getUsername()).role(savedStudent.getRole()).groupId(finalGroupId)
 					.groupName(finalGroupName).createdAt(savedStudent.getCreatedAt()).build();
-		}).subscribeOn(Schedulers.boundedElastic());
+		})).subscribeOn(Schedulers.boundedElastic());
 	}
 
 	private Flux<UserResponse> getUsersByRole(Role role) {

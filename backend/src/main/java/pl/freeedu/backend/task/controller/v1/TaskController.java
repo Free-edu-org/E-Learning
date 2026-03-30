@@ -52,6 +52,9 @@ public class TaskController {
 	}
 
 	@Operation(summary = "Update a choose task")
+	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Choose task updated"),
+			@ApiResponse(responseCode = "400", description = "Invalid input", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "404", description = "Task not found in the lesson", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PutMapping("/tasks/choose/{taskId}")
 	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonId))")
 	public Mono<ChooseTaskResponse> updateChooseTask(@PathVariable Integer lessonId, @PathVariable Integer taskId,
@@ -60,6 +63,8 @@ public class TaskController {
 	}
 
 	@Operation(summary = "Delete a choose task")
+	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Choose task deleted"),
+			@ApiResponse(responseCode = "404", description = "Task not found in the lesson", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@DeleteMapping("/tasks/choose/{taskId}")
 	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonId))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
@@ -81,6 +86,9 @@ public class TaskController {
 	}
 
 	@Operation(summary = "Update a write task")
+	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Write task updated"),
+			@ApiResponse(responseCode = "400", description = "Invalid input", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "404", description = "Task not found in the lesson", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PutMapping("/tasks/write/{taskId}")
 	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonId))")
 	public Mono<WriteTaskResponse> updateWriteTask(@PathVariable Integer lessonId, @PathVariable Integer taskId,
@@ -89,6 +97,8 @@ public class TaskController {
 	}
 
 	@Operation(summary = "Delete a write task")
+	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Write task deleted"),
+			@ApiResponse(responseCode = "404", description = "Task not found in the lesson", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@DeleteMapping("/tasks/write/{taskId}")
 	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonId))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
@@ -110,6 +120,9 @@ public class TaskController {
 	}
 
 	@Operation(summary = "Update a scatter task")
+	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Scatter task updated"),
+			@ApiResponse(responseCode = "400", description = "Invalid input", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "404", description = "Task not found in the lesson", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PutMapping("/tasks/scatter/{taskId}")
 	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonId))")
 	public Mono<ScatterTaskResponse> updateScatterTask(@PathVariable Integer lessonId, @PathVariable Integer taskId,
@@ -118,6 +131,8 @@ public class TaskController {
 	}
 
 	@Operation(summary = "Delete a scatter task")
+	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Scatter task deleted"),
+			@ApiResponse(responseCode = "404", description = "Task not found in the lesson", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@DeleteMapping("/tasks/scatter/{taskId}")
 	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonId))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
@@ -139,6 +154,9 @@ public class TaskController {
 	}
 
 	@Operation(summary = "Update a speak task")
+	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Speak task updated"),
+			@ApiResponse(responseCode = "400", description = "Invalid input", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "404", description = "Task not found in the lesson", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PutMapping("/tasks/speak/{taskId}")
 	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonId))")
 	public Mono<SpeakTaskResponse> updateSpeakTask(@PathVariable Integer lessonId, @PathVariable Integer taskId,
@@ -147,6 +165,8 @@ public class TaskController {
 	}
 
 	@Operation(summary = "Delete a speak task")
+	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Speak task deleted"),
+			@ApiResponse(responseCode = "404", description = "Task not found in the lesson", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@DeleteMapping("/tasks/speak/{taskId}")
 	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonId))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
@@ -159,7 +179,8 @@ public class TaskController {
 	@Operation(summary = "Submit all answers for a lesson")
 	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Answers evaluated successfully"),
 			@ApiResponse(responseCode = "400", description = "Lesson not started or invalid input", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
-			@ApiResponse(responseCode = "403", description = "Lesson already completed", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
+			@ApiResponse(responseCode = "403", description = "Lesson already completed or student has no access", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "404", description = "Lesson or task not found", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PostMapping("/submit")
 	@PreAuthorize("hasRole('STUDENT')")
 	public Mono<SubmitResponse> submitLesson(@PathVariable Integer lessonId,
