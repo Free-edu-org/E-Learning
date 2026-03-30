@@ -92,8 +92,7 @@ public class GlobalExceptionHandler {
 			ServerWebExchange exchange) {
 		log.warn("MethodNotAllowedException [{} {}]: {}", exchange.getRequest().getMethod(),
 				exchange.getRequest().getPath(), ex.getMessage());
-		return buildProblemDetail(HttpStatus.METHOD_NOT_ALLOWED, "Method Not Allowed", "METHOD_NOT_ALLOWED",
-				exchange);
+		return buildProblemDetail(HttpStatus.METHOD_NOT_ALLOWED, "Method Not Allowed", "METHOD_NOT_ALLOWED", exchange);
 	}
 
 	@ExceptionHandler(DataIntegrityViolationException.class)
