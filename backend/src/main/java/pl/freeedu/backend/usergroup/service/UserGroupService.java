@@ -2,6 +2,7 @@ package pl.freeedu.backend.usergroup.service;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import pl.freeedu.backend.security.principal.CustomUserDetails;
 import pl.freeedu.backend.user.exception.UserErrorCode;
 import pl.freeedu.backend.user.exception.UserException;
 import pl.freeedu.backend.user.model.Role;
@@ -173,11 +174,12 @@ public class UserGroupService {
 		return response;
 	}
 
-	private Integer resolveTeacherId(User currentUser, Integer requestedTeacherId) {
+	private Integer resolveTeacherId(CustomUserDetails currentUser, Integer requestedTeacherId) {
 		return resolveTeacherId(currentUser, requestedTeacherId, null);
 	}
 
-	private Integer resolveTeacherId(User currentUser, Integer requestedTeacherId, Integer fallbackTeacherId) {
+	private Integer resolveTeacherId(CustomUserDetails currentUser, Integer requestedTeacherId,
+			Integer fallbackTeacherId) {
 		if (currentUser.getRole() == Role.TEACHER) {
 			return currentUser.getId();
 		}
