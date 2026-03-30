@@ -10,11 +10,13 @@ describe('Tasks API (/api/v1/lessons/{lessonId}/tasks)', () => {
     let teacherToken;
     let studentToken;
     let secondTeacherToken;
+    let secondTeacherId;
     let lessonId;
     let chooseTaskId;
     let writeTaskId;
     let scatterTaskId;
     let speakTaskId;
+    const createdTasks = [];
 
     beforeAll(async () => {
         let res = await apiClient.post('/auth/login', adminCreds);
@@ -40,6 +42,10 @@ describe('Tasks API (/api/v1/lessons/{lessonId}/tasks)', () => {
         });
         secondTeacherToken = res.data.token;
 
+        setAuthToken(secondTeacherToken);
+        res = await apiClient.get('/users/me');
+        secondTeacherId = res.data.id;
+
         // Create lesson as teacher
         setAuthToken(teacherToken);
         res = await apiClient.post('/lessons', {
@@ -48,6 +54,32 @@ describe('Tasks API (/api/v1/lessons/{lessonId}/tasks)', () => {
             groupIds: []
         });
         lessonId = res.data.id;
+    });
+
+    afterAll(async () => {
+        for (const task of createdTasks.reverse()) {
+            setAuthToken(adminToken);
+            let response = await apiClient.delete(`/lessons/${lessonId}/tasks/${task.type}/${task.id}`);
+            if (response.status === 403) {
+                setAuthToken(teacherToken);
+                response = await apiClient.delete(`/lessons/${lessonId}/tasks/${task.type}/${task.id}`);
+            }
+            expect([204, 404]).toContain(response.status);
+        }
+
+        if (lessonId) {
+            setAuthToken(adminToken);
+            const response = await apiClient.delete(`/lessons/${lessonId}`);
+            expect([204, 404]).toContain(response.status);
+        }
+
+        if (secondTeacherId) {
+            setAuthToken(adminToken);
+            const response = await apiClient.delete(`/users/${secondTeacherId}`);
+            expect([204, 404]).toContain(response.status);
+        }
+
+        setAuthToken(null);
     });
 
     // ═══════════════════════════════════════════════
@@ -70,6 +102,7 @@ describe('Tasks API (/api/v1/lessons/{lessonId}/tasks)', () => {
             expect(response.data.possibleAnswers).toBe('3|4|5|6');
             expect(response.data.correctAnswer).toBe(1);
             chooseTaskId = response.data.id;
+            createdTasks.push({ type: 'choose', id: response.data.id });
         });
 
         it('should update a choose task (200)', async () => {
@@ -157,6 +190,7 @@ describe('Tasks API (/api/v1/lessons/{lessonId}/tasks)', () => {
             expect(response.data.task).toBe('Write the past tense of go');
             expect(response.data.correctAnswer).toBe('went');
             writeTaskId = response.data.id;
+            createdTasks.push({ type: 'write', id: response.data.id });
         });
 
         it('should update a write task (200)', async () => {
@@ -197,6 +231,7 @@ describe('Tasks API (/api/v1/lessons/{lessonId}/tasks)', () => {
             expect(response.data.words).toBe('is|cat|the|big');
             expect(response.data.correctAnswer).toBe('the cat is big');
             scatterTaskId = response.data.id;
+            createdTasks.push({ type: 'scatter', id: response.data.id });
         });
 
         it('should update a scatter task (200)', async () => {
@@ -235,6 +270,7 @@ describe('Tasks API (/api/v1/lessons/{lessonId}/tasks)', () => {
             expect(response.status).toBe(201);
             expect(response.data.task).toBe('Say hello in English');
             speakTaskId = response.data.id;
+            createdTasks.push({ type: 'speak', id: response.data.id });
         });
 
         it('should update a speak task (200)', async () => {
@@ -361,6 +397,7 @@ describe('Tasks API (/api/v1/lessons/{lessonId}/tasks)', () => {
             });
             expect(response.status).toBe(201);
             expect(response.data.task).toBe('Admin created task');
+            createdTasks.push({ type: 'write', id: response.data.id });
         });
     });
 

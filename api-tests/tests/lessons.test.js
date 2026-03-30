@@ -8,7 +8,7 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
     let adminToken;
     let teacherToken;
     let createdLessonId;
-    let groupId;
+    const createdLessonIds = [];
 
     beforeAll(async () => {
         let res = await apiClient.post('/auth/login', adminCreds);
@@ -16,14 +16,58 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
 
         res = await apiClient.post('/auth/login', teacherCreds);
         teacherToken = res.data.token;
+    });
 
-        // Create a group for assignment tests
-        setAuthToken(teacherToken);
-        res = await apiClient.post('/user-groups', {
-            name: `Lesson CRUD Group ${uniqueId}`,
-            description: 'For lesson CRUD tests'
-        });
-        groupId = res.data.id;
+    afterAll(async () => {
+        const tryDeleteLesson = async (lessonIdToDelete, token) => {
+            setAuthToken(token);
+            const response = await apiClient.delete(`/lessons/${lessonIdToDelete}`);
+            return response.status;
+        };
+
+        const tryDetachGroups = async (lessonIdToUpdate, token) => {
+            setAuthToken(token);
+            const listResponse = await apiClient.get('/lessons');
+            if (listResponse.status !== 200) {
+                return false;
+            }
+
+            const lesson = listResponse.data.find((item) => item.id === lessonIdToUpdate);
+            if (!lesson) {
+                return true;
+            }
+
+            const updateResponse = await apiClient.put(`/lessons/${lessonIdToUpdate}`, {
+                title: lesson.title,
+                theme: lesson.theme,
+                groupIds: []
+            });
+            return updateResponse.status === 200;
+        };
+
+        for (const lessonId of createdLessonIds.reverse()) {
+            let status = await tryDeleteLesson(lessonId, adminToken);
+            if ([204, 404].includes(status)) {
+                continue;
+            }
+
+            status = await tryDeleteLesson(lessonId, teacherToken);
+            if ([204, 404].includes(status)) {
+                continue;
+            }
+
+            await tryDetachGroups(lessonId, adminToken);
+            status = await tryDeleteLesson(lessonId, adminToken);
+            if ([204, 404].includes(status)) {
+                continue;
+            }
+
+            await tryDetachGroups(lessonId, teacherToken);
+            status = await tryDeleteLesson(lessonId, teacherToken);
+            expect([204, 404]).toContain(status);
+        }
+
+        setAuthToken(null);
     });
 
     // ═══════════════════════════════════════════════
@@ -35,7 +79,7 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
             const response = await apiClient.post('/lessons', {
                 title: `CRUD Lesson ${uniqueId}`,
                 theme: 'Testing',
-                groupIds: [groupId]
+                groupIds: []
             });
             expect(response.status).toBe(201);
             expect(response.data.id).toBeDefined();
@@ -47,6 +91,7 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
             expect(response.data.createdAt).toBeDefined();
             expect(Array.isArray(response.data.groups)).toBe(true);
             createdLessonId = response.data.id;
+            createdLessonIds.push(response.data.id);
         });
 
         it('should create a lesson as ADMIN (201)', async () => {
@@ -58,6 +103,7 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
             });
             expect(response.status).toBe(201);
             expect(response.data.title).toBe(`Admin Lesson ${uniqueId}`);
+            createdLessonIds.push(response.data.id);
         });
 
         it('should create a lesson without groupIds (201)', async () => {
@@ -68,6 +114,7 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
             });
             expect(response.status).toBe(201);
             expect(response.data.groups).toEqual([]);
+            createdLessonIds.push(response.data.id);
         });
 
         it('should return 400 for missing title', async () => {
