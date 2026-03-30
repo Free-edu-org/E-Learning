@@ -1,3 +1,8 @@
+---
+name: freeedu-review-auditor
+description: Wykonuje rygorystyczny review zmian jak wyrachowany senior; wykrywa regresje, niespojnosci, ryzyka i luki testowe oraz wydaje jednoznaczny werdykt gotowosci.
+---
+
 # FreeEdu Review Auditor
 
 Uzyj tego skilla, gdy uzytkownik prosi o review, audit zmian, sprawdzenie czy wszystko jest poprawne, lub finalna walidacje PR/commita.
@@ -66,4 +71,4 @@ Dzialaj jak wyrachowany senior reviewer:
 - Nie maskuj niezgodnosci miedzy kodem, testami i kontraktem.
 - Nie zaczynaj od testow. Najpierw ocen kod i jego skutki, potem sprawdz testy.
 
-Uzyj checklisty z `.agents/skills/freeedu-review-auditor/references/review-checklist.md`.
+Uzyj checklisty z `references/review-checklist.md`.

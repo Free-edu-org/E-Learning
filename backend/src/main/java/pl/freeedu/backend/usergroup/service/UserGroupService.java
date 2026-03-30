@@ -118,24 +118,17 @@ public class UserGroupService {
 
 	public Mono<Void> delete(Integer id) {
 		return Mono.fromCallable(() -> {
-			UserGroup group = userGroupRepository.findById(id)
+			UserGroup groupToDel = userGroupRepository.findById(id)
 					.orElseThrow(() -> new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND));
-			var memberIds = userInGroupRepository.findUserIdsByGroupId(id);
-			for (Integer memberId : memberIds) {
-				userRepository.findById(memberId).ifPresent(user -> {
-					user.setTeacherId(null);
-					userRepository.save(user);
-				});
-			}
-			userGroupRepository.delete(group);
+			userGroupRepository.delete(groupToDel);
 			return (Void) null;
 		}).subscribeOn(Schedulers.boundedElastic()).then();
 	}
-
 	public Mono<Void> addMember(Integer groupId, Integer userId) {
 		return Mono.fromCallable(() -> {
-			UserGroup group = userGroupRepository.findById(groupId)
-					.orElseThrow(() -> new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND));
+			if (!userGroupRepository.existsById(groupId)) {
+				throw new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND);
+			}
 			User user = userRepository.findById(userId)
 					.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 			if (user.getRole() != Role.STUDENT) {
@@ -146,8 +139,6 @@ public class UserGroupService {
 			}
 			try {
 				userInGroupRepository.save(UserInGroup.builder().userId(userId).groupId(groupId).build());
-				user.setTeacherId(group.getTeacherId());
-				userRepository.save(user);
 			} catch (DataIntegrityViolationException e) {
 				throw new UserGroupException(UserGroupErrorCode.STUDENT_ALREADY_IN_GROUP);
 			}
@@ -163,10 +154,6 @@ public class UserGroupService {
 			UserInGroup membership = userInGroupRepository.findByUserIdAndGroupId(userId, groupId)
 					.orElseThrow(() -> new UserGroupException(UserGroupErrorCode.MEMBER_NOT_IN_GROUP));
 			userInGroupRepository.delete(membership);
-			userRepository.findById(userId).ifPresent(user -> {
-				user.setTeacherId(null);
-				userRepository.save(user);
-			});
 			return (Void) null;
 		}).subscribeOn(Schedulers.boundedElastic()).then();
 	}

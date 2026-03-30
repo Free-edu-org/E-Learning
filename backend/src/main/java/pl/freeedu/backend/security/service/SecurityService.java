@@ -6,8 +6,6 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.stereotype.Service;
 import pl.freeedu.backend.security.principal.CustomUserDetails;
 import pl.freeedu.backend.user.model.Role;
-import pl.freeedu.backend.user.model.User;
-import pl.freeedu.backend.user.repository.UserRepository;
 import pl.freeedu.backend.lesson.repository.LessonRepository;
 import pl.freeedu.backend.usergroup.repository.UserGroupRepository;
 import pl.freeedu.backend.usergroup.repository.UserInGroupRepository;
@@ -17,14 +15,12 @@ import org.springframework.context.annotation.Lazy;
 @Service("securityService")
 public class SecurityService {
 
-	private final UserRepository userRepository;
 	private final UserGroupRepository userGroupRepository;
 	private final LessonRepository lessonRepository;
 	private final UserInGroupRepository userInGroupRepository;
 
-	public SecurityService(@Lazy UserRepository userRepository, @Lazy UserGroupRepository userGroupRepository,
-			@Lazy LessonRepository lessonRepository, @Lazy UserInGroupRepository userInGroupRepository) {
-		this.userRepository = userRepository;
+	public SecurityService(@Lazy UserGroupRepository userGroupRepository, @Lazy LessonRepository lessonRepository,
+			@Lazy UserInGroupRepository userInGroupRepository) {
 		this.userGroupRepository = userGroupRepository;
 		this.lessonRepository = lessonRepository;
 		this.userInGroupRepository = userInGroupRepository;
@@ -91,9 +87,7 @@ public class SecurityService {
 			return false;
 		}
 
-		User student = userRepository.findById(studentId).orElse(null);
-		return student != null && student.getRole() == Role.STUDENT
-				&& userDetails.getId().equals(student.getTeacherId());
+		return userInGroupRepository.isStudentInTeachersGroup(studentId, userDetails.getId());
 	}
 
 	public boolean hasStudentAccessToLesson(Authentication authentication, Integer lessonId) {

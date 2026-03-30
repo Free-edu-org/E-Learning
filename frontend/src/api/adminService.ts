@@ -13,19 +13,16 @@ export interface AdminCreateStudentRequest {
   username: string;
   email: string;
   password: string;
-  teacherId: number;
-  groupId?: number;
+  groupId: number;
 }
 
 export interface AdminUpdateStudentRequest {
   username: string;
   email: string;
-  teacherId: number;
-  groupId?: number;
+  groupId: number;
 }
 
 export interface AdminStudentProfile extends UserProfile {
-  teacherName?: string | null;
   groupId?: number | null;
   groupName?: string | null;
 }

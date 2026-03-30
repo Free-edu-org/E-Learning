@@ -1,3 +1,8 @@
+---
+name: freeedu-jira-task-generator
+description: Produkuje ustandaryzowane techniczne opisy zadan do Jiry na podstawie analizy SWS i obecnego stanu bazy danych.
+---
+
 # FreeEdu Jira Task Generator
 
 Ten skill sluzy do automatycznego generowania precyzyjnych, technicznych opisow zadan do Jiry dla projektu FreeEdu.

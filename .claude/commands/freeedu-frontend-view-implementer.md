@@ -1,3 +1,8 @@
+---
+name: freeedu-frontend-view-implementer
+description: Implementuje wskazany widok frontendowy na podstawie istniejącego kodu i stylu projektu; utrzymuje spojnosc UI/UX, mapuje integracje do api-contract i zgłasza brakujace endpointy backendu jako blokery.
+---
+
 # FreeEdu Frontend View Implementer
 
 Uzyj tego skilla, gdy uzytkownik prosi o implementacje lub edycje konkretnego widoku w frontendzie.
@@ -62,4 +67,4 @@ Dowiezc widok produkcyjnej jakosci, zgodny z obecnym stylem aplikacji, bez psuci
 - Nie tworz nowego design systemu, jesli projekt ma juz wzorce.
 - Trzymaj nazewnictwo i strukture plikow zgodna z repo.
 
-Uzyj checklisty z `.agents/skills/freeedu-frontend-view-implementer/references/frontend-view-checklist.md`.
+Uzyj checklisty z `references/frontend-view-checklist.md`.

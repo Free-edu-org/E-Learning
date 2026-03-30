@@ -79,7 +79,6 @@ interface UserDraft {
   username: string;
   email: string;
   password: string;
-  teacherId: number | "";
   groupId: number | "";
 }
 
@@ -105,7 +104,6 @@ const emptyUserDraft: UserDraft = {
   username: "",
   email: "",
   password: "",
-  teacherId: "",
   groupId: "",
 };
 const emptyGroupDraft: GroupDraft = { name: "", description: "" };
@@ -357,12 +355,8 @@ export function AdminDashboard() {
   }, [groupSearch, groups, selectedTeacherFilters]);
 
   const assignableGroups = useMemo(() => {
-    if (userDraft.teacherId === "") {
-      return [];
-    }
-
-    return groups.filter((group) => group.teacherId === userDraft.teacherId);
-  }, [groups, userDraft.teacherId]);
+    return groups;
+  }, [groups]);
 
   const currentMembershipStudents = useMemo(() => {
     if (!membershipDialog) {
@@ -378,9 +372,7 @@ export function AdminDashboard() {
     }
 
     return students.filter(
-      (student) =>
-        student.teacherId === membershipDialog.teacherId &&
-        (student.groupId == null || student.groupId === membershipDialog.groupId),
+      (student) => student.groupId == null || student.groupId === membershipDialog.groupId
     );
   }, [membershipDialog, students]);
 
@@ -480,7 +472,6 @@ export function AdminDashboard() {
       username: user.username,
       email: user.email,
       password: "",
-      teacherId: user.teacherId ?? "",
       groupId: "groupId" in user ? (user.groupId ?? "") : "",
     });
     setUserDialogOpen(true);
@@ -512,8 +503,8 @@ export function AdminDashboard() {
           await userService.createTeacher(payload);
           showToast("success", "Nauczyciel zostal utworzony.");
         } else {
-          if (userDraft.teacherId === "") {
-            showToast("error", "Wybierz nauczyciela dla nowego ucznia.");
+          if (userDraft.groupId === "") {
+            showToast("error", "Wybierz grupe dla nowego ucznia.");
             return;
           }
 
@@ -521,8 +512,7 @@ export function AdminDashboard() {
             username: userDraft.username,
             email: userDraft.email,
             password: userDraft.password,
-            teacherId: userDraft.teacherId,
-            ...(userDraft.groupId !== "" ? { groupId: userDraft.groupId } : {}),
+            groupId: userDraft.groupId,
           };
 
           await adminService.createStudent(payload);
@@ -532,16 +522,15 @@ export function AdminDashboard() {
         let updated: AdminListUser;
 
         if (selectedUser.role === "STUDENT") {
-          if (userDraft.teacherId === "") {
-            showToast("error", "Wybierz nauczyciela dla ucznia.");
+          if (userDraft.groupId === "") {
+            showToast("error", "Wybierz grupe dla ucznia.");
             return;
           }
 
           const payload: AdminUpdateStudentRequest = {
             username: userDraft.username,
             email: userDraft.email,
-            teacherId: userDraft.teacherId,
-            ...(userDraft.groupId !== "" ? { groupId: userDraft.groupId } : {}),
+            groupId: userDraft.groupId,
           };
           updated = await adminService.updateStudent(selectedUser.id, payload);
         } else {
@@ -2004,43 +1993,6 @@ export function AdminDashboard() {
                     <>
                       <TextField
                         select
-                        label="Nauczyciel"
-                        value={userDraft.teacherId}
-                        onChange={(event) => {
-                          const nextTeacherId =
-                            event.target.value === ""
-                              ? ""
-                              : Number(event.target.value);
-
-                          setUserDraft((current) => ({
-                            ...current,
-                            teacherId: nextTeacherId,
-                            groupId:
-                              nextTeacherId !== "" &&
-                              current.groupId !== "" &&
-                              groups.some(
-                                (group) =>
-                                  group.id === current.groupId &&
-                                  group.teacherId === nextTeacherId,
-                              )
-                                ? current.groupId
-                                : "",
-                          }));
-                        }}
-                        fullWidth
-                        required
-                        helperText="Nowy uczen musi byc przypisany do nauczyciela."
-                      >
-                        <MenuItem value="">Wybierz nauczyciela</MenuItem>
-                        {teachers.map((teacher) => (
-                          <MenuItem key={teacher.id} value={teacher.id}>
-                            {teacher.username} ({teacher.email})
-                          </MenuItem>
-                        ))}
-                      </TextField>
-
-                      <TextField
-                        select
                         label="Grupa"
                         value={userDraft.groupId}
                         onChange={(event) =>
@@ -2053,13 +2005,11 @@ export function AdminDashboard() {
                           }))
                         }
                         fullWidth
-                        disabled={userDraft.teacherId === ""}
+                        required
                         helperText={
-                          userDraft.teacherId === ""
-                            ? "Najpierw wybierz nauczyciela."
-                            : assignableGroups.length === 0
-                              ? "Ten nauczyciel nie ma jeszcze zadnej grupy. Uczen zostanie utworzony bez grupy."
-                              : "Przypisanie do grupy jest opcjonalne."
+                          assignableGroups.length === 0
+                            ? "Brak dostepnych grup. Utworz grupe najpierw."
+                            : "Wybierz grupe do ktorej chcesz przypisac ucznia."
                         }
                       >
                         <MenuItem value="">Bez grupy</MenuItem>
@@ -2085,7 +2035,7 @@ export function AdminDashboard() {
               onClick={submitUserDialog}
               disabled={
                 userDialogLoading ||
-                (userDialogRole === "STUDENT" && userDraft.teacherId === "")
+                (userDialogRole === "STUDENT" && userDraft.groupId === "")
               }
               sx={actionButtonSx}
             >

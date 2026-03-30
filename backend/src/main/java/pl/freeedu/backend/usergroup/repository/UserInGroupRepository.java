@@ -19,6 +19,9 @@ public interface UserInGroupRepository extends JpaRepository<UserInGroup, Intege
 			+ "WHERE uig.user_id = :userId AND ghl.lesson_id = :lessonId", nativeQuery = true)
 	boolean hasAccessToLesson(@Param("userId") Integer userId, @Param("lessonId") Integer lessonId);
 
+	@Query("SELECT COUNT(uig) > 0 FROM UserInGroup uig JOIN UserGroup ug ON uig.groupId = ug.id WHERE uig.userId = :studentId AND ug.teacherId = :teacherId")
+	boolean isStudentInTeachersGroup(@Param("studentId") Integer studentId, @Param("teacherId") Integer teacherId);
+
 	Optional<UserInGroup> findByUserId(Integer userId);
 
 	int countByGroupId(Integer groupId);
@@ -26,8 +29,6 @@ public interface UserInGroupRepository extends JpaRepository<UserInGroup, Intege
 	boolean existsByUserId(Integer userId);
 
 	boolean existsByUserIdAndGroupId(Integer userId, Integer groupId);
-
-	Optional<UserInGroup> findByUserId(Integer userId);
 
 	Optional<UserInGroup> findByUserIdAndGroupId(Integer userId, Integer groupId);
 

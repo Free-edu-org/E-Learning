@@ -60,8 +60,6 @@ public class AdminService {
 
 	public Flux<AdminStudentResponse> getStudents() {
 		return Mono.fromCallable(() -> {
-			Map<Integer, User> teacherMap = userRepository.findByRoleOrderByCreatedAtDesc(Role.TEACHER).stream()
-					.collect(Collectors.toMap(User::getId, Function.identity()));
 			Map<Integer, UserGroup> groupMap = userGroupRepository.findAll().stream()
 					.collect(Collectors.toMap(UserGroup::getId, Function.identity()));
 			Map<Integer, Integer> membershipMap = userInGroupRepository.findAllMemberships().stream()
@@ -69,7 +67,7 @@ public class AdminService {
 							UserInGroupRepository.UserMembershipProjection::getGroupId));
 
 			return userRepository.findByRoleOrderByCreatedAtDesc(Role.STUDENT).stream()
-					.map(student -> toAdminStudentResponse(student, teacherMap, groupMap, membershipMap)).toList();
+					.map(student -> toAdminStudentResponse(student, groupMap, membershipMap)).toList();
 		}).subscribeOn(Schedulers.boundedElastic()).flatMapMany(Flux::fromIterable);
 	}
 
@@ -82,31 +80,20 @@ public class AdminService {
 				throw new UserException(UserErrorCode.USERNAME_ALREADY_TAKEN);
 			}
 
-			User teacher = userRepository.findById(request.getTeacherId())
-					.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
-			if (teacher.getRole() != Role.TEACHER) {
-				throw new UserException(UserErrorCode.INVALID_TEACHER_ASSIGNMENT);
+			if (request.getGroupId() == null) {
+				throw new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND);
 			}
 
-			UserGroup group = null;
-			if (request.getGroupId() != null) {
-				group = userGroupRepository.findById(request.getGroupId())
-						.orElseThrow(() -> new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND));
-				if (!teacher.getId().equals(group.getTeacherId())) {
-					throw new UserGroupException(UserGroupErrorCode.GROUP_TEACHER_MISMATCH);
-				}
-			}
+			UserGroup group = userGroupRepository.findById(request.getGroupId())
+					.orElseThrow(() -> new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND));
 
 			User student = User.builder().email(request.getEmail()).username(request.getUsername())
-					.password(passwordEncoder.encode(request.getPassword())).role(Role.STUDENT)
-					.teacherId(teacher.getId()).build();
+					.password(passwordEncoder.encode(request.getPassword())).role(Role.STUDENT).build();
 
 			try {
 				User savedStudent = userRepository.save(student);
-				if (group != null) {
-					userInGroupRepository
-							.save(UserInGroup.builder().userId(savedStudent.getId()).groupId(group.getId()).build());
-				}
+				userInGroupRepository
+						.save(UserInGroup.builder().userId(savedStudent.getId()).groupId(group.getId()).build());
 				return userMapper.toUserResponse(savedStudent);
 			} catch (DataIntegrityViolationException ex) {
 				if (userRepository.existsByEmail(request.getEmail())) {
@@ -136,36 +123,24 @@ public class AdminService {
 				throw new UserException(UserErrorCode.USERNAME_ALREADY_TAKEN);
 			}
 
-			User teacher = userRepository.findById(request.getTeacherId())
-					.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
-			if (teacher.getRole() != Role.TEACHER) {
-				throw new UserException(UserErrorCode.INVALID_TEACHER_ASSIGNMENT);
+			if (request.getGroupId() == null) {
+				throw new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND);
 			}
 
-			UserGroup group = null;
-			if (request.getGroupId() != null) {
-				group = userGroupRepository.findById(request.getGroupId())
-						.orElseThrow(() -> new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND));
-				if (!teacher.getId().equals(group.getTeacherId())) {
-					throw new UserGroupException(UserGroupErrorCode.GROUP_TEACHER_MISMATCH);
-				}
-			}
+			UserGroup group = userGroupRepository.findById(request.getGroupId())
+					.orElseThrow(() -> new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND));
 
 			student.setUsername(request.getUsername());
 			student.setEmail(request.getEmail());
-			student.setTeacherId(teacher.getId());
 			User savedStudent = userRepository.save(student);
 
 			userInGroupRepository.findByUserId(savedStudent.getId()).ifPresent(userInGroupRepository::delete);
-			if (group != null) {
-				userInGroupRepository
-						.save(UserInGroup.builder().userId(savedStudent.getId()).groupId(group.getId()).build());
-			}
+			userInGroupRepository
+					.save(UserInGroup.builder().userId(savedStudent.getId()).groupId(group.getId()).build());
 
 			return AdminStudentResponse.builder().id(savedStudent.getId()).email(savedStudent.getEmail())
-					.username(savedStudent.getUsername()).role(savedStudent.getRole()).teacherId(teacher.getId())
-					.teacherName(teacher.getUsername()).groupId(group != null ? group.getId() : null)
-					.groupName(group != null ? group.getName() : null).createdAt(savedStudent.getCreatedAt()).build();
+					.username(savedStudent.getUsername()).role(savedStudent.getRole()).groupId(group.getId())
+					.groupName(group.getName()).createdAt(savedStudent.getCreatedAt()).build();
 		}).subscribeOn(Schedulers.boundedElastic());
 	}
 
@@ -176,15 +151,13 @@ public class AdminService {
 				.subscribeOn(Schedulers.boundedElastic()).flatMapMany(Flux::fromIterable);
 	}
 
-	private AdminStudentResponse toAdminStudentResponse(User student, Map<Integer, User> teacherMap,
-			Map<Integer, UserGroup> groupMap, Map<Integer, Integer> membershipMap) {
+	private AdminStudentResponse toAdminStudentResponse(User student, Map<Integer, UserGroup> groupMap,
+			Map<Integer, Integer> membershipMap) {
 		Integer groupId = membershipMap.get(student.getId());
-		User teacher = student.getTeacherId() != null ? teacherMap.get(student.getTeacherId()) : null;
 		UserGroup group = groupId != null ? groupMap.get(groupId) : null;
 
 		return AdminStudentResponse.builder().id(student.getId()).email(student.getEmail())
-				.username(student.getUsername()).role(student.getRole()).teacherId(student.getTeacherId())
-				.teacherName(teacher != null ? teacher.getUsername() : null).groupId(groupId)
+				.username(student.getUsername()).role(student.getRole()).groupId(groupId)
 				.groupName(group != null ? group.getName() : null).createdAt(student.getCreatedAt()).build();
 	}
 }

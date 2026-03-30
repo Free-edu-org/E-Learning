@@ -72,7 +72,7 @@ public class TeacherService {
 
 	public Flux<UserResponse> getMyStudents() {
 		return securityService.getCurrentUserId().flatMapMany(teacherId -> Mono.fromCallable(() -> {
-			return userRepository.findByTeacherIdAndRole(teacherId, Role.STUDENT).stream()
+			return userRepository.findByGroupsTeacherIdAndRole(teacherId, Role.STUDENT).stream()
 					.map(userMapper::toUserResponse).toList();
 		}).subscribeOn(Schedulers.boundedElastic()).flatMapMany(Flux::fromIterable));
 	}

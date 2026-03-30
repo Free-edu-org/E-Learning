@@ -22,10 +22,6 @@ public class AdminStudentResponse {
 
 	private Role role;
 
-	private Integer teacherId;
-
-	private String teacherName;
-
 	private Integer groupId;
 
 	private String groupName;

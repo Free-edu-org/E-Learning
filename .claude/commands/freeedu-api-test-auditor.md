@@ -1,3 +1,8 @@
+---
+name: freeedu-api-test-auditor
+description: "Dziala code-first: traktuje backend jako source of truth, aktualizuje api-contract.md na podstawie kodu, aktualizuje pliki .http, generuje/uszczelnia testy API i uruchamia testy koncowe."
+---
+
 # FreeEdu API Test Auditor
 
 Uzyj tego skilla, gdy celem jest utrzymanie dokumentacji i testow API 1:1 z aktualnym kodem backendu.
@@ -41,6 +46,9 @@ Uzyj tego skilla, gdy celem jest utrzymanie dokumentacji i testow API 1:1 z aktu
 - oczekuj jednego statusu na przypadek
 - sprawdzaj `code` dla ProblemDetail, gdy backend zwraca JSON
 - gdy backend zwraca `text/plain` lub puste body, asercja ma to jasno odzwierciedlac
+- jesli test tworzy dane (`user`, `group`, `lesson`, membership itp.), musi sledzic utworzone rekordy i robic cleanup w `afterAll`, o ile baza nie jest resetowana automatycznie per run
+- preferuj rejestry `createdUserIds` / `createdGroupIds` / `createdLessonIds` i usuwanie w odwrotnej kolejnosci zaleznosci
+- cleanup ma byc odporny na czesciowe wykonanie testu: akceptuj `[204, 404]` dla kasowania zasobow stworzonych pomocniczo
 - zachowuj styl testow zgodny z istniejacymi plikami w `api-tests/tests`:
   - podobna struktura `describe/it`
   - podobny styl nazw scenariuszy
@@ -70,10 +78,18 @@ Uzyj tego skilla, gdy celem jest utrzymanie dokumentacji i testow API 1:1 z aktu
 - `cd api-tests && npm test -- --runInBand`
 - opcjonalnie: `npm test -- --runInBand --coverage`
 
+## Cleanup Policy
+
+- Domyslnie zakladaj, ze testy API uruchamiaja sie na wspoldzielonej bazie developerskiej z seedami, a nie na izolowanej bazie efemerycznej.
+- Jesli test zapisuje dane i nie ma gwarancji resetu bazy po runie, brak cleanupu traktuj jako blad testu.
+- Seedy sa read-only; cleanup dotyczy tylko rekordow utworzonych przez test.
+- Gdy test potrzebuje utworzonych danych w wielu `it`, sprzataj na poziomie calego `describe` przez `afterAll`, nie w srodku scenariuszy.
+- Po zmianach sprawdz nie tylko zielony wynik testu, ale tez czy plik nie zostawia nowych rekordow po zakonczonym runie.
+
 9. Raportuj wynik:
 - co zaktualizowano w `api-contract.md`
 - jakie testy dodano/zaostrzono
 - wynik testow
 - ewentualne znane rozjazdy do naprawy w kodzie
 
-Uzyj checklisty z `.agents/skills/freeedu-api-test-auditor/references/api-test-audit-checklist.md`.
+Uzyj checklisty z `references/api-test-audit-checklist.md`.
