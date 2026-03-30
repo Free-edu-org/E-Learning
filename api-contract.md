@@ -126,6 +126,7 @@ Default local development base URL is `http://localhost:8080`
   "username": "student1",
   "email": "user@example.com",
   "role": "STUDENT",
+  "teacherId": null,
   "createdAt": "2026-03-02T21:00:00"
 }
 ```
@@ -148,6 +149,7 @@ Default local development base URL is `http://localhost:8080`
   "username": "student1",
   "email": "user@example.com",
   "role": "STUDENT",
+  "teacherId": 3,
   "createdAt": "2026-03-02T21:00:00"
 }
 ```
@@ -179,6 +181,7 @@ Default local development base URL is `http://localhost:8080`
   "username": "newUsername",
   "email": "new.email@example.com",
   "role": "STUDENT",
+  "teacherId": null,
   "createdAt": "2026-03-02T21:00:00"
 }
 ```
@@ -422,6 +425,7 @@ Poniżej znajdziesz opis endpointów do zarządzania lekcjami. Ścieżka bazowa:
     "theme": "Grammar",
     "isActive": true,
     "teacherId": 3,
+    "teacherName": "pan_tomasz",
     "createdAt": "2026-03-21T10:00:00",
     "groups": [ { "id": 1, "name": "Angielski A1" } ]
   }
@@ -430,11 +434,12 @@ Poniżej znajdziesz opis endpointów do zarządzania lekcjami. Ścieżka bazowa:
 
 | Field | Type                  | Description |
 |-------|-----------------------|-------------|
-| `id` | Inteager              | ID lekcji |
+| `id` | Integer               | ID lekcji |
 | `title` | String                | Tytuł lekcji |
 | `theme` | String                | Temat kategorii lekcji |
 | `isActive` | Boolean               | Czy lekcja jest aktywna |
 | `teacherId` | Integer               | ID nauczyciela, który utworzył lekcję |
+| `teacherName` | String                | Username nauczyciela |
 | `createdAt` | String (ISO datetime) | Data utworzenia |
 | `groups` | List<GroupDto>        | Lista grup przypisanych do lekcji (id, name) |
 
@@ -483,7 +488,7 @@ Zwraca zaktualizowaną reprezentację `LessonResponse`.
 
 **Known Errors:**
 - `VALIDATION_FAILED` (400 Bad Request): Złe dane wejściowe.
-- `USER_NOT_FOUND` / `LESSON_NOT_FOUND` (404 Not Found): Nie znaleziono lekcji (lub powiązanych zasobów).
+- `LESSON_NOT_FOUND` (404 Not Found): Nie znaleziono lekcji.
 - `UNAUTHORIZED` (401 Unauthorized)
 - `FORBIDDEN` (403 Forbidden)
 
@@ -760,6 +765,326 @@ Warstwa BFF dla uczniów.
 - **URL**: `/api/v1/student/progress`
 - **Method**: `GET`
 - **Description**: Zwraca status lekcji, oceny i progres ucznia (placeholder). Wymaga `STUDENT`.
+
+---
+
+## 8. Tasks (`/api/v1/lessons/{lessonId}/tasks`)
+
+Task management endpoints nested under lessons. All task CRUD requires `ADMIN` or lesson owner (`TEACHER`).
+
+### 8.1. Get Lesson Tasks
+- **URL**: `/api/v1/lessons/{lessonId}/tasks`
+- **Method**: `GET`
+- **Description**: Returns all tasks for a lesson grouped by section. Students get answers stripped and auto-start tracking. Teachers/admins see correct answers.
+- **Authorization**: `STUDENT`, `TEACHER`, or `ADMIN`
+
+**Success (200 OK):**
+```json
+{
+  "lessonId": 1,
+  "status": "IN_PROGRESS",
+  "sections": [
+    {
+      "section": "Vocabulary",
+      "chooseTasks": [
+        {
+          "id": 1,
+          "lessonId": 1,
+          "task": "Choose the correct answer",
+          "possibleAnswers": "a|b|c|d",
+          "correctAnswer": null,
+          "hint": "Think about grammar",
+          "section": "Vocabulary",
+          "createdAt": "2026-03-21T10:00:00"
+        }
+      ],
+      "writeTasks": [],
+      "scatterTasks": [],
+      "speakTasks": []
+    }
+  ]
+}
+```
+
+**Notes:**
+- For `STUDENT`: `correctAnswer` fields are `null` (stripped). `status` is `IN_PROGRESS` or triggers auto-start.
+- For `TEACHER`/`ADMIN`: `correctAnswer` fields are visible. `status` is `null`.
+
+**Known Errors:**
+- `LESSON_NOT_FOUND` (404 Not Found): Lesson does not exist.
+- `STUDENT_NO_ACCESS` (403 Forbidden): Student's group does not have access to this lesson.
+- `LESSON_ALREADY_COMPLETED` (403 Forbidden): Student has already completed this lesson.
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
+
+---
+
+### 8.2. Create Choose Task
+- **URL**: `/api/v1/lessons/{lessonId}/tasks/choose`
+- **Method**: `POST`
+- **Authorization**: `ADMIN` or lesson owner (`TEACHER`)
+
+**Request Body (JSON):**
+```json
+{
+  "task": "Choose the correct answer",
+  "possibleAnswers": "option1|option2|option3",
+  "correctAnswer": 1,
+  "hint": "Think about grammar",
+  "section": "Vocabulary"
+}
+```
+
+**Success (201 Created):**
+```json
+{
+  "id": 1, "lessonId": 1, "task": "...", "possibleAnswers": "...",
+  "correctAnswer": 1, "hint": "...", "section": "...", "createdAt": "..."
+}
+```
+
+**Known Errors:**
+- `LESSON_NOT_FOUND` (404 Not Found)
+- `VALIDATION_FAILED` (400 Bad Request): Missing required fields (`task`, `possibleAnswers`, `correctAnswer`)
+- `UNAUTHORIZED` (401), `FORBIDDEN` (403)
+
+---
+
+### 8.3. Update Choose Task
+- **URL**: `/api/v1/lessons/{lessonId}/tasks/choose/{taskId}`
+- **Method**: `PUT`
+- **Authorization**: `ADMIN` or lesson owner (`TEACHER`)
+
+**Request/Response**: Same shape as 8.2. **Success: 200 OK.**
+
+**Known Errors:**
+- `TASK_NOT_FOUND` (404 Not Found)
+- `VALIDATION_FAILED` (400), `UNAUTHORIZED` (401), `FORBIDDEN` (403)
+
+---
+
+### 8.4. Delete Choose Task
+- **URL**: `/api/v1/lessons/{lessonId}/tasks/choose/{taskId}`
+- **Method**: `DELETE`
+- **Authorization**: `ADMIN` or lesson owner (`TEACHER`)
+
+**Success (204 No Content):** *(Empty Response Body)*
+
+**Known Errors:**
+- `TASK_NOT_FOUND` (404 Not Found)
+- `UNAUTHORIZED` (401), `FORBIDDEN` (403)
+
+---
+
+### 8.5. Create Write Task
+- **URL**: `/api/v1/lessons/{lessonId}/tasks/write`
+- **Method**: `POST`
+- **Authorization**: `ADMIN` or lesson owner (`TEACHER`)
+
+**Request Body (JSON):**
+```json
+{
+  "task": "Write the past tense of 'go'",
+  "correctAnswer": "went",
+  "hint": "Irregular verb",
+  "section": "Grammar"
+}
+```
+
+**Success (201 Created):**
+```json
+{
+  "id": 1, "lessonId": 1, "task": "...", "correctAnswer": "...",
+  "hint": "...", "section": "...", "createdAt": "..."
+}
+```
+
+**Known Errors:**
+- `LESSON_NOT_FOUND` (404), `VALIDATION_FAILED` (400), `UNAUTHORIZED` (401), `FORBIDDEN` (403)
+
+---
+
+### 8.6. Update Write Task
+- **URL**: `/api/v1/lessons/{lessonId}/tasks/write/{taskId}`
+- **Method**: `PUT`
+- **Authorization**: `ADMIN` or lesson owner (`TEACHER`)
+
+**Success: 200 OK.** Same shape as 8.5.
+
+**Known Errors:**
+- `TASK_NOT_FOUND` (404), `VALIDATION_FAILED` (400), `UNAUTHORIZED` (401), `FORBIDDEN` (403)
+
+---
+
+### 8.7. Delete Write Task
+- **URL**: `/api/v1/lessons/{lessonId}/tasks/write/{taskId}`
+- **Method**: `DELETE`
+- **Authorization**: `ADMIN` or lesson owner (`TEACHER`)
+
+**Success (204 No Content)**
+
+**Known Errors:**
+- `TASK_NOT_FOUND` (404), `UNAUTHORIZED` (401), `FORBIDDEN` (403)
+
+---
+
+### 8.8. Create Scatter Task
+- **URL**: `/api/v1/lessons/{lessonId}/tasks/scatter`
+- **Method**: `POST`
+- **Authorization**: `ADMIN` or lesson owner (`TEACHER`)
+
+**Request Body (JSON):**
+```json
+{
+  "task": "Arrange the words",
+  "words": "is|cat|the|big",
+  "correctAnswer": "the cat is big",
+  "hint": "Subject verb adjective",
+  "section": "Grammar"
+}
+```
+
+**Success (201 Created):**
+```json
+{
+  "id": 1, "lessonId": 1, "task": "...", "words": "...", "correctAnswer": "...",
+  "hint": "...", "section": "...", "createdAt": "..."
+}
+```
+
+**Known Errors:**
+- `LESSON_NOT_FOUND` (404), `VALIDATION_FAILED` (400), `UNAUTHORIZED` (401), `FORBIDDEN` (403)
+
+---
+
+### 8.9. Update Scatter Task
+- **URL**: `/api/v1/lessons/{lessonId}/tasks/scatter/{taskId}`
+- **Method**: `PUT`
+- **Authorization**: `ADMIN` or lesson owner (`TEACHER`)
+
+**Success: 200 OK.** Same shape as 8.8.
+
+**Known Errors:**
+- `TASK_NOT_FOUND` (404), `VALIDATION_FAILED` (400), `UNAUTHORIZED` (401), `FORBIDDEN` (403)
+
+---
+
+### 8.10. Delete Scatter Task
+- **URL**: `/api/v1/lessons/{lessonId}/tasks/scatter/{taskId}`
+- **Method**: `DELETE`
+- **Authorization**: `ADMIN` or lesson owner (`TEACHER`)
+
+**Success (204 No Content)**
+
+**Known Errors:**
+- `TASK_NOT_FOUND` (404), `UNAUTHORIZED` (401), `FORBIDDEN` (403)
+
+---
+
+### 8.11. Create Speak Task
+- **URL**: `/api/v1/lessons/{lessonId}/tasks/speak`
+- **Method**: `POST`
+- **Authorization**: `ADMIN` or lesson owner (`TEACHER`)
+
+**Request Body (JSON):**
+```json
+{
+  "task": "Say the sentence: 'Hello, how are you?'",
+  "hint": "Focus on pronunciation",
+  "section": "Speaking"
+}
+```
+
+**Success (201 Created):**
+```json
+{
+  "id": 1, "lessonId": 1, "task": "...", "hint": "...",
+  "section": "...", "createdAt": "..."
+}
+```
+
+**Known Errors:**
+- `LESSON_NOT_FOUND` (404), `VALIDATION_FAILED` (400), `UNAUTHORIZED` (401), `FORBIDDEN` (403)
+
+---
+
+### 8.12. Update Speak Task
+- **URL**: `/api/v1/lessons/{lessonId}/tasks/speak/{taskId}`
+- **Method**: `PUT`
+- **Authorization**: `ADMIN` or lesson owner (`TEACHER`)
+
+**Success: 200 OK.** Same shape as 8.11.
+
+**Known Errors:**
+- `TASK_NOT_FOUND` (404), `VALIDATION_FAILED` (400), `UNAUTHORIZED` (401), `FORBIDDEN` (403)
+
+---
+
+### 8.13. Delete Speak Task
+- **URL**: `/api/v1/lessons/{lessonId}/tasks/speak/{taskId}`
+- **Method**: `DELETE`
+- **Authorization**: `ADMIN` or lesson owner (`TEACHER`)
+
+**Success (204 No Content)**
+
+**Known Errors:**
+- `TASK_NOT_FOUND` (404), `UNAUTHORIZED` (401), `FORBIDDEN` (403)
+
+---
+
+### 8.14. Submit Lesson Answers
+- **URL**: `/api/v1/lessons/{lessonId}/submit`
+- **Method**: `POST`
+- **Description**: Submits all answers for a lesson at once. Grades each answer and marks lesson as `COMPLETED`. One-shot — cannot re-submit.
+- **Authorization**: `STUDENT` only
+
+**Request Body (JSON):**
+```json
+{
+  "answers": [
+    { "taskId": 1, "taskType": "choose", "answer": "1" },
+    { "taskId": 2, "taskType": "write", "answer": "went" }
+  ]
+}
+```
+
+**Success (200 OK):**
+```json
+{
+  "score": 2,
+  "maxScore": 3,
+  "details": [
+    { "taskId": 1, "taskType": "choose", "isCorrect": true, "correctAnswer": "1" },
+    { "taskId": 2, "taskType": "write", "isCorrect": true, "correctAnswer": "went" }
+  ]
+}
+```
+
+**Grading logic:**
+- `choose`: exact string match on correctAnswer index
+- `write` / `scatter`: case-insensitive, trimmed comparison
+- `speak`: always correct (score always given)
+
+**Known Errors:**
+- `LESSON_NOT_FOUND` (404 Not Found)
+- `LESSON_NOT_STARTED` (400 Bad Request): Lesson not started yet (no prior GET /tasks call).
+- `LESSON_ALREADY_COMPLETED` (403 Forbidden): Lesson already submitted.
+- `STUDENT_NO_ACCESS` (403 Forbidden): Student's group does not have access.
+- `INVALID_TASK_TYPE` (400 Bad Request): Unknown task type in answers.
+- `UNAUTHORIZED` (401), `FORBIDDEN` (403)
+
+---
+
+### 8.15. Reset User Progress
+- **URL**: `/api/v1/lessons/{lessonId}/users/{userId}/reset`
+- **Method**: `POST`
+- **Description**: Deletes all UserAnswer and UserLesson records for a user+lesson, allowing re-attempt.
+- **Authorization**: `ADMIN` or lesson owner (`TEACHER`)
+
+**Success (204 No Content):** *(Empty Response Body)*
+
+**Known Errors:**
+- `UNAUTHORIZED` (401), `FORBIDDEN` (403)
 
 ---
 
