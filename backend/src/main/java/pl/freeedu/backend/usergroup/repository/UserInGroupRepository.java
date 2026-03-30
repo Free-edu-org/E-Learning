@@ -6,11 +6,20 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import pl.freeedu.backend.usergroup.model.UserInGroup;
 
+import org.springframework.data.repository.query.Param;
+
 import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface UserInGroupRepository extends JpaRepository<UserInGroup, Integer> {
+
+	@Query(value = "SELECT COUNT(*) > 0 FROM user_in_group uig "
+			+ "JOIN group_has_lesson ghl ON uig.group_id = ghl.group_id "
+			+ "WHERE uig.user_id = :userId AND ghl.lesson_id = :lessonId", nativeQuery = true)
+	boolean hasAccessToLesson(@Param("userId") Integer userId, @Param("lessonId") Integer lessonId);
+
+	Optional<UserInGroup> findByUserId(Integer userId);
 
 	int countByGroupId(Integer groupId);
 
