@@ -49,7 +49,7 @@ public class UserGroupService {
 						throw new UserGroupException(UserGroupErrorCode.GROUP_NAME_ALREADY_EXISTS);
 					}
 					UserGroup userGroup = userGroupMapper.toUserGroup(request);
-					userGroup.setTeacherId(currentUser.getRole() == Role.TEACHER ? currentUser.getId() : null);
+					userGroup.setTeacherId(resolveTeacherId(currentUser, request.getTeacherId()));
 					try {
 						UserGroup saved = userGroupRepository.save(userGroup);
 						return toResponseWithCount(saved);
@@ -99,7 +99,7 @@ public class UserGroupService {
 	}
 
 	public Mono<UserGroupResponse> update(Integer id, Mono<UserGroupRequest> requestMono) {
-		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
+		return requestMono.flatMap(request -> securityService.getCurrentUser().flatMap(currentUser -> Mono.fromCallable(() -> {
 			UserGroup group = userGroupRepository.findById(id)
 					.orElseThrow(() -> new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND));
 			if (!group.getName().equals(request.getName()) && userGroupRepository.existsByName(request.getName())) {
@@ -107,13 +107,14 @@ public class UserGroupService {
 			}
 			group.setName(request.getName());
 			group.setDescription(request.getDescription());
+			group.setTeacherId(resolveTeacherId(currentUser, request.getTeacherId(), group.getTeacherId()));
 			try {
 				UserGroup saved = userGroupRepository.save(group);
 				return toResponseWithCount(saved);
 			} catch (DataIntegrityViolationException e) {
 				throw new UserGroupException(UserGroupErrorCode.GROUP_NAME_ALREADY_EXISTS);
 			}
-		}).subscribeOn(Schedulers.boundedElastic()));
+		}).subscribeOn(Schedulers.boundedElastic())));
 	}
 
 	public Mono<Void> delete(Integer id) {
@@ -168,5 +169,24 @@ public class UserGroupService {
 		UserGroupResponse response = userGroupMapper.toUserGroupResponse(group);
 		response.setStudentCount(countMap.getOrDefault(group.getId(), 0L).intValue());
 		return response;
+	}
+
+	private Integer resolveTeacherId(User currentUser, Integer requestedTeacherId) {
+		return resolveTeacherId(currentUser, requestedTeacherId, null);
+	}
+
+	private Integer resolveTeacherId(User currentUser, Integer requestedTeacherId, Integer fallbackTeacherId) {
+		if (currentUser.getRole() == Role.TEACHER) {
+			return currentUser.getId();
+		}
+		if (requestedTeacherId == null) {
+			return fallbackTeacherId;
+		}
+		User teacher = userRepository.findById(requestedTeacherId)
+				.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
+		if (teacher.getRole() != Role.TEACHER) {
+			throw new UserException(UserErrorCode.INVALID_TEACHER_ASSIGNMENT);
+		}
+		return teacher.getId();
 	}
 }

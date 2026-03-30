@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Box,
@@ -6,36 +6,36 @@ import {
   Container,
   Grid,
   Skeleton,
-  Typography,
   Switch,
+  Typography,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import {
-  LogoutOutlined as LogoutIcon,
-  GroupOutlined as GroupIcon,
-  PersonAddOutlined as PersonAddIcon,
   AddCircleOutlined as AddIcon,
-  SchoolOutlined as SchoolIcon,
   DarkMode as DarkModeIcon,
+  GroupOutlined as GroupIcon,
   LightMode as LightModeIcon,
+  LogoutOutlined as LogoutIcon,
+  PersonAddOutlined as PersonAddIcon,
+  SchoolOutlined as SchoolIcon,
 } from "@mui/icons-material";
-import { useAppTheme } from "@/context/ThemeContext";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
-import { userService } from "@/api/userService";
-import { lessonService } from "@/api/lessonService";
-import type { UserProfile } from "@/api/userService";
-import type { Group, Lesson, TeacherStats } from "@/api/lessonService";
 import { ApiError } from "@/api/apiClient";
-import { StatsCard } from "@/components/teacher/StatsCard";
+import { lessonService } from "@/api/lessonService";
+import type { Group, Lesson, TeacherStats } from "@/api/lessonService";
+import { userService, type UserProfile } from "@/api/userService";
 import { ActionButton } from "@/components/teacher/ActionButton";
 import { LessonCard } from "@/components/teacher/LessonCard";
 import {
   LessonToolbar,
-  type StatusFilter,
   type SortMode,
+  type StatusFilter,
   type ViewMode,
 } from "@/components/teacher/LessonToolbar";
+import { StatsCard } from "@/components/teacher/StatsCard";
+import { panelSurfaceSx } from "@/components/ui/panel/panelStyles";
+import { useAuth } from "@/context/AuthContext";
+import { useAppTheme } from "@/context/ThemeContext";
 
 export function TeacherDashboard() {
   const { logout } = useAuth();
@@ -43,7 +43,6 @@ export function TeacherDashboard() {
   const theme = useTheme();
   const { toggleColorMode } = useAppTheme();
 
-  // ── Data state ──
   const [user, setUser] = useState<UserProfile | null>(null);
   const [stats, setStats] = useState<TeacherStats | null>(null);
   const [lessons, setLessons] = useState<Lesson[]>([]);
@@ -54,14 +53,12 @@ export function TeacherDashboard() {
   const [errorUser, setErrorUser] = useState<string | null>(null);
   const [errorData, setErrorData] = useState<string | null>(null);
 
-  // ── Toolbar state ──
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [sortMode, setSortMode] = useState<SortMode>("date_desc");
   const [selectedGroups, setSelectedGroups] = useState<Group[]>([]);
 
-  // ── Fetch user profile ──
   useEffect(() => {
     userService
       .getCurrentUser()
@@ -80,7 +77,6 @@ export function TeacherDashboard() {
       .finally(() => setLoadingUser(false));
   }, []);
 
-  // ── Fetch stats, lessons, and available groups ──
   useEffect(() => {
     Promise.all([
       lessonService.getTeacherStats(),
@@ -102,36 +98,31 @@ export function TeacherDashboard() {
       .finally(() => setLoadingData(false));
   }, []);
 
-  // ── Derived: filtered + sorted lessons ──
   const displayedLessons = useMemo(() => {
     let result = lessons;
 
-    // Search filter (title or theme)
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(
-        (l) =>
-          l.title.toLowerCase().includes(q) ||
-          l.theme.toLowerCase().includes(q),
+        (lesson) =>
+          lesson.title.toLowerCase().includes(q) ||
+          lesson.theme.toLowerCase().includes(q),
       );
     }
 
-    // Status filter
     if (statusFilter === "active") {
-      result = result.filter((l) => l.isActive);
+      result = result.filter((lesson) => lesson.isActive);
     } else if (statusFilter === "inactive") {
-      result = result.filter((l) => !l.isActive);
+      result = result.filter((lesson) => !lesson.isActive);
     }
 
-    // Group filter – lesson must have at least one selected group
     if (selectedGroups.length > 0) {
-      const selectedIds = new Set(selectedGroups.map((g) => g.id));
-      result = result.filter((l) =>
-        l.groups.some((g) => selectedIds.has(g.id)),
+      const selectedIds = new Set(selectedGroups.map((group) => group.id));
+      result = result.filter((lesson) =>
+        lesson.groups.some((group) => selectedIds.has(group.id)),
       );
     }
 
-    // Sort
     result = [...result].sort((a, b) => {
       switch (sortMode) {
         case "date_asc":
@@ -148,22 +139,18 @@ export function TeacherDashboard() {
     });
 
     return result;
-  }, [lessons, searchQuery, statusFilter, selectedGroups, sortMode]);
+  }, [lessons, searchQuery, selectedGroups, sortMode, statusFilter]);
 
   const handleLogout = () => {
     logout();
     navigate("/login");
   };
 
-  const pageBg =
-    theme.palette.mode === "light"
-      ? "#e8eef7"
-      : theme.palette.background.default;
+  const pageBg = theme.palette.mode === "light" ? "#e8eef7" : theme.palette.background.default;
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: pageBg, pb: 6 }}>
       <Container maxWidth="xl" sx={{ pt: 4, position: "relative" }}>
-        {/* ── TOP RIGHT BAR ── */}
         <Box
           sx={{
             position: { xs: "relative", md: "absolute" },
@@ -181,25 +168,15 @@ export function TeacherDashboard() {
             <LightModeIcon
               fontSize="small"
               sx={{
-                color:
-                  theme.palette.mode === "light"
-                    ? "primary.main"
-                    : "text.disabled",
+                color: theme.palette.mode === "light" ? "primary.main" : "text.disabled",
                 mr: 0.5,
               }}
             />
-            <Switch
-              size="small"
-              checked={theme.palette.mode === "dark"}
-              onChange={toggleColorMode}
-            />
+            <Switch size="small" checked={theme.palette.mode === "dark"} onChange={toggleColorMode} />
             <DarkModeIcon
               fontSize="small"
               sx={{
-                color:
-                  theme.palette.mode === "dark"
-                    ? "primary.main"
-                    : "text.disabled",
+                color: theme.palette.mode === "dark" ? "primary.main" : "text.disabled",
                 ml: 0.5,
               }}
             />
@@ -209,33 +186,19 @@ export function TeacherDashboard() {
             size="small"
             startIcon={<LogoutIcon />}
             onClick={handleLogout}
-            sx={{
-              borderRadius: 2,
-              textTransform: "none",
-              fontWeight: 600,
-              bgcolor: "background.paper",
-            }}
+            sx={{ borderRadius: 2, textTransform: "none", fontWeight: 600, bgcolor: "background.paper" }}
           >
             Wyloguj
           </Button>
         </Box>
 
-        {/* ── HEADER ── */}
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            mb: 4,
-          }}
-        >
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 4 }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
             <Box
               sx={{
+                ...panelSurfaceSx,
                 width: 44,
                 height: 44,
-                borderRadius: 2,
-                bgcolor: "background.paper",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -265,16 +228,10 @@ export function TeacherDashboard() {
           </Alert>
         )}
 
-        {/* ── STATS ── */}
         {loadingData ? (
           <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
             {[...Array(4)].map((_, i) => (
-              <Skeleton
-                key={i}
-                variant="rounded"
-                height={90}
-                sx={{ flex: 1, borderRadius: 3 }}
-              />
+              <Skeleton key={i} variant="rounded" height={90} sx={{ flex: 1, borderRadius: 3 }} />
             ))}
           </Box>
         ) : errorData ? (
@@ -284,52 +241,22 @@ export function TeacherDashboard() {
         ) : (
           <Box sx={{ display: "flex", gap: 2, mb: 3, flexWrap: "wrap" }}>
             <StatsCard label="Liczba lekcji" value={stats?.totalLessons ?? 0} />
-            <StatsCard
-              label="Aktywne lekcje"
-              value={stats?.activeLessons ?? 0}
-              highlightColor={theme.palette.primary.main}
-            />
-            <StatsCard
-              label="Aktywni uczniowie"
-              value={stats?.activeStudents ?? 0}
-            />
-            <StatsCard
-              label="Średnia wyników"
-              value={`${stats?.avgScore ?? 0}%`}
-            />
+            <StatsCard label="Aktywne lekcje" value={stats?.activeLessons ?? 0} highlightColor={theme.palette.primary.main} />
+            <StatsCard label="Aktywni uczniowie" value={stats?.activeStudents ?? 0} />
+            <StatsCard label="Średnia wyników" value={`${stats?.avgScore ?? 0}%`} />
           </Box>
         )}
 
-        {/* ── ACTIONS ── */}
         <Box sx={{ display: "flex", gap: 2, mb: 4, flexWrap: "wrap" }}>
-          <ActionButton
-            icon={<PersonAddIcon sx={{ fontSize: 32 }} />}
-            title="Zarządzaj uczniami"
-            subtitle="Dodaj, edytuj, archiwizuj"
-          />
-          <ActionButton
-            icon={<GroupIcon sx={{ fontSize: 32 }} />}
-            title="Zarządzaj grupami"
-            subtitle="Twórz grupy, przydzielaj uczniów"
-          />
-          <ActionButton
-            icon={<AddIcon sx={{ fontSize: 32 }} />}
-            title="Utwórz lekcję"
-            subtitle="Nowa lekcja z zadaniami"
-          />
+          <ActionButton icon={<PersonAddIcon sx={{ fontSize: 32 }} />} title="Zarządzaj uczniami" subtitle="Dodaj, edytuj, archiwizuj" />
+          <ActionButton icon={<GroupIcon sx={{ fontSize: 32 }} />} title="Zarządzaj grupami" subtitle="Twórz grupy i przydzielaj uczniów" />
+          <ActionButton icon={<AddIcon sx={{ fontSize: 32 }} />} title="Utwórz lekcję" subtitle="Nowa lekcja z zadaniami" />
         </Box>
 
-        {/* ── LESSONS HEADER ── */}
-        <Typography
-          variant="subtitle1"
-          fontWeight={700}
-          color="primary.main"
-          sx={{ mb: 1.5 }}
-        >
+        <Typography variant="subtitle1" fontWeight={700} color="primary.main" sx={{ mb: 1.5 }}>
           Moje lekcje
         </Typography>
 
-        {/* ── TOOLBAR ── */}
         <LessonToolbar
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
@@ -344,16 +271,11 @@ export function TeacherDashboard() {
           onSelectedGroupsChange={setSelectedGroups}
         />
 
-        {/* ── LESSON LIST ── */}
         {loadingData ? (
           <Grid container spacing={2}>
             {[...Array(8)].map((_, i) => (
               <Grid key={i} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
-                <Skeleton
-                  variant="rounded"
-                  height={220}
-                  sx={{ borderRadius: 3 }}
-                />
+                <Skeleton variant="rounded" height={220} sx={{ borderRadius: 3 }} />
               </Grid>
             ))}
           </Grid>

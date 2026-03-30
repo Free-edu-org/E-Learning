@@ -14,6 +14,7 @@ import { uiTokens } from "@/theme/uiTokens";
 type AppDialogProps = {
   open: boolean;
   onClose: () => void;
+  onExited?: () => void;
   children: ReactNode;
   maxWidth?: "xs" | "sm" | "md";
   paperSx?: SxProps<Theme>;
@@ -75,6 +76,7 @@ const dialogFooterSx: SxProps<Theme> = {
 export function AppDialog({
   open,
   onClose,
+  onExited,
   children,
   maxWidth = "sm",
   paperSx,
@@ -88,6 +90,7 @@ export function AppDialog({
       fullWidth
       maxWidth={maxWidth}
       PaperProps={{ sx: resolvedPaperSx }}
+      TransitionProps={{ onExited }}
     >
       {children}
     </Dialog>

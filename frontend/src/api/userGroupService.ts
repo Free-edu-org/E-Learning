@@ -12,6 +12,7 @@ export interface UserGroup {
 export interface UserGroupRequest {
   name: string;
   description: string;
+  teacherId?: number | null;
 }
 
 export const userGroupService = {

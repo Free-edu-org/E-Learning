@@ -79,6 +79,8 @@ import {
   panelIconButtonSx,
   panelListRowSx,
   panelSingleLineSx,
+  panelSurfaceSx,
+  panelToolbarSx,
   panelTitleSx,
   panelTwoLinesSx,
 } from "@/components/ui/panel/panelStyles";
@@ -102,6 +104,7 @@ interface UserDraft {
 interface GroupDraft {
   name: string;
   description: string;
+  teacherId: number | "";
 }
 
 interface DeleteDialogState {
@@ -123,14 +126,70 @@ const emptyUserDraft: UserDraft = {
   password: "",
   groupId: "",
 };
-const emptyGroupDraft: GroupDraft = { name: "", description: "" };
+const emptyGroupDraft: GroupDraft = { name: "", description: "", teacherId: "" };
+
+const validationFieldLabels: Record<string, string> = {
+  name: "Nazwa",
+  description: "Opis",
+  username: "Nazwa użytkownika",
+  email: "Adres e-mail",
+  password: "Has?o",
+  groupId: "Grupa",
+};
+
+const validationMessageTranslations: Record<string, string> = {
+  "Name is required": "Pole jest wymagane.",
+  "Description is required": "Pole jest wymagane.",
+  "Username is required": "Pole jest wymagane.",
+  "Email is required": "Pole jest wymagane.",
+  "Password is required": "Pole jest wymagane.",
+  "must not be blank": "Pole jest wymagane.",
+  "must not be null": "Pole jest wymagane.",
+  "must not be empty": "Pole jest wymagane.",
+  "must be a well-formed email address": "Podaj poprawny adres e-mail.",
+  "must be greater than or equal to 0": "Wartość jest nieprawidłowa.",
+};
+
+function translateBackendMessage(message: string) {
+  let translated = message;
+
+  for (const [source, target] of Object.entries(validationMessageTranslations)) {
+    translated = translated.replaceAll(source, target);
+  }
+
+  if (translated.startsWith("Validation failed:")) {
+    const rawDetails = translated.replace("Validation failed:", "").trim();
+    const parts = rawDetails
+      .split(",")
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .map((part) => {
+        const separatorIndex = part.indexOf(":");
+        if (separatorIndex === -1) {
+          return part;
+        }
+
+        const field = part.slice(0, separatorIndex).trim();
+        const detail = part.slice(separatorIndex + 1).trim();
+        const label = validationFieldLabels[field] ?? field;
+        return `${label}: ${detail}`;
+      });
+
+    return `Błąd walidacji: ${parts.join(", ")}`
+      .replaceAll(" .", ".")
+      .trim();
+  }
+
+  return translated;
+}
 
 function getErrorMessage(error: unknown, fallback: string) {
   if (error instanceof ApiError) {
-    return error.problem.detail || error.problem.title || fallback;
+    const message = error.problem.detail || error.problem.title;
+    return message ? translateBackendMessage(message) : fallback;
   }
   if (error instanceof Error && error.message === "NETWORK_ERROR") {
-    return "Brak polaczenia z serwerem.";
+    return "Brak połączenia z serwerem.";
   }
   return fallback;
 }
@@ -214,6 +273,7 @@ export function AdminDashboard() {
   const [selectedGroupFilters, setSelectedGroupFilters] = useState<UserGroup[]>(
     [],
   );
+  const [showUngroupedStudents, setShowUngroupedStudents] = useState(false);
 
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [currentUserError, setCurrentUserError] = useState<string | null>(null);
@@ -277,6 +337,15 @@ export function AdminDashboard() {
     const selectedGroupIds = new Set(selectedGroupFilters.map((g) => g.id));
 
     return allUsers.filter((user) => {
+      if (showUngroupedStudents) {
+        if (user.role !== "STUDENT") {
+          return false;
+        }
+        if (!("groupId" in user) || user.groupId != null) {
+          return false;
+        }
+      }
+
       if (userFilter !== "ALL" && user.role !== userFilter) {
         return false;
       }
@@ -328,6 +397,7 @@ export function AdminDashboard() {
     groups,
     selectedGroupFilters,
     selectedTeacherFilters,
+    showUngroupedStudents,
     userFilter,
     userSearch,
   ]);
@@ -411,7 +481,7 @@ export function AdminDashboard() {
       setStudents(nextStudents);
     } catch (error) {
       setUsersError(
-        getErrorMessage(error, "Nie uda\u0142o si\u0119 pobra\u0107 list nauczycieli i uczni\u00f3w."),
+        getErrorMessage(error, "Nie udało się pobrać list nauczycieli i uczniów."),
       );
     } finally {
       setUsersLoading(false);
@@ -475,13 +545,18 @@ export function AdminDashboard() {
     setUserDialogOpen(true);
   };
 
+  const resetUserDialogState = () => {
+    setSelectedUser(null);
+    setUserDraft(emptyUserDraft);
+    setUserDialogRole("TEACHER");
+    setUserDialogMode("create");
+  };
+
   const closeUserDialog = () => {
     if (userDialogLoading) {
       return;
     }
     setUserDialogOpen(false);
-    setSelectedUser(null);
-    setUserDraft(emptyUserDraft);
   };
 
   const submitUserDialog = async () => {
@@ -499,7 +574,7 @@ export function AdminDashboard() {
             password: userDraft.password,
           };
           await userService.createTeacher(payload);
-          showToast("success", "Nauczyciel zosta\u0142 utworzony.");
+          showToast("success", "Nauczyciel został utworzony.");
         } else {
           const payload: AdminCreateStudentRequest = {
             username: userDraft.username,
@@ -509,7 +584,7 @@ export function AdminDashboard() {
           };
 
           await adminService.createStudent(payload);
-          showToast("success", "Ucze\u0144 zosta\u0142 utworzony.");
+          showToast("success", "Uczeń został utworzony.");
         }
       } else if (selectedUser) {
         let updated: AdminListUser;
@@ -530,7 +605,7 @@ export function AdminDashboard() {
         }
 
         setSelectedUser(updated);
-        showToast("success", "Dane konta zosta\u0142y zapisane.");
+        showToast("success", "Dane konta zostały zapisane.");
       }
 
       await Promise.all([loadUsers(), loadAdminStats()]);
@@ -538,7 +613,7 @@ export function AdminDashboard() {
     } catch (error) {
       showToast(
         "error",
-        getErrorMessage(error, "Nie uda\u0142o si\u0119 zapisa\u0107 zmian konta."),
+        getErrorMessage(error, "Nie udało się zapisać zmian konta."),
       );
     } finally {
       setUserDialogLoading(false);
@@ -548,7 +623,10 @@ export function AdminDashboard() {
   const openCreateGroupDialog = () => {
     setGroupDialogMode("create");
     setSelectedGroup(null);
-    setGroupDraft(emptyGroupDraft);
+    setGroupDraft({
+      ...emptyGroupDraft,
+      teacherId: teachers.length === 1 ? teachers[0].id : "",
+    });
     setGroupDialogOpen(true);
   };
 
@@ -558,6 +636,7 @@ export function AdminDashboard() {
     setGroupDraft({
       name: group.name,
       description: group.description,
+      teacherId: group.teacherId ?? "",
     });
     setGroupDialogOpen(true);
   };
@@ -578,12 +657,18 @@ export function AdminDashboard() {
 
     setGroupDialogLoading(true);
     try {
+      const payload = {
+        name: groupDraft.name,
+        description: groupDraft.description,
+        teacherId: groupDraft.teacherId === "" ? null : groupDraft.teacherId,
+      };
+
       if (groupDialogMode === "create") {
-        await userGroupService.createGroup(groupDraft);
-        showToast("success", "Grupa zosta\u0142a utworzona.");
+        await userGroupService.createGroup(payload);
+        showToast("success", "Grupa została utworzona.");
       } else if (selectedGroup) {
-        await userGroupService.updateGroup(selectedGroup.id, groupDraft);
-        showToast("success", "Zmiany grupy zosta\u0142y zapisane.");
+        await userGroupService.updateGroup(selectedGroup.id, payload);
+        showToast("success", "Zmiany grupy zostały zapisane.");
       }
 
       await Promise.all([loadGroups(), loadAdminStats()]);
@@ -591,7 +676,7 @@ export function AdminDashboard() {
     } catch (error) {
       showToast(
         "error",
-        getErrorMessage(error, "Nie uda\u0142o si\u0119 zapisa\u0107 zmian grupy."),
+        getErrorMessage(error, "Nie udało się zapisać zmian grupy."),
       );
     } finally {
       setGroupDialogLoading(false);
@@ -625,17 +710,17 @@ export function AdminDashboard() {
           setSelectedUser(null);
         }
         await Promise.all([loadUsers(), loadAdminStats()]);
-        showToast("success", "Konto zosta\u0142o usuni\u0119te.");
+        showToast("success", "Konto zostało usunięte.");
       } else {
         await userGroupService.deleteGroup(deleteDialog.id);
         await Promise.all([loadGroups(), loadAdminStats()]);
-        showToast("success", "Grupa zosta\u0142a usuni\u0119ta.");
+        showToast("success", "Grupa została usunięta.");
       }
       closeDeleteDialog();
     } catch (error) {
       showToast(
         "error",
-        getErrorMessage(error, "Nie uda\u0142o si\u0119 usun\u0105\u0107 wskazanego elementu."),
+        getErrorMessage(error, "Nie udało się usunąć wskazanego elementu."),
       );
     } finally {
       setDeleteLoading(false);
@@ -674,13 +759,13 @@ export function AdminDashboard() {
         membershipDialog.groupId,
         membershipStudentId,
       );
-      showToast("success", "Ucze\u0144 zosta\u0142 dodany do grupy.");
+      showToast("success", "Uczeń został dodany do grupy.");
       await Promise.all([loadGroups(), loadUsers()]);
       setMembershipStudentId("");
     } catch (error) {
       showToast(
         "error",
-        getErrorMessage(error, "Nie uda\u0142o si\u0119 zmieni\u0107 sk\u0142adu grupy."),
+        getErrorMessage(error, "Nie udało się zmienić składu grupy."),
       );
     } finally {
       setMembershipLoading(false);
@@ -695,12 +780,12 @@ export function AdminDashboard() {
     setMembershipLoading(true);
     try {
       await userGroupService.removeStudentFromGroup(membershipDialog.groupId, studentId);
-      showToast("success", "Ucze\u0144 zosta\u0142 usuni\u0119ty z grupy.");
+      showToast("success", "Uczeń został usunięty z grupy.");
       await Promise.all([loadGroups(), loadUsers()]);
     } catch (error) {
       showToast(
         "error",
-        getErrorMessage(error, "Nie uda\u0142o si\u0119 zmieni\u0107 sk\u0142adu grupy."),
+        getErrorMessage(error, "Nie udało się zmienić składu grupy."),
       );
     } finally {
       setMembershipLoading(false);
@@ -811,7 +896,7 @@ export function AdminDashboard() {
         {adminStats && (
           <Box sx={{ display: "flex", gap: 2, mb: 3, flexWrap: "wrap" }}>
             <StatsCard
-                label="Wszyscy u\u017cytkownicy"
+                label="Wszyscy użytkownicy"
                 value={adminStats.totalUsers}
               />
             <StatsCard
@@ -839,12 +924,7 @@ export function AdminDashboard() {
 
         <Card
           elevation={0}
-          sx={{
-            borderRadius: 3,
-            border: "1px solid",
-            borderColor: "divider",
-            bgcolor: "background.paper",
-          }}
+          sx={panelSurfaceSx}
         >
           <CardContent sx={{ p: { xs: 2, md: 3 } }}>
             <Tabs
@@ -856,7 +936,7 @@ export function AdminDashboard() {
                 value="users"
                 icon={<PeopleIcon fontSize="small" />}
                 iconPosition="start"
-                label="U\u017cytkownicy"
+                label="Użytkownicy"
               />
               <Tab
                 value="groups"
@@ -875,7 +955,7 @@ export function AdminDashboard() {
                 >
                   <Stack spacing={1}>
                     <Typography variant="h6" fontWeight={800}>
-                      Konta nauczycieli i uczni\u00f3w
+                      Konta nauczycieli i uczniów
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       Filtruj liste, wyszukuj po nazwie lub emailu i otwieraj edycje w
@@ -896,7 +976,7 @@ export function AdminDashboard() {
                       disabled={usersLoading}
                       sx={topToolbarButtonSx}
                     >
-                      Odswiez
+                      Odśwież
                     </Button>
                     <Button
                       variant="contained"
@@ -914,7 +994,7 @@ export function AdminDashboard() {
                       onClick={() => openCreateUserDialog("STUDENT")}
                       sx={studentCreateButtonSx}
                     >
-                      Ucze\u0144
+                      Uczeń
                     </Button>
                   </Stack>
                 </Stack>
@@ -923,17 +1003,7 @@ export function AdminDashboard() {
 
                 <Paper
                   elevation={0}
-                  sx={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    alignItems: "center",
-                    gap: 1.5,
-                    p: 1.5,
-                    borderRadius: 3,
-                    border: "1px solid",
-                    borderColor: "divider",
-                    bgcolor: "background.paper",
-                  }}
+                  sx={panelToolbarSx}
                 >
                   <TextField
                     size="small"
@@ -1097,6 +1167,16 @@ export function AdminDashboard() {
                     </ToggleButton>
                   </ToggleButtonGroup>
 
+                  <ToggleButton
+                    value="ungrouped"
+                    selected={showUngroupedStudents}
+                    onChange={() => setShowUngroupedStudents((current) => !current)}
+                    size="small"
+                    sx={{ textTransform: "none", borderRadius: 2, flexShrink: 0 }}
+                  >
+                    Bez grupy
+                  </ToggleButton>
+
                   <Divider
                     orientation="vertical"
                     flexItem
@@ -1140,7 +1220,7 @@ export function AdminDashboard() {
                   </Box>
                 ) : filteredUsers.length === 0 ? (
                   <Alert severity="info">
-                    Brak kont pasuj?cych do wybranych filtr?w.
+                    Brak kont pasujących do wybranych filtrów.
                   </Alert>
                 ) : viewMode === "list" ? (
                   <Stack spacing={1.25}>
@@ -1229,7 +1309,7 @@ export function AdminDashboard() {
                               <EditIcon fontSize="small" />
                             </IconButton>
                             <IconButton
-                              aria-label={`Usu? ${user.username}`}
+                              aria-label={`Usuń ${user.username}`}
                               onClick={() =>
                                 openDeleteDialog({
                                   type: "user",
@@ -1239,7 +1319,7 @@ export function AdminDashboard() {
                                     user.role === "STUDENT" &&
                                     "groupName" in user &&
                                     user.groupName
-                                      ? `Ucze? w grupie ${user.groupName}`
+                                      ? `Uczeń w grupie ${user.groupName}`
                                       : user.email,
                                 })
                               }
@@ -1350,7 +1430,7 @@ export function AdminDashboard() {
                                     <EditIcon fontSize="small" />
                                   </IconButton>
                                   <IconButton
-                                    aria-label={`Usu? ${user.username}`}
+                                    aria-label={`Usuń ${user.username}`}
                                     onClick={() =>
                                       openDeleteDialog({
                                         type: "user",
@@ -1360,7 +1440,7 @@ export function AdminDashboard() {
                                           user.role === "STUDENT" &&
                                           "groupName" in user &&
                                           user.groupName
-                                            ? `Ucze? w grupie ${user.groupName}`
+                                            ? `Uczeń w grupie ${user.groupName}`
                                             : user.email,
                                       })
                                     }
@@ -1390,10 +1470,10 @@ export function AdminDashboard() {
                 >
                   <Stack spacing={1}>
                     <Typography variant="h6" fontWeight={800}>
-                      Grupy i sk?ad uczni?w
+                      Grupy i skład uczniów
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Tw?rz grupy, edytuj je i zarz?dzaj cz?onkami przez dedykowane
+                      Twórz grupy, edytuj je i zarządzaj członkami przez dedykowane
                       okna akcji.
                     </Typography>
                   </Stack>
@@ -1411,7 +1491,7 @@ export function AdminDashboard() {
                       disabled={groupsLoading}
                       sx={topToolbarButtonSx}
                     >
-                      Odswiez
+                      Odśwież
                     </Button>
                     <Button
                       variant="contained"
@@ -1429,17 +1509,7 @@ export function AdminDashboard() {
 
                 <Paper
                   elevation={0}
-                  sx={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    alignItems: "center",
-                    gap: 1.5,
-                    p: 1.5,
-                    borderRadius: 3,
-                    border: "1px solid",
-                    borderColor: "divider",
-                    bgcolor: "background.paper",
-                  }}
+                  sx={panelToolbarSx}
                 >
                   <TextField
                     size="small"
@@ -1556,7 +1626,7 @@ export function AdminDashboard() {
                   </Box>
                 ) : filteredGroups.length === 0 ? (
                   <Alert severity="info">
-                    Brak grup pasujacych do aktualnych filtrow.
+                    Brak grup pasujących do aktualnych filtrów.
                   </Alert>
                 ) : viewMode === "list" ? (
                   <Stack spacing={1.25}>
@@ -1586,7 +1656,7 @@ export function AdminDashboard() {
                               </Typography>
                               <Chip
                                 icon={<GroupIcon />}
-                                label={`${group.studentCount} uczni?w`}
+                                label={`${group.studentCount} uczniów`}
                                 color="warning"
                                 size="small"
                               />
@@ -1611,7 +1681,7 @@ export function AdminDashboard() {
                               useFlexGap
                             >
                               <Typography variant="body2" color="text.secondary">
-                                W?a?ciciel:{" "}
+                                Właściciel:{" "}
                                 <Box component="span" sx={{ fontWeight: 700, color: "text.primary" }}>
                                   {teacherNameById.get(group.teacherId ?? -1) ?? "Brak danych"}
                                 </Box>
@@ -1633,7 +1703,7 @@ export function AdminDashboard() {
                                   startIcon={<SchoolIcon />}
                                   onClick={() => openMembershipDialog(group)}
                                   sx={actionButtonSx}
-                                >Sk?ad grupy</Button>
+                                >Skład grupy</Button>
                             <Stack
                               direction="row"
                               spacing={1}
@@ -1647,7 +1717,7 @@ export function AdminDashboard() {
                                 <EditIcon fontSize="small" />
                               </IconButton>
                               <IconButton
-                                aria-label={`Usu? ${group.name}`}
+                                aria-label={`Usuń ${group.name}`}
                                 onClick={() =>
                                   openDeleteDialog({
                                     type: "group",
@@ -1700,7 +1770,7 @@ export function AdminDashboard() {
                                     color="text.secondary"
                                     sx={{ mt: 1, ...panelSingleLineSx }}
                                   >
-                                    W?a?ciciel:{" "}
+                                    Właściciel:{" "}
                                     <Box
                                       component="span"
                                       sx={{ fontWeight: 700, color: "text.primary" }}
@@ -1712,7 +1782,7 @@ export function AdminDashboard() {
                                 </Box>
                                 <Chip
                                   icon={<GroupIcon />}
-                                  label={`${group.studentCount} uczni?w`}
+                                  label={`${group.studentCount} uczniów`}
                                   color="warning"
                                   size="small"
                                   sx={{ flexShrink: 0 }}
@@ -1736,7 +1806,7 @@ export function AdminDashboard() {
                                     startIcon={<SchoolIcon />}
                                     onClick={() => openMembershipDialog(group)}
                                     sx={actionButtonSx}
-                                  >Sk?ad grupy</Button>
+                                  >Skład grupy</Button>
                                 </Box>
                                 <Box sx={panelActionClusterSx}>
                                   <IconButton
@@ -1750,7 +1820,7 @@ export function AdminDashboard() {
                                     <EditIcon fontSize="small" />
                                   </IconButton>
                                   <IconButton
-                                    aria-label={`Usu? ${group.name}`}
+                                    aria-label={`Usuń ${group.name}`}
                                     onClick={() =>
                                       openDeleteDialog({
                                         type: "group",
@@ -1783,6 +1853,7 @@ export function AdminDashboard() {
         <AppDialog
           open={userDialogOpen}
           onClose={closeUserDialog}
+          onExited={resetUserDialogState}
           maxWidth="xs"
           paperSx={{ width: { xs: "calc(100% - 24px)", sm: uiTokens.modal.compactWidth } }}
         >
@@ -1803,8 +1874,8 @@ export function AdminDashboard() {
             }
             subtitle={
               userDialogRole === "TEACHER"
-                ? "Utw\u00f3rz lub zaktualizuj konto nauczyciela."
-                : "Zarz\u0105dzaj danymi ucznia, przypisan\u0105 grup\u0105 i dost\u0119pem."
+                ? "Utwórz lub zaktualizuj konto nauczyciela."
+                : "Zarządzaj danymi ucznia, przypisaną grupą i dostępem."
             }
             badge={
               <Chip
@@ -1826,7 +1897,7 @@ export function AdminDashboard() {
                 <Stack spacing={2.25}>
               <FormField>
                 <TextField
-                  label="Nazwa u\u017cytkownika"
+                  label="Nazwa użytkownika"
                   value={userDraft.username}
                   onChange={(event) =>
                     setUserDraft((current) => ({
@@ -1856,7 +1927,7 @@ export function AdminDashboard() {
                   {userDialogMode === "create" && (
                     <FormField>
                       <TextField
-                        label="Has\u0142o"
+                        label="Hasło"
                         type="password"
                         value={userDraft.password}
                         onChange={(event) =>
@@ -1889,7 +1960,7 @@ export function AdminDashboard() {
                         helperText={
                           assignableGroups.length === 0
                             ? "Brak grup do wyboru"
-                            : "Wyb\u00f3r grupy jest opcjonalny."
+                            : "Wybór grupy jest opcjonalny."
                         }
                       >
                         <MenuItem value="">Bez grupy</MenuItem>
@@ -1934,7 +2005,7 @@ export function AdminDashboard() {
           <AppDialogHeader
             icon={<GroupIcon />}
             title={groupDialogMode === "create" ? "Nowa grupa" : "Edycja grupy"}
-            subtitle="Nadaj grupie czyteln\u0105 nazw\u0119 i kr\u00f3tki opis zgodny z jej przeznaczeniem."
+            subtitle="Nadaj grupie czytelną nazwę i krótki opis zgodny z jej przeznaczeniem."
             badge={
               <Chip
                 label={groupDialogMode === "create" ? "Nowa grupa" : "Edycja"}
@@ -1975,6 +2046,31 @@ export function AdminDashboard() {
                   fullWidth
                 />
               </FormField>
+              <FormField>
+                <TextField
+                  select
+                  label="Właściciel grupy"
+                  value={groupDraft.teacherId}
+                  onChange={(event) =>
+                    setGroupDraft((current) => ({
+                      ...current,
+                      teacherId:
+                        event.target.value === ""
+                          ? ""
+                          : Number(event.target.value),
+                    }))
+                  }
+                  helperText="Wybierz nauczyciela, który ma zarządzać grupą."
+                  fullWidth
+                >
+                  <MenuItem value="">Bez właściciela</MenuItem>
+                  {teachers.map((teacher) => (
+                    <MenuItem key={teacher.id} value={teacher.id}>
+                      {teacher.username}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </FormField>
               </Stack>
             </FormSection>
           </AppDialogBody>
@@ -1999,9 +2095,9 @@ export function AdminDashboard() {
         <AppDialog open={Boolean(deleteDialog)} onClose={closeDeleteDialog} maxWidth="xs">
           <AppDialogHeader
             icon={<DeleteIcon sx={{ color: "error.main" }} />}
-            title={deleteDialog?.type === "user" ? "Usu\u0144 konto" : "Usu\u0144 grup\u0119"}
+            title={deleteDialog?.type === "user" ? "Usuń konto" : "Usuń grupę"}
             subtitle="Ta operacja jest nieodwracalna i natychmiast usuwa wskazany element."
-            badge={<Chip label="Ostrze\u017cenie" size="small" color="error" sx={{ fontWeight: 700 }} />}
+            badge={<Chip label="Ostrzeżenie" size="small" color="error" sx={{ fontWeight: 700 }} />}
           />
           <AppDialogBody>
             <FormSection>
@@ -2020,8 +2116,8 @@ export function AdminDashboard() {
             </FormSection>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
               {deleteDialog?.type === "user"
-                ? "Usuni\u0119cie konta skasuje dost\u0119p tego u\u017cytkownika do systemu."
-                : "Usuni\u0119cie grupy wyczy\u015bci te\u017c jej sk\u0142ad i przypisania."}
+                ? "Usunięcie konta skasuje dostęp tego użytkownika do systemu."
+                : "Usunięcie grupy wyczyści też jej skład i przypisania."}
             </Typography>
           </AppDialogBody>
           <AppDialogFooter>
@@ -2037,7 +2133,7 @@ export function AdminDashboard() {
                 disabled={deleteLoading}
                 sx={actionButtonSx}
               >
-                {deleteLoading ? "Usuwanie..." : "Potwierd\u017a usuni\u0119cie"}
+                {deleteLoading ? "Usuwanie..." : "Potwierdź usunięcie"}
               </Button>
             </FormActions>
           </AppDialogFooter>
@@ -2051,9 +2147,9 @@ export function AdminDashboard() {
         >
           <AppDialogHeader
             icon={<SchoolIcon />}
-            title="Sk\u0142ad grupy"
-            subtitle="Sprawd\u017a aktualnych uczni\u00f3w i dodaj nowe osoby przypisane do w\u0142a\u015bciciela tej grupy."
-            badge={<Chip label="Cz\u0142onkowie" size="small" color="primary" sx={{ fontWeight: 700 }} />}
+            title="Skład grupy"
+            subtitle="Sprawdź aktualnych uczniów i dodaj nowe osoby przypisane do właściciela tej grupy."
+            badge={<Chip label="Członkowie" size="small" color="primary" sx={{ fontWeight: 700 }} />}
           />
           <AppDialogBody>
             <Stack spacing={3}>
@@ -2063,7 +2159,7 @@ export function AdminDashboard() {
                     {membershipDialog?.groupName}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    W?a?ciciel:{" "}
+                    Właściciel:{" "}
                     <Box component="span" sx={{ fontWeight: 700, color: "text.primary" }}>
                       {teacherNameById.get(membershipDialog?.teacherId ?? -1) ??
                         "Brak danych"}
@@ -2075,9 +2171,9 @@ export function AdminDashboard() {
                 </Stack>
               </FormSection>
 
-              <FormSection title="Aktualni cz\u0142onkowie">
+              <FormSection title="Aktualni członkowie">
                 {currentMembershipStudents.length === 0 ? (
-                  <Alert severity="info">Ta grupa nie ma jeszcze \u017cadnych uczni\u00f3w.</Alert>
+                  <Alert severity="info">Ta grupa nie ma jeszcze żadnych uczniów.</Alert>
                 ) : (
                   <Stack spacing={1}>
                     {currentMembershipStudents.map((student) => (
@@ -2115,7 +2211,7 @@ export function AdminDashboard() {
                             </Typography>
                           </Box>
                           <IconButton
-                            aria-label={`Usu\u0144 ${student.username} z grupy`}
+                            aria-label={`Usuń ${student.username} z grupy`}
                             onClick={() => removeMembershipStudent(student.id)}
                             disabled={membershipLoading}
                             sx={{ ...panelIconButtonSx, color: "error.main" }}
@@ -2131,7 +2227,7 @@ export function AdminDashboard() {
 
               <FormSection
                 title="Dodaj ucznia"
-                description="Lista pokazuje tylko uczni\u00f3w przypisanych do w\u0142a\u015bciciela tej grupy."
+                description="Lista pokazuje tylko uczni?w przypisanych do w?a?ciciela tej grupy."
               >
                 <Autocomplete
                   size="small"
@@ -2146,12 +2242,12 @@ export function AdminDashboard() {
                   onChange={(_, value) => setMembershipStudentId(value?.id ?? "")}
                   getOptionLabel={(option) => `${option.username} (${option.email})`}
                   isOptionEqualToValue={(option, value) => option.id === value.id}
-                  noOptionsText="Brak wolnych uczni\u00f3w dla tego nauczyciela"
+                  noOptionsText="Brak wolnych uczni?w dla tego nauczyciela"
                   renderInput={(params) => (
                     <TextField
                       {...params}
                       label="Wybierz ucznia"
-                      helperText="Wyb\u00f3r ucznia od razu przygotuje go do dodania do tej grupy."
+                      helperText="Wyb?r ucznia od razu przygotuje go do dodania do tej grupy."
                     />
                   )}
                 />

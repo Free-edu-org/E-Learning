@@ -1,4 +1,5 @@
 import { Paper, Typography, Box } from "@mui/material";
+import { panelSurfaceSx } from "@/components/ui/panel/panelStyles";
 
 interface ActionButtonProps {
   icon: React.ReactElement;
@@ -18,10 +19,8 @@ export function ActionButton({
       elevation={0}
       onClick={onClick}
       sx={{
+        ...panelSurfaceSx,
         p: 3,
-        borderRadius: 3,
-        border: "1px solid",
-        borderColor: "divider",
         flex: 1,
         display: "flex",
         flexDirection: "column",
