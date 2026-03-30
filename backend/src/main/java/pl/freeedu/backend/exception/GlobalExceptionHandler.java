@@ -5,6 +5,7 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.support.WebExchangeBindException;
+import org.springframework.web.server.MethodNotAllowedException;
 import org.springframework.web.server.ServerWebExchange;
 import pl.freeedu.backend.auth.exception.AuthException;
 import pl.freeedu.backend.lesson.exception.LessonException;
@@ -84,6 +85,15 @@ public class GlobalExceptionHandler {
 		log.warn("AuthenticationException [{} {}]: {}", exchange.getRequest().getMethod(),
 				exchange.getRequest().getPath(), ex.getMessage());
 		return buildProblemDetail(HttpStatus.UNAUTHORIZED, "Unauthorized", "UNAUTHORIZED", exchange);
+	}
+
+	@ExceptionHandler(MethodNotAllowedException.class)
+	public Mono<ProblemDetail> handleMethodNotAllowedException(MethodNotAllowedException ex,
+			ServerWebExchange exchange) {
+		log.warn("MethodNotAllowedException [{} {}]: {}", exchange.getRequest().getMethod(),
+				exchange.getRequest().getPath(), ex.getMessage());
+		return buildProblemDetail(HttpStatus.METHOD_NOT_ALLOWED, "Method Not Allowed", "METHOD_NOT_ALLOWED",
+				exchange);
 	}
 
 	@ExceptionHandler(DataIntegrityViolationException.class)

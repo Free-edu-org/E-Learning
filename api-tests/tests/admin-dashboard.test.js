@@ -2,6 +2,7 @@ const { apiClient, setAuthToken } = require('../utils/apiClient');
 
 describe('Admin Dashboard API (/api/v1/admin)', () => {
     const uniqueId = Date.now();
+    const freshId = () => `${Date.now()}_${Math.floor(Math.random() * 100000)}`;
     const adminCreds = { identifier: 'admin_marek', password: 'admin1' };
     const teacherCreds = { identifier: 'pan_tomasz', password: 'admin1' };
     const studentCreds = { identifier: 'jan_kowalski', password: 'student1' };
@@ -217,10 +218,11 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
         });
 
         it('should update student with groupId for ADMIN (200)', async () => {
+            const updateId = freshId();
             setAuthToken(adminToken);
             const response = await apiClient.put(`/admin/students/${createdStudentId}`, {
-                email: `admin.student.updated.${uniqueId}@example.com`,
-                username: `admin_student_updated_${uniqueId}`,
+                email: `admin.student.updated.${updateId}@example.com`,
+                username: `admin_student_updated_${updateId}`,
                 groupId: seedGroupId
             });
 
@@ -233,10 +235,11 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
         });
 
         it('should unassign student from group when groupId is null (200)', async () => {
+            const updateId = freshId();
             setAuthToken(adminToken);
             const response = await apiClient.put(`/admin/students/${createdStudentId}`, {
-                email: `admin.student.updated.${uniqueId}@example.com`,
-                username: `admin_student_updated_${uniqueId}`,
+                email: `admin.student.updated.${updateId}@example.com`,
+                username: `admin_student_updated_${updateId}`,
                 groupId: null
             });
 
@@ -257,10 +260,11 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
         });
 
         it('should return 404 for non-existent groupId', async () => {
+            const updateId = freshId();
             setAuthToken(adminToken);
             const response = await apiClient.put(`/admin/students/${createdStudentId}`, {
-                email: `admin.student.updated.${uniqueId}@example.com`,
-                username: `admin_student_updated_${uniqueId}`,
+                email: `admin.student.updated.${updateId}@example.com`,
+                username: `admin_student_updated_${updateId}`,
                 groupId: 999999
             });
             expect(response.status).toBe(404);

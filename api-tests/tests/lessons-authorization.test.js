@@ -80,7 +80,7 @@ describe('Lessons API Authorization (/api/v1/lessons)', () => {
             groupIds: []
         });
         expect(response.status).toBe(403);
-        expect(['NOT_LESSON_OWNER', 'FORBIDDEN']).toContain(response.data.code);
+        expect(response.data.code).toBe('FORBIDDEN');
     });
 
     it('should block other TEACHER from changing status of lesson they do not own', async () => {
@@ -89,14 +89,14 @@ describe('Lessons API Authorization (/api/v1/lessons)', () => {
             isActive: false
         });
         expect(response.status).toBe(403);
-        expect(['NOT_LESSON_OWNER', 'FORBIDDEN']).toContain(response.data.code);
+        expect(response.data.code).toBe('FORBIDDEN');
     });
 
     it('should block other TEACHER from deleting lesson they do not own', async () => {
         setAuthToken(secondTeacherToken);
         const response = await apiClient.delete(`/lessons/${ownLessonId}`);
         expect(response.status).toBe(403);
-        expect(['NOT_LESSON_OWNER', 'FORBIDDEN']).toContain(response.data.code);
+        expect(response.data.code).toBe('FORBIDDEN');
     });
 
     it('should allow ADMIN to update teacher lesson (200)', async () => {

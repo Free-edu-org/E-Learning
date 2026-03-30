@@ -138,14 +138,23 @@ public class AdminService {
 			student.setEmail(request.getEmail());
 			User savedStudent = userRepository.save(student);
 
-			userInGroupRepository.findByUserId(savedStudent.getId()).ifPresent(userInGroupRepository::delete);
+			UserInGroup existingMembership = userInGroupRepository.findByUserId(savedStudent.getId()).orElse(null);
 
 			Integer finalGroupId = null;
 			String finalGroupName = null;
 
-			if (group != null) {
-				userInGroupRepository
-						.save(UserInGroup.builder().userId(savedStudent.getId()).groupId(group.getId()).build());
+			if (group == null) {
+				if (existingMembership != null) {
+					userInGroupRepository.delete(existingMembership);
+				}
+			} else {
+				if (existingMembership == null) {
+					userInGroupRepository
+							.save(UserInGroup.builder().userId(savedStudent.getId()).groupId(group.getId()).build());
+				} else if (!group.getId().equals(existingMembership.getGroupId())) {
+					existingMembership.setGroupId(group.getId());
+					userInGroupRepository.save(existingMembership);
+				}
 				finalGroupId = group.getId();
 				finalGroupName = group.getName();
 			}

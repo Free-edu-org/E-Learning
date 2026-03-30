@@ -169,7 +169,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
                 description: 'Student tries to create'
             });
 
-            expect([401, 403]).toContain(response.status);
+            expect(response.status).toBe(403);
         });
     });
 
@@ -213,7 +213,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
             setAuthToken(studentToken);
             const response = await apiClient.get('/user-groups');
 
-            expect([401, 403]).toContain(response.status);
+            expect(response.status).toBe(403);
         });
     });
 
@@ -260,7 +260,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
             setAuthToken(studentToken);
             const response = await apiClient.get(`/user-groups/${existingGroupId}`);
 
-            expect([401, 403]).toContain(response.status);
+            expect(response.status).toBe(403);
         });
     });
 
@@ -367,7 +367,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
                 description: 'Student desc'
             });
 
-            expect([401, 403]).toContain(response.status);
+            expect(response.status).toBe(403);
         });
     });
 
@@ -480,7 +480,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
             setAuthToken(studentToken);
             const response = await apiClient.post(`/user-groups/${testGroupId}/members/${newStudentId}`);
 
-            expect([401, 403]).toContain(response.status);
+            expect(response.status).toBe(403);
         });
     });
 
@@ -525,7 +525,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
             setAuthToken(studentToken);
             const response = await apiClient.delete(`/user-groups/${testGroupId}/members/${removableStudentId}`);
 
-            expect([401, 403]).toContain(response.status);
+            expect(response.status).toBe(403);
         });
 
         it('should fail for non-existent group (404 USER_GROUP_NOT_FOUND)', async () => {
@@ -618,7 +618,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
             setAuthToken(studentToken);
             const response = await apiClient.delete(`/user-groups/${groupToDeleteId}`);
 
-            expect([401, 403]).toContain(response.status);
+            expect(response.status).toBe(403);
         });
 
         it('should delete group with members as ADMIN (204 No Content)', async () => {
@@ -713,7 +713,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
             expect(response.data.code).toBe('VALIDATION_FAILED');
         });
 
-        it('should handle creating groups with very long names', async () => {
+        it('should allow creating groups with a 255-char name', async () => {
             setAuthToken(adminToken);
             const longName = 'A'.repeat(255);
             const response = await apiClient.post('/user-groups', {
@@ -721,11 +721,9 @@ describe('User Groups API (/api/v1/user-groups)', () => {
                 description: 'Long name group'
             });
 
-            // Should either succeed (200/201) or fail gracefully (400/500) — not crash
-            expect([201, 400, 409, 500]).toContain(response.status);
-            if (response.status === 201 && response.data?.id) {
-                createdGroupIds.add(response.data.id);
-            }
+            expect(response.status).toBe(201);
+            expect(response.data.name).toBe(longName);
+            createdGroupIds.add(response.data.id);
         });
 
         it('should return proper ProblemDetail structure on error', async () => {

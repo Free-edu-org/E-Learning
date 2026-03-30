@@ -203,7 +203,7 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
                 title: 'Ghost',
                 theme: 'Ghost'
             });
-            expect([403, 404]).toContain(response.status);
+            expect(response.status).toBe(403);
         });
     });
 
@@ -241,7 +241,7 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
             const response = await apiClient.patch('/lessons/9999999/status', {
                 isActive: true
             });
-            expect([403, 404]).toContain(response.status);
+            expect(response.status).toBe(403);
         });
     });
 
@@ -265,7 +265,7 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
         it('should return 403 or 404 for deleting non-existent lesson', async () => {
             setAuthToken(teacherToken);
             const response = await apiClient.delete('/lessons/9999999');
-            expect([403, 404]).toContain(response.status);
+            expect(response.status).toBe(403);
         });
 
         it('should return 403 or 404 for deleting already deleted lesson', async () => {
@@ -278,7 +278,7 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
             await apiClient.delete(`/lessons/${id}`);
 
             const response = await apiClient.delete(`/lessons/${id}`);
-            expect([403, 404]).toContain(response.status);
+            expect(response.status).toBe(403);
         });
     });
 });

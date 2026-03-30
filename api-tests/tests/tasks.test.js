@@ -148,7 +148,7 @@ describe('Tasks API (/api/v1/lessons/{lessonId}/tasks)', () => {
                 possibleAnswers: 'a|b',
                 correctAnswer: 0
             });
-            expect([403, 404]).toContain(response.status);
+            expect(response.status).toBe(403);
         });
 
         it('should delete a choose task (204)', async () => {
