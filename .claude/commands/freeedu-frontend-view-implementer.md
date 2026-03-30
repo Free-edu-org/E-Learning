@@ -13,6 +13,17 @@ Uzyj tego workflowu, gdy trzeba dowiezc lub poprawic konkretny widok frontendowy
 - Zachowuj spojnosc UI/UX projektu.
 - Integruj frontend z backendem przez aktualny kontrakt wynikajacy z kodu.
 - Gdy backend nie pokrywa potrzeb, zglaszaj `Backend Gap` zamiast robic obejscia.
+- Jesli projekt ma wspolne tokeny i wrappery UI, korzystaj z nich w pierwszej kolejnosci.
+- Dla modalI, formularzy, badge'y, kart i action area najpierw sprawdz:
+  - `frontend/src/theme/uiTokens.ts`
+  - `frontend/src/components/ui/dialog/*`
+  - `frontend/src/components/ui/form/*`
+  - `frontend/src/components/ui/chips/*`
+  - `frontend/src/components/ui/panel/*`
+- Nie trzymaj w miare mozliwosci nowego systemu styli w pliku konkretnego widoku.
+- Nie dopisuj wielu lokalnych `const ...Sx = {}` w ekranie, jesli te same decyzje maja sens dla innych widokow.
+- Gdy brakuje wspolnego wrappera, tokena albo wariantu UI, najpierw stworz go we wspoldzielonym miejscu, a dopiero potem uzyj w widoku.
+- Widok ma zawierac glownie uzycie wspolnych komponentow i lokalny layout domenowy, a nie definicje calego systemu modalowego lub formularzowego.
 
 ## Kroki
 
