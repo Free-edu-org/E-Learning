@@ -1,22 +1,28 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
+  Chip,
   Container,
   Grid,
   Skeleton,
+  Stack,
   Switch,
+  TextField,
   Typography,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import {
   AddCircleOutlined as AddIcon,
+  AutoAwesomeOutlined as SparklesIcon,
   DarkMode as DarkModeIcon,
   GroupOutlined as GroupIcon,
   LightMode as LightModeIcon,
   LogoutOutlined as LogoutIcon,
   PersonAddOutlined as PersonAddIcon,
+  SaveOutlined as SaveIcon,
   SchoolOutlined as SchoolIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
@@ -33,9 +39,91 @@ import {
   type ViewMode,
 } from "@/components/teacher/LessonToolbar";
 import { StatsCard } from "@/components/teacher/StatsCard";
-import { panelSurfaceSx } from "@/components/ui/panel/panelStyles";
+import {
+  AppDialog,
+  AppDialogBody,
+  AppDialogFooter,
+  AppDialogHeader,
+  AppDialogStatus,
+} from "@/components/ui/dialog/AppDialog";
+import {
+  FormActions,
+  FormField,
+  FormSection,
+} from "@/components/ui/form/FormLayout";
+import {
+  panelFooterButtonSx,
+  panelSurfaceSx,
+} from "@/components/ui/panel/panelStyles";
 import { useAuth } from "@/context/AuthContext";
 import { useAppTheme } from "@/context/ThemeContext";
+import { uiTokens } from "@/theme/uiTokens";
+
+interface DialogFeedbackState {
+  severity: "success" | "error";
+  message: string;
+}
+
+interface LessonDraft {
+  title: string;
+  theme: string;
+  groupIds: Group[];
+}
+
+const emptyLessonDraft: LessonDraft = {
+  title: "",
+  theme: "",
+  groupIds: [],
+};
+
+const validationMessageTranslations: Record<string, string> = {
+  "Title is required": "Tytuł jest wymagany.",
+  "Theme is required": "Temat jest wymagany.",
+  "must not be blank": "Pole jest wymagane.",
+};
+
+function translateBackendMessage(message: string) {
+  let translated = message;
+  for (const [source, target] of Object.entries(
+    validationMessageTranslations,
+  )) {
+    translated = translated.replaceAll(source, target);
+  }
+
+  if (translated.startsWith("Validation failed:")) {
+    const rawDetails = translated.replace("Validation failed:", "").trim();
+    const fieldLabels: Record<string, string> = {
+      title: "Tytuł",
+      theme: "Temat",
+    };
+    const parts = rawDetails
+      .split(",")
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .map((part) => {
+        const separatorIndex = part.indexOf(":");
+        if (separatorIndex === -1) return part;
+        const field = part.slice(0, separatorIndex).trim();
+        const detail = part.slice(separatorIndex + 1).trim();
+        const label = fieldLabels[field] ?? field;
+        return `${label}: ${detail}`;
+      });
+    return `Błąd walidacji: ${parts.join(", ")}`.replaceAll(" .", ".").trim();
+  }
+
+  return translated;
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof ApiError) {
+    const message = error.problem.detail || error.problem.title;
+    return message ? translateBackendMessage(message) : fallback;
+  }
+  if (error instanceof Error && error.message === "NETWORK_ERROR") {
+    return "Brak połączenia z serwerem.";
+  }
+  return fallback;
+}
 
 export function TeacherDashboard() {
   const { logout } = useAuth();
@@ -58,6 +146,12 @@ export function TeacherDashboard() {
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [sortMode, setSortMode] = useState<SortMode>("date_desc");
   const [selectedGroups, setSelectedGroups] = useState<Group[]>([]);
+
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [lessonDraft, setLessonDraft] = useState<LessonDraft>(emptyLessonDraft);
+  const [createDialogLoading, setCreateDialogLoading] = useState(false);
+  const [createDialogFeedback, setCreateDialogFeedback] =
+    useState<DialogFeedbackState | null>(null);
 
   useEffect(() => {
     userService
@@ -97,6 +191,61 @@ export function TeacherDashboard() {
       })
       .finally(() => setLoadingData(false));
   }, []);
+
+  const refreshDashboardData = async () => {
+    const [s, l, g] = await Promise.all([
+      lessonService.getTeacherStats(),
+      lessonService.getTeacherLessons(),
+      lessonService.getTeacherGroups(),
+    ]);
+    setStats(s);
+    setLessons(l);
+    setAvailableGroups(g);
+  };
+
+  const openCreateLessonDialog = () => {
+    setLessonDraft(emptyLessonDraft);
+    setCreateDialogFeedback(null);
+    setCreateDialogOpen(true);
+  };
+
+  const closeCreateLessonDialog = () => {
+    if (createDialogLoading) return;
+    setCreateDialogOpen(false);
+  };
+
+  const resetCreateDialogState = () => {
+    setLessonDraft(emptyLessonDraft);
+    setCreateDialogFeedback(null);
+  };
+
+  const submitCreateLessonDialog = async () => {
+    if (createDialogLoading) return;
+
+    setCreateDialogFeedback(null);
+    setCreateDialogLoading(true);
+    try {
+      const groupIds = lessonDraft.groupIds.map((g) => g.id);
+      await lessonService.createLesson({
+        title: lessonDraft.title,
+        theme: lessonDraft.theme,
+        groupIds: groupIds.length > 0 ? groupIds : undefined,
+      });
+      setCreateDialogFeedback({
+        severity: "success",
+        message: "Lekcja została utworzona.",
+      });
+      await refreshDashboardData();
+      window.setTimeout(() => closeCreateLessonDialog(), 900);
+    } catch (error) {
+      setCreateDialogFeedback({
+        severity: "error",
+        message: getErrorMessage(error, "Nie udało się utworzyć lekcji."),
+      });
+    } finally {
+      setCreateDialogLoading(false);
+    }
+  };
 
   const displayedLessons = useMemo(() => {
     let result = lessons;
@@ -302,6 +451,7 @@ export function TeacherDashboard() {
             icon={<AddIcon sx={{ fontSize: 32 }} />}
             title="Utwórz lekcję"
             subtitle="Nowa lekcja z zadaniami"
+            onClick={openCreateLessonDialog}
           />
         </Box>
 
@@ -361,6 +511,136 @@ export function TeacherDashboard() {
             ))}
           </Grid>
         )}
+        <AppDialog
+          open={createDialogOpen}
+          onClose={closeCreateLessonDialog}
+          onExited={resetCreateDialogState}
+          maxWidth="xs"
+          paperSx={{
+            width: { xs: "calc(100% - 24px)", sm: uiTokens.modal.compactWidth },
+          }}
+        >
+          <AppDialogHeader
+            icon={<SparklesIcon />}
+            title="Nowa lekcja"
+            subtitle="Podaj tytuł i temat lekcji. Opcjonalnie przypisz ją do grup."
+            badge={
+              <Chip
+                label="Nowa"
+                size="small"
+                color="primary"
+                sx={{ fontWeight: 700 }}
+              />
+            }
+          />
+          <AppDialogBody>
+            {createDialogFeedback && (
+              <AppDialogStatus severity={createDialogFeedback.severity}>
+                {createDialogFeedback.message}
+              </AppDialogStatus>
+            )}
+            <Stack spacing={2.25}>
+              <FormSection>
+                <Stack spacing={2.25}>
+                  <FormField>
+                    <TextField
+                      label="Tytuł lekcji"
+                      value={lessonDraft.title}
+                      onChange={(event) =>
+                        setLessonDraft((current) => ({
+                          ...current,
+                          title: event.target.value,
+                        }))
+                      }
+                      fullWidth
+                    />
+                  </FormField>
+                  <FormField>
+                    <TextField
+                      label="Temat lekcji"
+                      value={lessonDraft.theme}
+                      onChange={(event) =>
+                        setLessonDraft((current) => ({
+                          ...current,
+                          theme: event.target.value,
+                        }))
+                      }
+                      multiline
+                      minRows={3}
+                      fullWidth
+                    />
+                  </FormField>
+                </Stack>
+              </FormSection>
+              <FormSection
+                title="Przypisanie do grup"
+                description="Wybierz grupy, które mają mieć dostęp do tej lekcji."
+              >
+                <Autocomplete
+                  multiple
+                  size="small"
+                  options={availableGroups}
+                  value={lessonDraft.groupIds}
+                  onChange={(_, value) =>
+                    setLessonDraft((current) => ({
+                      ...current,
+                      groupIds: value,
+                    }))
+                  }
+                  getOptionLabel={(option) => option.name}
+                  isOptionEqualToValue={(option, value) =>
+                    option.id === value.id
+                  }
+                  disableCloseOnSelect
+                  noOptionsText="Brak dostępnych grup"
+                  renderTags={(tagValue, getTagProps) =>
+                    tagValue.map((option, index) => {
+                      const { key, ...rest } = getTagProps({ index });
+                      return (
+                        <Chip
+                          key={key}
+                          label={option.name}
+                          size="small"
+                          sx={{ fontSize: "0.7rem", height: 20 }}
+                          {...rest}
+                        />
+                      );
+                    })
+                  }
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      placeholder={
+                        lessonDraft.groupIds.length === 0
+                          ? "Wybierz grupy..."
+                          : undefined
+                      }
+                    />
+                  )}
+                />
+              </FormSection>
+            </Stack>
+          </AppDialogBody>
+          <AppDialogFooter>
+            <FormActions>
+              <Button
+                onClick={closeCreateLessonDialog}
+                sx={{ ...panelFooterButtonSx, color: "text.secondary" }}
+              >
+                Anuluj
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<SaveIcon />}
+                onClick={submitCreateLessonDialog}
+                disabled={createDialogLoading}
+                sx={panelFooterButtonSx}
+              >
+                {createDialogLoading ? "Tworzenie..." : "Utwórz lekcję"}
+              </Button>
+            </FormActions>
+          </AppDialogFooter>
+        </AppDialog>
       </Container>
     </Box>
   );
