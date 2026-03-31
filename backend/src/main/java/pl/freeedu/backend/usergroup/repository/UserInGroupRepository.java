@@ -19,6 +19,9 @@ public interface UserInGroupRepository extends JpaRepository<UserInGroup, Intege
 			+ "WHERE uig.user_id = :userId AND ghl.lesson_id = :lessonId", nativeQuery = true)
 	boolean hasAccessToLesson(@Param("userId") Integer userId, @Param("lessonId") Integer lessonId);
 
+	@Query("SELECT COUNT(uig) > 0 FROM UserInGroup uig JOIN UserGroup ug ON uig.groupId = ug.id WHERE uig.userId = :studentId AND ug.teacherId = :teacherId")
+	boolean isStudentInTeachersGroup(@Param("studentId") Integer studentId, @Param("teacherId") Integer teacherId);
+
 	Optional<UserInGroup> findByUserId(Integer userId);
 
 	int countByGroupId(Integer groupId);
@@ -38,8 +41,16 @@ public interface UserInGroupRepository extends JpaRepository<UserInGroup, Intege
 	@Query("SELECT u.userId FROM UserInGroup u WHERE u.groupId = :groupId")
 	List<Integer> findUserIdsByGroupId(Integer groupId);
 
+	@Query("SELECT u.userId as userId, u.groupId as groupId FROM UserInGroup u")
+	List<UserMembershipProjection> findAllMemberships();
+
 	interface GroupCountProjection {
 		Integer getGroupId();
 		Long getCount();
+	}
+
+	interface UserMembershipProjection {
+		Integer getUserId();
+		Integer getGroupId();
 	}
 }

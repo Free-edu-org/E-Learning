@@ -1,5 +1,6 @@
 package pl.freeedu.backend.user.service;
 
+import java.util.function.BiFunction;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import pl.freeedu.backend.auth.exception.AuthErrorCode;
@@ -10,7 +11,6 @@ import pl.freeedu.backend.user.dto.RegisterUserRequest;
 import pl.freeedu.backend.user.dto.ChangePasswordRequest;
 import pl.freeedu.backend.user.dto.UpdateUserRequest;
 import pl.freeedu.backend.user.dto.UserResponse;
-import pl.freeedu.backend.user.model.Role;
 import pl.freeedu.backend.user.model.User;
 import pl.freeedu.backend.user.repository.UserRepository;
 import pl.freeedu.backend.security.service.SecurityService;
@@ -51,16 +51,13 @@ public class UserService {
 						throw new UserException(UserErrorCode.USERNAME_ALREADY_TAKEN);
 					}
 					User user = userMapper.toStudentUser(request, passwordEncoder.encode(request.getPassword()));
-					if (currentUser.getRole() == Role.TEACHER) {
-						user.setTeacherId(currentUser.getId());
-					}
 					userRepository.save(user);
 					return (Void) null;
 				}).subscribeOn(Schedulers.boundedElastic())));
 	}
 
 	private Mono<Void> registerUser(Mono<RegisterUserRequest> requestMono,
-			java.util.function.BiFunction<RegisterUserRequest, String, User> mapperFunction) {
+			BiFunction<RegisterUserRequest, String, User> mapperFunction) {
 		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
 			if (userRepository.existsByEmail(request.getEmail())) {
 				throw new UserException(UserErrorCode.EMAIL_ALREADY_TAKEN);

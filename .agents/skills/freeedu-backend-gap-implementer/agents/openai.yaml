@@ -1,0 +1,3 @@
+interface:
+  display_name: "FreeEdu Backend Gap Implementer"
+  short_description: "Domyka brakujace endpointy i logike backendu zgodnie ze stylem FreeEdu"

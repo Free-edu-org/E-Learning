@@ -30,9 +30,6 @@ public class User {
 	@Column(nullable = false)
 	private Role role;
 
-	@Column(name = "teacher_id")
-	private Integer teacherId;
-
 	@Column(name = "created_at", insertable = false, updatable = false)
 	private LocalDateTime createdAt;
 }

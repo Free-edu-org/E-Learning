@@ -1,22 +1,23 @@
-import {
+﻿import {
   Autocomplete,
+  Chip,
+  Divider,
+  InputAdornment,
+  MenuItem,
+  Paper,
+  Select,
   TextField,
   ToggleButton,
   ToggleButtonGroup,
-  Select,
-  MenuItem,
-  InputAdornment,
-  Paper,
-  Divider,
-  Chip,
 } from "@mui/material";
 import {
-  SearchOutlined as SearchIcon,
   GridViewOutlined as GridIcon,
+  SearchOutlined as SearchIcon,
   ViewListOutlined as ListIcon,
 } from "@mui/icons-material";
 import type { SelectChangeEvent } from "@mui/material";
 import type { Group } from "@/api/lessonService";
+import { panelToolbarSx } from "@/components/ui/panel/panelStyles";
 
 export type StatusFilter = "all" | "active" | "inactive";
 export type ViewMode = "grid" | "list";
@@ -31,9 +32,7 @@ interface LessonToolbarProps {
   onViewModeChange: (value: ViewMode) => void;
   sortMode: SortMode;
   onSortModeChange: (value: SortMode) => void;
-  /** All groups available to this teacher */
   availableGroups: Group[];
-  /** Currently selected group filter (empty = show all) */
   selectedGroups: Group[];
   onSelectedGroupsChange: (groups: Group[]) => void;
 }
@@ -70,25 +69,10 @@ export function LessonToolbar({
   };
 
   return (
-    <Paper
-      elevation={0}
-      sx={{
-        display: "flex",
-        flexWrap: "wrap",
-        alignItems: "center",
-        gap: 1.5,
-        p: 1.5,
-        mb: 2,
-        borderRadius: 3,
-        border: "1px solid",
-        borderColor: "divider",
-        bgcolor: "background.paper",
-      }}
-    >
-      {/* ── Search ── */}
+    <Paper elevation={0} sx={{ ...panelToolbarSx, mb: 2 }}>
       <TextField
         size="small"
-        placeholder="Szukaj lekcji…"
+        placeholder="Szukaj lekcji..."
         value={searchQuery}
         onChange={(e) => onSearchChange(e.target.value)}
         slotProps={{
@@ -113,7 +97,6 @@ export function LessonToolbar({
         sx={{ display: { xs: "none", sm: "block" } }}
       />
 
-      {/* ── Group Autocomplete ── */}
       <Autocomplete
         multiple
         size="small"
@@ -143,7 +126,7 @@ export function LessonToolbar({
           <TextField
             {...params}
             placeholder={
-              selectedGroups.length === 0 ? "Filtruj grupy…" : undefined
+              selectedGroups.length === 0 ? "Filtruj grupy..." : undefined
             }
             sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
           />
@@ -157,7 +140,6 @@ export function LessonToolbar({
         sx={{ display: { xs: "none", sm: "block" } }}
       />
 
-      {/* ── Status filter ── */}
       <ToggleButtonGroup
         value={statusFilter}
         exclusive
@@ -189,7 +171,6 @@ export function LessonToolbar({
         sx={{ display: { xs: "none", sm: "block" } }}
       />
 
-      {/* ── Sort ── */}
       <Select
         size="small"
         value={sortMode}
@@ -202,8 +183,8 @@ export function LessonToolbar({
       >
         <MenuItem value="date_desc">Data: Najnowsze</MenuItem>
         <MenuItem value="date_asc">Data: Najstarsze</MenuItem>
-        <MenuItem value="title_az">Tytuł: A→Z</MenuItem>
-        <MenuItem value="title_za">Tytuł: Z→A</MenuItem>
+        <MenuItem value="title_az">Tytuł: A-Z</MenuItem>
+        <MenuItem value="title_za">Tytuł: Z-A</MenuItem>
       </Select>
 
       <Divider
@@ -212,7 +193,6 @@ export function LessonToolbar({
         sx={{ display: { xs: "none", sm: "block" } }}
       />
 
-      {/* ── View mode toggle ── */}
       <ToggleButtonGroup
         value={viewMode}
         exclusive

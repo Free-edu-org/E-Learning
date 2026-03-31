@@ -20,7 +20,7 @@ Authorization: Bearer {{auth_token}}
   "password": "password"
 }
 
-### Get User Details (Requires Admin, Teacher for student, or Owner)
+### Get User Details (Requires Admin, Teacher of student's group, or Owner)
 GET http://localhost:8080/api/v1/users/1
 Authorization: Bearer {{auth_token}}
 

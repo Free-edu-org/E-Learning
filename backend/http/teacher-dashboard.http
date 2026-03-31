@@ -1,15 +1,50 @@
-### Get Teacher Dashboard stats (Requires Teacher or Admin)
+### Get Teacher Dashboard stats (Requires TEACHER)
 GET http://localhost:8080/api/v1/teacher/stats
-Authorization: Bearer {{auth_token}}
+Authorization: Bearer {{teacher_token}}
 
-### Get Teacher's own lessons (Requires Teacher or Admin)
+### Get Teacher's own lessons (Requires TEACHER)
 GET http://localhost:8080/api/v1/teacher/lessons
-Authorization: Bearer {{auth_token}}
+Authorization: Bearer {{teacher_token}}
 
-### Get Teacher's own groups (Requires Teacher or Admin)
+### Get Teacher's own groups (Requires TEACHER)
 GET http://localhost:8080/api/v1/teacher/my-groups
-Authorization: Bearer {{auth_token}}
+Authorization: Bearer {{teacher_token}}
 
-### Get Teacher's own students (Requires Teacher)
+### Get Teacher's own students (Requires TEACHER)
 GET http://localhost:8080/api/v1/teacher/students
-Authorization: Bearer {{auth_token}}
+Authorization: Bearer {{teacher_token}}
+
+### Create student in teacher's own group (Requires TEACHER, groupId mandatory)
+POST http://localhost:8080/api/v1/teacher/students
+Authorization: Bearer {{teacher_token}}
+Content-Type: application/json
+
+{
+  "username": "teacher_created_student",
+  "email": "teacher.created@example.com",
+  "password": "password123",
+  "groupId": 1
+}
+
+### Create student - missing groupId (400 VALIDATION_FAILED)
+POST http://localhost:8080/api/v1/teacher/students
+Authorization: Bearer {{teacher_token}}
+Content-Type: application/json
+
+{
+  "username": "teacher_no_group",
+  "email": "teacher.nogroup@example.com",
+  "password": "password123"
+}
+
+### Create student - forbidden (ADMIN token -> 403)
+POST http://localhost:8080/api/v1/teacher/students
+Authorization: Bearer {{admin_token}}
+Content-Type: application/json
+
+{
+  "username": "admin_attempt",
+  "email": "admin.attempt@example.com",
+  "password": "password123",
+  "groupId": 1
+}

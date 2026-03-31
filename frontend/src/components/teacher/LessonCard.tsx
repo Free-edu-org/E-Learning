@@ -1,25 +1,32 @@
-import {
-  Card,
-  CardContent,
-  CardActions,
-  Typography,
+﻿import {
   Box,
-  Switch,
-  Chip,
   Button,
+  Card,
+  CardActions,
+  CardContent,
+  Chip,
   Divider,
+  Switch,
   Tooltip,
+  Typography,
 } from "@mui/material";
 import {
-  EditOutlined as EditIcon,
   BarChartOutlined as BarChartIcon,
+  EditOutlined as EditIcon,
   MenuBook as BookIcon,
 } from "@mui/icons-material";
 import type { Lesson } from "@/api/lessonService";
+import {
+  outlinedMetaChipSx,
+  panelCardFooterSx,
+  panelFooterButtonSx,
+  panelGridCardContentSx,
+  panelGridCardSx,
+  panelListRowSx,
+} from "@/components/ui/panel/panelStyles";
 
 interface LessonCardProps {
   lesson: Lesson;
-  /** When true, renders a compact horizontal row instead of the full card */
   listView?: boolean;
 }
 
@@ -31,7 +38,6 @@ function formatDate(dateStr: string): string {
   return `${day}.${month}.${year}`;
 }
 
-/** Small colored dot for list-view status indicator */
 function StatusDot({ active }: { active: boolean }) {
   return (
     <Box
@@ -48,10 +54,6 @@ function StatusDot({ active }: { active: boolean }) {
 
 const MAX_CHIPS_VISIBLE = 2;
 
-/**
- * Renders up to MAX_CHIPS_VISIBLE group chips.
- * If there are more, shows "+N inne" chip with a tooltip listing the rest.
- */
 function GroupChips({ groups }: { groups: Lesson["groups"] }) {
   if (groups.length === 0) {
     return (
@@ -76,13 +78,7 @@ function GroupChips({ groups }: { groups: Lesson["groups"] }) {
           label={g.name}
           size="small"
           variant="outlined"
-          sx={{
-            fontSize: "0.68rem",
-            height: 20,
-            borderRadius: "6px",
-            color: "text.secondary",
-            borderColor: "divider",
-          }}
+          sx={{ fontSize: "0.68rem", height: 20, ...outlinedMetaChipSx }}
         />
       ))}
       {overflow.length > 0 && (
@@ -97,7 +93,7 @@ function GroupChips({ groups }: { groups: Lesson["groups"] }) {
             sx={{
               fontSize: "0.68rem",
               height: 20,
-              borderRadius: "6px",
+              borderRadius: "999px",
               bgcolor: "action.hover",
               color: "text.secondary",
               cursor: "default",
@@ -114,23 +110,18 @@ export function LessonCard({ lesson, listView = false }: LessonCardProps) {
     return (
       <Box
         sx={{
+          ...panelListRowSx,
           display: "flex",
           alignItems: "center",
           gap: 2,
           px: 2,
           py: 1.25,
-          borderRadius: 2,
-          border: "1px solid",
-          borderColor: "divider",
-          bgcolor: "background.paper",
           transition: "box-shadow 0.15s, border-color 0.15s",
           "&:hover": { boxShadow: 2, borderColor: "primary.light" },
         }}
       >
-        {/* Status dot */}
         <StatusDot active={lesson.isActive} />
 
-        {/* Title + theme */}
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography
             variant="body2"
@@ -145,7 +136,6 @@ export function LessonCard({ lesson, listView = false }: LessonCardProps) {
           </Typography>
         </Box>
 
-        {/* Groups (compact list) */}
         <Box
           sx={{
             flexShrink: 0,
@@ -158,7 +148,6 @@ export function LessonCard({ lesson, listView = false }: LessonCardProps) {
           <GroupChips groups={lesson.groups} />
         </Box>
 
-        {/* Date */}
         <Typography
           variant="caption"
           color="text.secondary"
@@ -167,19 +156,18 @@ export function LessonCard({ lesson, listView = false }: LessonCardProps) {
           {formatDate(lesson.createdAt)}
         </Typography>
 
-        {/* Actions */}
         <Box sx={{ display: "flex", gap: 0.5, flexShrink: 0 }}>
           <Button
             size="small"
             startIcon={<EditIcon fontSize="small" />}
-            sx={{ textTransform: "none", fontWeight: 600, minWidth: 0 }}
+            sx={{ ...panelFooterButtonSx, color: "primary.main" }}
           >
             Edytuj
           </Button>
           <Button
             size="small"
             startIcon={<BarChartIcon fontSize="small" />}
-            sx={{ textTransform: "none", fontWeight: 600, minWidth: 0 }}
+            sx={{ ...panelFooterButtonSx, color: "primary.main" }}
           >
             Wyniki
           </Button>
@@ -188,24 +176,19 @@ export function LessonCard({ lesson, listView = false }: LessonCardProps) {
     );
   }
 
-  // ── Grid card view ──
   return (
     <Card
       elevation={0}
-      sx={{
-        borderRadius: 3,
-        border: "1px solid",
-        borderColor: "divider",
-        bgcolor: "background.paper",
-        display: "flex",
-        flexDirection: "column",
-        height: "100%",
-        transition: "box-shadow 0.2s, transform 0.15s",
-        "&:hover": { boxShadow: 3, transform: "translateY(-2px)" },
-      }}
+      sx={{ ...panelGridCardSx, display: "flex", flexDirection: "column" }}
     >
-      <CardContent sx={{ flex: 1, pb: 1 }}>
-        {/* Title */}
+      <CardContent
+        sx={{
+          ...panelGridCardContentSx,
+          flex: "1 1 auto",
+          height: "auto",
+          pb: 1,
+        }}
+      >
         <Box
           sx={{ display: "flex", alignItems: "flex-start", gap: 1, mb: 0.5 }}
         >
@@ -222,7 +205,6 @@ export function LessonCard({ lesson, listView = false }: LessonCardProps) {
           </Typography>
         </Box>
 
-        {/* Theme */}
         <Typography
           variant="body2"
           color="text.secondary"
@@ -231,7 +213,6 @@ export function LessonCard({ lesson, listView = false }: LessonCardProps) {
           {lesson.theme}
         </Typography>
 
-        {/* Status */}
         <Box
           sx={{
             display: "flex",
@@ -273,41 +254,45 @@ export function LessonCard({ lesson, listView = false }: LessonCardProps) {
           </Box>
         </Box>
 
-        {/* Created at */}
         <Typography
           variant="caption"
           color="text.secondary"
           display="block"
           sx={{ mb: 1 }}
         >
-          Utworzona: {formatDate(lesson.createdAt)}
+          Utworzono: {formatDate(lesson.createdAt)}
         </Typography>
 
-        {/* Groups */}
         <GroupChips groups={lesson.groups} />
       </CardContent>
 
       <Divider />
 
-      <CardActions sx={{ px: 2, py: 1, gap: 1 }}>
-        <Button
-          size="small"
-          variant="outlined"
-          startIcon={<EditIcon fontSize="small" />}
-          fullWidth
-          sx={{ borderRadius: 2, textTransform: "none", fontWeight: 600 }}
+      <CardActions sx={{ ...panelCardFooterSx, px: 2, py: 1, gap: 1, mt: 0 }}>
+        <Box
+          sx={{ display: "flex", width: "100%", gap: 1, flexWrap: "nowrap" }}
         >
-          Edytuj
-        </Button>
-        <Button
-          size="small"
-          variant="outlined"
-          startIcon={<BarChartIcon fontSize="small" />}
-          fullWidth
-          sx={{ borderRadius: 2, textTransform: "none", fontWeight: 600 }}
-        >
-          Wyniki
-        </Button>
+          <Button
+            size="small"
+            variant="outlined"
+            color="primary"
+            startIcon={<EditIcon fontSize="small" />}
+            fullWidth
+            sx={panelFooterButtonSx}
+          >
+            Edytuj
+          </Button>
+          <Button
+            size="small"
+            variant="outlined"
+            color="primary"
+            startIcon={<BarChartIcon fontSize="small" />}
+            fullWidth
+            sx={panelFooterButtonSx}
+          >
+            Wyniki
+          </Button>
+        </Box>
       </CardActions>
     </Card>
   );

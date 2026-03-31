@@ -4,10 +4,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.stereotype.Service;
+import java.util.Objects;
 import pl.freeedu.backend.security.principal.CustomUserDetails;
 import pl.freeedu.backend.user.model.Role;
-import pl.freeedu.backend.user.model.User;
-import pl.freeedu.backend.user.repository.UserRepository;
 import pl.freeedu.backend.lesson.repository.LessonRepository;
 import pl.freeedu.backend.usergroup.repository.UserGroupRepository;
 import pl.freeedu.backend.usergroup.repository.UserInGroupRepository;
@@ -17,14 +16,12 @@ import org.springframework.context.annotation.Lazy;
 @Service("securityService")
 public class SecurityService {
 
-	private final UserRepository userRepository;
 	private final UserGroupRepository userGroupRepository;
 	private final LessonRepository lessonRepository;
 	private final UserInGroupRepository userInGroupRepository;
 
-	public SecurityService(@Lazy UserRepository userRepository, @Lazy UserGroupRepository userGroupRepository,
-			@Lazy LessonRepository lessonRepository, @Lazy UserInGroupRepository userInGroupRepository) {
-		this.userRepository = userRepository;
+	public SecurityService(@Lazy UserGroupRepository userGroupRepository, @Lazy LessonRepository lessonRepository,
+			@Lazy UserInGroupRepository userInGroupRepository) {
 		this.userGroupRepository = userGroupRepository;
 		this.lessonRepository = lessonRepository;
 		this.userInGroupRepository = userInGroupRepository;
@@ -32,8 +29,8 @@ public class SecurityService {
 
 	public Mono<Integer> getCurrentUserId() {
 		return ReactiveSecurityContextHolder.getContext().map(SecurityContext::getAuthentication)
-				.filter(java.util.Objects::nonNull).filter(Authentication::isAuthenticated)
-				.map(Authentication::getPrincipal).ofType(CustomUserDetails.class).map(CustomUserDetails::getId);
+				.filter(Objects::nonNull).filter(Authentication::isAuthenticated).map(Authentication::getPrincipal)
+				.ofType(CustomUserDetails.class).map(CustomUserDetails::getId);
 	}
 
 	public boolean isOwner(Authentication authentication, Integer targetUserId) {
@@ -91,9 +88,7 @@ public class SecurityService {
 			return false;
 		}
 
-		User student = userRepository.findById(studentId).orElse(null);
-		return student != null && student.getRole() == Role.STUDENT
-				&& userDetails.getId().equals(student.getTeacherId());
+		return userInGroupRepository.isStudentInTeachersGroup(studentId, userDetails.getId());
 	}
 
 	public boolean hasStudentAccessToLesson(Authentication authentication, Integer lessonId) {
@@ -109,8 +104,7 @@ public class SecurityService {
 
 	public Mono<CustomUserDetails> getCurrentUser() {
 		return ReactiveSecurityContextHolder.getContext().map(SecurityContext::getAuthentication)
-				.filter(java.util.Objects::nonNull).filter(Authentication::isAuthenticated)
-				.map(Authentication::getPrincipal).filter(principal -> principal instanceof CustomUserDetails)
-				.cast(CustomUserDetails.class);
+				.filter(Objects::nonNull).filter(Authentication::isAuthenticated).map(Authentication::getPrincipal)
+				.filter(principal -> principal instanceof CustomUserDetails).cast(CustomUserDetails.class);
 	}
 }

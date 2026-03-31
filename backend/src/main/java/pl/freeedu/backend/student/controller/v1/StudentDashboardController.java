@@ -1,6 +1,7 @@
 package pl.freeedu.backend.student.controller.v1;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,7 +17,8 @@ import reactor.core.publisher.Mono;
 public class StudentDashboardController {
 
 	// TODO: Replace with StudentService and real DTO mappings
-	@Operation(summary = "Get personal progress")
+	@Operation(summary = "Get personal progress placeholder")
+	@ApiResponse(responseCode = "200", description = "Plain-text placeholder response for the student progress view")
 	@GetMapping("/progress")
 	@PreAuthorize("hasRole('STUDENT')")
 	@ResponseStatus(HttpStatus.OK)

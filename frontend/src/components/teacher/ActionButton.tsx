@@ -1,4 +1,9 @@
 import { Paper, Typography, Box } from "@mui/material";
+import type { SxProps, Theme } from "@mui/material/styles";
+import {
+  panelSurfaceActionSx,
+  panelSurfaceSx,
+} from "@/components/ui/panel/panelStyles";
 
 interface ActionButtonProps {
   icon: React.ReactElement;
@@ -13,29 +18,14 @@ export function ActionButton({
   subtitle,
   onClick,
 }: ActionButtonProps) {
+  const actionTileSx = [
+    panelSurfaceSx,
+    panelSurfaceActionSx,
+    { flex: 1 },
+  ] as SxProps<Theme>;
+
   return (
-    <Paper
-      elevation={0}
-      onClick={onClick}
-      sx={{
-        p: 3,
-        borderRadius: 3,
-        border: "1px solid",
-        borderColor: "divider",
-        flex: 1,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 0.5,
-        cursor: "pointer",
-        transition: "box-shadow 0.2s, border-color 0.2s, transform 0.15s",
-        "&:hover": {
-          boxShadow: 4,
-          borderColor: "primary.main",
-          transform: "translateY(-2px)",
-        },
-      }}
-    >
+    <Paper elevation={0} onClick={onClick} sx={actionTileSx}>
       <Box sx={{ color: "primary.main", mb: 0.5 }}>{icon}</Box>
       <Typography variant="body1" fontWeight={700} align="center">
         {title}

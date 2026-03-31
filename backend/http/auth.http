@@ -1,4 +1,18 @@
-### Login User (Store token)
+### Login as Admin (Store admin_token + auth_token)
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "identifier": "admin@freeedu.pl",
+  "password": "password"
+}
+
+> {%
+    client.global.set("admin_token", response.body.token);
+    client.global.set("auth_token", response.body.token);
+%}
+
+### Login as Teacher (Store teacher_token)
 POST http://localhost:8080/api/v1/auth/login
 Content-Type: application/json
 
@@ -8,5 +22,18 @@ Content-Type: application/json
 }
 
 > {%
-    client.global.set("auth_token", response.body.token);
+    client.global.set("teacher_token", response.body.token);
+%}
+
+### Login as Student (Store student_token)
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "identifier": "student@szkola.pl",
+  "password": "password"
+}
+
+> {%
+    client.global.set("student_token", response.body.token);
 %}

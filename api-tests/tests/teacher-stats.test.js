@@ -235,32 +235,32 @@ describe('Teacher Stats API (/api/v1/teacher/stats)', () => {
             setAuthToken(studentToken);
             const response = await apiClient.get('/teacher/stats');
 
-            expect([401, 403]).toContain(response.status);
+            expect(response.status).toBe(403);
         });
     });
 
     // ─── HTTP METHOD ENFORCEMENT ─────────────────────────────────────
 
     describe('HTTP Method Enforcement', () => {
-        it('should reject POST method (405 or 404 or 500)', async () => {
+        it('should reject POST method (405 Method Not Allowed)', async () => {
             setAuthToken(teacherToken);
             const response = await apiClient.post('/teacher/stats');
 
-            expect([404, 405, 500]).toContain(response.status);
+            expect(response.status).toBe(405);
         });
 
-        it('should reject PUT method (405 or 404 or 500)', async () => {
+        it('should reject PUT method (405 Method Not Allowed)', async () => {
             setAuthToken(teacherToken);
             const response = await apiClient.put('/teacher/stats', {});
 
-            expect([404, 405, 500]).toContain(response.status);
+            expect(response.status).toBe(405);
         });
 
-        it('should reject DELETE method (405 or 404 or 500)', async () => {
+        it('should reject DELETE method (405 Method Not Allowed)', async () => {
             setAuthToken(teacherToken);
             const response = await apiClient.delete('/teacher/stats');
 
-            expect([404, 405, 500]).toContain(response.status);
+            expect(response.status).toBe(405);
         });
     });
 

@@ -1,4 +1,5 @@
 import { Paper, Typography } from "@mui/material";
+import { panelSurfaceSx } from "@/components/ui/panel/panelStyles";
 
 interface StatsCardProps {
   label: string;
@@ -11,10 +12,8 @@ export function StatsCard({ label, value, highlightColor }: StatsCardProps) {
     <Paper
       elevation={0}
       sx={{
+        ...panelSurfaceSx,
         p: 2.5,
-        borderRadius: 3,
-        border: "1px solid",
-        borderColor: "divider",
         flex: 1,
         minWidth: 150,
       }}

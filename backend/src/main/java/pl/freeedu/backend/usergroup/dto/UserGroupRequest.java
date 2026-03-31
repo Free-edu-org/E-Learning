@@ -17,4 +17,6 @@ public class UserGroupRequest {
 
 	@NotBlank(message = "Description is required")
 	private String description;
+
+	private Integer teacherId;
 }
