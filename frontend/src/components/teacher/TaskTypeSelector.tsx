@@ -20,7 +20,7 @@ interface TaskTypeOption {
 const taskTypeOptions: TaskTypeOption[] = [
   {
     type: "choose",
-    label: "Wybor",
+    label: "Wybór",
     description: "Uczeń wybiera poprawną odpowiedź",
     icon: <ChooseIcon />,
   },
