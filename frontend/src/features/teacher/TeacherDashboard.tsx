@@ -144,11 +144,20 @@ function getTaskValidationError(
     if (!task.possibleAnswers.trim()) {
       return `${position}: podaj odpowiedzi oddzielone znakiem |.`;
     }
-    if (task.correctAnswer.trim() === "") {
+    const trimmedCorrect = task.correctAnswer.trim();
+    if (trimmedCorrect === "") {
       return `${position}: podaj indeks poprawnej odpowiedzi (np. 0).`;
     }
-    if (!Number.isInteger(Number(task.correctAnswer.trim()))) {
+    const correctIndex = Number(trimmedCorrect);
+    if (!Number.isInteger(correctIndex)) {
       return `${position}: indeks poprawnej odpowiedzi musi być liczbą całkowitą.`;
+    }
+    const answers = task.possibleAnswers
+      .split("|")
+      .map((answer) => answer.trim())
+      .filter(Boolean);
+    if (correctIndex < 0 || correctIndex >= answers.length) {
+      return `${position}: indeks poprawnej odpowiedzi musi wskazywać jedną z dostępnych odpowiedzi (od 0 do ${Math.max(answers.length - 1, 0)}).`;
     }
   }
 
