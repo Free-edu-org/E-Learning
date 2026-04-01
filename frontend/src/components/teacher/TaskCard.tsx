@@ -42,10 +42,26 @@ const taskTypeMeta: Record<
   TaskType,
   { label: string; icon: ReactNode; color: string }
 > = {
-  choose: { label: "Wybór", icon: <ChooseIcon fontSize="small" />, color: "#10b981" },
-  write: { label: "Pisanie", icon: <WriteIcon fontSize="small" />, color: "#6366f1" },
-  scatter: { label: "Rozsypanka", icon: <ScatterIcon fontSize="small" />, color: "#f59e0b" },
-  speak: { label: "Mówienie", icon: <SpeakIcon fontSize="small" />, color: "#ec4899" },
+  choose: {
+    label: "Wybór",
+    icon: <ChooseIcon fontSize="small" />,
+    color: "#10b981",
+  },
+  write: {
+    label: "Pisanie",
+    icon: <WriteIcon fontSize="small" />,
+    color: "#6366f1",
+  },
+  scatter: {
+    label: "Rozsypanka",
+    icon: <ScatterIcon fontSize="small" />,
+    color: "#f59e0b",
+  },
+  speak: {
+    label: "Mówienie",
+    icon: <SpeakIcon fontSize="small" />,
+    color: "#ec4899",
+  },
 };
 
 /* ── Compact header used both in-place and inside DragOverlay ── */
@@ -65,7 +81,10 @@ function TaskCardHeader({
   expanded?: boolean;
   onToggle?: () => void;
   onDelete?: () => void;
-  dragHandleProps?: { ref: React.Ref<HTMLElement>; listeners: Record<string, unknown> };
+  dragHandleProps?: {
+    ref: React.Ref<HTMLElement>;
+    listeners: Record<string, unknown>;
+  };
 }) {
   const meta = taskTypeMeta[task.type];
 
@@ -79,7 +98,10 @@ function TaskCardHeader({
         py: 1.25,
         borderBottom: expanded ? "1px solid" : "none",
         borderColor: (theme) =>
-          alpha(theme.palette.divider, theme.palette.mode === "dark" ? 0.15 : 0.2),
+          alpha(
+            theme.palette.divider,
+            theme.palette.mode === "dark" ? 0.15 : 0.2,
+          ),
         bgcolor: (theme) =>
           alpha(meta.color, theme.palette.mode === "dark" ? 0.06 : 0.04),
         cursor: isDragOverlay ? "grabbing" : "pointer",
@@ -165,7 +187,13 @@ function TaskCardHeader({
 
 /* ── Portal overlay shown while dragging ── */
 
-export function TaskCardOverlay({ task, index }: { task: LessonTaskDraft; index: number }) {
+export function TaskCardOverlay({
+  task,
+  index,
+}: {
+  task: LessonTaskDraft;
+  index: number;
+}) {
   const meta = taskTypeMeta[task.type];
 
   return (
@@ -180,7 +208,12 @@ export function TaskCardOverlay({ task, index }: { task: LessonTaskDraft; index:
         cursor: "grabbing",
       }}
     >
-      <TaskCardHeader task={task} index={index} isDragOverlay expanded={false} />
+      <TaskCardHeader
+        task={task}
+        index={index}
+        isDragOverlay
+        expanded={false}
+      />
     </Box>
   );
 }
@@ -248,7 +281,10 @@ export function TaskCard({ task, index, onChange, onDelete }: TaskCardProps) {
         borderRadius: uiTokens.radius.card,
         border: "1px solid",
         borderColor: (theme) =>
-          alpha(theme.palette.divider, theme.palette.mode === "dark" ? 0.22 : 0.32),
+          alpha(
+            theme.palette.divider,
+            theme.palette.mode === "dark" ? 0.22 : 0.32,
+          ),
         bgcolor: (theme) =>
           alpha(
             theme.palette.common.white,
@@ -273,7 +309,10 @@ export function TaskCard({ task, index, onChange, onDelete }: TaskCardProps) {
         expanded={expanded}
         onToggle={() => setExpanded((prev) => !prev)}
         onDelete={onDelete}
-        dragHandleProps={{ ref: setActivatorNodeRef, listeners: listeners as Record<string, unknown> }}
+        dragHandleProps={{
+          ref: setActivatorNodeRef,
+          listeners: listeners as Record<string, unknown>,
+        }}
       />
 
       {/* Body */}

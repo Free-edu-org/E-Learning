@@ -54,10 +54,8 @@ export function ScatterWordBuilder({
                 borderRadius: uiTokens.radius.control,
                 fontWeight: 600,
                 border: "1.5px solid",
-                borderColor: (theme) =>
-                  alpha(theme.palette.primary.main, 0.3),
-                bgcolor: (theme) =>
-                  alpha(theme.palette.primary.main, 0.06),
+                borderColor: (theme) => alpha(theme.palette.primary.main, 0.3),
+                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.06),
                 transition: "all 0.2s ease",
                 "&:hover": {
                   borderColor: "primary.main",

@@ -130,7 +130,10 @@ function getErrorMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
-function getTaskValidationError(task: LessonTaskDraft, index: number): string | null {
+function getTaskValidationError(
+  task: LessonTaskDraft,
+  index: number,
+): string | null {
   const position = `Zadanie ${index + 1}`;
 
   if (!task.task.trim()) {
@@ -637,7 +640,11 @@ export function TeacherDashboard() {
           onExited={resetCreateDialogState}
           maxWidth="md"
           paperSx={{
-            width: { xs: "calc(100% - 24px)", sm: uiTokens.modal.comfortableWidth, md: 720 },
+            width: {
+              xs: "calc(100% - 24px)",
+              sm: uiTokens.modal.comfortableWidth,
+              md: 720,
+            },
           }}
         >
           <AppDialogHeader

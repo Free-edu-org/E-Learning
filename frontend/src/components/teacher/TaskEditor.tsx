@@ -144,8 +144,7 @@ export function TaskEditor({ tasks, onChange }: TaskEditorProps) {
             p: 2,
             borderRadius: uiTokens.radius.card,
             border: "1px solid",
-            borderColor: (theme) =>
-              alpha(theme.palette.primary.main, 0.2),
+            borderColor: (theme) => alpha(theme.palette.primary.main, 0.2),
             bgcolor: (theme) =>
               alpha(
                 theme.palette.primary.main,
@@ -158,11 +157,7 @@ export function TaskEditor({ tasks, onChange }: TaskEditorProps) {
             animation: "selectorSlide 0.25s ease-out",
           }}
         >
-          <Typography
-            variant="subtitle2"
-            fontWeight={700}
-            sx={{ mb: 1.5 }}
-          >
+          <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.5 }}>
             Wybierz typ zadania
           </Typography>
           <TaskTypeSelector onSelect={handleAddTask} />
@@ -202,7 +197,9 @@ export function TaskEditor({ tasks, onChange }: TaskEditorProps) {
               ? (() => {
                   const idx = tasks.findIndex((t) => t.id === activeId);
                   const task = tasks[idx];
-                  return task ? <TaskCardOverlay task={task} index={idx} /> : null;
+                  return task ? (
+                    <TaskCardOverlay task={task} index={idx} />
+                  ) : null;
                 })()
               : null}
           </DragOverlay>
@@ -217,8 +214,7 @@ export function TaskEditor({ tasks, onChange }: TaskEditorProps) {
             p: 4,
             borderRadius: uiTokens.radius.card,
             border: "2px dashed",
-            borderColor: (theme) =>
-              alpha(theme.palette.divider, 0.3),
+            borderColor: (theme) => alpha(theme.palette.divider, 0.3),
             bgcolor: (theme) =>
               alpha(
                 theme.palette.common.white,
@@ -229,14 +225,11 @@ export function TaskEditor({ tasks, onChange }: TaskEditorProps) {
             transition: "all 0.2s ease",
             "&:hover": {
               borderColor: "primary.main",
-              bgcolor: (theme) =>
-                alpha(theme.palette.primary.main, 0.03),
+              bgcolor: (theme) => alpha(theme.palette.primary.main, 0.03),
             },
           }}
         >
-          <AddIcon
-            sx={{ fontSize: 36, color: "text.disabled", mb: 0.5 }}
-          />
+          <AddIcon sx={{ fontSize: 36, color: "text.disabled", mb: 0.5 }} />
           <Typography variant="body2" color="text.secondary">
             Kliknij aby dodać pierwsze zadanie
           </Typography>

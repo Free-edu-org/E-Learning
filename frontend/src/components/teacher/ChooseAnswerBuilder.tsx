@@ -50,10 +50,7 @@ export function ChooseAnswerBuilder({
     } else if (index < correctIndex) {
       newCorrect = correctIndex - 1;
     }
-    onChange(
-      updated.join("|"),
-      newCorrect >= 0 ? String(newCorrect) : "",
-    );
+    onChange(updated.join("|"), newCorrect >= 0 ? String(newCorrect) : "");
   };
 
   const setCorrect = (index: number) => {
