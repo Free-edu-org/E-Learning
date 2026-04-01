@@ -29,6 +29,7 @@ import { useNavigate } from "react-router-dom";
 import { ApiError } from "@/api/apiClient";
 import { lessonService } from "@/api/lessonService";
 import type { Group, Lesson, TeacherStats } from "@/api/lessonService";
+import { taskService } from "@/api/taskService";
 import { userService, type UserProfile } from "@/api/userService";
 import { ActionButton } from "@/components/teacher/ActionButton";
 import { LessonCard } from "@/components/teacher/LessonCard";
@@ -39,6 +40,8 @@ import {
   type ViewMode,
 } from "@/components/teacher/LessonToolbar";
 import { StatsCard } from "@/components/teacher/StatsCard";
+import { TaskEditor } from "@/components/teacher/TaskEditor";
+import type { LessonTaskDraft } from "@/components/teacher/TaskCard";
 import {
   AppDialog,
   AppDialogBody,
@@ -60,7 +63,7 @@ import { useAppTheme } from "@/context/ThemeContext";
 import { uiTokens } from "@/theme/uiTokens";
 
 interface DialogFeedbackState {
-  severity: "success" | "error";
+  severity: "success" | "error" | "warning";
   message: string;
 }
 
@@ -68,12 +71,14 @@ interface LessonDraft {
   title: string;
   theme: string;
   groupIds: Group[];
+  tasks: LessonTaskDraft[];
 }
 
 const emptyLessonDraft: LessonDraft = {
   title: "",
   theme: "",
   groupIds: [],
+  tasks: [],
 };
 
 const validationMessageTranslations: Record<string, string> = {
@@ -123,6 +128,83 @@ function getErrorMessage(error: unknown, fallback: string) {
     return "Brak połączenia z serwerem.";
   }
   return fallback;
+}
+
+function getTaskValidationError(task: LessonTaskDraft, index: number): string | null {
+  const position = `Zadanie ${index + 1}`;
+
+  if (!task.task.trim()) {
+    return `${position}: treść zadania jest wymagana.`;
+  }
+
+  if (task.type === "choose") {
+    if (!task.possibleAnswers.trim()) {
+      return `${position}: podaj odpowiedzi oddzielone znakiem |.`;
+    }
+    if (task.correctAnswer.trim() === "") {
+      return `${position}: podaj indeks poprawnej odpowiedzi (np. 0).`;
+    }
+    if (!Number.isInteger(Number(task.correctAnswer.trim()))) {
+      return `${position}: indeks poprawnej odpowiedzi musi być liczbą całkowitą.`;
+    }
+  }
+
+  if (task.type === "write") {
+    if (!task.correctAnswer.trim()) {
+      return `${position}: poprawna odpowiedź jest wymagana.`;
+    }
+  }
+
+  if (task.type === "scatter") {
+    if (!task.words.trim()) {
+      return `${position}: podaj słowa oddzielone znakiem |.`;
+    }
+    if (!task.correctAnswer.trim()) {
+      return `${position}: poprawna odpowiedź jest wymagana.`;
+    }
+  }
+
+  return null;
+}
+
+async function createLessonTask(lessonId: number, task: LessonTaskDraft) {
+  const hint = task.hint.trim() || undefined;
+  const section = task.section.trim() || undefined;
+
+  if (task.type === "choose") {
+    return taskService.createChooseTask(lessonId, {
+      task: task.task.trim(),
+      possibleAnswers: task.possibleAnswers.trim(),
+      correctAnswer: Number(task.correctAnswer.trim()),
+      hint,
+      section,
+    });
+  }
+
+  if (task.type === "write") {
+    return taskService.createWriteTask(lessonId, {
+      task: task.task.trim(),
+      correctAnswer: task.correctAnswer.trim(),
+      hint,
+      section,
+    });
+  }
+
+  if (task.type === "scatter") {
+    return taskService.createScatterTask(lessonId, {
+      task: task.task.trim(),
+      words: task.words.trim(),
+      correctAnswer: task.correctAnswer.trim(),
+      hint,
+      section,
+    });
+  }
+
+  return taskService.createSpeakTask(lessonId, {
+    task: task.task.trim(),
+    hint,
+    section,
+  });
 }
 
 export function TeacherDashboard() {
@@ -222,19 +304,57 @@ export function TeacherDashboard() {
   const submitCreateLessonDialog = async () => {
     if (createDialogLoading) return;
 
+    const taskValidationError = lessonDraft.tasks
+      .map((task, index) => getTaskValidationError(task, index))
+      .find((error): error is string => Boolean(error));
+    if (taskValidationError) {
+      setCreateDialogFeedback({
+        severity: "error",
+        message: taskValidationError,
+      });
+      return;
+    }
+
     setCreateDialogFeedback(null);
     setCreateDialogLoading(true);
     try {
       const groupIds = lessonDraft.groupIds.map((g) => g.id);
-      await lessonService.createLesson({
+      const createdLesson = await lessonService.createLesson({
         title: lessonDraft.title,
         theme: lessonDraft.theme,
         groupIds: groupIds.length > 0 ? groupIds : undefined,
       });
-      setCreateDialogFeedback({
-        severity: "success",
-        message: "Lekcja została utworzona.",
-      });
+
+      const taskDrafts = lessonDraft.tasks;
+      if (taskDrafts.length > 0) {
+        const taskResults = await Promise.allSettled(
+          taskDrafts.map((task) => createLessonTask(createdLesson.id, task)),
+        );
+        const failedTaskCount = taskResults.filter(
+          (result) => result.status === "rejected",
+        ).length;
+
+        if (failedTaskCount > 0) {
+          setCreateDialogFeedback({
+            severity: "warning",
+            message:
+              failedTaskCount === taskDrafts.length
+                ? "Lekcja została utworzona, ale nie udało się dodać żadnego zadania."
+                : `Lekcja została utworzona. Nie udało się dodać ${failedTaskCount} z ${taskDrafts.length} zadań.`,
+          });
+        } else {
+          setCreateDialogFeedback({
+            severity: "success",
+            message: `Lekcja i ${taskDrafts.length} zadań zostały utworzone.`,
+          });
+        }
+      } else {
+        setCreateDialogFeedback({
+          severity: "success",
+          message: "Lekcja została utworzona.",
+        });
+      }
+
       await refreshDashboardData();
       window.setTimeout(() => closeCreateLessonDialog(), 900);
     } catch (error) {
@@ -515,9 +635,9 @@ export function TeacherDashboard() {
           open={createDialogOpen}
           onClose={closeCreateLessonDialog}
           onExited={resetCreateDialogState}
-          maxWidth="xs"
+          maxWidth="md"
           paperSx={{
-            width: { xs: "calc(100% - 24px)", sm: uiTokens.modal.compactWidth },
+            width: { xs: "calc(100% - 24px)", sm: uiTokens.modal.comfortableWidth, md: 720 },
           }}
         >
           <AppDialogHeader
@@ -617,6 +737,17 @@ export function TeacherDashboard() {
                       }
                     />
                   )}
+                />
+              </FormSection>
+              <FormSection
+                title="Zadania (opcjonalnie)"
+                description="Dodaj zadania, które mają zostać utworzone razem z lekcją."
+              >
+                <TaskEditor
+                  tasks={lessonDraft.tasks}
+                  onChange={(tasks) =>
+                    setLessonDraft((current) => ({ ...current, tasks }))
+                  }
                 />
               </FormSection>
             </Stack>
