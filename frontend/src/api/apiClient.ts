@@ -72,3 +72,44 @@ export async function fetchApi<T>(
 
   return JSON.parse(rawBody) as T;
 }
+
+export async function fetchApiText(
+  endpoint: string,
+  options: RequestInit = {},
+): Promise<string> {
+  const url = `${API_BASE_URL}${endpoint}`;
+
+  const token = localStorage.getItem("token");
+  const headers = new Headers(options.headers);
+  if (token && !headers.has("Authorization")) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(url, { ...options, headers });
+  } catch {
+    throw new Error("NETWORK_ERROR");
+  }
+
+  if (!response.ok) {
+    let problem: ProblemDetail;
+    try {
+      problem = await response.json();
+    } catch {
+      problem = {
+        status: response.status,
+        title: response.statusText,
+        detail: "WystÄ…piĹ‚ nieoczekiwany bĹ‚Ä…d. SprĂłbuj ponownie pĂłĹşniej.",
+      };
+    }
+
+    if (response.status === 401 && problem.code === "TOKEN_EXPIRED") {
+      window.dispatchEvent(new Event("auth:expired"));
+    }
+
+    throw new ApiError(problem);
+  }
+
+  return response.text();
+}

@@ -15,6 +15,9 @@ public interface LessonRepository extends JpaRepository<Lesson, Integer> {
 	@EntityGraph(attributePaths = {"teacher"})
 	List<Lesson> findByTeacher_Id(Integer teacherId);
 
+	@EntityGraph(attributePaths = {"teacher"})
+	List<Lesson> findByIdIn(List<Integer> ids);
+
 	@Override
 	@EntityGraph(attributePaths = {"teacher"})
 	Optional<Lesson> findById(Integer id);
