@@ -1,10 +1,11 @@
-﻿import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState, useCallback } from "react";
 import {
   Alert,
   Autocomplete,
   Box,
   Button,
   Chip,
+  CircularProgress,
   Container,
   Grid,
   Skeleton,
@@ -18,6 +19,8 @@ import {
   AddCircleOutlined as AddIcon,
   AutoAwesomeOutlined as SparklesIcon,
   DarkMode as DarkModeIcon,
+  DeleteOutline as DeleteIcon,
+  EditOutlined as EditLessonIcon,
   GroupOutlined as GroupIcon,
   LightMode as LightModeIcon,
   LogoutOutlined as LogoutIcon,
@@ -30,6 +33,7 @@ import { ApiError } from "@/api/apiClient";
 import { lessonService } from "@/api/lessonService";
 import type { Group, Lesson, TeacherStats } from "@/api/lessonService";
 import { taskService } from "@/api/taskService";
+import type { LessonTasksResponse } from "@/api/taskService";
 import { userService, type UserProfile } from "@/api/userService";
 import { ActionButton } from "@/components/teacher/ActionButton";
 import { LessonCard } from "@/components/teacher/LessonCard";
@@ -219,6 +223,118 @@ async function createLessonTask(lessonId: number, task: LessonTaskDraft) {
   });
 }
 
+async function updateLessonTask(
+  lessonId: number,
+  backendId: number,
+  task: LessonTaskDraft,
+) {
+  const hint = task.hint.trim() || undefined;
+  const section = task.section.trim() || undefined;
+
+  if (task.type === "choose") {
+    return taskService.updateChooseTask(lessonId, backendId, {
+      task: task.task.trim(),
+      possibleAnswers: task.possibleAnswers.trim(),
+      correctAnswer: Number(task.correctAnswer.trim()),
+      hint,
+      section,
+    });
+  }
+  if (task.type === "write") {
+    return taskService.updateWriteTask(lessonId, backendId, {
+      task: task.task.trim(),
+      correctAnswer: task.correctAnswer.trim(),
+      hint,
+      section,
+    });
+  }
+  if (task.type === "scatter") {
+    return taskService.updateScatterTask(lessonId, backendId, {
+      task: task.task.trim(),
+      words: task.words.trim(),
+      correctAnswer: task.correctAnswer.trim(),
+      hint,
+      section,
+    });
+  }
+  return taskService.updateSpeakTask(lessonId, backendId, {
+    task: task.task.trim(),
+    hint,
+    section,
+  });
+}
+
+/**
+ * Convert backend LessonTasksResponse to flat LessonTaskDraft[].
+ * Each draft gets `backendId:<type>:<id>` as its `id` so we can track
+ * which ones already exist on the server.
+ */
+function tasksResponseToDrafts(
+  response: LessonTasksResponse,
+): LessonTaskDraft[] {
+  const drafts: LessonTaskDraft[] = [];
+  for (const section of response.sections) {
+    const sec = section.section ?? "";
+    for (const t of section.chooseTasks) {
+      drafts.push({
+        id: `backendId:choose:${t.id}`,
+        type: "choose",
+        task: t.task,
+        possibleAnswers: t.possibleAnswers,
+        correctAnswer: t.correctAnswer != null ? String(t.correctAnswer) : "",
+        words: "",
+        hint: t.hint ?? "",
+        section: sec,
+      });
+    }
+    for (const t of section.writeTasks) {
+      drafts.push({
+        id: `backendId:write:${t.id}`,
+        type: "write",
+        task: t.task,
+        possibleAnswers: "",
+        correctAnswer: t.correctAnswer ?? "",
+        words: "",
+        hint: t.hint ?? "",
+        section: sec,
+      });
+    }
+    for (const t of section.scatterTasks) {
+      drafts.push({
+        id: `backendId:scatter:${t.id}`,
+        type: "scatter",
+        task: t.task,
+        possibleAnswers: "",
+        correctAnswer: t.correctAnswer ?? "",
+        words: t.words,
+        hint: t.hint ?? "",
+        section: sec,
+      });
+    }
+    for (const t of section.speakTasks) {
+      drafts.push({
+        id: `backendId:speak:${t.id}`,
+        type: "speak",
+        task: t.task,
+        possibleAnswers: "",
+        correctAnswer: "",
+        words: "",
+        hint: t.hint ?? "",
+        section: sec,
+      });
+    }
+  }
+  return drafts;
+}
+
+function parseBackendDraftId(
+  draftId: string,
+): { type: string; backendId: number } | null {
+  const match = /^backendId:(\w+):(\d+)$/.exec(draftId);
+  if (!match) return null;
+  return { type: match[1], backendId: Number(match[2]) };
+}
+
 export function TeacherDashboard() {
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -245,6 +361,25 @@ export function TeacherDashboard() {
   const [lessonDraft, setLessonDraft] = useState<LessonDraft>(emptyLessonDraft);
   const [createDialogLoading, setCreateDialogLoading] = useState(false);
   const [createDialogFeedback, setCreateDialogFeedback] =
+    useState<DialogFeedbackState | null>(null);
+
+  // ── Edit dialog state ──
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
+  const [editDraft, setEditDraft] = useState<LessonDraft>(emptyLessonDraft);
+  const [editOriginalTasks, setEditOriginalTasks] = useState<LessonTaskDraft[]>(
+    [],
+  );
+  const [editDialogLoading, setEditDialogLoading] = useState(false);
+  const [editDialogFeedback, setEditDialogFeedback] =
+    useState<DialogFeedbackState | null>(null);
+  const [editTasksLoading, setEditTasksLoading] = useState(false);
+
+  // ── Delete confirmation state ──
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingLesson, setDeletingLesson] = useState<Lesson | null>(null);
+  const [deleteDialogLoading, setDeleteDialogLoading] = useState(false);
+  const [deleteDialogFeedback, setDeleteDialogFeedback] =
     useState<DialogFeedbackState | null>(null);
 
   useEffect(() => {
@@ -376,6 +511,199 @@ export function TeacherDashboard() {
       });
     } finally {
       setCreateDialogLoading(false);
+    }
+  };
+
+  // ── Edit dialog handlers ──
+
+  const openEditLessonDialog = useCallback(async (lesson: Lesson) => {
+    setEditingLesson(lesson);
+    setEditDraft({
+      title: lesson.title,
+      theme: lesson.theme,
+      groupIds: lesson.groups,
+      tasks: [],
+    });
+    setEditDialogFeedback(null);
+    setEditDialogOpen(true);
+    setEditTasksLoading(true);
+
+    try {
+      const tasksResponse = await taskService.getLessonTasks(lesson.id);
+      const drafts = tasksResponseToDrafts(tasksResponse);
+      setEditDraft((prev) => ({ ...prev, tasks: drafts }));
+      setEditOriginalTasks(drafts);
+    } catch {
+      setEditDialogFeedback({
+        severity: "warning",
+        message: "Nie udało się załadować zadań. Możesz edytować dane lekcji.",
+      });
+      setEditOriginalTasks([]);
+    } finally {
+      setEditTasksLoading(false);
+    }
+  }, []);
+
+  const closeEditLessonDialog = () => {
+    if (editDialogLoading) return;
+    setEditDialogOpen(false);
+  };
+
+  const resetEditDialogState = () => {
+    setEditingLesson(null);
+    setEditDraft(emptyLessonDraft);
+    setEditOriginalTasks([]);
+    setEditDialogFeedback(null);
+  };
+
+  const submitEditLessonDialog = async () => {
+    if (editDialogLoading || !editingLesson) return;
+
+    const taskValidationError = editDraft.tasks
+      .map((task, index) => getTaskValidationError(task, index))
+      .find((error): error is string => Boolean(error));
+    if (taskValidationError) {
+      setEditDialogFeedback({
+        severity: "error",
+        message: taskValidationError,
+      });
+      return;
+    }
+
+    setEditDialogFeedback(null);
+    setEditDialogLoading(true);
+
+    try {
+      const lessonId = editingLesson.id;
+      const groupIds = editDraft.groupIds.map((g) => g.id);
+
+      // 1. Update lesson metadata
+      await lessonService.updateLesson(lessonId, {
+        title: editDraft.title,
+        theme: editDraft.theme,
+        groupIds,
+      });
+
+      // 2. Diff tasks: find creates, updates, deletes
+      const originalIds = new Set(editOriginalTasks.map((t) => t.id));
+      const currentIds = new Set(editDraft.tasks.map((t) => t.id));
+
+      const tasksToDelete = editOriginalTasks.filter(
+        (t) => !currentIds.has(t.id),
+      );
+      const tasksToCreate = editDraft.tasks.filter(
+        (t) => !parseBackendDraftId(t.id),
+      );
+      const tasksToUpdate = editDraft.tasks.filter(
+        (t) => parseBackendDraftId(t.id) && originalIds.has(t.id),
+      );
+
+      const allTaskOps: Promise<unknown>[] = [];
+
+      // Deletes
+      for (const task of tasksToDelete) {
+        const parsed = parseBackendDraftId(task.id);
+        if (parsed) {
+          allTaskOps.push(
+            taskService.deleteTask(lessonId, task.type, parsed.backendId),
+          );
+        }
+      }
+
+      // Updates
+      for (const task of tasksToUpdate) {
+        const parsed = parseBackendDraftId(task.id);
+        if (parsed) {
+          allTaskOps.push(updateLessonTask(lessonId, parsed.backendId, task));
+        }
+      }
+
+      // Creates
+      for (const task of tasksToCreate) {
+        allTaskOps.push(createLessonTask(lessonId, task));
+      }
+
+      if (allTaskOps.length > 0) {
+        const results = await Promise.allSettled(allTaskOps);
+        const failed = results.filter((r) => r.status === "rejected").length;
+        if (failed > 0) {
+          setEditDialogFeedback({
+            severity: "warning",
+            message: `Lekcja zaktualizowana. Nie udało się przetworzyć ${failed} z ${allTaskOps.length} operacji na zadaniach.`,
+          });
+        } else {
+          setEditDialogFeedback({
+            severity: "success",
+            message: "Lekcja i zadania zostały zaktualizowane.",
+          });
+        }
+      } else {
+        setEditDialogFeedback({
+          severity: "success",
+          message: "Lekcja została zaktualizowana.",
+        });
+      }
+
+      await refreshDashboardData();
+      window.setTimeout(() => closeEditLessonDialog(), 900);
+    } catch (error) {
+      setEditDialogFeedback({
+        severity: "error",
+        message: getErrorMessage(error, "Nie udało się zaktualizować lekcji."),
+      });
+    } finally {
+      setEditDialogLoading(false);
+    }
+  };
+
+  // ── Toggle lesson status ──
+
+  const handleToggleLessonStatus = useCallback(async (lesson: Lesson) => {
+    try {
+      await lessonService.updateLessonStatus(lesson.id, !lesson.isActive);
+      await refreshDashboardData();
+    } catch {
+      // silently ignore, user can retry
+    }
+  }, []);
+
+  // ── Delete dialog handlers ──
+
+  const openDeleteDialog = useCallback((lesson: Lesson) => {
+    setDeletingLesson(lesson);
+    setDeleteDialogFeedback(null);
+    setDeleteDialogOpen(true);
+  }, []);
+
+  const closeDeleteDialog = () => {
+    if (deleteDialogLoading) return;
+    setDeleteDialogOpen(false);
+  };
+
+  const resetDeleteDialogState = () => {
+    setDeletingLesson(null);
+    setDeleteDialogFeedback(null);
+  };
+
+  const submitDeleteLesson = async () => {
+    if (deleteDialogLoading || !deletingLesson) return;
+    setDeleteDialogLoading(true);
+    setDeleteDialogFeedback(null);
+    try {
+      await lessonService.deleteLesson(deletingLesson.id);
+      setDeleteDialogFeedback({
+        severity: "success",
+        message: "Lekcja została usunięta.",
+      });
+      await refreshDashboardData();
+      window.setTimeout(() => closeDeleteDialog(), 700);
+    } catch (error) {
+      setDeleteDialogFeedback({
+        severity: "error",
+        message: getErrorMessage(error, "Nie udało się usunąć lekcji."),
+      });
+    } finally {
+      setDeleteDialogLoading(false);
     }
   };
 
@@ -631,14 +959,26 @@ export function TeacherDashboard() {
         ) : viewMode === "list" ? (
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
             {displayedLessons.map((lesson) => (
-              <LessonCard key={lesson.id} lesson={lesson} listView />
+              <LessonCard
+                key={lesson.id}
+                lesson={lesson}
+                listView
+                onEdit={openEditLessonDialog}
+                onDelete={openDeleteDialog}
+                onToggleStatus={handleToggleLessonStatus}
+              />
             ))}
           </Box>
         ) : (
           <Grid container spacing={2}>
             {displayedLessons.map((lesson) => (
               <Grid key={lesson.id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
-                <LessonCard lesson={lesson} />
+                <LessonCard
+                  lesson={lesson}
+                  onEdit={openEditLessonDialog}
+                  onDelete={openDeleteDialog}
+                  onToggleStatus={handleToggleLessonStatus}
+                />
               </Grid>
             ))}
           </Grid>
@@ -784,6 +1124,207 @@ export function TeacherDashboard() {
                 sx={panelFooterButtonSx}
               >
                 {createDialogLoading ? "Tworzenie..." : "Utwórz lekcję"}
+              </Button>
+            </FormActions>
+          </AppDialogFooter>
+        </AppDialog>
+
+        {/* ── Edit Lesson Dialog ── */}
+        <AppDialog
+          open={editDialogOpen}
+          onClose={closeEditLessonDialog}
+          onExited={resetEditDialogState}
+          maxWidth="md"
+          paperSx={{
+            width: {
+              xs: "calc(100% - 24px)",
+              sm: uiTokens.modal.comfortableWidth,
+              md: 720,
+            },
+          }}
+        >
+          <AppDialogHeader
+            icon={<EditLessonIcon />}
+            title="Edytuj lekcję"
+            subtitle="Zmień dane lekcji, przypisanie do grup lub zadania."
+            badge={
+              <Chip
+                label="Edycja"
+                size="small"
+                color="primary"
+                variant="outlined"
+                sx={{ fontWeight: 700 }}
+              />
+            }
+          />
+          <AppDialogBody>
+            {editDialogFeedback && (
+              <AppDialogStatus severity={editDialogFeedback.severity}>
+                {editDialogFeedback.message}
+              </AppDialogStatus>
+            )}
+            <Stack spacing={2.25}>
+              <FormSection>
+                <Stack spacing={2.25}>
+                  <FormField>
+                    <TextField
+                      label="Tytuł lekcji"
+                      value={editDraft.title}
+                      onChange={(event) =>
+                        setEditDraft((current) => ({
+                          ...current,
+                          title: event.target.value,
+                        }))
+                      }
+                      fullWidth
+                    />
+                  </FormField>
+                  <FormField>
+                    <TextField
+                      label="Temat lekcji"
+                      value={editDraft.theme}
+                      onChange={(event) =>
+                        setEditDraft((current) => ({
+                          ...current,
+                          theme: event.target.value,
+                        }))
+                      }
+                      multiline
+                      minRows={3}
+                      fullWidth
+                    />
+                  </FormField>
+                </Stack>
+              </FormSection>
+              <FormSection
+                title="Przypisanie do grup"
+                description="Wybierz grupy, które mają mieć dostęp do tej lekcji."
+              >
+                <Autocomplete
+                  multiple
+                  size="small"
+                  options={availableGroups}
+                  value={editDraft.groupIds}
+                  onChange={(_, value) =>
+                    setEditDraft((current) => ({
+                      ...current,
+                      groupIds: value,
+                    }))
+                  }
+                  getOptionLabel={(option) => option.name}
+                  isOptionEqualToValue={(option, value) =>
+                    option.id === value.id
+                  }
+                  disableCloseOnSelect
+                  noOptionsText="Brak dostępnych grup"
+                  renderTags={(tagValue, getTagProps) =>
+                    tagValue.map((option, index) => {
+                      const { key, ...rest } = getTagProps({ index });
+                      return (
+                        <Chip
+                          key={key}
+                          label={option.name}
+                          size="small"
+                          sx={{ fontSize: "0.7rem", height: 20 }}
+                          {...rest}
+                        />
+                      );
+                    })
+                  }
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      placeholder={
+                        editDraft.groupIds.length === 0
+                          ? "Wybierz grupy..."
+                          : undefined
+                      }
+                    />
+                  )}
+                />
+              </FormSection>
+              <FormSection
+                title="Zadania"
+                description="Edytuj, dodaj lub usuń zadania przypisane do lekcji."
+              >
+                {editTasksLoading ? (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "center",
+                      py: 4,
+                    }}
+                  >
+                    <CircularProgress size={32} />
+                  </Box>
+                ) : (
+                  <TaskEditor
+                    tasks={editDraft.tasks}
+                    onChange={(tasks) =>
+                      setEditDraft((current) => ({ ...current, tasks }))
+                    }
+                  />
+                )}
+              </FormSection>
+            </Stack>
+          </AppDialogBody>
+          <AppDialogFooter>
+            <FormActions>
+              <Button
+                onClick={closeEditLessonDialog}
+                sx={{ ...panelFooterButtonSx, color: "text.secondary" }}
+              >
+                Anuluj
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<SaveIcon />}
+                onClick={submitEditLessonDialog}
+                disabled={editDialogLoading || editTasksLoading}
+                sx={panelFooterButtonSx}
+              >
+                {editDialogLoading ? "Zapisywanie..." : "Zapisz zmiany"}
+              </Button>
+            </FormActions>
+          </AppDialogFooter>
+        </AppDialog>
+
+        {/* ── Delete Lesson Confirmation Dialog ── */}
+        <AppDialog
+          open={deleteDialogOpen}
+          onClose={closeDeleteDialog}
+          onExited={resetDeleteDialogState}
+          maxWidth="xs"
+        >
+          <AppDialogHeader
+            icon={<DeleteIcon />}
+            title="Usuń lekcję"
+            subtitle={`Czy na pewno chcesz usunąć lekcję "${deletingLesson?.title ?? ""}"? Ta operacja jest nieodwracalna.`}
+          />
+          <AppDialogBody>
+            {deleteDialogFeedback && (
+              <AppDialogStatus severity={deleteDialogFeedback.severity}>
+                {deleteDialogFeedback.message}
+              </AppDialogStatus>
+            )}
+          </AppDialogBody>
+          <AppDialogFooter>
+            <FormActions>
+              <Button
+                onClick={closeDeleteDialog}
+                sx={{ ...panelFooterButtonSx, color: "text.secondary" }}
+              >
+                Anuluj
+              </Button>
+              <Button
+                variant="contained"
+                color="error"
+                startIcon={<DeleteIcon />}
+                onClick={submitDeleteLesson}
+                disabled={deleteDialogLoading}
+                sx={panelFooterButtonSx}
+              >
+                {deleteDialogLoading ? "Usuwanie..." : "Usuń lekcję"}
               </Button>
             </FormActions>
           </AppDialogFooter>
