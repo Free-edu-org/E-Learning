@@ -39,4 +39,18 @@ export const lessonService = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+  updateLesson: (id: number, payload: CreateLessonRequest) =>
+    fetchApi<Lesson>(`/api/v1/lessons/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+  updateLessonStatus: (id: number, isActive: boolean) =>
+    fetchApi<void>(`/api/v1/lessons/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ isActive }),
+    }),
+  deleteLesson: (id: number) =>
+    fetchApi<void>(`/api/v1/lessons/${id}`, {
+      method: "DELETE",
+    }),
 };

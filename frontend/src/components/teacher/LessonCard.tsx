@@ -11,7 +11,7 @@
   Typography,
 } from "@mui/material";
 import {
-  BarChartOutlined as BarChartIcon,
+  DeleteOutline as DeleteIcon,
   EditOutlined as EditIcon,
   MenuBook as BookIcon,
 } from "@mui/icons-material";
@@ -28,6 +28,9 @@ import {
 interface LessonCardProps {
   lesson: Lesson;
   listView?: boolean;
+  onEdit?: (lesson: Lesson) => void;
+  onDelete?: (lesson: Lesson) => void;
+  onToggleStatus?: (lesson: Lesson) => void;
 }
 
 function formatDate(dateStr: string): string {
@@ -105,7 +108,13 @@ function GroupChips({ groups }: { groups: Lesson["groups"] }) {
   );
 }
 
-export function LessonCard({ lesson, listView = false }: LessonCardProps) {
+export function LessonCard({
+  lesson,
+  listView = false,
+  onEdit,
+  onDelete,
+  onToggleStatus,
+}: LessonCardProps) {
   if (listView) {
     return (
       <Box
@@ -161,15 +170,17 @@ export function LessonCard({ lesson, listView = false }: LessonCardProps) {
             size="small"
             startIcon={<EditIcon fontSize="small" />}
             sx={{ ...panelFooterButtonSx, color: "primary.main" }}
+            onClick={() => onEdit?.(lesson)}
           >
             Edytuj
           </Button>
           <Button
             size="small"
-            startIcon={<BarChartIcon fontSize="small" />}
-            sx={{ ...panelFooterButtonSx, color: "primary.main" }}
+            startIcon={<DeleteIcon fontSize="small" />}
+            sx={{ ...panelFooterButtonSx, color: "error.main" }}
+            onClick={() => onDelete?.(lesson)}
           >
-            Wyniki
+            Usuń
           </Button>
         </Box>
       </Box>
@@ -248,8 +259,7 @@ export function LessonCard({ lesson, listView = false }: LessonCardProps) {
             <Switch
               size="small"
               checked={lesson.isActive}
-              readOnly
-              sx={{ pointerEvents: "none" }}
+              onChange={() => onToggleStatus?.(lesson)}
             />
           </Box>
         </Box>
@@ -279,18 +289,20 @@ export function LessonCard({ lesson, listView = false }: LessonCardProps) {
             startIcon={<EditIcon fontSize="small" />}
             fullWidth
             sx={panelFooterButtonSx}
+            onClick={() => onEdit?.(lesson)}
           >
             Edytuj
           </Button>
           <Button
             size="small"
             variant="outlined"
-            color="primary"
-            startIcon={<BarChartIcon fontSize="small" />}
+            color="error"
+            startIcon={<DeleteIcon fontSize="small" />}
             fullWidth
             sx={panelFooterButtonSx}
+            onClick={() => onDelete?.(lesson)}
           >
-            Wyniki
+            Usuń
           </Button>
         </Box>
       </CardActions>
