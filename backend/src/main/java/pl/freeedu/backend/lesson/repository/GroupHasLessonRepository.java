@@ -1,8 +1,10 @@
 package pl.freeedu.backend.lesson.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 import pl.freeedu.backend.lesson.dto.GroupDto;
 import pl.freeedu.backend.lesson.model.GroupHasLesson;
 
@@ -13,6 +15,8 @@ public interface GroupHasLessonRepository extends JpaRepository<GroupHasLesson, 
 
 	List<GroupHasLesson> findByLessonId(Integer lessonId);
 
+	@Modifying
+	@Transactional
 	void deleteByLessonId(Integer lessonId);
 
 	@Query("SELECT new pl.freeedu.backend.lesson.dto.GroupDto(g.id, g.name) "
