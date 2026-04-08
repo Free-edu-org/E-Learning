@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import {
   Alert,
   Autocomplete,
@@ -10,7 +10,6 @@ import {
   Grid,
   Skeleton,
   Stack,
-  Switch,
   TextField,
   Typography,
 } from "@mui/material";
@@ -18,15 +17,11 @@ import { useTheme } from "@mui/material/styles";
 import {
   AddCircleOutlined as AddIcon,
   AutoAwesomeOutlined as SparklesIcon,
-  DarkMode as DarkModeIcon,
   DeleteOutline as DeleteIcon,
   EditOutlined as EditLessonIcon,
   GroupOutlined as GroupIcon,
-  LightMode as LightModeIcon,
-  LogoutOutlined as LogoutIcon,
   PersonAddOutlined as PersonAddIcon,
   SaveOutlined as SaveIcon,
-  SchoolOutlined as SchoolIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { ApiError } from "@/api/apiClient";
@@ -58,12 +53,12 @@ import {
   FormField,
   FormSection,
 } from "@/components/ui/form/FormLayout";
+import { DashboardHeader } from "@/components/ui/panel/DashboardHeader";
+import { DashboardTopBar } from "@/components/ui/panel/DashboardTopBar";
 import {
   panelFooterButtonSx,
-  panelSurfaceSx,
 } from "@/components/ui/panel/panelStyles";
 import { useAuth } from "@/context/AuthContext";
-import { useAppTheme } from "@/context/ThemeContext";
 import { uiTokens } from "@/theme/uiTokens";
 
 interface DialogFeedbackState {
@@ -339,7 +334,6 @@ export function TeacherDashboard() {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const theme = useTheme();
-  const { toggleColorMode } = useAppTheme();
 
   const [user, setUser] = useState<UserProfile | null>(null);
   const [stats, setStats] = useState<TeacherStats | null>(null);
@@ -763,98 +757,16 @@ export function TeacherDashboard() {
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: pageBg, pb: 6 }}>
       <Container maxWidth="xl" sx={{ pt: 4, position: "relative" }}>
-        <Box
-          sx={{
-            position: { xs: "relative", md: "absolute" },
-            top: { md: 32 },
-            right: { md: 24 },
-            mb: { xs: 3, md: 0 },
-            display: "flex",
-            justifyContent: "flex-end",
-            alignItems: "center",
-            gap: 3,
-            zIndex: 10,
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center" }}>
-            <LightModeIcon
-              fontSize="small"
-              sx={{
-                color:
-                  theme.palette.mode === "light"
-                    ? "primary.main"
-                    : "text.disabled",
-                mr: 0.5,
-              }}
-            />
-            <Switch
-              size="small"
-              checked={theme.palette.mode === "dark"}
-              onChange={toggleColorMode}
-            />
-            <DarkModeIcon
-              fontSize="small"
-              sx={{
-                color:
-                  theme.palette.mode === "dark"
-                    ? "primary.main"
-                    : "text.disabled",
-                ml: 0.5,
-              }}
-            />
-          </Box>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<LogoutIcon />}
-            onClick={handleLogout}
-            sx={{
-              borderRadius: 2,
-              textTransform: "none",
-              fontWeight: 600,
-              bgcolor: "background.paper",
-            }}
-          >
-            Wyloguj
-          </Button>
-        </Box>
+        {/* ── Top bar: dark mode toggle + logout ── */}
+        <DashboardTopBar onLogout={handleLogout} />
 
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            mb: 4,
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            <Box
-              sx={{
-                ...panelSurfaceSx,
-                width: 44,
-                height: 44,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: 1,
-              }}
-            >
-              <SchoolIcon sx={{ color: "primary.main" }} />
-            </Box>
-            <Box>
-              {loadingUser ? (
-                <Skeleton width={180} height={28} />
-              ) : (
-                <Typography variant="h6" fontWeight={700} lineHeight={1.2}>
-                  Witaj, {user?.username ?? "Nauczyciel"}!
-                </Typography>
-              )}
-              <Typography variant="caption" color="text.secondary">
-                Panel nauczyciela
-              </Typography>
-            </Box>
-          </Box>
-        </Box>
+        {/* ── Greeting header ── */}
+        <DashboardHeader
+          loading={loadingUser}
+          username={user?.username}
+          subtitle="Panel nauczyciela"
+          fallbackName="Nauczycielu"
+        />
 
         {errorUser && (
           <Alert severity="warning" sx={{ mb: 3, borderRadius: 2 }}>

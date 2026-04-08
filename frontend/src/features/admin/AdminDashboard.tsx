@@ -17,7 +17,6 @@ import {
   MenuItem,
   Paper,
   Stack,
-  Switch,
   Tab,
   Tabs,
   TextField,
@@ -28,13 +27,10 @@ import {
 import {
   AddCircleOutline as AddCircleIcon,
   AutoAwesomeOutlined as SparklesIcon,
-  DarkMode as DarkModeIcon,
   DeleteOutline as DeleteIcon,
   EditOutlined as EditIcon,
   GroupOutlined as GroupIcon,
-  LightMode as LightModeIcon,
   ListOutlined as ListIcon,
-  LogoutOutlined as LogoutIcon,
   ManageAccountsOutlined as ManageAccountsIcon,
   PeopleOutline as PeopleIcon,
   PersonOutline as PersonIcon,
@@ -80,6 +76,8 @@ import {
   FormField,
   FormSection,
 } from "@/components/ui/form/FormLayout";
+import { DashboardHeader } from "@/components/ui/panel/DashboardHeader";
+import { DashboardTopBar } from "@/components/ui/panel/DashboardTopBar";
 import {
   outlinedMetaChipSx,
   panelCardFooterSx,
@@ -99,7 +97,6 @@ import {
   panelTwoLinesSx,
 } from "@/components/ui/panel/panelStyles";
 import { useAuth } from "@/context/AuthContext";
-import { useAppTheme } from "@/context/ThemeContext";
 import { uiTokens } from "@/theme/uiTokens";
 
 type UserRole = "TEACHER" | "STUDENT";
@@ -246,7 +243,6 @@ export function AdminDashboard() {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const theme = useTheme();
-  const { toggleColorMode } = useAppTheme();
 
   const [activeTab, setActiveTab] = useState<AdminTab>("users");
   const [userFilter, setUserFilter] = useState<UserFilter>("ALL");
@@ -869,88 +865,17 @@ export function AdminDashboard() {
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: pageBg, pb: 6 }}>
       <Container maxWidth="xl" sx={{ pt: 4, position: "relative" }}>
-        <Box
-          sx={{
-            position: { xs: "relative", md: "absolute" },
-            top: { md: 32 },
-            right: { md: 24 },
-            mb: { xs: 3, md: 0 },
-            display: "flex",
-            justifyContent: "flex-end",
-            alignItems: "center",
-            gap: 3,
-            zIndex: 10,
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center" }}>
-            <LightModeIcon
-              fontSize="small"
-              sx={{
-                color:
-                  theme.palette.mode === "light"
-                    ? "primary.main"
-                    : "text.disabled",
-                mr: 0.5,
-              }}
-            />
-            <Switch
-              size="small"
-              checked={theme.palette.mode === "dark"}
-              onChange={toggleColorMode}
-            />
-            <DarkModeIcon
-              fontSize="small"
-              sx={{
-                color:
-                  theme.palette.mode === "dark"
-                    ? "primary.main"
-                    : "text.disabled",
-                ml: 0.5,
-              }}
-            />
-          </Box>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<LogoutIcon />}
-            onClick={handleLogout}
-            sx={{
-              borderRadius: 2,
-              textTransform: "none",
-              fontWeight: 600,
-              bgcolor: "background.paper",
-            }}
-          >
-            Wyloguj
-          </Button>
-        </Box>
+        {/* ── Top bar: dark mode toggle + logout ── */}
+        <DashboardTopBar onLogout={handleLogout} />
 
-        <Box sx={{ mb: 4 }}>
-          <Stack direction="row" spacing={1.5} alignItems="center">
-            <Box
-              sx={{
-                width: 44,
-                height: 44,
-                borderRadius: 2,
-                bgcolor: "background.paper",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: 1,
-              }}
-            >
-              <ManageAccountsIcon sx={{ color: "primary.main" }} />
-            </Box>
-            <Box>
-              <Typography variant="h6" fontWeight={700} lineHeight={1.2}>
-                Witaj, {currentUser?.username ?? "Administrator"}!
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Panel administratora
-              </Typography>
-            </Box>
-          </Stack>
-        </Box>
+        {/* ── Greeting header ── */}
+        <DashboardHeader
+          loading={false}
+          username={currentUser?.username}
+          subtitle="Panel administratora"
+          fallbackName="Administratorze"
+          icon={<ManageAccountsIcon sx={{ color: "primary.main" }} />}
+        />
 
         {currentUserError && (
           <Alert severity="warning" sx={{ mb: 3, borderRadius: 3 }}>

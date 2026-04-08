@@ -5,28 +5,38 @@ import {
   Button,
   Chip,
   Container,
-  Divider,
+  Dialog,
+  DialogContent,
+  DialogTitle,
   Grid,
+  IconButton,
+  MenuItem,
   Paper,
+  Select,
   Skeleton,
   Stack,
-  Switch,
+  TextField,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
 import {
   AutoStoriesOutlined as LessonIcon,
   CheckCircleOutlined as CompletedIcon,
-  DarkMode as DarkModeIcon,
+  CloseOutlined as CloseIcon,
+  EditOutlined as EditIcon,
+  EmailOutlined as EmailIcon,
+  GroupOutlined as GroupIcon,
   InsightsOutlined as InsightsIcon,
-  LightMode as LightModeIcon,
-  LogoutOutlined as LogoutIcon,
-  PlayCircleOutlineOutlined as ProgressIcon,
-  SchoolOutlined as SchoolIcon,
-  TrendingUpOutlined as TrendingUpIcon,
+  LockOutlined as LockIcon,
+  PersonOutlined as PersonIcon,
+  SaveOutlined as SaveIcon,
+  SortOutlined as SortIcon,
+  TodayOutlined as TodayIcon,
+  TrendingUpOutlined as ResultIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
-import { ApiError } from "@/api/apiClient";
 import {
   studentService,
   type StudentLesson,
@@ -34,50 +44,318 @@ import {
   type StudentStats,
 } from "@/api/studentService";
 import { userService, type UserProfile } from "@/api/userService";
-import { StatsCard } from "@/components/teacher/StatsCard";
+import { DashboardHeader } from "@/components/ui/panel/DashboardHeader";
+import { DashboardTopBar } from "@/components/ui/panel/DashboardTopBar";
 import {
-  outlinedMetaChipSx,
   panelCardFooterSx,
   panelFooterButtonSx,
   panelGridCardContentSx,
   panelGridCardSx,
   panelSurfaceSx,
+  panelToolbarSx,
 } from "@/components/ui/panel/panelStyles";
 import { useAuth } from "@/context/AuthContext";
-import { useAppTheme } from "@/context/ThemeContext";
+import { formatDate, getErrorMessage } from "@/utils/dashboardUtils";
 
-function formatDate(value?: string) {
-  if (!value) {
-    return "Brak danych";
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function getLessonStatusTag(lesson: StudentLesson) {
+  if (lesson.status === "COMPLETED") {
+    return (
+      <Chip
+        label="Ukończona"
+        size="small"
+        sx={{
+          bgcolor: (t) => alpha(t.palette.success.main, 0.12),
+          color: "success.main",
+          fontWeight: 700,
+          borderRadius: 1.5,
+          height: 24,
+          fontSize: "0.72rem",
+        }}
+      />
+    );
   }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
+  if (!lesson.isActive) {
+    return (
+      <Chip
+        label="Nieaktywna"
+        size="small"
+        sx={{
+          bgcolor: (t) => alpha(t.palette.text.disabled, 0.12),
+          color: "text.disabled",
+          fontWeight: 700,
+          borderRadius: 1.5,
+          height: 24,
+          fontSize: "0.72rem",
+        }}
+      />
+    );
   }
-
-  return new Intl.DateTimeFormat("pl-PL", {
-    dateStyle: "medium",
-  }).format(date);
+  if (lesson.status === "IN_PROGRESS") {
+    return (
+      <Chip
+        label="W trakcie"
+        size="small"
+        sx={{
+          bgcolor: (t) => alpha(t.palette.primary.main, 0.12),
+          color: "primary.main",
+          fontWeight: 700,
+          borderRadius: 1.5,
+          height: 24,
+          fontSize: "0.72rem",
+        }}
+      />
+    );
+  }
+  return (
+    <Chip
+      label="Do rozpoczęcia"
+      size="small"
+      sx={{
+        bgcolor: (t) => alpha(t.palette.info.main, 0.12),
+        color: "info.main",
+        fontWeight: 700,
+        borderRadius: 1.5,
+        height: 24,
+        fontSize: "0.72rem",
+      }}
+    />
+  );
 }
 
-function getErrorMessage(error: unknown, fallback: string) {
-  if (error instanceof ApiError) {
-    return error.problem.detail || error.problem.title || fallback;
-  }
+// ── Sub-components ────────────────────────────────────────────────────────────
 
-  if (error instanceof Error && error.message === "NETWORK_ERROR") {
-    return "Brak połączenia z serwerem.";
-  }
-
-  return fallback;
+interface ProfileRowProps {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  readOnly?: boolean;
 }
+
+function ProfileRow({ icon, label, value }: ProfileRowProps) {
+  return (
+    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+      <Box
+        sx={{
+          ...panelSurfaceSx,
+          width: 34,
+          height: 34,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+          color: "primary.main",
+        }}
+      >
+        {icon}
+      </Box>
+      <Box sx={{ minWidth: 0 }}>
+        <Typography variant="caption" color="text.secondary" display="block">
+          {label}
+        </Typography>
+        <Typography variant="body2" fontWeight={600} sx={{ overflowWrap: "anywhere" }}>
+          {value}
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
+
+// ── Result Dialog ─────────────────────────────────────────────────────────────
+
+interface ResultDialogProps {
+  lesson: StudentLesson | null;
+  onClose: () => void;
+}
+
+function ResultDialog({ lesson, onClose }: ResultDialogProps) {
+  const theme = useTheme();
+  if (!lesson) return null;
+
+  return (
+    <Dialog open onClose={onClose} maxWidth="xs" fullWidth
+      PaperProps={{ sx: { borderRadius: 3 } }}
+    >
+      <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", pb: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <ResultIcon sx={{ color: "primary.main" }} />
+          <Typography variant="h6" fontWeight={700}>Wynik lekcji</Typography>
+        </Box>
+        <IconButton size="small" onClick={onClose}><CloseIcon fontSize="small" /></IconButton>
+      </DialogTitle>
+      <DialogContent>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          {lesson.title}
+        </Typography>
+        <Box
+          sx={{
+            ...panelSurfaceSx,
+            p: 2.5,
+            textAlign: "center",
+            bgcolor: alpha(theme.palette.success.main, 0.07),
+            mb: 2,
+          }}
+        >
+          <Typography variant="h3" fontWeight={800} color="success.main">
+            {lesson.resultPercent}%
+          </Typography>
+          {lesson.score != null && lesson.maxScore != null && (
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              {lesson.score} / {lesson.maxScore} punktów
+            </Typography>
+          )}
+        </Box>
+        <Chip
+          icon={<CompletedIcon />}
+          label="Lekcja ukończona"
+          color="success"
+          variant="outlined"
+          sx={{ width: "100%", justifyContent: "center" }}
+        />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Edit Profile Dialog ───────────────────────────────────────────────────────
+
+interface EditProfileDialogProps {
+  user: UserProfile | null;
+  onClose: () => void;
+}
+
+function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
+  const [username, setUsername] = useState(user?.username ?? "");
+  const [email, setEmail] = useState(user?.email ?? "");
+
+  return (
+    <Dialog open onClose={onClose} maxWidth="xs" fullWidth
+      PaperProps={{ sx: { borderRadius: 3 } }}
+    >
+      <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", pb: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <EditIcon sx={{ color: "primary.main" }} />
+          <Typography variant="h6" fontWeight={700}>Edycja danych</Typography>
+        </Box>
+        <IconButton size="small" onClick={onClose}><CloseIcon fontSize="small" /></IconButton>
+      </DialogTitle>
+      <DialogContent>
+        <Stack spacing={2} sx={{ pt: 1 }}>
+          <TextField
+            label="Nazwa użytkownika"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            fullWidth
+            size="small"
+          />
+          <TextField
+            label="E-mail"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            fullWidth
+            size="small"
+            type="email"
+          />
+          <Alert severity="info" sx={{ borderRadius: 2, fontSize: "0.8rem" }}>
+            Zmiana danych wymaga potwierdzenia przez administratora.
+          </Alert>
+          <Button
+            variant="contained"
+            startIcon={<SaveIcon />}
+            onClick={onClose}
+            sx={{ ...panelFooterButtonSx, alignSelf: "flex-end" }}
+          >
+            Zapisz
+          </Button>
+        </Stack>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Progress Dialog ───────────────────────────────────────────────────────────
+
+interface ProgressDialogProps {
+  progress: StudentProgress | null;
+  stats: StudentStats | null;
+  onClose: () => void;
+}
+
+function ProgressDialog({ progress, stats, onClose }: ProgressDialogProps) {
+  const theme = useTheme();
+  const progressPercent =
+    stats && stats.totalLessons > 0
+      ? Math.round((stats.completedLessons / stats.totalLessons) * 100)
+      : 0;
+
+  return (
+    <Dialog open onClose={onClose} maxWidth="xs" fullWidth
+      PaperProps={{ sx: { borderRadius: 3 } }}
+    >
+      <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", pb: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <InsightsIcon sx={{ color: "primary.main" }} />
+          <Typography variant="h6" fontWeight={700}>Twoje postępy</Typography>
+        </Box>
+        <IconButton size="small" onClick={onClose}><CloseIcon fontSize="small" /></IconButton>
+      </DialogTitle>
+      <DialogContent>
+        <Stack spacing={2} sx={{ pt: 1 }}>
+          <Box
+            sx={{
+              ...panelSurfaceSx,
+              p: 2,
+              textAlign: "center",
+              bgcolor: alpha(theme.palette.primary.main, 0.06),
+            }}
+          >
+            <Typography variant="h3" fontWeight={800} color="primary.main">
+              {progressPercent}%
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              ogólny postęp
+            </Typography>
+          </Box>
+
+          <Stack direction="row" spacing={1}>
+            <Chip
+              icon={<CompletedIcon />}
+              label={`Ukończono: ${progress?.completedLessons ?? 0}`}
+              color="success"
+              variant="outlined"
+              sx={{ flex: 1, justifyContent: "center" }}
+            />
+          </Stack>
+
+          {stats && (
+            <Box sx={{ ...panelSurfaceSx, p: 1.5 }}>
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
+                Średni wynik
+              </Typography>
+              <Typography variant="body1" fontWeight={700}>
+                {stats.averageScore}%
+              </Typography>
+            </Box>
+          )}
+
+          {progress?.summary && (
+            <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+              {progress.summary}
+            </Typography>
+          )}
+        </Stack>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Main Dashboard ────────────────────────────────────────────────────────────
 
 export function StudentDashboard() {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const theme = useTheme();
-  const { toggleColorMode } = useAppTheme();
 
   const [user, setUser] = useState<UserProfile | null>(null);
   const [stats, setStats] = useState<StudentStats | null>(null);
@@ -85,6 +363,17 @@ export function StudentDashboard() {
   const [lessons, setLessons] = useState<StudentLesson[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Dialogs
+  const [resultLesson, setResultLesson] = useState<StudentLesson | null>(null);
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
+  const [progressOpen, setProgressOpen] = useState(false);
+
+  // Filtering & sorting
+  type LessonFilter = "ALL" | "COMPLETED" | "IN_PROGRESS" | "NOT_STARTED";
+  type LessonSort = "title_asc" | "title_desc" | "status";
+  const [lessonFilter, setLessonFilter] = useState<LessonFilter>("ALL");
+  const [lessonSort, setLessonSort] = useState<LessonSort>("status");
 
   useEffect(() => {
     Promise.all([
@@ -100,9 +389,7 @@ export function StudentDashboard() {
         setLessons(nextLessons);
       })
       .catch((err: unknown) => {
-        setError(
-          getErrorMessage(err, "Nie udało się pobrać danych panelu ucznia."),
-        );
+        setError(getErrorMessage(err, "Nie udało się pobrać danych panelu ucznia."));
       })
       .finally(() => setLoading(false));
   }, []);
@@ -113,9 +400,7 @@ export function StudentDashboard() {
   };
 
   const pageBg =
-    theme.palette.mode === "light"
-      ? "#e8eef7"
-      : theme.palette.background.default;
+    theme.palette.mode === "light" ? "#e8eef7" : theme.palette.background.default;
 
   const heroGradient = useMemo(
     () =>
@@ -125,138 +410,55 @@ export function StudentDashboard() {
     [theme.palette.mode],
   );
 
-  const completedLessons = lessons.filter(
-    (lesson) => lesson.status === "COMPLETED",
-  );
+  const progressPercent =
+    stats && stats.totalLessons > 0
+      ? Math.round((stats.completedLessons / stats.totalLessons) * 100)
+      : 0;
 
-  function getStatusChip(lesson: StudentLesson) {
-    if (lesson.status === "COMPLETED") {
-      return (
-        <Chip
-          label="Ukończona"
-          color="success"
-          size="small"
-          sx={{ fontWeight: 700 }}
-        />
-      );
+  // First group name from any lesson (displayed in profile)
+  const studentGroupName = useMemo(() => {
+    for (const lesson of lessons) {
+      if (lesson.groups.length > 0) return lesson.groups[0].name;
     }
+    return null;
+  }, [lessons]);
 
-    if (lesson.status === "IN_PROGRESS") {
-      return (
-        <Chip
-          label="W trakcie"
-          color="warning"
-          size="small"
-          sx={{ fontWeight: 700 }}
-        />
-      );
-    }
+  const statusOrder: Record<StudentLesson["status"], number> = {
+    IN_PROGRESS: 0,
+    NOT_STARTED: 1,
+    COMPLETED: 2,
+  };
 
-    return (
-      <Chip
-        label={lesson.isActive ? "Do rozpoczęcia" : "Nieaktywna"}
-        variant="outlined"
-        size="small"
-        sx={{ fontWeight: 700 }}
-      />
-    );
-  }
+  const displayedLessons = useMemo(() => {
+    let result = lessons.filter((l) => {
+      if (lessonFilter === "ALL") return true;
+      if (lessonFilter === "NOT_STARTED") return l.status === "NOT_STARTED" && l.isActive;
+      return l.status === lessonFilter;
+    });
+
+    result = [...result].sort((a, b) => {
+      if (lessonSort === "title_asc") return a.title.localeCompare(b.title, "pl");
+      if (lessonSort === "title_desc") return b.title.localeCompare(a.title, "pl");
+      // status: in_progress first, then not_started, then completed
+      return statusOrder[a.status] - statusOrder[b.status];
+    });
+
+    return result;
+  }, [lessons, lessonFilter, lessonSort]);
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: pageBg, pb: 6 }}>
       <Container maxWidth="xl" sx={{ pt: 4, position: "relative" }}>
-        <Box
-          sx={{
-            position: { xs: "relative", md: "absolute" },
-            top: { md: 32 },
-            right: { md: 24 },
-            mb: { xs: 3, md: 0 },
-            display: "flex",
-            justifyContent: "flex-end",
-            alignItems: "center",
-            gap: 3,
-            zIndex: 10,
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center" }}>
-            <LightModeIcon
-              fontSize="small"
-              sx={{
-                color:
-                  theme.palette.mode === "light"
-                    ? "primary.main"
-                    : "text.disabled",
-                mr: 0.5,
-              }}
-            />
-            <Switch
-              size="small"
-              checked={theme.palette.mode === "dark"}
-              onChange={toggleColorMode}
-            />
-            <DarkModeIcon
-              fontSize="small"
-              sx={{
-                color:
-                  theme.palette.mode === "dark"
-                    ? "primary.main"
-                    : "text.disabled",
-                ml: 0.5,
-              }}
-            />
-          </Box>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<LogoutIcon />}
-            onClick={handleLogout}
-            sx={{
-              borderRadius: 2,
-              textTransform: "none",
-              fontWeight: 600,
-              bgcolor: "background.paper",
-            }}
-          >
-            Wyloguj
-          </Button>
-        </Box>
+        {/* ── Top bar ── */}
+        <DashboardTopBar onLogout={handleLogout} />
 
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            mb: 4,
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            <Box
-              sx={{
-                ...panelSurfaceSx,
-                width: 44,
-                height: 44,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: 1,
-              }}
-            >
-              <SchoolIcon sx={{ color: "primary.main" }} />
-            </Box>
-            <Box>
-              {loading ? (
-                <Skeleton width={180} height={28} />
-              ) : (
-                <Typography variant="h6" fontWeight={700} lineHeight={1.2}>
-                  Witaj, {user?.username ?? "Uczniu"}!
-                </Typography>
-              )}
-              <Typography variant="caption" color="text.secondary">
-                Panel ucznia
-              </Typography>
-            </Box>
-          </Box>
-        </Box>
+        {/* ── Greeting header ── */}
+        <DashboardHeader
+          loading={loading}
+          username={user?.username}
+          subtitle="Panel ucznia"
+          fallbackName="Uczniu"
+        />
 
         {error && (
           <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
@@ -264,39 +466,7 @@ export function StudentDashboard() {
           </Alert>
         )}
 
-        <Box sx={{ display: "flex", gap: 2, mb: 3, flexWrap: "wrap" }}>
-          {loading ? (
-            [...Array(3)].map((_, index) => (
-              <Skeleton
-                key={index}
-                variant="rounded"
-                height={90}
-                sx={{ flex: 1, minWidth: 170, borderRadius: 3 }}
-              />
-            ))
-          ) : (
-            <>
-              <StatsCard
-                label="Przypisane lekcje"
-                value={stats?.totalLessons ?? 0}
-                highlightColor={theme.palette.primary.main}
-              />
-              <StatsCard
-                label="Ukończone lekcje"
-                value={stats?.completedLessons ?? 0}
-              />
-              <StatsCard
-                label="Średni wynik"
-                value={`${stats?.averageScore ?? 0}%`}
-              />
-              <StatsCard
-                label="W trakcie"
-                value={stats?.inProgressLessons ?? 0}
-              />
-            </>
-          )}
-        </Box>
-
+        {/* ── Hero banner ── */}
         <Paper
           elevation={0}
           sx={{
@@ -315,42 +485,50 @@ export function StudentDashboard() {
             justifyContent="space-between"
           >
             <Box>
-              <Typography variant="body2" sx={{ opacity: 0.88, mb: 0.75 }}>
-                Twoja strefa nauki
+              <Typography variant="body2" sx={{ opacity: 0.82, mb: 0.5 }}>
+                Twój postęp nauki
               </Typography>
               <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
-                Wracaj regularnie i śledź własny postęp.
+                {progressPercent === 0
+                  ? "Zacznij od pierwszej lekcji — każdy krok się liczy!"
+                  : progressPercent === 100
+                    ? "Świetnie! Ukończyłeś wszystkie przypisane lekcje 🎉"
+                    : `Ukończyłeś ${progressPercent}% przypisanych lekcji — tak trzymaj!`}
               </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.9, maxWidth: 620 }}>
-                Widok jest już podłączony do realnych danych ucznia: statystyk,
-                podsumowania postępu i lekcji przypisanych przez grupę.
+              {progress && (
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                  {progress.summary}
+                </Typography>
+              )}
+            </Box>
+            <Box
+              sx={{
+                bgcolor: alpha("#fff", 0.12),
+                borderRadius: 3,
+                px: 3,
+                py: 2,
+                textAlign: "center",
+                flexShrink: 0,
+                minWidth: 110,
+              }}
+            >
+              <Typography variant="h4" fontWeight={800}>
+                {progressPercent}%
+              </Typography>
+              <Typography variant="caption" sx={{ opacity: 0.85 }}>
+                ukończono
               </Typography>
             </Box>
-            <Chip
-              label="Widok ucznia"
-              sx={{
-                bgcolor: alpha("#ffffff", 0.16),
-                color: "#fff",
-                fontWeight: 700,
-                borderRadius: 999,
-              }}
-            />
           </Stack>
         </Paper>
 
+        {/* ── Info grid: Postępy + Moje konto ── */}
         <Grid container spacing={2} sx={{ mb: 4 }}>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Paper
-              elevation={0}
-              sx={{
-                ...panelGridCardSx,
-                minHeight: 240,
-              }}
-            >
+          {/* Postępy - uproszczone */}
+          <Grid size={{ xs: 12, md: 7 }}>
+            <Paper elevation={0} sx={{ ...panelGridCardSx, minHeight: 200 }}>
               <Box sx={panelGridCardContentSx}>
-                <Box
-                  sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}
-                >
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
                   <InsightsIcon sx={{ color: "primary.main" }} />
                   <Typography variant="h6" fontWeight={700}>
                     Twoje postępy
@@ -364,32 +542,29 @@ export function StudentDashboard() {
                     <Skeleton variant="rounded" height={24} width="55%" />
                   </Stack>
                 ) : progress ? (
-                  <>
-                    <Typography
-                      variant="body1"
-                      sx={{ color: "text.primary", mb: 2, lineHeight: 1.7 }}
-                    >
-                      {progress.summary}
-                    </Typography>
-                    <Stack
-                      direction={{ xs: "column", sm: "row" }}
-                      spacing={1}
-                      flexWrap="wrap"
-                    >
+                  <Stack spacing={1.5}>
+                    <Stack direction={{ xs: "column", sm: "row" }} spacing={1} flexWrap="wrap">
                       <Chip
                         icon={<CompletedIcon />}
                         label={`Ukończono: ${progress.completedLessons}`}
                         color="success"
                         variant="outlined"
                       />
-                      <Chip
-                        icon={<ProgressIcon />}
-                        label={`W trakcie: ${progress.inProgressLessons}`}
-                        color="warning"
-                        variant="outlined"
-                      />
                     </Stack>
-                  </>
+                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+                      {progress.summary}
+                    </Typography>
+                    <Box sx={{ mt: "auto", pt: 1 }}>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        startIcon={<InsightsIcon />}
+                        sx={{ ...panelFooterButtonSx }}
+                      >
+                        Szczegóły postępów
+                      </Button>
+                    </Box>
+                  </Stack>
                 ) : (
                   <Alert severity="info" sx={{ borderRadius: 2 }}>
                     Brak danych postępu do wyświetlenia.
@@ -399,67 +574,58 @@ export function StudentDashboard() {
             </Paper>
           </Grid>
 
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Paper
-              elevation={0}
-              sx={{
-                ...panelGridCardSx,
-                minHeight: 240,
-              }}
-            >
+          <Grid size={{ xs: 12, md: 5 }}>
+            <Paper elevation={0} sx={{ ...panelGridCardSx, minHeight: 200 }}>
               <Box sx={panelGridCardContentSx}>
-                <Box
-                  sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}
-                >
-                  <TrendingUpIcon sx={{ color: "primary.main" }} />
-                  <Typography variant="h6" fontWeight={700}>
-                    Dane konta
-                  </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <PersonIcon sx={{ color: "primary.main" }} />
+                    <Typography variant="h6" fontWeight={700}>
+                      Moje konto
+                    </Typography>
+                  </Box>
+                  {!loading && (
+                    <Button
+                      size="small"
+                      startIcon={<EditIcon />}
+                      sx={{ ...panelFooterButtonSx, fontSize: "0.78rem" }}
+                    >
+                      Edytuj
+                    </Button>
+                  )}
                 </Box>
 
                 {loading ? (
-                  <Stack spacing={1.25}>
-                    <Skeleton variant="rounded" height={24} />
-                    <Skeleton variant="rounded" height={24} width="72%" />
-                    <Skeleton variant="rounded" height={24} width="60%" />
+                  <Stack spacing={1.5}>
+                    <Skeleton variant="rounded" height={34} />
+                    <Skeleton variant="rounded" height={34} width="80%" />
+                    <Skeleton variant="rounded" height={34} width="65%" />
+                    <Skeleton variant="rounded" height={34} width="75%" />
                   </Stack>
                 ) : (
                   <Stack spacing={1.5}>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">
-                        Login
-                      </Typography>
-                      <Typography variant="body1" fontWeight={700}>
-                        {user?.username ?? "Brak danych"}
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">
-                        E-mail
-                      </Typography>
-                      <Typography
-                        variant="body1"
-                        sx={{ overflowWrap: "anywhere" }}
-                      >
-                        {user?.email ?? "Brak danych"}
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">
-                        Data utworzenia konta
-                      </Typography>
-                      <Typography variant="body1">
-                        {formatDate(user?.createdAt)}
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">
-                        Ukończone lekcje
-                      </Typography>
-                      <Typography variant="body1">
-                        {stats?.completedLessons ?? 0} / {stats?.totalLessons ?? 0}
-                      </Typography>
-                    </Box>
+                    <ProfileRow
+                      icon={<PersonIcon fontSize="small" />}
+                      label="Login"
+                      value={user?.username ?? "—"}
+                    />
+                    <ProfileRow
+                      icon={<EmailIcon fontSize="small" />}
+                      label="E-mail"
+                      value={user?.email ?? "—"}
+                    />
+                    <ProfileRow
+                      icon={<TodayIcon fontSize="small" />}
+                      label="Konto założone"
+                      value={formatDate(user?.createdAt)}
+                    />
+                    {studentGroupName && (
+                      <ProfileRow
+                        icon={<GroupIcon fontSize="small" />}
+                        label="Grupa"
+                        value={studentGroupName}
+                      />
+                    )}
                   </Stack>
                 )}
               </Box>
@@ -467,20 +633,59 @@ export function StudentDashboard() {
           </Grid>
         </Grid>
 
-        <Typography
-          variant="subtitle1"
-          fontWeight={700}
-          color="primary.main"
-          sx={{ mb: 1.5 }}
+        {/* ── Lesson list ── */}
+        <Box
+          sx={{
+            ...panelToolbarSx,
+            flexDirection: { xs: "column", md: "row" },
+            alignItems: { xs: "stretch", md: "center" },
+            mb: 2,
+          }}
         >
-          Dostępne lekcje
-        </Typography>
+          <Typography variant="subtitle1" fontWeight={700} color="primary.main" sx={{ mr: "auto" }}>
+            Dostępne lekcje
+          </Typography>
+
+          {!loading && lessons.length > 0 && (
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ ml: "auto" }}>
+              {/* Status filter */}
+              <ToggleButtonGroup
+                value={lessonFilter}
+                exclusive
+                onChange={(_, v) => { if (v) setLessonFilter(v); }}
+                size="small"
+                sx={{
+                  flexShrink: 0,
+                  bgcolor: "background.paper",
+                  "& .MuiToggleButton-root": { textTransform: "none", fontWeight: 600, px: 1.5, py: 0.5, fontSize: "0.82rem" }
+                }}
+              >
+                <ToggleButton value="ALL">Wszystkie</ToggleButton>
+                <ToggleButton value="COMPLETED">Ukończone</ToggleButton>
+                <ToggleButton value="NOT_STARTED">Do rozpoczęcia</ToggleButton>
+              </ToggleButtonGroup>
+
+              {/* Sort */}
+              <Select
+                value={lessonSort}
+                onChange={(e) => setLessonSort(e.target.value as typeof lessonSort)}
+                size="small"
+                startAdornment={<SortIcon sx={{ mr: 0.75, fontSize: 18, color: "text.secondary" }} />}
+                sx={{ minWidth: 165, borderRadius: 2, fontSize: "0.85rem", fontWeight: 600, bgcolor: "background.paper" }}
+              >
+                <MenuItem value="status">Sortuj: Status</MenuItem>
+                <MenuItem value="title_asc">Sortuj: A → Z</MenuItem>
+                <MenuItem value="title_desc">Sortuj: Z → A</MenuItem>
+              </Select>
+            </Stack>
+          )}
+        </Box>
 
         {loading ? (
           <Grid container spacing={2}>
             {[...Array(3)].map((_, index) => (
               <Grid key={index} size={{ xs: 12, md: 4 }}>
-                <Skeleton variant="rounded" height={260} sx={{ borderRadius: 3 }} />
+                <Skeleton variant="rounded" height={220} sx={{ borderRadius: 3 }} />
               </Grid>
             ))}
           </Grid>
@@ -488,129 +693,143 @@ export function StudentDashboard() {
           <Alert severity="info" sx={{ borderRadius: 2 }}>
             Nie masz jeszcze przypisanych lekcji.
           </Alert>
+        ) : displayedLessons.length === 0 ? (
+          <Alert severity="info" sx={{ borderRadius: 2 }}>
+            Brak lekcji pasujących do wybranego filtra.
+          </Alert>
         ) : (
           <Grid container spacing={2}>
-            {lessons.map((lesson) => (
-              <Grid key={lesson.id} size={{ xs: 12, md: 6, xl: 4 }}>
-                <Paper elevation={0} sx={panelGridCardSx}>
-                  <Box sx={panelGridCardContentSx}>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "flex-start",
-                        justifyContent: "space-between",
-                        gap: 1.5,
-                        mb: 1.5,
-                      }}
-                    >
-                      <Box sx={{ display: "flex", gap: 1.25, minWidth: 0 }}>
-                        <LessonIcon sx={{ color: "primary.main", mt: 0.25 }} />
-                        <Box sx={{ minWidth: 0 }}>
-                          <Typography variant="body1" fontWeight={700}>
-                            {lesson.title}
-                          </Typography>
+            {displayedLessons.map((lesson) => {
+              const isCompleted = lesson.status === "COMPLETED";
+              const isInProgress = lesson.status === "IN_PROGRESS";
+              const isLocked = !lesson.isActive && !isCompleted;
+
+              return (
+                <Grid key={lesson.id} size={{ xs: 12, md: 6, xl: 4 }}>
+                  <Paper elevation={0} sx={panelGridCardSx}>
+                    <Box sx={panelGridCardContentSx}>
+                      {/* Header row: icon + title + status icon */}
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "flex-start",
+                          justifyContent: "space-between",
+                          gap: 1.5,
+                          mb: 2,
+                        }}
+                      >
+                        <Box sx={{ display: "flex", gap: 1.5, minWidth: 0 }}>
+                          <LessonIcon sx={{ color: "primary.main", mt: 0.25, flexShrink: 0 }} />
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography variant="body1" fontWeight={700}>
+                              {lesson.title}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
+                              {lesson.theme}
+                            </Typography>
+                          </Box>
+                        </Box>
+                        {getLessonStatusTag(lesson)}
+                      </Box>
+
+                      {/* Wynik — only for completed lessons */}
+                      {isCompleted && lesson.resultPercent != null && (
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            mb: 2,
+                            px: 1.5,
+                            py: 1,
+                            borderRadius: 2,
+                            bgcolor: alpha(theme.palette.success.main, 0.08),
+                            border: "1px solid",
+                            borderColor: alpha(theme.palette.success.main, 0.2),
+                          }}
+                        >
                           <Typography variant="body2" color="text.secondary">
-                            {lesson.theme}
+                            Wynik
+                          </Typography>
+                          <Typography variant="body1" fontWeight={700} color="success.main">
+                            {lesson.resultPercent}%
+                          </Typography>
+                        </Box>
+                      )}
+
+                      <Box sx={{ mt: "auto" }}>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
+                          <PersonIcon sx={{ fontSize: 18, color: "text.secondary" }} />
+                          <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                            {lesson.teacherName}
                           </Typography>
                         </Box>
                       </Box>
-                      {getStatusChip(lesson)}
+
+                      {/* Footer actions */}
+                      <Box sx={panelCardFooterSx}>
+                        {isCompleted ? (
+                          <Stack direction="row" spacing={1} sx={{ width: "100%" }}>
+                            <Button
+                              fullWidth
+                              variant="outlined"
+                              startIcon={<CompletedIcon />}
+                              sx={{
+                                ...panelFooterButtonSx,
+                                color: "success.main",
+                                borderColor: alpha(theme.palette.success.main, 0.4),
+                              }}
+                            >
+                              Ukończono
+                            </Button>
+                            <Button
+                              variant="outlined"
+                              startIcon={<ResultIcon />}
+                              onClick={() => setResultLesson(lesson)}
+                              sx={{ ...panelFooterButtonSx, minWidth: "auto", px: 2 }}
+                            >
+                              Wynik
+                            </Button>
+                          </Stack>
+                        ) : isLocked ? (
+                          <Button
+                            fullWidth
+                            variant="outlined"
+                            startIcon={<LockIcon />}
+                            disabled
+                            sx={panelFooterButtonSx}
+                          >
+                            Lekcja nieaktywna
+                          </Button>
+                        ) : (
+                          <Button
+                            fullWidth
+                            variant="contained"
+                            sx={panelFooterButtonSx}
+                          >
+                            {isInProgress ? "Kontynuacja w przygotowaniu" : "Rozpocznij lekcję"}
+                          </Button>
+                        )}
+                      </Box>
                     </Box>
-
-                    <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
-                      {lesson.groups.map((group) => (
-                        <Chip
-                          key={group.id}
-                          label={group.name}
-                          size="small"
-                          variant="outlined"
-                          sx={outlinedMetaChipSx}
-                        />
-                      ))}
-                    </Stack>
-
-                    <Box sx={{ mt: 2.25 }}>
-                      <Typography variant="caption" color="text.secondary">
-                        Nauczyciel
-                      </Typography>
-                      <Typography variant="body2" fontWeight={600}>
-                        {lesson.teacherName}
-                      </Typography>
-                    </Box>
-
-                    <Box sx={{ mt: 1.5 }}>
-                      <Typography variant="caption" color="text.secondary">
-                        Utworzono
-                      </Typography>
-                      <Typography variant="body2">
-                        {formatDate(lesson.createdAt)}
-                      </Typography>
-                    </Box>
-
-                    <Box
-                      sx={{
-                        ...panelSurfaceSx,
-                        p: 1.5,
-                        mt: 2.25,
-                        bgcolor: lesson.resultPercent
-                          ? "success.50"
-                          : "background.paper",
-                      }}
-                    >
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        display="block"
-                        sx={{ mb: 0.5 }}
-                      >
-                        Wynik
-                      </Typography>
-                      <Typography variant="body1" fontWeight={700}>
-                        {lesson.resultPercent != null
-                          ? `${lesson.resultPercent}%`
-                          : lesson.status === "IN_PROGRESS"
-                            ? "Lekcja rozpoczęta"
-                            : "Brak wyniku"}
-                      </Typography>
-                      {lesson.score != null && lesson.maxScore != null && (
-                        <Typography variant="caption" color="text.secondary">
-                          {lesson.score} / {lesson.maxScore} punktów
-                        </Typography>
-                      )}
-                    </Box>
-
-                    <Divider sx={{ my: 2 }} />
-
-                    <Box sx={panelCardFooterSx}>
-                      <Button
-                        fullWidth
-                        variant={lesson.status === "COMPLETED" ? "outlined" : "contained"}
-                        disabled={!lesson.isActive}
-                        sx={panelFooterButtonSx}
-                      >
-                        {lesson.status === "COMPLETED"
-                          ? "Ukończono"
-                          : lesson.status === "IN_PROGRESS"
-                            ? "Kontynuacja w przygotowaniu"
-                            : lesson.isActive
-                              ? "Start lekcji w przygotowaniu"
-                              : "Lekcja nieaktywna"}
-                      </Button>
-                    </Box>
-                  </Box>
-                </Paper>
-              </Grid>
-            ))}
+                  </Paper>
+                </Grid>
+              );
+            })}
           </Grid>
         )}
-
-        {!loading && completedLessons.length > 0 && (
-          <Alert severity="success" sx={{ mt: 3, borderRadius: 2 }}>
-            Masz już ukończone {completedLessons.length} lekcje. Panel pokazuje
-            ich wynik procentowy na podstawie zapisanych `UserLesson`.
-          </Alert>
-        )}
       </Container>
+
+      {/* ── Dialogs ── */}
+      {resultLesson && (
+        <ResultDialog lesson={resultLesson} onClose={() => setResultLesson(null)} />
+      )}
+      {editProfileOpen && (
+        <EditProfileDialog user={user} onClose={() => setEditProfileOpen(false)} />
+      )}
+      {progressOpen && (
+        <ProgressDialog progress={progress} stats={stats} onClose={() => setProgressOpen(false)} />
+      )}
     </Box>
   );
 }
