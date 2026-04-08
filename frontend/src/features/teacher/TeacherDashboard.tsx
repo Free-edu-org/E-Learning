@@ -55,9 +55,7 @@ import {
 } from "@/components/ui/form/FormLayout";
 import { DashboardHeader } from "@/components/ui/panel/DashboardHeader";
 import { DashboardTopBar } from "@/components/ui/panel/DashboardTopBar";
-import {
-  panelFooterButtonSx,
-} from "@/components/ui/panel/panelStyles";
+import { panelFooterButtonSx } from "@/components/ui/panel/panelStyles";
 import { useAuth } from "@/context/AuthContext";
 import { uiTokens } from "@/theme/uiTokens";
 

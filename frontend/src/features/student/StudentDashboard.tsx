@@ -154,7 +154,11 @@ function ProfileRow({ icon, label, value }: ProfileRowProps) {
         <Typography variant="caption" color="text.secondary" display="block">
           {label}
         </Typography>
-        <Typography variant="body2" fontWeight={600} sx={{ overflowWrap: "anywhere" }}>
+        <Typography
+          variant="body2"
+          fontWeight={600}
+          sx={{ overflowWrap: "anywhere" }}
+        >
           {value}
         </Typography>
       </Box>
@@ -174,15 +178,30 @@ function ResultDialog({ lesson, onClose }: ResultDialogProps) {
   if (!lesson) return null;
 
   return (
-    <Dialog open onClose={onClose} maxWidth="xs" fullWidth
+    <Dialog
+      open
+      onClose={onClose}
+      maxWidth="xs"
+      fullWidth
       PaperProps={{ sx: { borderRadius: 3 } }}
     >
-      <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", pb: 1 }}>
+      <DialogTitle
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          pb: 1,
+        }}
+      >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <ResultIcon sx={{ color: "primary.main" }} />
-          <Typography variant="h6" fontWeight={700}>Wynik lekcji</Typography>
+          <Typography variant="h6" fontWeight={700}>
+            Wynik lekcji
+          </Typography>
         </Box>
-        <IconButton size="small" onClick={onClose}><CloseIcon fontSize="small" /></IconButton>
+        <IconButton size="small" onClick={onClose}>
+          <CloseIcon fontSize="small" />
+        </IconButton>
       </DialogTitle>
       <DialogContent>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -230,15 +249,30 @@ function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
   const [email, setEmail] = useState(user?.email ?? "");
 
   return (
-    <Dialog open onClose={onClose} maxWidth="xs" fullWidth
+    <Dialog
+      open
+      onClose={onClose}
+      maxWidth="xs"
+      fullWidth
       PaperProps={{ sx: { borderRadius: 3 } }}
     >
-      <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", pb: 1 }}>
+      <DialogTitle
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          pb: 1,
+        }}
+      >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <EditIcon sx={{ color: "primary.main" }} />
-          <Typography variant="h6" fontWeight={700}>Edycja danych</Typography>
+          <Typography variant="h6" fontWeight={700}>
+            Edycja danych
+          </Typography>
         </Box>
-        <IconButton size="small" onClick={onClose}><CloseIcon fontSize="small" /></IconButton>
+        <IconButton size="small" onClick={onClose}>
+          <CloseIcon fontSize="small" />
+        </IconButton>
       </DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ pt: 1 }}>
@@ -290,15 +324,30 @@ function ProgressDialog({ progress, stats, onClose }: ProgressDialogProps) {
       : 0;
 
   return (
-    <Dialog open onClose={onClose} maxWidth="xs" fullWidth
+    <Dialog
+      open
+      onClose={onClose}
+      maxWidth="xs"
+      fullWidth
       PaperProps={{ sx: { borderRadius: 3 } }}
     >
-      <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", pb: 1 }}>
+      <DialogTitle
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          pb: 1,
+        }}
+      >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <InsightsIcon sx={{ color: "primary.main" }} />
-          <Typography variant="h6" fontWeight={700}>Twoje postępy</Typography>
+          <Typography variant="h6" fontWeight={700}>
+            Twoje postępy
+          </Typography>
         </Box>
-        <IconButton size="small" onClick={onClose}><CloseIcon fontSize="small" /></IconButton>
+        <IconButton size="small" onClick={onClose}>
+          <CloseIcon fontSize="small" />
+        </IconButton>
       </DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ pt: 1 }}>
@@ -330,7 +379,12 @@ function ProgressDialog({ progress, stats, onClose }: ProgressDialogProps) {
 
           {stats && (
             <Box sx={{ ...panelSurfaceSx, p: 1.5 }}>
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                display="block"
+                sx={{ mb: 0.5 }}
+              >
                 Średni wynik
               </Typography>
               <Typography variant="body1" fontWeight={700}>
@@ -340,7 +394,11 @@ function ProgressDialog({ progress, stats, onClose }: ProgressDialogProps) {
           )}
 
           {progress?.summary && (
-            <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ lineHeight: 1.7 }}
+            >
               {progress.summary}
             </Typography>
           )}
@@ -389,7 +447,9 @@ export function StudentDashboard() {
         setLessons(nextLessons);
       })
       .catch((err: unknown) => {
-        setError(getErrorMessage(err, "Nie udało się pobrać danych panelu ucznia."));
+        setError(
+          getErrorMessage(err, "Nie udało się pobrać danych panelu ucznia."),
+        );
       })
       .finally(() => setLoading(false));
   }, []);
@@ -400,7 +460,9 @@ export function StudentDashboard() {
   };
 
   const pageBg =
-    theme.palette.mode === "light" ? "#e8eef7" : theme.palette.background.default;
+    theme.palette.mode === "light"
+      ? "#e8eef7"
+      : theme.palette.background.default;
 
   const heroGradient = useMemo(
     () =>
@@ -432,13 +494,16 @@ export function StudentDashboard() {
   const displayedLessons = useMemo(() => {
     let result = lessons.filter((l) => {
       if (lessonFilter === "ALL") return true;
-      if (lessonFilter === "NOT_STARTED") return l.status === "NOT_STARTED" && l.isActive;
+      if (lessonFilter === "NOT_STARTED")
+        return l.status === "NOT_STARTED" && l.isActive;
       return l.status === lessonFilter;
     });
 
     result = [...result].sort((a, b) => {
-      if (lessonSort === "title_asc") return a.title.localeCompare(b.title, "pl");
-      if (lessonSort === "title_desc") return b.title.localeCompare(a.title, "pl");
+      if (lessonSort === "title_asc")
+        return a.title.localeCompare(b.title, "pl");
+      if (lessonSort === "title_desc")
+        return b.title.localeCompare(a.title, "pl");
       // status: in_progress first, then not_started, then completed
       return statusOrder[a.status] - statusOrder[b.status];
     });
@@ -528,7 +593,9 @@ export function StudentDashboard() {
           <Grid size={{ xs: 12, md: 7 }}>
             <Paper elevation={0} sx={{ ...panelGridCardSx, minHeight: 200 }}>
               <Box sx={panelGridCardContentSx}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+                <Box
+                  sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}
+                >
                   <InsightsIcon sx={{ color: "primary.main" }} />
                   <Typography variant="h6" fontWeight={700}>
                     Twoje postępy
@@ -543,7 +610,11 @@ export function StudentDashboard() {
                   </Stack>
                 ) : progress ? (
                   <Stack spacing={1.5}>
-                    <Stack direction={{ xs: "column", sm: "row" }} spacing={1} flexWrap="wrap">
+                    <Stack
+                      direction={{ xs: "column", sm: "row" }}
+                      spacing={1}
+                      flexWrap="wrap"
+                    >
                       <Chip
                         icon={<CompletedIcon />}
                         label={`Ukończono: ${progress.completedLessons}`}
@@ -551,7 +622,11 @@ export function StudentDashboard() {
                         variant="outlined"
                       />
                     </Stack>
-                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ lineHeight: 1.7 }}
+                    >
                       {progress.summary}
                     </Typography>
                     <Box sx={{ mt: "auto", pt: 1 }}>
@@ -577,7 +652,14 @@ export function StudentDashboard() {
           <Grid size={{ xs: 12, md: 5 }}>
             <Paper elevation={0} sx={{ ...panelGridCardSx, minHeight: 200 }}>
               <Box sx={panelGridCardContentSx}>
-                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    mb: 2,
+                  }}
+                >
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <PersonIcon sx={{ color: "primary.main" }} />
                     <Typography variant="h6" fontWeight={700}>
@@ -642,22 +724,39 @@ export function StudentDashboard() {
             mb: 2,
           }}
         >
-          <Typography variant="subtitle1" fontWeight={700} color="primary.main" sx={{ mr: "auto" }}>
+          <Typography
+            variant="subtitle1"
+            fontWeight={700}
+            color="primary.main"
+            sx={{ mr: "auto" }}
+          >
             Dostępne lekcje
           </Typography>
 
           {!loading && lessons.length > 0 && (
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ ml: "auto" }}>
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              spacing={1.5}
+              sx={{ ml: "auto" }}
+            >
               {/* Status filter */}
               <ToggleButtonGroup
                 value={lessonFilter}
                 exclusive
-                onChange={(_, v) => { if (v) setLessonFilter(v); }}
+                onChange={(_, v) => {
+                  if (v) setLessonFilter(v);
+                }}
                 size="small"
                 sx={{
                   flexShrink: 0,
                   bgcolor: "background.paper",
-                  "& .MuiToggleButton-root": { textTransform: "none", fontWeight: 600, px: 1.5, py: 0.5, fontSize: "0.82rem" }
+                  "& .MuiToggleButton-root": {
+                    textTransform: "none",
+                    fontWeight: 600,
+                    px: 1.5,
+                    py: 0.5,
+                    fontSize: "0.82rem",
+                  },
                 }}
               >
                 <ToggleButton value="ALL">Wszystkie</ToggleButton>
@@ -668,10 +767,22 @@ export function StudentDashboard() {
               {/* Sort */}
               <Select
                 value={lessonSort}
-                onChange={(e) => setLessonSort(e.target.value as typeof lessonSort)}
+                onChange={(e) =>
+                  setLessonSort(e.target.value as typeof lessonSort)
+                }
                 size="small"
-                startAdornment={<SortIcon sx={{ mr: 0.75, fontSize: 18, color: "text.secondary" }} />}
-                sx={{ minWidth: 165, borderRadius: 2, fontSize: "0.85rem", fontWeight: 600, bgcolor: "background.paper" }}
+                startAdornment={
+                  <SortIcon
+                    sx={{ mr: 0.75, fontSize: 18, color: "text.secondary" }}
+                  />
+                }
+                sx={{
+                  minWidth: 165,
+                  borderRadius: 2,
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                  bgcolor: "background.paper",
+                }}
               >
                 <MenuItem value="status">Sortuj: Status</MenuItem>
                 <MenuItem value="title_asc">Sortuj: A → Z</MenuItem>
@@ -685,7 +796,11 @@ export function StudentDashboard() {
           <Grid container spacing={2}>
             {[...Array(3)].map((_, index) => (
               <Grid key={index} size={{ xs: 12, md: 4 }}>
-                <Skeleton variant="rounded" height={220} sx={{ borderRadius: 3 }} />
+                <Skeleton
+                  variant="rounded"
+                  height={220}
+                  sx={{ borderRadius: 3 }}
+                />
               </Grid>
             ))}
           </Grid>
@@ -719,12 +834,22 @@ export function StudentDashboard() {
                         }}
                       >
                         <Box sx={{ display: "flex", gap: 1.5, minWidth: 0 }}>
-                          <LessonIcon sx={{ color: "primary.main", mt: 0.25, flexShrink: 0 }} />
+                          <LessonIcon
+                            sx={{
+                              color: "primary.main",
+                              mt: 0.25,
+                              flexShrink: 0,
+                            }}
+                          />
                           <Box sx={{ minWidth: 0 }}>
                             <Typography variant="body1" fontWeight={700}>
                               {lesson.title}
                             </Typography>
-                            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{ mt: 0.25 }}
+                            >
                               {lesson.theme}
                             </Typography>
                           </Box>
@@ -751,16 +876,33 @@ export function StudentDashboard() {
                           <Typography variant="body2" color="text.secondary">
                             Wynik
                           </Typography>
-                          <Typography variant="body1" fontWeight={700} color="success.main">
+                          <Typography
+                            variant="body1"
+                            fontWeight={700}
+                            color="success.main"
+                          >
                             {lesson.resultPercent}%
                           </Typography>
                         </Box>
                       )}
 
                       <Box sx={{ mt: "auto" }}>
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
-                          <PersonIcon sx={{ fontSize: 18, color: "text.secondary" }} />
-                          <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
+                            mb: 1.5,
+                          }}
+                        >
+                          <PersonIcon
+                            sx={{ fontSize: 18, color: "text.secondary" }}
+                          />
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            fontWeight={500}
+                          >
                             {lesson.teacherName}
                           </Typography>
                         </Box>
@@ -769,7 +911,11 @@ export function StudentDashboard() {
                       {/* Footer actions */}
                       <Box sx={panelCardFooterSx}>
                         {isCompleted ? (
-                          <Stack direction="row" spacing={1} sx={{ width: "100%" }}>
+                          <Stack
+                            direction="row"
+                            spacing={1}
+                            sx={{ width: "100%" }}
+                          >
                             <Button
                               fullWidth
                               variant="outlined"
@@ -777,7 +923,10 @@ export function StudentDashboard() {
                               sx={{
                                 ...panelFooterButtonSx,
                                 color: "success.main",
-                                borderColor: alpha(theme.palette.success.main, 0.4),
+                                borderColor: alpha(
+                                  theme.palette.success.main,
+                                  0.4,
+                                ),
                               }}
                             >
                               Ukończono
@@ -786,7 +935,11 @@ export function StudentDashboard() {
                               variant="outlined"
                               startIcon={<ResultIcon />}
                               onClick={() => setResultLesson(lesson)}
-                              sx={{ ...panelFooterButtonSx, minWidth: "auto", px: 2 }}
+                              sx={{
+                                ...panelFooterButtonSx,
+                                minWidth: "auto",
+                                px: 2,
+                              }}
                             >
                               Wynik
                             </Button>
@@ -807,7 +960,9 @@ export function StudentDashboard() {
                             variant="contained"
                             sx={panelFooterButtonSx}
                           >
-                            {isInProgress ? "Kontynuacja w przygotowaniu" : "Rozpocznij lekcję"}
+                            {isInProgress
+                              ? "Kontynuacja w przygotowaniu"
+                              : "Rozpocznij lekcję"}
                           </Button>
                         )}
                       </Box>
@@ -822,13 +977,23 @@ export function StudentDashboard() {
 
       {/* ── Dialogs ── */}
       {resultLesson && (
-        <ResultDialog lesson={resultLesson} onClose={() => setResultLesson(null)} />
+        <ResultDialog
+          lesson={resultLesson}
+          onClose={() => setResultLesson(null)}
+        />
       )}
       {editProfileOpen && (
-        <EditProfileDialog user={user} onClose={() => setEditProfileOpen(false)} />
+        <EditProfileDialog
+          user={user}
+          onClose={() => setEditProfileOpen(false)}
+        />
       )}
       {progressOpen && (
-        <ProgressDialog progress={progress} stats={stats} onClose={() => setProgressOpen(false)} />
+        <ProgressDialog
+          progress={progress}
+          stats={stats}
+          onClose={() => setProgressOpen(false)}
+        />
       )}
     </Box>
   );
