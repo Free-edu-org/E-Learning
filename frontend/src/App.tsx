@@ -6,7 +6,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Login } from "./features/auth/Login";
 import { TeacherDashboard } from "./features/teacher/TeacherDashboard";
 import { AdminDashboard } from "./features/admin/AdminDashboard";
-import { Box, Typography } from "@mui/material";
+import { StudentDashboard } from "./features/student/StudentDashboard";
 
 /** Redirects to the correct dashboard based on the user's role. */
 function RoleBasedRedirect() {
@@ -20,12 +20,7 @@ function RoleBasedRedirect() {
     return <Navigate to="/admin" replace />;
   }
 
-  // STUDENT fallback - placeholder until a student dashboard is built
-  return (
-    <Box sx={{ p: 4, textAlign: "center" }}>
-      <Typography variant="h5">Panel ucznia - wkrótce dostępny</Typography>
-    </Box>
-  );
+  return <Navigate to="/student" replace />;
 }
 
 function App() {
@@ -47,6 +42,10 @@ function App() {
 
             <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
               <Route path="/admin" element={<AdminDashboard />} />
+            </Route>
+
+            <Route element={<ProtectedRoute allowedRoles={["STUDENT"]} />}>
+              <Route path="/student" element={<StudentDashboard />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />

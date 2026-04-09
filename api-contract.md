@@ -783,17 +783,29 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
 ---
 ## 7. Student Dashboard (`/api/v1/student`)
 
-Warstwa BFF dla uczniów.
+Warstwa BFF dla uczniow.
 
-### 7.1. Get Personal Progress
-- **URL**: `/api/v1/student/progress`
+### 7.1. Get Dashboard Statistics
+- **URL**: `/api/v1/student/stats`
 - **Method**: `GET`
-- **Description**: Zwraca tymczasowy tekstowy placeholder postępu ucznia. Endpoint jest przygotowany jako BFF pod przyszłą implementację DTO, ale obecnie zwraca `text/plain` jako zwykły string w body. Wymaga `STUDENT`.
+- **Description**: Zwraca zagregowane statystyki ucznia dla przypisanych lekcji. Wymaga `STUDENT`.
 
 **Success (200 OK):**
-```text
-Student progress placeholder (e.g. marks, upcoming lessons)
+```json
+{
+  "totalLessons": 2,
+  "completedLessons": 1,
+  "inProgressLessons": 1,
+  "averageScore": 80.0
+}
 ```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `totalLessons` | Integer | Liczba lekcji przypisanych do grupy ucznia. |
+| `completedLessons` | Integer | Liczba lekcji ukonczonych przez ucznia. |
+| `inProgressLessons` | Integer | Liczba lekcji rozpoczetych, ale jeszcze nieukonczonych. |
+| `averageScore` | Double | Sredni wynik procentowy z lekcji, ktore maja zapisany rezultat. |
 
 **Known Errors:**
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
@@ -801,6 +813,75 @@ Student progress placeholder (e.g. marks, upcoming lessons)
 
 ---
 
+### 7.2. Get Student Lessons
+- **URL**: `/api/v1/student/lessons`
+- **Method**: `GET`
+- **Description**: Zwraca lekcje przypisane do aktualnego ucznia przez jego grupe wraz ze statusem postepu i wynikiem. Wymaga `STUDENT`.
+
+**Success (200 OK):**
+```json
+[
+  {
+    "id": 12,
+    "title": "Present Simple - lesson 1",
+    "theme": "Grammar",
+    "isActive": true,
+    "teacherId": 3,
+    "teacherName": "pan_tomasz",
+    "createdAt": "2026-03-21T10:00:00",
+    "groups": [
+      { "id": 1, "name": "Angielski A1" }
+    ],
+    "status": "COMPLETED",
+    "score": 4,
+    "maxScore": 5,
+    "resultPercent": 80.0
+  }
+]
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | Integer | ID lekcji. |
+| `title` | String | Tytul lekcji. |
+| `theme` | String | Temat lekcji. |
+| `isActive` | Boolean | Flaga aktywnosci lekcji. |
+| `teacherId` | Integer | ID nauczyciela prowadzacego. |
+| `teacherName` | String | Username nauczyciela prowadzacego. |
+| `createdAt` | String (ISO datetime) | Data utworzenia lekcji. |
+| `groups` | List<GroupDto> | Grupy przypisane do lekcji. |
+| `status` | String | `NOT_STARTED`, `IN_PROGRESS` albo `COMPLETED`. |
+| `score` | Integer or null | Zdobyta liczba punktow dla lekcji z zapisanym postepem. |
+| `maxScore` | Integer or null | Maksymalna liczba punktow dla biezacej proby. |
+| `resultPercent` | Double or null | Wynik procentowy, jesli lekcja ma zapisany rezultat. |
+
+**Known Errors:**
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
+
+---
+
+### 7.3. Get Personal Progress
+- **URL**: `/api/v1/student/progress`
+- **Method**: `GET`
+- **Description**: Zwraca podsumowanie postepu ucznia w formie DTO. Wymaga `STUDENT`.
+
+**Success (200 OK):**
+```json
+{
+  "summary": "Ukonczono 1 z 2 lekcji. Sredni wynik wynosi 80.0%.",
+  "completedLessons": 1,
+  "totalLessons": 2,
+  "inProgressLessons": 1,
+  "averageScore": 80.0
+}
+```
+
+**Known Errors:**
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
+
+---
 ## 8. Tasks (`/api/v1/lessons/{lessonId}/tasks`)
 
 Task management endpoints nested under lessons. All task CRUD requires `ADMIN` or lesson owner (`TEACHER`).

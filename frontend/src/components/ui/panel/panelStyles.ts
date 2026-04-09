@@ -125,9 +125,13 @@ export const panelFooterButtonSx: SxProps<Theme> = {
 
 export const panelDeleteButtonSx: SxProps<Theme> = {
   ...panelFooterButtonSx,
-  color: "error.main",
+  color: (theme) => theme.palette.error.dark,
   border: "1px solid",
-  borderColor: "error.main",
+  borderColor: (theme) => alpha(theme.palette.error.main, 0.45),
+  "&:hover": {
+    borderColor: (theme) => alpha(theme.palette.error.main, 0.7),
+    bgcolor: (theme) => alpha(theme.palette.error.main, 0.06),
+  },
 };
 
 export const panelToolbarButtonSx: SxProps<Theme> = {
