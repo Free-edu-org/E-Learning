@@ -6,6 +6,7 @@ import {
   Chip,
   Container,
   Dialog,
+  DialogActions,
   DialogContent,
   DialogTitle,
   Grid,
@@ -426,6 +427,8 @@ export function StudentDashboard() {
   const [resultLesson, setResultLesson] = useState<StudentLesson | null>(null);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [progressOpen, setProgressOpen] = useState(false);
+  const [confirmStartLesson, setConfirmStartLesson] =
+    useState<StudentLesson | null>(null);
 
   // Filtering & sorting
   type LessonFilter = "ALL" | "COMPLETED" | "IN_PROGRESS" | "NOT_STARTED";
@@ -821,7 +824,28 @@ export function StudentDashboard() {
 
               return (
                 <Grid key={lesson.id} size={{ xs: 12, md: 6, xl: 4 }}>
-                  <Paper elevation={0} sx={panelGridCardSx}>
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      ...panelGridCardSx,
+                      cursor: isLocked ? "default" : "pointer",
+                      transition: "box-shadow 0.15s, border-color 0.15s",
+                      ...(!isLocked && {
+                        "&:hover": {
+                          boxShadow: 2,
+                          borderColor: "primary.light",
+                        },
+                      }),
+                    }}
+                    onClick={() => {
+                      if (isLocked) return;
+                      if (isCompleted) {
+                        setResultLesson(lesson);
+                      } else {
+                        setConfirmStartLesson(lesson);
+                      }
+                    }}
+                  >
                     <Box sx={panelGridCardContentSx}>
                       {/* Header row: icon + title + status icon */}
                       <Box
@@ -909,7 +933,7 @@ export function StudentDashboard() {
                       </Box>
 
                       {/* Footer actions */}
-                      <Box sx={panelCardFooterSx}>
+                      <Box sx={panelCardFooterSx} onClick={(e) => e.stopPropagation()}>
                         {isCompleted ? (
                           <Stack
                             direction="row"
@@ -959,9 +983,10 @@ export function StudentDashboard() {
                             fullWidth
                             variant="contained"
                             sx={panelFooterButtonSx}
+                            onClick={() => setConfirmStartLesson(lesson)}
                           >
                             {isInProgress
-                              ? "Kontynuacja w przygotowaniu"
+                              ? "Kontynuuj lekcję"
                               : "Rozpocznij lekcję"}
                           </Button>
                         )}
@@ -995,6 +1020,54 @@ export function StudentDashboard() {
           onClose={() => setProgressOpen(false)}
         />
       )}
+
+      {/* Confirm start lesson dialog */}
+      <Dialog
+        open={confirmStartLesson != null}
+        onClose={() => setConfirmStartLesson(null)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 3 } }}
+      >
+        <DialogTitle sx={{ fontWeight: 700 }}>
+          {confirmStartLesson?.status === "IN_PROGRESS"
+            ? "Kontynuować lekcję?"
+            : "Rozpocząć lekcję?"}
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            {confirmStartLesson?.status === "IN_PROGRESS"
+              ? `Czy chcesz wrócić do lekcji "${confirmStartLesson?.title}"?`
+              : `Czy na pewno chcesz rozpocząć lekcję "${confirmStartLesson?.title}"? Po rozpoczęciu musisz ją ukończyć.`}
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={() => setConfirmStartLesson(null)}
+            sx={{ textTransform: "none", fontWeight: 600 }}
+          >
+            Anuluj
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              if (confirmStartLesson) {
+                navigate(`/student/lessons/${confirmStartLesson.id}`);
+              }
+            }}
+            sx={{
+              textTransform: "none",
+              fontWeight: 600,
+              borderRadius: 2,
+              boxShadow: "none",
+            }}
+          >
+            {confirmStartLesson?.status === "IN_PROGRESS"
+              ? "Kontynuuj"
+              : "Rozpocznij"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

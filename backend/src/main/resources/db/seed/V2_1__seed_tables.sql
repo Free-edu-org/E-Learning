@@ -19,21 +19,67 @@ INSERT INTO achievements (name, description) VALUES
 -- Lekcje
 INSERT INTO lessons (title, theme, is_active, teacher_id) VALUES
     ('Powitania', 'Podstawowe zwroty grzecznościowe', TRUE, 4),
-    ('Czasowniki', 'Czas Present Simple', TRUE, 4);
+    ('Czasowniki', 'Czas Present Simple', TRUE, 4),
+    ('Kolory i zwierzęta', 'Słownictwo podstawowe - kolory, zwierzęta, proste zdania', TRUE, 4);
 
--- Zadania: Wybór (choose_tasks)
+-- ═══════════════════════════════════════════════════════════════
+-- Zadania do lekcji 1 i 2 (istniejące, poprawiony format separatora)
+-- ═══════════════════════════════════════════════════════════════
+
+-- Zadania: Wybór (choose_tasks) — separator |
 INSERT INTO choose_tasks (lesson_id, task, possible_answers, correct_answer) VALUES
-    (1, 'Jak powiesz "Dzień dobry" rano?', '1. Good night, 2. Good morning, 3. Hello', 2),
-    (2, 'Wybierz poprawną formę: He ___ to school.', '1. go, 2. goes, 3. going', 2);
+    (1, 'Jak powiesz "Dzień dobry" rano?', 'Good night|Good morning|Hello', 1),
+    (2, 'Wybierz poprawną formę: He ___ to school.', 'go|goes|going', 1);
 
 -- Zadania: Pisanie (write_tasks)
 INSERT INTO write_tasks (lesson_id, task, correct_answer) VALUES
     (1, 'Przetłumacz na angielski: "Cześć"', 'Hello'),
     (2, 'Wpisz przeczenie: I ___ not like apples.', 'do');
 
--- Zadania: Rozsypanka (scatter_tasks)
+-- Zadania: Rozsypanka (scatter_tasks) — separator |
 INSERT INTO scatter_tasks (lesson_id, task, words, correct_answer) VALUES
-    (1, 'Ułóż zdanie: am, I, John', 'am;I;John', 'I am John');
+    (1, 'Ułóż zdanie: am, I, John', 'am|I|John', 'I am John');
+
+-- ═══════════════════════════════════════════════════════════════
+-- Lekcja 3: "Kolory i zwierzęta" — pełna lekcja z sekcjami, hintami i 4 typami zadań
+-- ═══════════════════════════════════════════════════════════════
+
+-- Sekcja: Kolory (choose + write)
+INSERT INTO choose_tasks (lesson_id, task, possible_answers, correct_answer, hint, section) VALUES
+    (3, 'What color is the sky?', 'red|blue|green|yellow', 1, 'Pomyśl o pogodnym dniu.', 'Kolory'),
+    (3, 'What color is grass?', 'blue|red|green|orange', 2, 'Pomyśl o parku wiosną.', 'Kolory'),
+    (3, 'Choose the correct translation of "czerwony":', 'blue|red|yellow|pink', 1, NULL, 'Kolory');
+
+INSERT INTO write_tasks (lesson_id, task, correct_answer, hint, section) VALUES
+    (3, 'Przetłumacz na angielski: "żółty"', 'yellow', 'Kolor słońca i bananów.', 'Kolory'),
+    (3, 'Jak po angielsku powiemy "czarny"?', 'black', NULL, 'Kolory');
+
+-- Sekcja: Zwierzęta (choose + write + scatter)
+INSERT INTO choose_tasks (lesson_id, task, possible_answers, correct_answer, hint, section) VALUES
+    (3, 'Which animal says "meow"?', 'dog|cat|bird|fish', 1, 'To zwierzę domowe, które lubi mleko.', 'Zwierzęta'),
+    (3, 'Which animal can fly?', 'cat|fish|bird|dog', 2, 'Ma skrzydła i pióra.', 'Zwierzęta');
+
+INSERT INTO write_tasks (lesson_id, task, correct_answer, hint, section) VALUES
+    (3, 'Przetłumacz na angielski: "pies"', 'dog', 'Najlepszy przyjaciel człowieka.', 'Zwierzęta'),
+    (3, 'Jak po angielsku powiemy "ryba"?', 'fish', NULL, 'Zwierzęta');
+
+INSERT INTO scatter_tasks (lesson_id, task, words, correct_answer, hint, section) VALUES
+    (3, 'Ułóż zdanie z rozsypanki:', 'a|have|I|cat', 'I have a cat', 'Zacznij od "I".', 'Zwierzęta'),
+    (3, 'Ułóż zdanie:', 'is|The|big|dog', 'The dog is big', 'Zacznij od "The".', 'Zwierzęta');
+
+-- Sekcja: Proste zdania (scatter + speak)
+INSERT INTO scatter_tasks (lesson_id, task, words, correct_answer, hint, section) VALUES
+    (3, 'Ułóż zdanie:', 'blue|The|is|sky', 'The sky is blue', NULL, 'Proste zdania'),
+    (3, 'Ułóż poprawne zdanie:', 'like|I|red|color|the', 'I like the red color', 'Zacznij od "I".', 'Proste zdania');
+
+INSERT INTO speak_tasks (lesson_id, task, hint, section) VALUES
+    (3, 'Przeczytaj na głos: "The cat is black and the dog is brown."', 'Zwróć uwagę na wymowę "brown".', 'Proste zdania'),
+    (3, 'Przeczytaj na głos: "I like blue birds and yellow fish."', NULL, 'Proste zdania'),
+    (3, 'Powiedz na głos: "My favorite color is green."', 'Słowo "favorite" wymawiamy fejwryt.', 'Proste zdania');
+
+-- ═══════════════════════════════════════════════════════════════
+-- Przypisania
+-- ═══════════════════════════════════════════════════════════════
 
 -- Przypisanie użytkowników do grup (user_in_group)
 INSERT INTO user_in_group (user_id, group_id) VALUES
@@ -43,7 +89,8 @@ INSERT INTO user_in_group (user_id, group_id) VALUES
 -- Przypisanie lekcji do grup (group_has_lesson)
 INSERT INTO group_has_lesson (group_id, lesson_id) VALUES
     (1, 1), -- Grupa A1 ma lekcję "Powitania"
-    (1, 2); -- Grupa A1 ma lekcję "Czasowniki"
+    (1, 2), -- Grupa A1 ma lekcję "Czasowniki"
+    (1, 3); -- Grupa A1 ma lekcję "Kolory i zwierzęta"
 
 -- Odpowiedzi użytkowników (user_answers)
 INSERT INTO user_answers (task_id, user_id, lesson_id, answer, is_correct, task_type) VALUES

@@ -7,6 +7,7 @@ import {
   closestCenter,
   KeyboardSensor,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -41,15 +42,19 @@ function createEmptyTaskDraft(type: TaskType = "write"): LessonTaskDraft {
 interface TaskEditorProps {
   tasks: LessonTaskDraft[];
   onChange: (tasks: LessonTaskDraft[]) => void;
+  defaultExpanded?: boolean;
 }
 
-export function TaskEditor({ tasks, onChange }: TaskEditorProps) {
+export function TaskEditor({ tasks, onChange, defaultExpanded = true }: TaskEditorProps) {
   const [showTypeSelector, setShowTypeSelector] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: { distance: 8 },
+      activationConstraint: { distance: 3 },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 200, tolerance: 5 },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
@@ -185,6 +190,7 @@ export function TaskEditor({ tasks, onChange }: TaskEditorProps) {
                   index={index}
                   onChange={(updated) => handleUpdateTask(index, updated)}
                   onDelete={() => handleDeleteTask(index)}
+                  defaultExpanded={defaultExpanded}
                 />
               ))}
             </Stack>
