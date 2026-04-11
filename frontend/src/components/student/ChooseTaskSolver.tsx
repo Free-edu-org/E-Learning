@@ -72,9 +72,7 @@ export function ChooseTaskSolver({
         {options.map((option, index) => (
           <Box
             key={index}
-            onClick={() =>
-              !disabled && !result && onChange(String(index))
-            }
+            onClick={() => !disabled && !result && onChange(String(index))}
             sx={getOptionSx(index)}
           >
             <Box sx={chooseOptionNumberSx}>{index + 1}</Box>
@@ -88,9 +86,7 @@ export function ChooseTaskSolver({
       {result && (
         <Box
           sx={
-            result.isCorrect
-              ? taskFeedbackCorrectSx
-              : taskFeedbackIncorrectSx
+            result.isCorrect ? taskFeedbackCorrectSx : taskFeedbackIncorrectSx
           }
         >
           <Stack direction="row" alignItems="center" spacing={1}>

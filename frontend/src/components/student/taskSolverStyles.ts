@@ -86,8 +86,7 @@ export const chooseOptionSelectedSx: SxProps<Theme> = {
       theme.palette.primary.main,
       theme.palette.mode === "dark" ? 0.08 : 0.06,
     ),
-  boxShadow: (theme) =>
-    `0 0 0 1px ${alpha(theme.palette.primary.main, 0.25)}`,
+  boxShadow: (theme) => `0 0 0 1px ${alpha(theme.palette.primary.main, 0.25)}`,
   "&:hover": {
     borderColor: (theme) => alpha(theme.palette.primary.main, 0.6),
     boxShadow: (theme) =>
@@ -120,7 +119,10 @@ export const chooseOptionNumberSx: SxProps<Theme> = {
   justifyContent: "center",
   flexShrink: 0,
   bgcolor: (theme) =>
-    alpha(theme.palette.text.primary, theme.palette.mode === "dark" ? 0.08 : 0.06),
+    alpha(
+      theme.palette.text.primary,
+      theme.palette.mode === "dark" ? 0.08 : 0.06,
+    ),
   color: "text.secondary",
   fontWeight: 700,
   fontSize: "0.9rem",

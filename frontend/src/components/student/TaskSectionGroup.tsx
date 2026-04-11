@@ -1,6 +1,9 @@
 import { Box, Stack, Typography } from "@mui/material";
 import type { TaskSectionDto } from "@/api/taskService";
-import type { SubmitAnswerItem, SubmitAnswerDetail } from "@/api/studentService";
+import type {
+  SubmitAnswerItem,
+  SubmitAnswerDetail,
+} from "@/api/studentService";
 import { ChooseTaskSolver } from "./ChooseTaskSolver";
 import { WriteTaskSolver } from "./WriteTaskSolver";
 import { ScatterTaskSolver } from "./ScatterTaskSolver";

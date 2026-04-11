@@ -68,7 +68,11 @@ export function WriteTaskSolver({
       )}
 
       {result && (
-        <Box sx={result.isCorrect ? taskFeedbackCorrectSx : taskFeedbackIncorrectSx}>
+        <Box
+          sx={
+            result.isCorrect ? taskFeedbackCorrectSx : taskFeedbackIncorrectSx
+          }
+        >
           <Stack direction="row" alignItems="center" spacing={1}>
             {result.isCorrect ? (
               <CorrectIcon color="success" fontSize="small" />
@@ -76,7 +80,9 @@ export function WriteTaskSolver({
               <IncorrectIcon color="error" fontSize="small" />
             )}
             <Typography variant="body2" fontWeight={600}>
-              {result.isCorrect ? "Poprawna odpowiedź!" : "Niepoprawna odpowiedź"}
+              {result.isCorrect
+                ? "Poprawna odpowiedź!"
+                : "Niepoprawna odpowiedź"}
             </Typography>
           </Stack>
           {!result.isCorrect && (

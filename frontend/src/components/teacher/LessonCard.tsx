@@ -167,7 +167,10 @@ export function LessonCard({
           {formatDate(lesson.createdAt)}
         </Typography>
 
-        <Box sx={{ display: "flex", gap: 0.5, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+        <Box
+          sx={{ display: "flex", gap: 0.5, flexShrink: 0 }}
+          onClick={(e) => e.stopPropagation()}
+        >
           <Button
             size="small"
             startIcon={<EditIcon fontSize="small" />}
@@ -245,7 +248,10 @@ export function LessonCard({
           <Typography variant="caption" color="text.secondary">
             Status:
           </Typography>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }} onClick={(e) => e.stopPropagation()}>
+          <Box
+            sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+            onClick={(e) => e.stopPropagation()}
+          >
             {lesson.isActive ? (
               <Chip
                 label="Aktywna"
@@ -288,7 +294,10 @@ export function LessonCard({
 
       <Divider />
 
-      <CardActions sx={{ ...panelCardFooterSx, px: 2, py: 1, gap: 1, mt: 0 }} onClick={(e) => e.stopPropagation()}>
+      <CardActions
+        sx={{ ...panelCardFooterSx, px: 2, py: 1, gap: 1, mt: 0 }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <Box
           sx={{ display: "flex", width: "100%", gap: 1, flexWrap: "nowrap" }}
         >

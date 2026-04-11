@@ -45,7 +45,11 @@ interface TaskEditorProps {
   defaultExpanded?: boolean;
 }
 
-export function TaskEditor({ tasks, onChange, defaultExpanded = true }: TaskEditorProps) {
+export function TaskEditor({
+  tasks,
+  onChange,
+  defaultExpanded = true,
+}: TaskEditorProps) {
   const [showTypeSelector, setShowTypeSelector] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
 

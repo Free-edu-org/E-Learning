@@ -47,7 +47,10 @@ function App() {
 
             <Route element={<ProtectedRoute allowedRoles={["STUDENT"]} />}>
               <Route path="/student" element={<StudentDashboard />} />
-              <Route path="/student/lessons/:lessonId" element={<LessonSolver />} />
+              <Route
+                path="/student/lessons/:lessonId"
+                element={<LessonSolver />}
+              />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />

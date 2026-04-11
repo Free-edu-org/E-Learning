@@ -4,7 +4,7 @@ import {
   CheckCircleOutlined as CorrectIcon,
   CancelOutlined as IncorrectIcon,
 } from "@mui/icons-material";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import type { ScatterTaskResponse } from "@/api/taskService";
 import type { SubmitAnswerDetail } from "@/api/studentService";
 import {
@@ -49,13 +49,6 @@ export function ScatterTaskSolver({
     }
     return indices;
   });
-
-  // Clear selectedIndices when value is externally reset to empty
-  useEffect(() => {
-    if (!value) {
-      setSelectedIndices([]);
-    }
-  }, [value]);
 
   const handleSelect = (index: number) => {
     if (disabled) return;
@@ -105,8 +98,7 @@ export function ScatterTaskSolver({
           mb: 1.5,
           borderRadius: 2,
           border: "2px dashed",
-          borderColor: (theme) =>
-            alpha(theme.palette.primary.main, 0.25),
+          borderColor: (theme) => alpha(theme.palette.primary.main, 0.25),
           bgcolor: (theme) =>
             alpha(
               theme.palette.primary.main,
@@ -145,7 +137,9 @@ export function ScatterTaskSolver({
             <Chip
               key={index}
               label={word}
-              onClick={isUsed || disabled ? undefined : () => handleSelect(index)}
+              onClick={
+                isUsed || disabled ? undefined : () => handleSelect(index)
+              }
               size="small"
               sx={{
                 fontWeight: 600,
@@ -174,7 +168,11 @@ export function ScatterTaskSolver({
       )}
 
       {result && (
-        <Box sx={result.isCorrect ? taskFeedbackCorrectSx : taskFeedbackIncorrectSx}>
+        <Box
+          sx={
+            result.isCorrect ? taskFeedbackCorrectSx : taskFeedbackIncorrectSx
+          }
+        >
           <Stack direction="row" alignItems="center" spacing={1}>
             {result.isCorrect ? (
               <CorrectIcon color="success" fontSize="small" />
@@ -182,7 +180,9 @@ export function ScatterTaskSolver({
               <IncorrectIcon color="error" fontSize="small" />
             )}
             <Typography variant="body2" fontWeight={600}>
-              {result.isCorrect ? "Poprawna odpowiedź!" : "Niepoprawna odpowiedź"}
+              {result.isCorrect
+                ? "Poprawna odpowiedź!"
+                : "Niepoprawna odpowiedź"}
             </Typography>
           </Stack>
           {!result.isCorrect && (

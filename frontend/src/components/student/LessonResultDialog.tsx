@@ -50,7 +50,10 @@ export function LessonResultDialog({
           <IconButton
             size="small"
             onClick={onClose}
-            sx={{ color: "text.secondary", "&:hover": { color: "text.primary" } }}
+            sx={{
+              color: "text.secondary",
+              "&:hover": { color: "text.primary" },
+            }}
           >
             <CloseIcon fontSize="small" />
           </IconButton>

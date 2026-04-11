@@ -234,7 +234,13 @@ interface TaskCardProps {
   defaultExpanded?: boolean;
 }
 
-export function TaskCard({ task, index, onChange, onDelete, defaultExpanded = true }: TaskCardProps) {
+export function TaskCard({
+  task,
+  index,
+  onChange,
+  onDelete,
+  defaultExpanded = true,
+}: TaskCardProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const meta = taskTypeMeta[task.type];
 

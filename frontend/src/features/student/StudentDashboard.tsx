@@ -411,6 +411,12 @@ function ProgressDialog({ progress, stats, onClose }: ProgressDialogProps) {
 
 // ── Main Dashboard ────────────────────────────────────────────────────────────
 
+const STATUS_ORDER: Record<StudentLesson["status"], number> = {
+  IN_PROGRESS: 0,
+  NOT_STARTED: 1,
+  COMPLETED: 2,
+};
+
 export function StudentDashboard() {
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -488,12 +494,6 @@ export function StudentDashboard() {
     return null;
   }, [lessons]);
 
-  const statusOrder: Record<StudentLesson["status"], number> = {
-    IN_PROGRESS: 0,
-    NOT_STARTED: 1,
-    COMPLETED: 2,
-  };
-
   const displayedLessons = useMemo(() => {
     let result = lessons.filter((l) => {
       if (lessonFilter === "ALL") return true;
@@ -508,7 +508,7 @@ export function StudentDashboard() {
       if (lessonSort === "title_desc")
         return b.title.localeCompare(a.title, "pl");
       // status: in_progress first, then not_started, then completed
-      return statusOrder[a.status] - statusOrder[b.status];
+      return STATUS_ORDER[a.status] - STATUS_ORDER[b.status];
     });
 
     return result;
@@ -933,7 +933,10 @@ export function StudentDashboard() {
                       </Box>
 
                       {/* Footer actions */}
-                      <Box sx={panelCardFooterSx} onClick={(e) => e.stopPropagation()}>
+                      <Box
+                        sx={panelCardFooterSx}
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         {isCompleted ? (
                           <Stack
                             direction="row"

@@ -44,9 +44,7 @@ import { WriteTaskSolver } from "@/components/student/WriteTaskSolver";
 import { ScatterTaskSolver } from "@/components/student/ScatterTaskSolver";
 import { SpeakTaskSolver } from "@/components/student/SpeakTaskSolver";
 import { LessonResultDialog } from "@/components/student/LessonResultDialog";
-import {
-  CheckCircleOutlined as AnsweredIcon,
-} from "@mui/icons-material";
+import { CheckCircleOutlined as AnsweredIcon } from "@mui/icons-material";
 import {
   taskCardSx,
   taskTypeMeta,
@@ -244,7 +242,11 @@ export function LessonSolver() {
 
     const completeAnswers: SubmitAnswerItem[] = flatTasks.map(
       ({ taskId, taskType }) =>
-        answers[answerKey(taskType, taskId)] ?? { taskId, taskType, answer: "" },
+        answers[answerKey(taskType, taskId)] ?? {
+          taskId,
+          taskType,
+          answer: "",
+        },
     );
 
     setSubmitting(true);
@@ -294,7 +296,8 @@ export function LessonSolver() {
       resultsMap?.get(answerKey(currentTask.taskType, currentTask.taskId)) ??
       null;
     const currentAnswer =
-      answers[answerKey(currentTask.taskType, currentTask.taskId)]?.answer ?? "";
+      answers[answerKey(currentTask.taskType, currentTask.taskId)]?.answer ??
+      "";
     const disabled = submitting || isSubmitted;
 
     switch (currentTask.taskType) {
@@ -382,11 +385,7 @@ export function LessonSolver() {
         {loading && (
           <Stack spacing={2}>
             <Skeleton variant="rounded" height={20} sx={{ borderRadius: 2 }} />
-            <Skeleton
-              variant="rounded"
-              height={400}
-              sx={{ borderRadius: 3 }}
-            />
+            <Skeleton variant="rounded" height={400} sx={{ borderRadius: 3 }} />
           </Stack>
         )}
 
@@ -439,44 +438,50 @@ export function LessonSolver() {
             />
 
             {/* Unanswered alert */}
-            {showUnansweredAlert && answeredCount < totalTaskCount && (() => {
-              const unansweredIndices = flatTasks
-                .map((t, i) => ({ idx: i, t }))
-                .filter(({ t }) => (answers[answerKey(t.taskType, t.taskId)]?.answer ?? "") === "")
-                .map(({ idx }) => idx);
+            {showUnansweredAlert &&
+              answeredCount < totalTaskCount &&
+              (() => {
+                const unansweredIndices = flatTasks
+                  .map((t, i) => ({ idx: i, t }))
+                  .filter(
+                    ({ t }) =>
+                      (answers[answerKey(t.taskType, t.taskId)]?.answer ??
+                        "") === "",
+                  )
+                  .map(({ idx }) => idx);
 
-              return (
-                <Alert
-                  severity="warning"
-                  sx={{ mb: 2, borderRadius: 2 }}
-                  action={
-                    <Stack direction="row" spacing={1}>
-                      <Button
-                        color="inherit"
-                        size="small"
-                        onClick={() => setShowUnansweredAlert(false)}
-                      >
-                        Wróć do pytań
-                      </Button>
-                      <Button
-                        color="warning"
-                        size="small"
-                        variant="contained"
-                        onClick={doSubmit}
-                        sx={{ textTransform: "none", fontWeight: 600 }}
-                      >
-                        Wyślij mimo to
-                      </Button>
-                    </Stack>
-                  }
-                >
-                  Nie odpowiedziano na {totalTaskCount - answeredCount} z{" "}
-                  {totalTaskCount} pytań (
-                  {unansweredIndices.map((i) => `zad. ${i + 1}`).join(", ")}
-                  ). Puste odpowiedzi będą ocenione jako błędne.
-                </Alert>
-              );
-            })()}
+                return (
+                  <Alert
+                    severity="warning"
+                    sx={{ mb: 2, borderRadius: 2 }}
+                    action={
+                      <Stack direction="row" spacing={1}>
+                        <Button
+                          color="inherit"
+                          size="small"
+                          onClick={() => setShowUnansweredAlert(false)}
+                        >
+                          Wróć do pytań
+                        </Button>
+                        <Button
+                          color="warning"
+                          size="small"
+                          variant="contained"
+                          onClick={doSubmit}
+                          sx={{ textTransform: "none", fontWeight: 600 }}
+                        >
+                          Wyślij mimo to
+                        </Button>
+                      </Stack>
+                    }
+                  >
+                    Nie odpowiedziano na {totalTaskCount - answeredCount} z{" "}
+                    {totalTaskCount} pytań (
+                    {unansweredIndices.map((i) => `zad. ${i + 1}`).join(", ")}
+                    ). Puste odpowiedzi będą ocenione jako błędne.
+                  </Alert>
+                );
+              })()}
 
             {/* Main layout with task nav rail */}
             <Box sx={{ display: "flex", gap: 2 }}>
@@ -498,11 +503,19 @@ export function LessonSolver() {
                   const taskResult = resultsMap?.get(key) ?? null;
 
                   // Show section divider before first task of a new section
-                  const prevSection = idx > 0 ? flatTasks[idx - 1].section : null;
+                  const prevSection =
+                    idx > 0 ? flatTasks[idx - 1].section : null;
                   const showDivider = idx > 0 && ft.section !== prevSection;
 
                   return (
-                    <Box key={key} sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                    <Box
+                      key={key}
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                      }}
+                    >
                       {showDivider && (
                         <Box
                           sx={{
@@ -520,12 +533,20 @@ export function LessonSolver() {
                               {`${idx + 1}. ${meta.label}`}
                             </Typography>
                             {isAnswered && !isSubmitted && (
-                              <Typography variant="caption" display="block" sx={{ opacity: 0.8 }}>
+                              <Typography
+                                variant="caption"
+                                display="block"
+                                sx={{ opacity: 0.8 }}
+                              >
                                 Odpowiedziano
                               </Typography>
                             )}
                             {taskResult && (
-                              <Typography variant="caption" display="block" sx={{ opacity: 0.8 }}>
+                              <Typography
+                                variant="caption"
+                                display="block"
+                                sx={{ opacity: 0.8 }}
+                              >
                                 {taskResult.isCorrect ? "Poprawne" : "Błędne"}
                               </Typography>
                             )}
@@ -574,7 +595,9 @@ export function LessonSolver() {
                                       bgcolor: (t: Theme) =>
                                         alpha(
                                           t.palette.text.primary,
-                                          t.palette.mode === "dark" ? 0.06 : 0.05,
+                                          t.palette.mode === "dark"
+                                            ? 0.06
+                                            : 0.05,
                                         ),
                                       color: "text.secondary",
                                       borderColor: (t: Theme) =>
@@ -609,185 +632,211 @@ export function LessonSolver() {
               <Box sx={{ flex: 1, minWidth: 0 }}>
                 <Grid container spacing={3}>
                   {/* Left: Task card */}
-              <Grid size={{ xs: 12, md: 8, lg: 9 }}>
-                <Paper elevation={0} sx={{ ...taskCardSx, p: 3 }}>
-                  {/* Inner task card */}
-                  <Box
-                    sx={{
-                      p: 2.5,
-                      mb: 3,
-                      borderRadius: 3,
-                      bgcolor: (t) =>
-                        alpha(
-                          t.palette.common.white,
-                          t.palette.mode === "dark" ? 0.02 : 0.6,
-                        ),
-                      border: "1px solid",
-                      borderColor: (t) =>
-                        alpha(
-                          t.palette.divider,
-                          t.palette.mode === "dark" ? 0.15 : 0.2,
-                        ),
-                    }}
-                  >
-                    {renderCurrentTask()}
-                  </Box>
-
-                  {/* Navigation buttons */}
-                  <Stack
-                    direction="row"
-                    justifyContent="space-between"
-                    alignItems="center"
-                  >
-                    <Button
-                      startIcon={<BackIcon />}
-                      onClick={handlePrev}
-                      disabled={currentStep === 0}
-                      sx={{
-                        textTransform: "none",
-                        fontWeight: 600,
-                        color: "text.secondary",
-                        visibility: currentStep === 0 ? "hidden" : "visible",
-                      }}
-                    >
-                      Wstecz
-                    </Button>
-
-                    {isSubmitted ? (
-                      isLastStep ? (
-                        <Button
-                          variant="contained"
-                          startIcon={<BackIcon />}
-                          onClick={goBack}
-                          sx={{
-                            textTransform: "none",
-                            fontWeight: 600,
-                            borderRadius: 2,
-                            boxShadow: "none",
-                          }}
-                        >
-                          Wróć do panelu
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="contained"
-                          endIcon={<NextIcon />}
-                          onClick={handleNext}
-                          sx={{
-                            textTransform: "none",
-                            fontWeight: 600,
-                            borderRadius: 2,
-                            boxShadow: "none",
-                            bgcolor: "grey.700",
-                            "&:hover": { bgcolor: "grey.800" },
-                          }}
-                        >
-                          Dalej
-                        </Button>
-                      )
-                    ) : isLastStep ? (
-                      <Button
-                        variant="contained"
-                        endIcon={
-                          submitting ? (
-                            <CircularProgress size={16} color="inherit" />
-                          ) : (
-                            <SubmitIcon />
-                          )
-                        }
-                        onClick={handleFinish}
-                        disabled={submitting}
+                  <Grid size={{ xs: 12, md: 8, lg: 9 }}>
+                    <Paper elevation={0} sx={{ ...taskCardSx, p: 3 }}>
+                      {/* Inner task card */}
+                      <Box
                         sx={{
-                          textTransform: "none",
-                          fontWeight: 600,
-                          borderRadius: 2,
-                          boxShadow: "none",
-                          px: 3,
+                          p: 2.5,
+                          mb: 3,
+                          borderRadius: 3,
+                          bgcolor: (t) =>
+                            alpha(
+                              t.palette.common.white,
+                              t.palette.mode === "dark" ? 0.02 : 0.6,
+                            ),
+                          border: "1px solid",
+                          borderColor: (t) =>
+                            alpha(
+                              t.palette.divider,
+                              t.palette.mode === "dark" ? 0.15 : 0.2,
+                            ),
                         }}
                       >
-                        {submitting ? "Wysyłanie..." : "Zakończ lekcję"}
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="contained"
-                        endIcon={<NextIcon />}
-                        onClick={handleNext}
-                        sx={{
-                          textTransform: "none",
-                          fontWeight: 600,
-                          borderRadius: 2,
-                          boxShadow: "none",
-                          bgcolor: "grey.700",
-                          "&:hover": { bgcolor: "grey.800" },
-                        }}
-                      >
-                        Dalej
-                      </Button>
-                    )}
-                  </Stack>
-                </Paper>
-              </Grid>
-
-              {/* Right: Sidebar */}
-              <Grid
-                size={{ xs: 12, md: 4, lg: 3 }}
-                sx={{ display: { xs: "none", md: "block" } }}
-              >
-                <Paper elevation={0} sx={sidebarCardSx}>
-                  <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2 }}>
-                    {currentTask.hint ? "Podpowiedź" : currentTask.section ?? "Informacja"}
-                  </Typography>
-
-                  {currentTask.hint && (
-                    <Stack direction="row" spacing={1} alignItems="flex-start">
-                      <HintIcon
-                        sx={{
-                          color: "warning.main",
-                          fontSize: 20,
-                          mt: 0.25,
-                          flexShrink: 0,
-                        }}
-                      />
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ lineHeight: 1.7 }}
-                      >
-                        {currentTask.hint}
-                      </Typography>
-                    </Stack>
-                  )}
-
-                  {!currentTask.hint && currentTask.section && (
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ lineHeight: 1.7 }}
-                    >
-                      Sekcja: {currentTask.section}
-                    </Typography>
-                  )}
-
-                  {!currentTask.hint && !currentTask.section && (
-                    <Typography variant="body2" color="text.secondary">
-                      Rozwiąż zadanie po lewej stronie.
-                    </Typography>
-                  )}
-
-                  {/* Task type badge */}
-                  <Box sx={{ mt: 2, pt: 2, borderTop: "1px solid", borderColor: "divider" }}>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Box sx={{ color: taskTypeMeta[currentTask.taskType].color }}>
-                        {taskTypeMeta[currentTask.taskType].icon}
+                        {renderCurrentTask()}
                       </Box>
-                      <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                        Typ: {taskTypeMeta[currentTask.taskType].label}
+
+                      {/* Navigation buttons */}
+                      <Stack
+                        direction="row"
+                        justifyContent="space-between"
+                        alignItems="center"
+                      >
+                        <Button
+                          startIcon={<BackIcon />}
+                          onClick={handlePrev}
+                          disabled={currentStep === 0}
+                          sx={{
+                            textTransform: "none",
+                            fontWeight: 600,
+                            color: "text.secondary",
+                            visibility:
+                              currentStep === 0 ? "hidden" : "visible",
+                          }}
+                        >
+                          Wstecz
+                        </Button>
+
+                        {isSubmitted ? (
+                          isLastStep ? (
+                            <Button
+                              variant="contained"
+                              startIcon={<BackIcon />}
+                              onClick={goBack}
+                              sx={{
+                                textTransform: "none",
+                                fontWeight: 600,
+                                borderRadius: 2,
+                                boxShadow: "none",
+                              }}
+                            >
+                              Wróć do panelu
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="contained"
+                              endIcon={<NextIcon />}
+                              onClick={handleNext}
+                              sx={{
+                                textTransform: "none",
+                                fontWeight: 600,
+                                borderRadius: 2,
+                                boxShadow: "none",
+                                bgcolor: "grey.700",
+                                "&:hover": { bgcolor: "grey.800" },
+                              }}
+                            >
+                              Dalej
+                            </Button>
+                          )
+                        ) : isLastStep ? (
+                          <Button
+                            variant="contained"
+                            endIcon={
+                              submitting ? (
+                                <CircularProgress size={16} color="inherit" />
+                              ) : (
+                                <SubmitIcon />
+                              )
+                            }
+                            onClick={handleFinish}
+                            disabled={submitting}
+                            sx={{
+                              textTransform: "none",
+                              fontWeight: 600,
+                              borderRadius: 2,
+                              boxShadow: "none",
+                              px: 3,
+                            }}
+                          >
+                            {submitting ? "Wysyłanie..." : "Zakończ lekcję"}
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="contained"
+                            endIcon={<NextIcon />}
+                            onClick={handleNext}
+                            sx={{
+                              textTransform: "none",
+                              fontWeight: 600,
+                              borderRadius: 2,
+                              boxShadow: "none",
+                              bgcolor: "grey.700",
+                              "&:hover": { bgcolor: "grey.800" },
+                            }}
+                          >
+                            Dalej
+                          </Button>
+                        )}
+                      </Stack>
+                    </Paper>
+                  </Grid>
+
+                  {/* Right: Sidebar */}
+                  <Grid
+                    size={{ xs: 12, md: 4, lg: 3 }}
+                    sx={{ display: { xs: "none", md: "block" } }}
+                  >
+                    <Paper elevation={0} sx={sidebarCardSx}>
+                      <Typography
+                        variant="subtitle1"
+                        fontWeight={700}
+                        sx={{ mb: 2 }}
+                      >
+                        {currentTask.hint
+                          ? "Podpowiedź"
+                          : (currentTask.section ?? "Informacja")}
                       </Typography>
-                    </Stack>
-                  </Box>
-                </Paper>
-              </Grid>
-            </Grid>
+
+                      {currentTask.hint && (
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          alignItems="flex-start"
+                        >
+                          <HintIcon
+                            sx={{
+                              color: "warning.main",
+                              fontSize: 20,
+                              mt: 0.25,
+                              flexShrink: 0,
+                            }}
+                          />
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{ lineHeight: 1.7 }}
+                          >
+                            {currentTask.hint}
+                          </Typography>
+                        </Stack>
+                      )}
+
+                      {!currentTask.hint && currentTask.section && (
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ lineHeight: 1.7 }}
+                        >
+                          Sekcja: {currentTask.section}
+                        </Typography>
+                      )}
+
+                      {!currentTask.hint && !currentTask.section && (
+                        <Typography variant="body2" color="text.secondary">
+                          Rozwiąż zadanie po lewej stronie.
+                        </Typography>
+                      )}
+
+                      {/* Task type badge */}
+                      <Box
+                        sx={{
+                          mt: 2,
+                          pt: 2,
+                          borderTop: "1px solid",
+                          borderColor: "divider",
+                        }}
+                      >
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <Box
+                            sx={{
+                              color: taskTypeMeta[currentTask.taskType].color,
+                            }}
+                          >
+                            {taskTypeMeta[currentTask.taskType].icon}
+                          </Box>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            fontWeight={600}
+                          >
+                            Typ: {taskTypeMeta[currentTask.taskType].label}
+                          </Typography>
+                        </Stack>
+                      </Box>
+                    </Paper>
+                  </Grid>
+                </Grid>
               </Box>
             </Box>
           </>
