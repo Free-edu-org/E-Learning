@@ -1,10 +1,11 @@
-﻿import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AppThemeProvider } from "./context/ThemeContext";
 import { AuthProvider } from "./context/AuthContext";
 import { useAuth } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Login } from "./features/auth/Login";
 import { TeacherDashboard } from "./features/teacher/TeacherDashboard";
+import { TeacherStudentsView } from "./features/teacher/TeacherStudentsView";
 import { AdminDashboard } from "./features/admin/AdminDashboard";
 import { StudentDashboard } from "./features/student/StudentDashboard";
 
@@ -38,6 +39,7 @@ function App() {
             {/* Zabezpieczenie przed wejściem na panel nauczyciela przez inne role */}
             <Route element={<ProtectedRoute allowedRoles={["TEACHER"]} />}>
               <Route path="/teacher" element={<TeacherDashboard />} />
+              <Route path="/teacher/students" element={<TeacherStudentsView />} />
             </Route>
 
             <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>

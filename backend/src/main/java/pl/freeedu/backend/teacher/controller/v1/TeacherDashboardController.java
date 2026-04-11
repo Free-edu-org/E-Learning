@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -16,8 +17,8 @@ import org.springframework.web.bind.annotation.RestController;
 import pl.freeedu.backend.lesson.dto.LessonResponse;
 import pl.freeedu.backend.teacher.dto.TeacherCreateStudentRequest;
 import pl.freeedu.backend.teacher.dto.TeacherStatsResponse;
+import pl.freeedu.backend.teacher.dto.TeacherStudentResponse;
 import pl.freeedu.backend.teacher.service.TeacherService;
-import pl.freeedu.backend.user.dto.UserResponse;
 import pl.freeedu.backend.usergroup.dto.UserGroupResponse;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -65,7 +66,7 @@ public class TeacherDashboardController {
 	@GetMapping("/students")
 	@PreAuthorize("hasRole('TEACHER')")
 	@ResponseStatus(HttpStatus.OK)
-	public Flux<UserResponse> getMyStudents() {
+	public Flux<TeacherStudentResponse> getMyStudents() {
 		return teacherService.getMyStudents();
 	}
 
@@ -78,7 +79,21 @@ public class TeacherDashboardController {
 	@PostMapping("/students")
 	@PreAuthorize("hasRole('TEACHER')")
 	@ResponseStatus(HttpStatus.CREATED)
-	public Mono<UserResponse> createStudent(@Valid @RequestBody Mono<TeacherCreateStudentRequest> request) {
+	public Mono<TeacherStudentResponse> createStudent(@Valid @RequestBody Mono<TeacherCreateStudentRequest> request) {
 		return teacherService.createStudent(request);
+	}
+
+	@Operation(summary = "Update student's data and group assignment")
+	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Student successfully updated"),
+			@ApiResponse(responseCode = "400", description = "Bad Request"),
+			@ApiResponse(responseCode = "403", description = "Forbidden - requires TEACHER role and ownership"),
+			@ApiResponse(responseCode = "404", description = "Group or student not found"),
+			@ApiResponse(responseCode = "409", description = "Conflict - EMAIL_ALREADY_TAKEN or USERNAME_ALREADY_TAKEN")})
+	@PutMapping("/students/{id}")
+	@PreAuthorize("hasRole('TEACHER')")
+	@ResponseStatus(HttpStatus.OK)
+	public Mono<TeacherStudentResponse> updateStudent(@org.springframework.web.bind.annotation.PathVariable Integer id,
+			@Valid @RequestBody Mono<pl.freeedu.backend.teacher.dto.TeacherUpdateStudentRequest> request) {
+		return teacherService.updateStudent(id, request);
 	}
 }

@@ -631,6 +631,44 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
 
 ---
 
+### 5.6. Update Student (Teacher API)
+- **URL**: `/api/v1/teacher/students/{id}`
+- **Method**: `PUT`
+- **Description**: Aktualizuje dane ucznia (username, email) oraz przypisaną grupę. Uczeń musi należeć do jednej z grup nauczyciela. `groupId` jest wymagany i docelowa grupa również musi należeć do nauczyciela.
+- **Authorization**: `TEACHER`
+
+**Request Body (JSON):**
+```json
+{
+  "username": "updated_student",
+  "email": "updated.student@example.com",
+  "groupId": 2
+}
+```
+
+**Success (200 OK):**
+```json
+{
+  "id": 15,
+  "username": "updated_student",
+  "email": "updated.student@example.com",
+  "role": "STUDENT",
+  "createdAt": "2026-03-30T20:15:00"
+}
+```
+
+**Known Errors:**
+- `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
+- `INVALID_ROLE_FOR_GROUP` (400 Bad Request): Wskazana grupa nie należy do aktualnego nauczyciela lub zmieniany user nie jest uczniem.
+- `USER_GROUP_NOT_FOUND` (404 Not Found): Grupa o podanym ID nie istnieje.
+- `USER_NOT_FOUND` (404 Not Found): Uczeń nie istnieje.
+- `EMAIL_ALREADY_TAKEN` (409 Conflict): Email already exists.
+- `USERNAME_ALREADY_TAKEN` (409 Conflict): Username already exists.
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Uczeń docelowy nie znajduje się w żadnej z grup przypisanych do tego nauczyciela.
+
+---
+
 ## 6. Admin Dashboard (`/api/v1/admin`)
 
 Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.

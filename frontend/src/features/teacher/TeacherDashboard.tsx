@@ -810,12 +810,14 @@ export function TeacherDashboard() {
           <ActionButton
             icon={<PersonAddIcon sx={{ fontSize: 32 }} />}
             title="Zarządzaj uczniami"
-            subtitle="Dodaj, edytuj, archiwizuj"
+            subtitle="Dodaj uczniów i zmieniaj klasy"
+            onClick={() => navigate("/teacher/students")}
           />
           <ActionButton
             icon={<GroupIcon sx={{ fontSize: 32 }} />}
             title="Zarządzaj grupami"
             subtitle="Twórz grupy i przydzielaj uczniów"
+            onClick={() => navigate("/teacher/students")}
           />
           <ActionButton
             icon={<AddIcon sx={{ fontSize: 32 }} />}
