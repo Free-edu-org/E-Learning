@@ -651,11 +651,25 @@ export function TeacherDashboard() {
   // ── Toggle lesson status ──
 
   const handleToggleLessonStatus = useCallback(async (lesson: Lesson) => {
+    const newStatus = !lesson.isActive;
+
+    // Optimistic local update — no jump / re-order
+    setLessons((prev) =>
+      prev.map((l) => (l.id === lesson.id ? { ...l, isActive: newStatus } : l)),
+    );
+
     try {
-      await lessonService.updateLessonStatus(lesson.id, !lesson.isActive);
-      await refreshDashboardData();
+      await lessonService.updateLessonStatus(lesson.id, newStatus);
+      // Refresh stats only (active count changed)
+      const s = await lessonService.getTeacherStats();
+      setStats(s);
     } catch {
-      // silently ignore, user can retry
+      // Revert on failure
+      setLessons((prev) =>
+        prev.map((l) =>
+          l.id === lesson.id ? { ...l, isActive: !newStatus } : l,
+        ),
+      );
     }
   }, []);
 
@@ -1175,6 +1189,7 @@ export function TeacherDashboard() {
                     onChange={(tasks) =>
                       setEditDraft((current) => ({ ...current, tasks }))
                     }
+                    defaultExpanded={false}
                   />
                 )}
               </FormSection>

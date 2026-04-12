@@ -8,6 +8,7 @@ import { TeacherDashboard } from "./features/teacher/TeacherDashboard";
 import { TeacherStudentsView } from "./features/teacher/TeacherStudentsView";
 import { AdminDashboard } from "./features/admin/AdminDashboard";
 import { StudentDashboard } from "./features/student/StudentDashboard";
+import { LessonSolver } from "./features/student/LessonSolver";
 
 /** Redirects to the correct dashboard based on the user's role. */
 function RoleBasedRedirect() {
@@ -48,6 +49,10 @@ function App() {
 
             <Route element={<ProtectedRoute allowedRoles={["STUDENT"]} />}>
               <Route path="/student" element={<StudentDashboard />} />
+              <Route
+                path="/student/lessons/:lessonId"
+                element={<LessonSolver />}
+              />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />

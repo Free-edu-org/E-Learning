@@ -90,6 +90,8 @@ function TaskCardHeader({
 
   return (
     <Box
+      ref={dragHandleProps?.ref}
+      {...dragHandleProps?.listeners}
       sx={{
         display: "flex",
         alignItems: "center",
@@ -104,26 +106,30 @@ function TaskCardHeader({
           ),
         bgcolor: (theme) =>
           alpha(meta.color, theme.palette.mode === "dark" ? 0.06 : 0.04),
-        cursor: isDragOverlay ? "grabbing" : "pointer",
-        transition: "background-color 0.2s ease",
+        cursor: isDragOverlay ? "grabbing" : "grab",
+        touchAction: "none",
+        transition:
+          "background-color 0.2s ease, transform 0.15s ease, box-shadow 0.15s ease",
         ...(!isDragOverlay && {
           "&:hover": {
             bgcolor: (theme: import("@mui/material/styles").Theme) =>
               alpha(meta.color, theme.palette.mode === "dark" ? 0.1 : 0.07),
+          },
+          "&:active": {
+            transform: "scale(1.015)",
+            boxShadow: `0 6px 20px ${alpha(meta.color, 0.18)}`,
+            bgcolor: (theme: import("@mui/material/styles").Theme) =>
+              alpha(meta.color, theme.palette.mode === "dark" ? 0.14 : 0.1),
           },
         }),
       }}
       onClick={onToggle}
     >
       <Box
-        ref={dragHandleProps?.ref}
-        {...dragHandleProps?.listeners}
         sx={{
           display: "flex",
           alignItems: "center",
-          cursor: isDragOverlay ? "grabbing" : "grab",
           flexShrink: 0,
-          touchAction: "none",
           color: "text.disabled",
           "&:hover": { color: "text.secondary" },
         }}
@@ -225,10 +231,17 @@ interface TaskCardProps {
   index: number;
   onChange: (updated: LessonTaskDraft) => void;
   onDelete: () => void;
+  defaultExpanded?: boolean;
 }
 
-export function TaskCard({ task, index, onChange, onDelete }: TaskCardProps) {
-  const [expanded, setExpanded] = useState(true);
+export function TaskCard({
+  task,
+  index,
+  onChange,
+  onDelete,
+  defaultExpanded = true,
+}: TaskCardProps) {
+  const [expanded, setExpanded] = useState(defaultExpanded);
   const meta = taskTypeMeta[task.type];
 
   const {

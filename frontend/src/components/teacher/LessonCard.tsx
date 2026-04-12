@@ -118,6 +118,7 @@ export function LessonCard({
   if (listView) {
     return (
       <Box
+        onClick={() => onEdit?.(lesson)}
         sx={{
           ...panelListRowSx,
           display: "flex",
@@ -125,6 +126,7 @@ export function LessonCard({
           gap: 2,
           px: 2,
           py: 1.25,
+          cursor: "pointer",
           transition: "box-shadow 0.15s, border-color 0.15s",
           "&:hover": { boxShadow: 2, borderColor: "primary.light" },
         }}
@@ -165,7 +167,10 @@ export function LessonCard({
           {formatDate(lesson.createdAt)}
         </Typography>
 
-        <Box sx={{ display: "flex", gap: 0.5, flexShrink: 0 }}>
+        <Box
+          sx={{ display: "flex", gap: 0.5, flexShrink: 0 }}
+          onClick={(e) => e.stopPropagation()}
+        >
           <Button
             size="small"
             startIcon={<EditIcon fontSize="small" />}
@@ -190,7 +195,15 @@ export function LessonCard({
   return (
     <Card
       elevation={0}
-      sx={{ ...panelGridCardSx, display: "flex", flexDirection: "column" }}
+      sx={{
+        ...panelGridCardSx,
+        display: "flex",
+        flexDirection: "column",
+        cursor: "pointer",
+        transition: "box-shadow 0.15s, border-color 0.15s",
+        "&:hover": { boxShadow: 2, borderColor: "primary.light" },
+      }}
+      onClick={() => onEdit?.(lesson)}
     >
       <CardContent
         sx={{
@@ -235,7 +248,10 @@ export function LessonCard({
           <Typography variant="caption" color="text.secondary">
             Status:
           </Typography>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+          <Box
+            sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+            onClick={(e) => e.stopPropagation()}
+          >
             {lesson.isActive ? (
               <Chip
                 label="Aktywna"
@@ -278,7 +294,10 @@ export function LessonCard({
 
       <Divider />
 
-      <CardActions sx={{ ...panelCardFooterSx, px: 2, py: 1, gap: 1, mt: 0 }}>
+      <CardActions
+        sx={{ ...panelCardFooterSx, px: 2, py: 1, gap: 1, mt: 0 }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <Box
           sx={{ display: "flex", width: "100%", gap: 1, flexWrap: "nowrap" }}
         >

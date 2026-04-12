@@ -10,7 +10,7 @@ Uzyj tego workflowu, gdy trzeba dowiezc lub poprawic konkretny widok frontendowy
 ## Zasady
 
 - Analizuj najpierw istniejacy frontend.
-- Zachowuj spojnosc UI/UX projektu.
+- Zachowuj spojnosc UI/UX projektu.`
 - Integruj frontend z backendem przez aktualny kontrakt wynikajacy z kodu.
 - Gdy backend nie pokrywa potrzeb, zglaszaj `Backend Gap` zamiast robic obejscia.
 - Jesli projekt ma wspolne tokeny i wrappery UI, korzystaj z nich w pierwszej kolejnosci.

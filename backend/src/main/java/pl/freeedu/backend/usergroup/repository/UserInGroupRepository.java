@@ -14,10 +14,14 @@ import java.util.Optional;
 @Repository
 public interface UserInGroupRepository extends JpaRepository<UserInGroup, Integer> {
 
-	@Query(value = "SELECT COUNT(*) > 0 FROM user_in_group uig "
+	@Query(value = "SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END FROM user_in_group uig "
 			+ "JOIN group_has_lesson ghl ON uig.group_id = ghl.group_id "
 			+ "WHERE uig.user_id = :userId AND ghl.lesson_id = :lessonId", nativeQuery = true)
-	boolean hasAccessToLesson(@Param("userId") Integer userId, @Param("lessonId") Integer lessonId);
+	int hasAccessToLessonRaw(@Param("userId") Integer userId, @Param("lessonId") Integer lessonId);
+
+	default boolean hasAccessToLesson(Integer userId, Integer lessonId) {
+		return hasAccessToLessonRaw(userId, lessonId) > 0;
+	}
 
 	@Query("SELECT COUNT(uig) > 0 FROM UserInGroup uig JOIN UserGroup ug ON uig.groupId = ug.id WHERE uig.userId = :studentId AND ug.teacherId = :teacherId")
 	boolean isStudentInTeachersGroup(@Param("studentId") Integer studentId, @Param("teacherId") Integer teacherId);
