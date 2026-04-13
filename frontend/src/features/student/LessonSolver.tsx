@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Box,
@@ -19,6 +19,7 @@ import {
   ArrowForwardOutlined as NextIcon,
   SendOutlined as SubmitIcon,
   LightbulbOutlined as HintIcon,
+  WarningAmberOutlined as WarningIcon,
 } from "@mui/icons-material";
 import { useNavigate, useParams } from "react-router-dom";
 import {
@@ -28,6 +29,7 @@ import {
   type WriteTaskResponse,
   type ScatterTaskResponse,
   type SpeakTaskResponse,
+  type SpeakTranscriptionResponse,
 } from "@/api/taskService";
 import {
   studentService,
@@ -44,6 +46,12 @@ import { WriteTaskSolver } from "@/components/student/WriteTaskSolver";
 import { ScatterTaskSolver } from "@/components/student/ScatterTaskSolver";
 import { SpeakTaskSolver } from "@/components/student/SpeakTaskSolver";
 import { LessonResultDialog } from "@/components/student/LessonResultDialog";
+import {
+  AppDialog,
+  AppDialogBody,
+  AppDialogFooter,
+  AppDialogHeader,
+} from "@/components/ui/dialog/AppDialog";
 import { CheckCircleOutlined as AnsweredIcon } from "@mui/icons-material";
 import {
   taskCardSx,
@@ -65,6 +73,11 @@ interface FlatTask {
     | WriteTaskResponse
     | ScatterTaskResponse
     | SpeakTaskResponse;
+}
+
+interface SpeakAttemptState {
+  attempts: number;
+  result: SpeakTranscriptionResponse | null;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -120,17 +133,22 @@ export function LessonSolver() {
   const navigate = useNavigate();
   const { logout } = useAuth();
   const theme = useTheme();
+  const unloadSubmitSentRef = useRef(false);
 
   const [lessonData, setLessonData] = useState<LessonTasksResponse | null>(
     null,
   );
   const [answers, setAnswers] = useState<Record<string, SubmitAnswerItem>>({});
+  const [speakAttempts, setSpeakAttempts] = useState<
+    Record<string, SpeakAttemptState>
+  >({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitResult, setSubmitResult] =
     useState<SubmitAnswersResponse | null>(null);
   const [resultDialogOpen, setResultDialogOpen] = useState(false);
+  const [exitDialogOpen, setExitDialogOpen] = useState(false);
 
   // Step-based navigation
   const [currentStep, setCurrentStep] = useState(0);
@@ -182,6 +200,8 @@ export function LessonSolver() {
   const currentTask = flatTasks[currentStep] ?? null;
   const isLastStep = currentStep === totalTaskCount - 1;
   const isSubmitted = submitResult != null;
+  const shouldBlockExit =
+    lessonData != null && totalTaskCount > 0 && !isSubmitted;
 
   const answeredCount = Object.values(answers).filter(
     (a) => a.answer !== "",
@@ -208,6 +228,23 @@ export function LessonSolver() {
     }));
   };
 
+  const handleSpeakTranscriptionResult = (
+    taskId: number,
+    result: SpeakTranscriptionResponse,
+  ) => {
+    setSpeakAttempts((prev) => {
+      const key = answerKey("speak", taskId);
+      const current = prev[key] ?? { attempts: 0, result: null };
+      return {
+        ...prev,
+        [key]: {
+          attempts: current.attempts + 1,
+          result,
+        },
+      };
+    });
+  };
+
   const handleNext = () => {
     if (currentStep < totalTaskCount - 1) {
       setCurrentStep((prev) => prev + 1);
@@ -224,32 +261,45 @@ export function LessonSolver() {
     const unanswered = totalTaskCount - answeredCount;
     if (unanswered > 0) {
       setShowUnansweredAlert(true);
-      // Navigate to the first unanswered task so the user can see which one
-      const firstUnansweredIdx = flatTasks.findIndex(
-        (t) => (answers[answerKey(t.taskType, t.taskId)]?.answer ?? "") === "",
-      );
-      if (firstUnansweredIdx >= 0) {
-        setCurrentStep(firstUnansweredIdx);
-      }
+      goToFirstUnansweredTask(false);
       return;
     }
     doSubmit();
   };
 
-  const doSubmit = async () => {
+  const goToFirstUnansweredTask = (hideAlert = true) => {
+    const firstUnansweredIdx = flatTasks.findIndex(
+      (t) => (answers[answerKey(t.taskType, t.taskId)]?.answer ?? "") === "",
+    );
+    if (firstUnansweredIdx >= 0) {
+      setCurrentStep(firstUnansweredIdx);
+    }
+    if (hideAlert) {
+      setShowUnansweredAlert(false);
+    }
+  };
+
+  const buildCompleteAnswers = useCallback(
+    (): SubmitAnswerItem[] =>
+      flatTasks.map(
+        ({ taskId, taskType }) =>
+          answers[answerKey(taskType, taskId)] ?? {
+            taskId,
+            taskType,
+            answer: "",
+          },
+      ),
+    [answers, flatTasks],
+  );
+
+  const doSubmit = async (options?: { navigateAfterSubmit?: boolean }) => {
     if (!lessonData) return;
     const id = Number(lessonId);
 
-    const completeAnswers: SubmitAnswerItem[] = flatTasks.map(
-      ({ taskId, taskType }) =>
-        answers[answerKey(taskType, taskId)] ?? {
-          taskId,
-          taskType,
-          answer: "",
-        },
-    );
+    const completeAnswers = buildCompleteAnswers();
 
     setSubmitting(true);
+    unloadSubmitSentRef.current = true;
     setError(null);
     setShowUnansweredAlert(false);
 
@@ -258,8 +308,12 @@ export function LessonSolver() {
         answers: completeAnswers,
       });
       setSubmitResult(result);
-      setResultDialogOpen(true);
+      setResultDialogOpen(!options?.navigateAfterSubmit);
       setCurrentStep(0);
+      setExitDialogOpen(false);
+      if (options?.navigateAfterSubmit) {
+        navigate("/student");
+      }
     } catch (err: unknown) {
       if (err instanceof ApiError) {
         const code = err.problem.code;
@@ -271,6 +325,7 @@ export function LessonSolver() {
       } else {
         setError(getErrorMessage(err, "Nie udało się wysłać odpowiedzi."));
       }
+      unloadSubmitSentRef.current = false;
     } finally {
       setSubmitting(false);
     }
@@ -283,9 +338,76 @@ export function LessonSolver() {
 
   const goBack = () => navigate("/student");
 
+  const requestExit = () => {
+    if (shouldBlockExit) {
+      setExitDialogOpen(true);
+      return;
+    }
+    goBack();
+  };
+
+  const confirmExitAndSubmit = () => {
+    void doSubmit({ navigateAfterSubmit: true });
+  };
+
+  useEffect(() => {
+    if (!shouldBlockExit) return;
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    const handlePopState = () => {
+      setExitDialogOpen(true);
+      window.history.pushState({ lessonGuard: true }, "", window.location.href);
+    };
+
+    const handlePageHide = () => {
+      if (unloadSubmitSentRef.current || !lessonId) return;
+      unloadSubmitSentRef.current = true;
+
+      const token = localStorage.getItem("token");
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+      fetch(
+        `${import.meta.env.VITE_API_URL || "http://localhost:8080"}/api/v1/lessons/${lessonId}/submit`,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ answers: buildCompleteAnswers() }),
+          keepalive: true,
+        },
+      ).catch(() => undefined);
+    };
+
+    window.history.pushState({ lessonGuard: true }, "", window.location.href);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("popstate", handlePopState);
+    window.addEventListener("pagehide", handlePageHide);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("popstate", handlePopState);
+      window.removeEventListener("pagehide", handlePageHide);
+    };
+  }, [buildCompleteAnswers, lessonId, shouldBlockExit]);
+
   const hasNoTasks = lessonData != null && totalTaskCount === 0;
   const progressPercent =
     totalTaskCount > 0 ? ((currentStep + 1) / totalTaskCount) * 100 : 0;
+  const unansweredIndices = flatTasks
+    .map((t, i) => ({ idx: i, t }))
+    .filter(
+      ({ t }) =>
+        (answers[answerKey(t.taskType, t.taskId)]?.answer ?? "") === "",
+    )
+    .map(({ idx }) => idx);
 
   // ── Render current task solver ─────────────────────────────────────────────
 
@@ -340,20 +462,30 @@ export function LessonSolver() {
             disabled={disabled}
           />
         );
-      case "speak":
+      case "speak": {
+        const speakAttempt =
+          speakAttempts[answerKey("speak", currentTask.taskId)] ?? null;
         return (
           <SpeakTaskSolver
             key={`speak_${currentTask.taskId}`}
             lessonId={Number(lessonId)}
             task={currentTask.taskData as SpeakTaskResponse}
-            value={currentAnswer}
+            transcriptionResult={speakAttempt?.result ?? null}
+            attempts={speakAttempt?.attempts ?? 0}
             onChange={(answer) =>
               handleAnswer(currentTask.taskId, "speak", answer)
+            }
+            onTranscriptionResult={(transcriptionResult) =>
+              handleSpeakTranscriptionResult(
+                currentTask.taskId,
+                transcriptionResult,
+              )
             }
             result={taskResult}
             disabled={disabled}
           />
         );
+      }
     }
   }
 
@@ -365,7 +497,7 @@ export function LessonSolver() {
         {/* Back button */}
         <Button
           startIcon={<BackIcon />}
-          onClick={goBack}
+          onClick={requestExit}
           sx={{
             textTransform: "none",
             fontWeight: 600,
@@ -437,52 +569,6 @@ export function LessonSolver() {
                 },
               }}
             />
-
-            {/* Unanswered alert */}
-            {showUnansweredAlert &&
-              answeredCount < totalTaskCount &&
-              (() => {
-                const unansweredIndices = flatTasks
-                  .map((t, i) => ({ idx: i, t }))
-                  .filter(
-                    ({ t }) =>
-                      (answers[answerKey(t.taskType, t.taskId)]?.answer ??
-                        "") === "",
-                  )
-                  .map(({ idx }) => idx);
-
-                return (
-                  <Alert
-                    severity="warning"
-                    sx={{ mb: 2, borderRadius: 2 }}
-                    action={
-                      <Stack direction="row" spacing={1}>
-                        <Button
-                          color="inherit"
-                          size="small"
-                          onClick={() => setShowUnansweredAlert(false)}
-                        >
-                          Wróć do pytań
-                        </Button>
-                        <Button
-                          color="warning"
-                          size="small"
-                          variant="contained"
-                          onClick={doSubmit}
-                          sx={{ textTransform: "none", fontWeight: 600 }}
-                        >
-                          Wyślij mimo to
-                        </Button>
-                      </Stack>
-                    }
-                  >
-                    Nie odpowiedziano na {totalTaskCount - answeredCount} z{" "}
-                    {totalTaskCount} pytań (
-                    {unansweredIndices.map((i) => `zad. ${i + 1}`).join(", ")}
-                    ). Puste odpowiedzi będą ocenione jako błędne.
-                  </Alert>
-                );
-              })()}
 
             {/* Main layout with task nav rail */}
             <Box sx={{ display: "flex", gap: 2 }}>
@@ -845,6 +931,95 @@ export function LessonSolver() {
       </Container>
 
       {/* Result dialog */}
+      <AppDialog
+        open={showUnansweredAlert && answeredCount < totalTaskCount}
+        onClose={() => goToFirstUnansweredTask()}
+        maxWidth="xs"
+      >
+        <AppDialogHeader
+          icon={<WarningIcon />}
+          title="Nie wykonano wszystkich zadań"
+          subtitle="Możesz wrócić do pierwszego brakującego zadania albo wysłać obecny wynik."
+        />
+        <AppDialogBody>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ lineHeight: 1.7 }}
+          >
+            Brakuje odpowiedzi w {totalTaskCount - answeredCount} z{" "}
+            {totalTaskCount} zadań (
+            {unansweredIndices.map((i) => `zad. ${i + 1}`).join(", ")}). Jeżeli
+            wyślesz teraz, brakujące odpowiedzi zostaną ocenione jako błędne.
+          </Typography>
+        </AppDialogBody>
+        <AppDialogFooter>
+          <Button
+            onClick={() => goToFirstUnansweredTask()}
+            disabled={submitting}
+            sx={{ textTransform: "none", fontWeight: 600, borderRadius: 2 }}
+          >
+            Wróć do pytań
+          </Button>
+          <Button
+            variant="contained"
+            color="warning"
+            onClick={() => void doSubmit()}
+            disabled={submitting}
+            endIcon={
+              submitting ? <CircularProgress size={16} color="inherit" /> : null
+            }
+            sx={{ textTransform: "none", fontWeight: 700, borderRadius: 2 }}
+          >
+            Wyślij mimo to
+          </Button>
+        </AppDialogFooter>
+      </AppDialog>
+
+      <AppDialog
+        open={exitDialogOpen}
+        onClose={() => setExitDialogOpen(false)}
+        maxWidth="xs"
+      >
+        <AppDialogHeader
+          icon={<WarningIcon />}
+          title="Zakończyć lekcję?"
+          subtitle="Aktualne odpowiedzi zostaną wysłane i zapisane jako ostateczny wynik tej lekcji."
+        />
+        <AppDialogBody>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ lineHeight: 1.7 }}
+          >
+            Jeżeli potwierdzisz, lekcja zostanie zakończona teraz. Puste
+            odpowiedzi będą ocenione jako błędne. Możesz też wrócić do lekcji i
+            dokończyć zadania.
+          </Typography>
+        </AppDialogBody>
+        <AppDialogFooter>
+          <Button
+            onClick={() => setExitDialogOpen(false)}
+            disabled={submitting}
+            sx={{ textTransform: "none", fontWeight: 600, borderRadius: 2 }}
+          >
+            Nie, dokończę lekcję
+          </Button>
+          <Button
+            variant="contained"
+            color="warning"
+            onClick={confirmExitAndSubmit}
+            disabled={submitting}
+            endIcon={
+              submitting ? <CircularProgress size={16} color="inherit" /> : null
+            }
+            sx={{ textTransform: "none", fontWeight: 700, borderRadius: 2 }}
+          >
+            Wyślij wynik i wyjdź
+          </Button>
+        </AppDialogFooter>
+      </AppDialog>
+
       <LessonResultDialog
         open={resultDialogOpen}
         result={submitResult}

@@ -20,8 +20,8 @@ public class SttClient {
 
 	private final WebClient webClient;
 
-	public SttClient(WebClient.Builder webClientBuilder, @Value("${application.stt.base-url}") String sttBaseUrl) {
-		this.webClient = webClientBuilder.baseUrl(sttBaseUrl).build();
+	public SttClient(@Value("${application.stt.base-url}") String sttBaseUrl) {
+		this.webClient = WebClient.builder().baseUrl(sttBaseUrl).build();
 	}
 
 	public Mono<SttTranscriptionResponse> transcribe(FilePart audio) {

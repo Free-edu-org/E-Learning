@@ -89,8 +89,10 @@ export function TaskSectionGroup({
             key={`speak-${task.id}`}
             lessonId={lessonId}
             task={task}
-            value={answers[task.id]?.answer ?? ""}
+            transcriptionResult={null}
+            attempts={0}
             onChange={(answer) => onAnswer(task.id, "speak", answer)}
+            onTranscriptionResult={() => undefined}
             result={results?.get(task.id) ?? null}
             disabled={disabled}
           />

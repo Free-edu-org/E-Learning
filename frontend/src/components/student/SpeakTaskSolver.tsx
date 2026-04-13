@@ -13,7 +13,6 @@ import {
   CheckCircleOutlined as CorrectIcon,
   MicNoneOutlined as MicIcon,
   StopCircleOutlined as StopIcon,
-  UploadFileOutlined as TranscribeIcon,
 } from "@mui/icons-material";
 import {
   taskService,
@@ -32,8 +31,10 @@ import {
 interface SpeakTaskSolverProps {
   lessonId: number;
   task: SpeakTaskResponse;
-  value: string;
+  transcriptionResult: SpeakTranscriptionResponse | null;
+  attempts: number;
   onChange: (answer: string) => void;
+  onTranscriptionResult: (result: SpeakTranscriptionResponse) => void;
   result: SubmitAnswerDetail | null;
   disabled: boolean;
 }
@@ -41,8 +42,10 @@ interface SpeakTaskSolverProps {
 export function SpeakTaskSolver({
   lessonId,
   task,
-  value,
+  transcriptionResult,
+  attempts,
   onChange,
+  onTranscriptionResult,
   result,
   disabled,
 }: SpeakTaskSolverProps) {
@@ -51,20 +54,17 @@ export function SpeakTaskSolver({
   const chunksRef = useRef<Blob[]>([]);
   const [recording, setRecording] = useState(false);
   const [processing, setProcessing] = useState(false);
-  const [lastScore, setLastScore] = useState<number | null>(null);
-  const [attempts, setAttempts] = useState(0);
-  const [transcriptionResult, setTranscriptionResult] =
-    useState<SpeakTranscriptionResponse | null>(null);
   const [recordingError, setRecordingError] = useState<string | null>(null);
+  const maxAttempts = transcriptionResult?.correct ? 2 : 3;
   const canRecord =
-    !disabled &&
-    !processing &&
-    (attempts === 0 || (attempts < 2 && !transcriptionResult?.correct));
+    !disabled && !processing && !recording && attempts < maxAttempts;
+  const scorePercent =
+    transcriptionResult == null
+      ? null
+      : Math.round(Math.max(0, Math.min(1, transcriptionResult.score)) * 100);
 
   const startRecording = async () => {
     setRecordingError(null);
-    setLastScore(null);
-    setTranscriptionResult(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       chunksRef.current = [];
@@ -117,9 +117,7 @@ export function SpeakTaskSolver({
         audio,
       );
       onChange(response.text);
-      setLastScore(response.score);
-      setTranscriptionResult(response);
-      setAttempts((prev) => prev + 1);
+      onTranscriptionResult(response);
     } catch {
       setRecordingError(
         "Nie udalo sie rozpoznac nagrania. Sprobuj ponownie za chwile.",
@@ -182,43 +180,107 @@ export function SpeakTaskSolver({
               Rozpoznawanie mowy
             </Button>
           )}
+          {attempts > 0 && (
+            <Chip
+              label={`Proba ${attempts}/${maxAttempts}`}
+              size="small"
+              variant="outlined"
+              sx={{
+                alignSelf: { xs: "flex-start", sm: "center" },
+                borderRadius: 2,
+              }}
+            />
+          )}
         </Stack>
 
-        {value && (
-          <Alert
-            severity="info"
-            icon={<TranscribeIcon />}
-            sx={{ borderRadius: 2 }}
-          >
-            Transkrypcja: {value}
-            {lastScore != null && ` (${Math.round(lastScore * 100)}%)`}
-          </Alert>
-        )}
-
         {transcriptionResult && (
-          <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap">
-            {transcriptionResult.words.map((word, index) => (
+          <Box
+            sx={{
+              border: "1px solid",
+              borderColor: transcriptionResult.correct
+                ? "success.light"
+                : "warning.light",
+              bgcolor: (theme) =>
+                alpha(
+                  transcriptionResult.correct
+                    ? theme.palette.success.main
+                    : theme.palette.warning.main,
+                  theme.palette.mode === "dark" ? 0.1 : 0.08,
+                ),
+              borderRadius: 2,
+              p: 1.5,
+            }}
+          >
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              justifyContent="space-between"
+              alignItems={{ xs: "flex-start", sm: "center" }}
+              spacing={1}
+              sx={{ mb: 1.25 }}
+            >
+              <Typography variant="subtitle2" fontWeight={800}>
+                {transcriptionResult.correct
+                  ? "Wymowa zaakceptowana"
+                  : "Sprobuj poprawic zaznaczone slowa"}
+              </Typography>
               <Chip
-                key={`${word.expected}-${index}`}
-                label={word.expected}
+                label={`${scorePercent}%`}
+                color={transcriptionResult.correct ? "success" : "warning"}
                 size="small"
-                color={word.correct ? "success" : "error"}
-                variant={word.correct ? "filled" : "outlined"}
-                title={
-                  word.correct
-                    ? "Poprawnie"
-                    : `Uslyszano: ${word.actual || "-"}`
-                }
-                sx={{ borderRadius: 2, fontWeight: 700 }}
+                sx={{ borderRadius: 2, fontWeight: 800, minWidth: 58 }}
               />
-            ))}
-          </Stack>
+            </Stack>
+
+            <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap">
+              {transcriptionResult.words.map((word, index) => (
+                <Box
+                  key={`${word.expected}-${index}`}
+                  sx={{
+                    px: 1,
+                    py: 0.75,
+                    minHeight: 36,
+                    borderRadius: 2,
+                    border: "1px solid",
+                    borderColor: word.correct ? "success.main" : "error.main",
+                    bgcolor: (theme) =>
+                      alpha(
+                        word.correct
+                          ? theme.palette.success.main
+                          : theme.palette.error.main,
+                        theme.palette.mode === "dark" ? 0.18 : 0.1,
+                      ),
+                  }}
+                >
+                  <Typography
+                    component="span"
+                    variant="body2"
+                    fontWeight={800}
+                    color={word.correct ? "success.dark" : "error.dark"}
+                  >
+                    {word.expected}
+                  </Typography>
+                  {!word.correct && (
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: "block", lineHeight: 1.1 }}
+                    >
+                      {word.actual
+                        ? `uslyszano: ${word.actual}`
+                        : "nie uslyszano"}
+                    </Typography>
+                  )}
+                </Box>
+              ))}
+            </Stack>
+          </Box>
         )}
 
         {attempts >= 2 && !transcriptionResult?.correct && (
           <Alert severity="warning" sx={{ borderRadius: 2 }}>
-            Wykorzystano dwie proby. Dalej zostanie wyslana ostatnia
-            transkrypcja.
+            {attempts >= 3
+              ? "Wykorzystano trzy proby. Dalej zostanie wyslana ostatnia transkrypcja."
+              : "Mozesz nagrac jeszcze jedna probe."}
           </Alert>
         )}
 
