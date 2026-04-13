@@ -15,6 +15,9 @@ public class SpeakTaskRequest {
 	@NotBlank(message = "Task is required")
 	private String task;
 
+	@NotBlank(message = "Expected text is required")
+	private String expectedText;
+
 	private String hint;
 
 	private String section;

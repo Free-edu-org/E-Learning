@@ -265,10 +265,12 @@ describe('Tasks API (/api/v1/lessons/{lessonId}/tasks)', () => {
             setAuthToken(teacherToken);
             const response = await apiClient.post(`/lessons/${lessonId}/tasks/speak`, {
                 task: 'Say hello in English',
+                expectedText: 'Hello',
                 hint: 'Greeting'
             });
             expect(response.status).toBe(201);
             expect(response.data.task).toBe('Say hello in English');
+            expect(response.data.expectedText).toBe('Hello');
             speakTaskId = response.data.id;
             createdTasks.push({ type: 'speak', id: response.data.id });
         });
@@ -277,10 +279,12 @@ describe('Tasks API (/api/v1/lessons/{lessonId}/tasks)', () => {
             setAuthToken(teacherToken);
             const response = await apiClient.put(`/lessons/${lessonId}/tasks/speak/${speakTaskId}`, {
                 task: 'Say goodbye in English',
+                expectedText: 'Goodbye',
                 hint: 'Farewell'
             });
             expect(response.status).toBe(200);
             expect(response.data.task).toBe('Say goodbye in English');
+            expect(response.data.expectedText).toBe('Goodbye');
         });
 
         it('should return 400 for empty speak task', async () => {

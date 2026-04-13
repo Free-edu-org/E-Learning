@@ -27,6 +27,7 @@ export interface CreateScatterTaskRequest {
 
 export interface CreateSpeakTaskRequest {
   task: string;
+  expectedText: string;
   hint?: string;
   section?: string;
 }
@@ -57,7 +58,20 @@ export interface ScatterTaskResponse extends TaskResponse {
 }
 
 export interface SpeakTaskResponse extends TaskResponse {
+  expectedText: string;
   createdAt: string;
+}
+
+export interface SpeakTranscriptionResponse {
+  text: string;
+  expectedText: string;
+  correct: boolean;
+  score: number;
+  words: {
+    expected: string;
+    actual: string;
+    correct: boolean;
+  }[];
 }
 
 export interface TaskSectionDto {
@@ -140,4 +154,15 @@ export const taskService = {
     fetchApi<void>(`/api/v1/lessons/${lessonId}/tasks/${type}/${taskId}`, {
       method: "DELETE",
     }),
+  transcribeSpeakTask: (lessonId: number, taskId: number, audio: Blob) => {
+    const formData = new FormData();
+    formData.append("file", audio, "answer.webm");
+    return fetchApi<SpeakTranscriptionResponse>(
+      `/api/v1/lessons/${lessonId}/tasks/speak/${taskId}/transcribe`,
+      {
+        method: "POST",
+        body: formData,
+      },
+    );
+  },
 };

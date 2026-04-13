@@ -344,6 +344,7 @@ export function LessonSolver() {
         return (
           <SpeakTaskSolver
             key={`speak_${currentTask.taskId}`}
+            lessonId={Number(lessonId)}
             task={currentTask.taskData as SpeakTaskResponse}
             value={currentAnswer}
             onChange={(answer) =>

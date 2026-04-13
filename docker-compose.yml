@@ -50,6 +50,11 @@ services:
     build:
       context: ./stt-service
     container_name: freeedu-stt
+    environment:
+      STT_MODEL_SIZE: ${STT_MODEL_SIZE}
+      STT_DEVICE: ${STT_DEVICE}
+      STT_COMPUTE_TYPE: ${STT_COMPUTE_TYPE}
+      STT_LANGUAGE: ${STT_LANGUAGE}
     ports:
       - "${STT_PORT}:8000"
 
