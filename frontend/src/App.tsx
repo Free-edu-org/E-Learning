@@ -40,7 +40,10 @@ function App() {
             {/* Zabezpieczenie przed wejściem na panel nauczyciela przez inne role */}
             <Route element={<ProtectedRoute allowedRoles={["TEACHER"]} />}>
               <Route path="/teacher" element={<TeacherDashboard />} />
-              <Route path="/teacher/students" element={<TeacherStudentsView />} />
+              <Route
+                path="/teacher/students"
+                element={<TeacherStudentsView />}
+              />
             </Route>
 
             <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>

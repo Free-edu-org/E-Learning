@@ -1,17 +1,25 @@
-import { useCallback, useEffect, useMemo, useState, type DragEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type DragEvent,
+} from "react";
 import {
   Alert,
   Box,
   Button,
+  ButtonBase,
   Chip,
   CircularProgress,
+  Collapse,
   Container,
   Divider,
   FormControl,
   IconButton,
+  InputAdornment,
   InputLabel,
   MenuItem,
-  Paper,
   Select,
   Stack,
   TextField,
@@ -24,11 +32,13 @@ import {
   DragIndicatorOutlined as DragIcon,
   EditOutlined as EditIcon,
   EmailOutlined as EmailIcon,
+  ExpandMoreOutlined as ExpandMoreIcon,
   GroupOutlined as GroupIcon,
   PersonAddOutlined as PersonAddIcon,
   PersonOutlined as PersonIcon,
   RefreshOutlined as RefreshIcon,
   SaveOutlined as SaveIcon,
+  SearchOutlined as SearchIcon,
   SchoolOutlined as SchoolIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
@@ -55,6 +65,10 @@ import {
 } from "@/components/ui/form/FormLayout";
 import { DashboardHeader } from "@/components/ui/panel/DashboardHeader";
 import { DashboardTopBar } from "@/components/ui/panel/DashboardTopBar";
+import {
+  panelSurfaceSx,
+  panelToolbarSx,
+} from "@/components/ui/panel/panelStyles";
 import { uiTokens } from "@/theme/uiTokens";
 
 type DialogFeedbackState = {
@@ -83,7 +97,9 @@ const operationErrorMessages: Record<string, string> = {
 
 function translateBackendMessage(message: string) {
   let translated = message;
-  for (const [source, target] of Object.entries(validationMessageTranslations)) {
+  for (const [source, target] of Object.entries(
+    validationMessageTranslations,
+  )) {
     translated = translated.replaceAll(source, target);
   }
 
@@ -156,6 +172,7 @@ export function TeacherStudentsView() {
   const [availableGroups, setAvailableGroups] = useState<Group[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [errorData, setErrorData] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [pageFeedback, setPageFeedback] = useState<DialogFeedbackState | null>(
     null,
   );
@@ -190,6 +207,9 @@ export function TeacherStudentsView() {
   );
   const [dragOverGroupId, setDragOverGroupId] = useState<number | null>(null);
   const [movingStudentId, setMovingStudentId] = useState<number | null>(null);
+  const [expandedGroupIds, setExpandedGroupIds] = useState<Set<number>>(
+    () => new Set(),
+  );
 
   const fetchData = useCallback(async () => {
     setLoadingData(true);
@@ -203,10 +223,7 @@ export function TeacherStudentsView() {
       setAvailableGroups(groupsData);
     } catch (error) {
       setErrorData(
-        getOperationErrorMessage(
-          error,
-          "Nie udało się pobrać uczniów i grup.",
-        ),
+        getOperationErrorMessage(error, "Nie udało się pobrać uczniów i grup."),
       );
     } finally {
       setLoadingData(false);
@@ -230,6 +247,10 @@ export function TeacherStudentsView() {
     fetchData();
   }, [fetchData]);
 
+  useEffect(() => {
+    setExpandedGroupIds(new Set(availableGroups.map((group) => group.id)));
+  }, [availableGroups]);
+
   const groupsWithStudents = useMemo(
     () =>
       availableGroups.map((group) => ({
@@ -238,6 +259,33 @@ export function TeacherStudentsView() {
       })),
     [availableGroups, students],
   );
+
+  const filteredGroupsWithStudents = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return groupsWithStudents;
+
+    return groupsWithStudents
+      .map((group) => {
+        const groupMatches = [
+          group.name,
+          group.description ?? "",
+          String(group.id),
+        ].some((value) => value.toLowerCase().includes(query));
+        const matchingStudents = group.students.filter((student) =>
+          [student.username, student.email, String(student.id)].some((value) =>
+            value.toLowerCase().includes(query),
+          ),
+        );
+
+        return {
+          ...group,
+          totalStudentCount: group.students.length,
+          students: groupMatches ? group.students : matchingStudents,
+          matchesSearch: groupMatches || matchingStudents.length > 0,
+        };
+      })
+      .filter((group) => group.matchesSearch);
+  }, [groupsWithStudents, searchQuery]);
 
   const handleLogout = () => {
     logout();
@@ -468,8 +516,22 @@ export function TeacherStudentsView() {
     }
   };
 
+  const toggleGroupExpanded = (groupId: number) => {
+    setExpandedGroupIds((current) => {
+      const next = new Set(current);
+      if (next.has(groupId)) {
+        next.delete(groupId);
+      } else {
+        next.add(groupId);
+      }
+      return next;
+    });
+  };
+
   const pageBg =
-    theme.palette.mode === "light" ? "#e8eef7" : theme.palette.background.default;
+    theme.palette.mode === "light"
+      ? "#e8eef7"
+      : theme.palette.background.default;
   const buttonSx = {
     px: 3,
     py: 1,
@@ -484,12 +546,16 @@ export function TeacherStudentsView() {
         <DashboardTopBar onLogout={handleLogout} />
 
         <Button
-          variant="outlined"
           startIcon={<BackIcon />}
           onClick={() => navigate("/teacher")}
-          sx={{ ...buttonSx, bgcolor: "background.paper", mb: 2 }}
+          sx={{
+            textTransform: "none",
+            fontWeight: 600,
+            mb: 2,
+            color: "text.secondary",
+          }}
         >
-          Powrót do kokpitu
+          Wróć do panelu
         </Button>
 
         <DashboardHeader
@@ -532,7 +598,8 @@ export function TeacherStudentsView() {
               Klasy i uczniowie
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Przeciągnij ucznia na inną kartę grupy, aby zmienić przypisanie.
+              Rozwiń grupę, aby zobaczyć uczniów. Przeciągnij ucznia na inną
+              grupę, aby zmienić przypisanie.
             </Typography>
           </Box>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
@@ -568,6 +635,44 @@ export function TeacherStudentsView() {
           </Stack>
         </Stack>
 
+        {!loadingData && availableGroups.length > 0 && (
+          <Box sx={{ ...panelToolbarSx, mb: 2 }}>
+            <TextField
+              size="small"
+              placeholder="Szukaj grupy, ucznia, e-maila lub ID"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon
+                        fontSize="small"
+                        sx={{ color: "text.secondary" }}
+                      />
+                    </InputAdornment>
+                  ),
+                },
+              }}
+              sx={{
+                minWidth: 220,
+                flex: "1 1 260px",
+                "& .MuiOutlinedInput-root": { borderRadius: 2 },
+              }}
+            />
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              fontWeight={600}
+              sx={{ px: 0.5, whiteSpace: "nowrap" }}
+            >
+              {searchQuery.trim()
+                ? `Wyniki: ${filteredGroupsWithStudents.length} z ${groupsWithStudents.length} grup`
+                : `${groupsWithStudents.length} grup`}
+            </Typography>
+          </Box>
+        )}
+
         {loadingData ? (
           <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
             <CircularProgress size={40} />
@@ -576,25 +681,27 @@ export function TeacherStudentsView() {
           <Alert severity="info" sx={{ borderRadius: 2 }}>
             Nie masz jeszcze grup. Utwórz pierwszą grupę, aby dodać uczniów.
           </Alert>
+        ) : filteredGroupsWithStudents.length === 0 ? (
+          <Alert severity="info" sx={{ borderRadius: 2 }}>
+            Brak grup lub uczniów pasujących do wyszukiwania.
+          </Alert>
         ) : (
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: {
-                xs: "1fr",
-                md: "repeat(2, minmax(0, 1fr))",
-                xl: "repeat(3, minmax(0, 1fr))",
-              },
-              gap: 2,
-              alignItems: "start",
-            }}
-          >
-            {groupsWithStudents.map((group) => {
+          <Stack spacing={1.25}>
+            {filteredGroupsWithStudents.map((group) => {
               const isDropTarget = dragOverGroupId === group.id;
+              const isExpanded = expandedGroupIds.has(group.id);
+              const visibleStudentCount = group.students.length;
+              const totalStudentCount =
+                "totalStudentCount" in group
+                  ? group.totalStudentCount
+                  : group.students.length;
+              const studentCountLabel =
+                searchQuery.trim() && visibleStudentCount !== totalStudentCount
+                  ? `${visibleStudentCount} z ${totalStudentCount} uczniów`
+                  : `${totalStudentCount} uczniów`;
               return (
-                <Paper
+                <Box
                   key={group.id}
-                  elevation={0}
                   onDragOver={(event) => {
                     event.preventDefault();
                     event.dataTransfer.dropEffect = "move";
@@ -603,169 +710,214 @@ export function TeacherStudentsView() {
                   onDragLeave={() => setDragOverGroupId(null)}
                   onDrop={(event) => handleDrop(event, group.id)}
                   sx={{
-                    border: 1,
+                    ...panelSurfaceSx,
                     borderColor: isDropTarget ? "primary.main" : "divider",
-                    borderRadius: uiTokens.radius.card,
                     bgcolor: isDropTarget ? "action.hover" : "background.paper",
-                    minHeight: 190,
                     overflow: "hidden",
                     transition:
-                      "border-color 120ms ease, background-color 120ms ease",
+                      "border-color 120ms ease, background-color 120ms ease, box-shadow 120ms ease",
+                    boxShadow: isDropTarget
+                      ? "0 14px 30px rgba(15, 23, 42, 0.12)"
+                      : "none",
                   }}
                 >
-                  <Stack
-                    direction="row"
-                    alignItems="flex-start"
-                    justifyContent="space-between"
-                    spacing={2}
-                    sx={{ p: 2 }}
+                  <ButtonBase
+                    onClick={() => toggleGroupExpanded(group.id)}
+                    sx={{
+                      width: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 2,
+                      p: 2,
+                      textAlign: "left",
+                      minHeight: 78,
+                      "&:hover": { bgcolor: "action.hover" },
+                    }}
                   >
-                    <Box sx={{ minWidth: 0 }}>
-                      <Stack
-                        direction="row"
-                        spacing={1}
-                        alignItems="center"
-                        sx={{ minWidth: 0 }}
+                    <Stack
+                      direction="row"
+                      spacing={1.5}
+                      alignItems="center"
+                      sx={{ minWidth: 0, flex: 1 }}
+                    >
+                      <Box
+                        sx={{
+                          width: 38,
+                          height: 38,
+                          borderRadius: 2,
+                          bgcolor: "action.hover",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                        }}
                       >
                         <GroupIcon color="primary" />
+                      </Box>
+                      <Box sx={{ minWidth: 0 }}>
                         <Typography
-                          variant="h6"
+                          variant="body1"
                           fontWeight={800}
-                          sx={{ overflowWrap: "anywhere" }}
+                          sx={{
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
                         >
                           {group.name}
                         </Typography>
-                      </Stack>
-                      {group.description && (
                         <Typography
                           variant="body2"
                           color="text.secondary"
-                          sx={{ mt: 0.5, overflowWrap: "anywhere" }}
+                          sx={{
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
                         >
-                          {group.description}
+                          {group.description || "Brak opisu grupy."}
                         </Typography>
-                      )}
-                    </Box>
-                    <Chip
-                      label={`${group.students.length} uczniów`}
-                      size="small"
-                      sx={{ flexShrink: 0, fontWeight: 700 }}
-                    />
-                  </Stack>
+                      </Box>
+                    </Stack>
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      alignItems="center"
+                      sx={{ flexShrink: 0 }}
+                    >
+                      <Chip
+                        label={studentCountLabel}
+                        size="small"
+                        sx={{ fontWeight: 700 }}
+                      />
+                      <ExpandMoreIcon
+                        sx={{
+                          color: "text.secondary",
+                          transition: "transform 150ms ease",
+                          transform: isExpanded ? "rotate(180deg)" : "none",
+                        }}
+                      />
+                    </Stack>
+                  </ButtonBase>
 
-                  <Divider />
+                  <Collapse in={isExpanded} timeout={180} unmountOnExit>
+                    <Divider />
 
-                  {group.students.length === 0 ? (
-                    <Box sx={{ p: 2.5 }}>
-                      <Alert severity="info" sx={{ borderRadius: 2 }}>
-                        Brak uczniów w tej grupie.
-                      </Alert>
-                    </Box>
-                  ) : (
-                    <Stack divider={<Divider flexItem />}>
-                      {group.students.map((student) => {
-                        const isMoving = movingStudentId === student.id;
-                        return (
-                          <Box
-                            key={student.id}
-                            draggable={movingStudentId === null}
-                            onDragStart={(event) => {
-                              event.dataTransfer.effectAllowed = "move";
-                              event.dataTransfer.setData(
-                                "text/plain",
-                                String(student.id),
-                              );
-                              setDraggingStudentId(student.id);
-                            }}
-                            onDragEnd={() => {
-                              setDraggingStudentId(null);
-                              setDragOverGroupId(null);
-                            }}
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "space-between",
-                              gap: 1.5,
-                              px: 2,
-                              py: 1.5,
-                              opacity:
-                                draggingStudentId === student.id || isMoving
-                                  ? 0.55
-                                  : 1,
-                              cursor: movingStudentId === null ? "grab" : "default",
-                              "&:hover": { bgcolor: "action.hover" },
-                            }}
-                          >
-                            <Stack
-                              direction="row"
-                              spacing={1.25}
-                              alignItems="center"
-                              sx={{ minWidth: 0 }}
+                    {group.students.length === 0 ? (
+                      <Box sx={{ p: 2 }}>
+                        <Alert severity="info" sx={{ borderRadius: 2 }}>
+                          Brak uczniów w tej grupie.
+                        </Alert>
+                      </Box>
+                    ) : (
+                      <Stack divider={<Divider flexItem />}>
+                        {group.students.map((student) => {
+                          const isMoving = movingStudentId === student.id;
+                          return (
+                            <Box
+                              key={student.id}
+                              draggable={movingStudentId === null}
+                              onDragStart={(event) => {
+                                event.dataTransfer.effectAllowed = "move";
+                                event.dataTransfer.setData(
+                                  "text/plain",
+                                  String(student.id),
+                                );
+                                setDraggingStudentId(student.id);
+                              }}
+                              onDragEnd={() => {
+                                setDraggingStudentId(null);
+                                setDragOverGroupId(null);
+                              }}
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                gap: 1.5,
+                                px: 2,
+                                py: 1.5,
+                                minHeight: 72,
+                                opacity:
+                                  draggingStudentId === student.id || isMoving
+                                    ? 0.55
+                                    : 1,
+                                cursor:
+                                  movingStudentId === null ? "grab" : "default",
+                                "&:hover": { bgcolor: "action.hover" },
+                              }}
                             >
-                              <DragIcon
-                                fontSize="small"
-                                sx={{ color: "text.disabled", flexShrink: 0 }}
-                              />
-                              <PersonIcon
-                                sx={{ color: "primary.main", flexShrink: 0 }}
-                              />
-                              <Box sx={{ minWidth: 0 }}>
-                                <Typography
-                                  variant="body1"
-                                  fontWeight={700}
-                                  sx={{ overflowWrap: "anywhere" }}
-                                >
-                                  {student.username}
-                                </Typography>
-                                <Stack
-                                  direction="row"
-                                  spacing={0.5}
-                                  alignItems="center"
-                                  sx={{ minWidth: 0 }}
-                                >
-                                  <EmailIcon
-                                    sx={{
-                                      fontSize: 14,
-                                      color: "text.secondary",
-                                      flexShrink: 0,
-                                    }}
-                                  />
+                              <Stack
+                                direction="row"
+                                spacing={1.25}
+                                alignItems="center"
+                                sx={{ minWidth: 0 }}
+                              >
+                                <DragIcon
+                                  fontSize="small"
+                                  sx={{ color: "text.disabled", flexShrink: 0 }}
+                                />
+                                <PersonIcon
+                                  sx={{ color: "primary.main", flexShrink: 0 }}
+                                />
+                                <Box sx={{ minWidth: 0 }}>
                                   <Typography
-                                    variant="body2"
-                                    color="text.secondary"
+                                    variant="body1"
+                                    fontWeight={700}
                                     sx={{ overflowWrap: "anywhere" }}
                                   >
-                                    {student.email}
+                                    {student.username}
                                   </Typography>
-                                </Stack>
-                              </Box>
-                            </Stack>
-                            <Stack
-                              direction="row"
-                              spacing={1}
-                              alignItems="center"
-                              sx={{ flexShrink: 0 }}
-                            >
-                              {isMoving && <CircularProgress size={18} />}
-                              <IconButton
-                                aria-label="Edytuj ucznia"
-                                size="small"
-                                color="primary"
-                                onClick={() => openEditStudentDialog(student)}
-                                disabled={isMoving}
+                                  <Stack
+                                    direction="row"
+                                    spacing={0.5}
+                                    alignItems="center"
+                                    sx={{ minWidth: 0 }}
+                                  >
+                                    <EmailIcon
+                                      sx={{
+                                        fontSize: 14,
+                                        color: "text.secondary",
+                                        flexShrink: 0,
+                                      }}
+                                    />
+                                    <Typography
+                                      variant="body2"
+                                      color="text.secondary"
+                                      sx={{ overflowWrap: "anywhere" }}
+                                    >
+                                      {student.email}
+                                    </Typography>
+                                  </Stack>
+                                </Box>
+                              </Stack>
+                              <Stack
+                                direction="row"
+                                spacing={1}
+                                alignItems="center"
+                                sx={{ flexShrink: 0 }}
                               >
-                                <EditIcon fontSize="small" />
-                              </IconButton>
-                            </Stack>
-                          </Box>
-                        );
-                      })}
-                    </Stack>
-                  )}
-                </Paper>
+                                {isMoving && <CircularProgress size={18} />}
+                                <IconButton
+                                  aria-label="Edytuj ucznia"
+                                  size="small"
+                                  color="primary"
+                                  onClick={() => openEditStudentDialog(student)}
+                                  disabled={isMoving}
+                                >
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                              </Stack>
+                            </Box>
+                          );
+                        })}
+                      </Stack>
+                    )}
+                  </Collapse>
+                </Box>
               );
             })}
-          </Box>
+          </Stack>
         )}
 
         <AppDialog
@@ -840,7 +992,11 @@ export function TeacherStudentsView() {
                   />
                 </FormField>
                 <FormField>
-                  <FormControl fullWidth size="small" disabled={createStudentLoading}>
+                  <FormControl
+                    fullWidth
+                    size="small"
+                    disabled={createStudentLoading}
+                  >
                     <InputLabel>Grupa ucznia</InputLabel>
                     <Select
                       label="Grupa ucznia"
@@ -940,7 +1096,11 @@ export function TeacherStudentsView() {
                   />
                 </FormField>
                 <FormField>
-                  <FormControl fullWidth size="small" disabled={editStudentLoading}>
+                  <FormControl
+                    fullWidth
+                    size="small"
+                    disabled={editStudentLoading}
+                  >
                     <InputLabel>Grupa ucznia</InputLabel>
                     <Select
                       label="Grupa ucznia"

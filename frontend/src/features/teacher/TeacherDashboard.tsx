@@ -822,22 +822,21 @@ export function TeacherDashboard() {
 
         <Box sx={{ display: "flex", gap: 2, mb: 4, flexWrap: "wrap" }}>
           <ActionButton
-            icon={<PersonAddIcon sx={{ fontSize: 32 }} />}
-            title="Zarządzaj uczniami"
-            subtitle="Dodaj uczniów i zmieniaj klasy"
-            onClick={() => navigate("/teacher/students")}
-          />
-          <ActionButton
-            icon={<GroupIcon sx={{ fontSize: 32 }} />}
-            title="Zarządzaj grupami"
-            subtitle="Twórz grupy i przydzielaj uczniów"
-            onClick={() => navigate("/teacher/students")}
-          />
-          <ActionButton
             icon={<AddIcon sx={{ fontSize: 32 }} />}
             title="Utwórz lekcję"
             subtitle="Nowa lekcja z zadaniami"
             onClick={openCreateLessonDialog}
+          />
+          <ActionButton
+            icon={
+              <Stack direction="row" spacing={0.5} alignItems="center">
+                <PersonAddIcon sx={{ fontSize: 30 }} />
+                <GroupIcon sx={{ fontSize: 30 }} />
+              </Stack>
+            }
+            title="Zarządzaj uczniami i grupami"
+            subtitle="Dodaj uczniów, twórz grupy i zmieniaj przypisania"
+            onClick={() => navigate("/teacher/students")}
           />
         </Box>
 
