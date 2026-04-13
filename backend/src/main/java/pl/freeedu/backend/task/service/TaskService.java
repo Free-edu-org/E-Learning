@@ -1,6 +1,7 @@
 package pl.freeedu.backend.task.service;
 
 import org.springframework.stereotype.Service;
+import pl.freeedu.backend.lesson.model.Lesson;
 import pl.freeedu.backend.lesson.repository.LessonRepository;
 import pl.freeedu.backend.security.service.SecurityService;
 import pl.freeedu.backend.task.dto.*;
@@ -48,7 +49,8 @@ public class TaskService {
 
 	public Mono<LessonTasksResponse> getLessonTasks(Integer lessonId) {
 		return securityService.getCurrentUser().flatMap(user -> Mono.fromCallable(() -> {
-			lessonRepository.findById(lessonId).orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_FOUND));
+			Lesson lesson = lessonRepository.findById(lessonId)
+					.orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_FOUND));
 
 			boolean isStudent = user.getRole() == Role.STUDENT;
 			String status = null;
@@ -63,8 +65,14 @@ public class TaskService {
 					if (existing.get().getStatus() == UserLessonStatus.COMPLETED) {
 						throw new TaskException(TaskErrorCode.LESSON_ALREADY_COMPLETED);
 					}
+					if (!Boolean.TRUE.equals(lesson.getIsActive())) {
+						throw new TaskException(TaskErrorCode.LESSON_NOT_ACTIVE);
+					}
 					status = existing.get().getStatus().name();
 				} else {
+					if (!Boolean.TRUE.equals(lesson.getIsActive())) {
+						throw new TaskException(TaskErrorCode.LESSON_NOT_ACTIVE);
+					}
 					UserLesson userLesson = UserLesson.builder().userId(user.getId()).lessonId(lessonId)
 							.status(UserLessonStatus.IN_PROGRESS).score(0).maxScore(0).build();
 					userLessonRepository.save(userLesson);
@@ -223,18 +231,23 @@ public class TaskService {
 	public Mono<SubmitResponse> submitLesson(Integer lessonId, Mono<SubmitRequest> requestMono) {
 		return requestMono
 				.flatMap(request -> securityService.getCurrentUserId().flatMap(userId -> Mono.fromCallable(() -> {
-					lessonRepository.findById(lessonId)
+					Lesson lesson = lessonRepository.findById(lessonId)
 							.orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_FOUND));
 					if (!userInGroupRepository.hasAccessToLesson(userId, lessonId)) {
 						throw new TaskException(TaskErrorCode.STUDENT_NO_ACCESS);
 					}
 
-					UserLesson userLesson = userLessonRepository.findByUserIdAndLessonId(userId, lessonId)
-							.orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_STARTED));
-
-					if (userLesson.getStatus() == UserLessonStatus.COMPLETED) {
+					Optional<UserLesson> maybeUserLesson = userLessonRepository.findByUserIdAndLessonId(userId,
+							lessonId);
+					if (maybeUserLesson.isPresent()
+							&& maybeUserLesson.get().getStatus() == UserLessonStatus.COMPLETED) {
 						throw new TaskException(TaskErrorCode.LESSON_ALREADY_COMPLETED);
 					}
+					if (!Boolean.TRUE.equals(lesson.getIsActive())) {
+						throw new TaskException(TaskErrorCode.LESSON_NOT_ACTIVE);
+					}
+					UserLesson userLesson = maybeUserLesson
+							.orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_STARTED));
 
 					int score = 0;
 					int maxScore = 0;

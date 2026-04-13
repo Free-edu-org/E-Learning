@@ -86,7 +86,8 @@ public class StudentService {
 		List<StudentLessonResponse> studentLessons = new ArrayList<>();
 		for (Lesson lesson : lessons) {
 			var lessonResponse = lessonMapper.toResponse(lesson);
-			lessonResponse.setGroups(groupHasLessonRepository.findGroupsForLesson(lesson.getId()));
+			lessonResponse.setGroups(groupHasLessonRepository.findGroupsForLesson(lesson.getId()).stream()
+					.filter(group -> maybeGroupId.get().equals(group.getId())).toList());
 
 			UserLesson userLesson = userLessonsByLessonId.get(lesson.getId());
 			Integer score = userLesson != null ? userLesson.getScore() : null;

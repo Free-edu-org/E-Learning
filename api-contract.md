@@ -585,7 +585,7 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
 - **Description**: Zwraca listę uczniów przypisanych do grup aktualnie zalogowanego nauczyciela (relacja przez `UserInGroup` oraz `UserGroup.teacherId`).
 - **Authorization**: `TEACHER`
 
-**Success (200 OK):** Zwraca macierz elementów `UserResponse` (wyłącznie użytkownicy z rolą `STUDENT`).
+**Success (200 OK):** Zwraca macierz elementów `TeacherStudentResponse` (wyłącznie użytkownicy z rolą `STUDENT`) z `groupId` aktualnego przypisania do grupy nauczyciela.
 
 **Known Errors:**
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
@@ -616,7 +616,8 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
   "username": "new_student",
   "email": "new.student@example.com",
   "role": "STUDENT",
-  "createdAt": "2026-03-30T20:15:00"
+  "createdAt": "2026-03-30T20:15:00",
+  "groupId": 1
 }
 ```
 
@@ -653,7 +654,8 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
   "username": "updated_student",
   "email": "updated.student@example.com",
   "role": "STUDENT",
-  "createdAt": "2026-03-30T20:15:00"
+  "createdAt": "2026-03-30T20:15:00",
+  "groupId": 2
 }
 ```
 
@@ -887,7 +889,7 @@ Warstwa BFF dla uczniow.
 | `teacherId` | Integer | ID nauczyciela prowadzacego. |
 | `teacherName` | String | Username nauczyciela prowadzacego. |
 | `createdAt` | String (ISO datetime) | Data utworzenia lekcji. |
-| `groups` | List<GroupDto> | Grupy przypisane do lekcji. |
+| `groups` | List<GroupDto> | W student dashboard zwracana jest tylko grupa aktualnego ucznia, nawet jesli lekcja jest przypisana do wielu grup. |
 | `status` | String | `NOT_STARTED`, `IN_PROGRESS` albo `COMPLETED`. |
 | `score` | Integer or null | Zdobyta liczba punktow dla lekcji z zapisanym postepem. |
 | `maxScore` | Integer or null | Maksymalna liczba punktow dla biezacej proby. |
@@ -927,7 +929,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 ### 8.1. Get Lesson Tasks
 - **URL**: `/api/v1/lessons/{lessonId}/tasks`
 - **Method**: `GET`
-- **Description**: Returns all tasks for a lesson grouped by section. Students get answers stripped and auto-start tracking. Teachers/admins see correct answers.
+- **Description**: Returns all tasks for a lesson grouped by section. Students get answers stripped and auto-start tracking only when the lesson is active. Teachers/admins see correct answers and may inspect inactive lessons.
 - **Authorization**: `STUDENT`, `TEACHER`, or `ADMIN`
 
 **Success (200 OK):**
@@ -965,6 +967,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 **Known Errors:**
 - `LESSON_NOT_FOUND` (404 Not Found): Lesson does not exist.
 - `STUDENT_NO_ACCESS` (403 Forbidden): Student's group does not have access to this lesson.
+- `LESSON_NOT_ACTIVE` (403 Forbidden): Lesson is not active for students.
 - `LESSON_ALREADY_COMPLETED` (403 Forbidden): Student has already completed this lesson.
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
 - `FORBIDDEN` (403 Forbidden): Token role does not permit access.
@@ -1187,7 +1190,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 ### 8.14. Submit Lesson Answers
 - **URL**: `/api/v1/lessons/{lessonId}/submit`
 - **Method**: `POST`
-- **Description**: Submits all answers for a lesson at once. Grades each answer and marks lesson as `COMPLETED`. One-shot — cannot re-submit.
+- **Description**: Submits all answers for an active lesson at once. Grades each answer and marks lesson as `COMPLETED`. One-shot — cannot re-submit.
 - **Authorization**: `STUDENT` only
 
 **Request Body (JSON):**
@@ -1219,6 +1222,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 
 **Known Errors:**
 - `LESSON_NOT_FOUND` (404 Not Found)
+- `LESSON_NOT_ACTIVE` (403 Forbidden): Lesson is not active for students.
 - `LESSON_NOT_STARTED` (400 Bad Request): Lesson not started yet (no prior GET /tasks call).
 - `LESSON_ALREADY_COMPLETED` (403 Forbidden): Lesson already submitted.
 - `STUDENT_NO_ACCESS` (403 Forbidden): Student's group does not have access.

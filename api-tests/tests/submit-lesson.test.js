@@ -38,6 +38,9 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
         expect(res.status).toBe(201);
         lessonId = res.data.id;
 
+        res = await apiClient.patch(`/lessons/${lessonId}/status`, { isActive: true });
+        expect(res.status).toBe(204);
+
         // Teacher creates 4 task types
         res = await apiClient.post(`/lessons/${lessonId}/tasks/choose`, {
             task: 'What is 2+2?',
@@ -459,6 +462,30 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
             });
             expect(response.status).toBe(404);
             expect(response.data.code).toBe('TASK_NOT_FOUND');
+        });
+
+        it('should return 403 LESSON_NOT_ACTIVE when student starts or submits an inactive lesson', async () => {
+            setAuthToken(teacherToken);
+            await apiClient.post(`/lessons/${lessonId}/users/${studentId}/reset`);
+            let response = await apiClient.patch(`/lessons/${lessonId}/status`, { isActive: false });
+            expect(response.status).toBe(204);
+
+            try {
+                setAuthToken(studentToken);
+                response = await apiClient.get(`/lessons/${lessonId}/tasks`);
+                expect(response.status).toBe(403);
+                expect(response.data.code).toBe('LESSON_NOT_ACTIVE');
+
+                response = await apiClient.post(`/lessons/${lessonId}/submit`, {
+                    answers: [{ taskId: chooseTaskId, taskType: 'choose', answer: '1' }]
+                });
+                expect(response.status).toBe(403);
+                expect(response.data.code).toBe('LESSON_NOT_ACTIVE');
+            } finally {
+                setAuthToken(teacherToken);
+                response = await apiClient.patch(`/lessons/${lessonId}/status`, { isActive: true });
+                expect(response.status).toBe(204);
+            }
         });
     });
 

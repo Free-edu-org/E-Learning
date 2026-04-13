@@ -8,6 +8,8 @@ describe('Teacher Stats API (/api/v1/teacher/stats)', () => {
     let adminToken;
     let teacherToken;
     let studentToken;
+    let isolatedTeacherToken;
+    let isolatedTeacherId;
 
     beforeAll(async () => {
         let res = await apiClient.post('/auth/login', {
@@ -28,6 +30,44 @@ describe('Teacher Stats API (/api/v1/teacher/stats)', () => {
         });
         studentToken = res.data.token;
     });
+
+    afterAll(async () => {
+        setAuthToken(adminToken);
+        if (isolatedTeacherId) {
+            const response = await apiClient.delete(`/users/${isolatedTeacherId}`);
+            expect([204, 404]).toContain(response.status);
+        }
+        setAuthToken(null);
+    });
+
+    async function getIsolatedTeacherToken() {
+        if (isolatedTeacherToken) return isolatedTeacherToken;
+
+        const uniqueId = Date.now();
+        const teacherData = {
+            email: `teacher.stats.${uniqueId}@test.com`,
+            username: `teacher_stats_${uniqueId}`,
+            password: 'password123'
+        };
+
+        setAuthToken(adminToken);
+        let res = await apiClient.post('/users/teacher', teacherData);
+        expect(res.status).toBe(201);
+
+        res = await apiClient.post('/auth/login', {
+            identifier: teacherData.username,
+            password: teacherData.password
+        });
+        expect(res.status).toBe(200);
+        isolatedTeacherToken = res.data.token;
+
+        setAuthToken(isolatedTeacherToken);
+        res = await apiClient.get('/users/me');
+        expect(res.status).toBe(200);
+        isolatedTeacherId = res.data.id;
+
+        return isolatedTeacherToken;
+    }
 
     // ─── HAPPY PATH ───────────────────────────────────────────────────
 
@@ -165,7 +205,7 @@ describe('Teacher Stats API (/api/v1/teacher/stats)', () => {
         });
 
         it('endpoint should return consistent results on repeated calls', async () => {
-            setAuthToken(teacherToken);
+            setAuthToken(await getIsolatedTeacherToken());
             const r1 = await apiClient.get('/teacher/stats');
             const r2 = await apiClient.get('/teacher/stats');
 
