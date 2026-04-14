@@ -1,0 +1,303 @@
+package pl.freeedu.backend.admin.service;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.TransactionCallback;
+import org.springframework.transaction.support.TransactionTemplate;
+import pl.freeedu.backend.admin.dto.*;
+import pl.freeedu.backend.user.dto.UserResponse;
+import pl.freeedu.backend.user.exception.UserErrorCode;
+import pl.freeedu.backend.user.exception.UserException;
+import pl.freeedu.backend.user.model.Role;
+import pl.freeedu.backend.user.model.User;
+import pl.freeedu.backend.user.repository.UserRepository;
+import pl.freeedu.backend.user.service.UserMapper;
+import pl.freeedu.backend.usergroup.exception.UserGroupErrorCode;
+import pl.freeedu.backend.usergroup.exception.UserGroupException;
+import pl.freeedu.backend.usergroup.model.UserGroup;
+import pl.freeedu.backend.usergroup.model.UserInGroup;
+import pl.freeedu.backend.usergroup.repository.UserGroupRepository;
+import pl.freeedu.backend.usergroup.repository.UserInGroupRepository;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
+
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class AdminServiceTest {
+
+	@Mock
+	private UserRepository userRepository;
+	@Mock
+	private UserGroupRepository userGroupRepository;
+	@Mock
+	private UserInGroupRepository userInGroupRepository;
+	@Mock
+	private UserMapper userMapper;
+	@Mock
+	private PasswordEncoder passwordEncoder;
+	@Mock
+	private TransactionTemplate transactionTemplate;
+
+	@InjectMocks
+	private AdminService adminService;
+
+	@BeforeEach
+	void setUp() {
+		// Mock TransactionTemplate to execute the callback immediately
+		lenient().when(transactionTemplate.execute(any())).thenAnswer(invocation -> {
+			TransactionCallback<?> callback = invocation.getArgument(0);
+			return callback.doInTransaction(mock(TransactionStatus.class));
+		});
+	}
+
+	@Test
+	void shouldReturnAdminStats() {
+		// given
+		when(userRepository.count()).thenReturn(10L);
+		when(userRepository.countByRole(Role.ADMIN)).thenReturn(1L);
+		when(userRepository.countByRole(Role.TEACHER)).thenReturn(2L);
+		when(userRepository.countByRole(Role.STUDENT)).thenReturn(7L);
+		when(userGroupRepository.count()).thenReturn(3L);
+
+		// when
+		Mono<AdminStatsResponse> result = adminService.getStats();
+
+		// then
+		StepVerifier.create(result).assertNext(stats -> {
+			assertEquals(10L, stats.getTotalUsers());
+			assertEquals(1L, stats.getTotalAdmins());
+			assertEquals(3L, stats.getTotalGroups());
+		}).verifyComplete();
+	}
+
+	@Test
+	void shouldGetTeachers() {
+		// given
+		User teacher = User.builder().id(1).username("T1").role(Role.TEACHER).build();
+		when(userRepository.findByRoleOrderByCreatedAtDesc(Role.TEACHER)).thenReturn(List.of(teacher));
+		when(userMapper.toUserResponse(teacher)).thenReturn(UserResponse.builder().id(1).build());
+
+		// when
+		Flux<UserResponse> result = adminService.getTeachers();
+
+		// then
+		StepVerifier.create(result).assertNext(resp -> assertEquals(1, resp.getId())).verifyComplete();
+	}
+
+	@Test
+	void shouldGetStudentsWithGroupInfo() {
+		// given
+		User student = User.builder().id(1).username("S1").role(Role.STUDENT).build();
+		UserGroup group = UserGroup.builder().id(10).name("G1").build();
+
+		when(userGroupRepository.findAll()).thenReturn(List.of(group));
+		when(userInGroupRepository.findAllMemberships())
+				.thenReturn(List.of(new UserInGroupRepository.UserMembershipProjection() {
+					@Override
+					public Integer getUserId() {
+						return 1;
+					}
+
+					@Override
+					public Integer getGroupId() {
+						return 10;
+					}
+				}));
+		when(userRepository.findByRoleOrderByCreatedAtDesc(Role.STUDENT)).thenReturn(List.of(student));
+
+		// when
+		Flux<AdminStudentResponse> result = adminService.getStudents();
+
+		// then
+		StepVerifier.create(result).assertNext(resp -> {
+			assertEquals(1, resp.getId());
+			assertEquals("G1", resp.getGroupName());
+			assertEquals(10, resp.getGroupId());
+		}).verifyComplete();
+	}
+
+	@Test
+	void shouldCreateStudentSucceed() {
+		// given
+		AdminCreateStudentRequest req = AdminCreateStudentRequest.builder().email("s@e.com").username("s1")
+				.password("p").groupId(10).build();
+		UserGroup group = UserGroup.builder().id(10).build();
+
+		when(userRepository.existsByEmail(req.getEmail())).thenReturn(false);
+		when(userRepository.existsByUsername(req.getUsername())).thenReturn(false);
+		when(userGroupRepository.findById(10)).thenReturn(Optional.of(group));
+		when(passwordEncoder.encode("p")).thenReturn("encoded");
+		when(userRepository.save(any())).thenAnswer(inv -> {
+			User u = inv.getArgument(0);
+			u.setId(1);
+			return u;
+		});
+		when(userMapper.toUserResponse(any())).thenReturn(UserResponse.builder().id(1).build());
+
+		// when
+		Mono<UserResponse> result = adminService.createStudent(req);
+
+		// then
+		StepVerifier.create(result).assertNext(resp -> {
+			assertEquals(1, resp.getId());
+			verify(userInGroupRepository).save(any());
+		}).verifyComplete();
+	}
+
+	@Test
+	void shouldRejectCreateStudentWhenEmailTaken() {
+		// given
+		AdminCreateStudentRequest req = AdminCreateStudentRequest.builder().email("s@e.com").build();
+		when(userRepository.existsByEmail(req.getEmail())).thenReturn(true);
+
+		// when
+		Mono<UserResponse> result = adminService.createStudent(req);
+
+		// then
+		StepVerifier.create(result).expectErrorSatisfies(error -> {
+			assertTrue(error instanceof UserException);
+			assertEquals(UserErrorCode.EMAIL_ALREADY_TAKEN, ((UserException) error).getErrorCode());
+		}).verify();
+	}
+
+	@Test
+	void shouldRejectCreateStudentWhenUsernameTaken() {
+		// given
+		AdminCreateStudentRequest req = AdminCreateStudentRequest.builder().username("s1").build();
+		when(userRepository.existsByEmail(any())).thenReturn(false);
+		when(userRepository.existsByUsername("s1")).thenReturn(true);
+
+		// when
+		Mono<UserResponse> result = adminService.createStudent(req);
+
+		// then
+		StepVerifier.create(result).expectErrorSatisfies(error -> {
+			assertTrue(error instanceof UserException);
+			assertEquals(UserErrorCode.USERNAME_ALREADY_TAKEN, ((UserException) error).getErrorCode());
+		}).verify();
+	}
+
+	@Test
+	void shouldUpdateStudentSucceed() {
+		// given
+		AdminUpdateStudentRequest req = AdminUpdateStudentRequest.builder().email("new@e.com").username("new")
+				.groupId(11).build();
+		User student = User.builder().id(1).email("old@e.com").username("old").role(Role.STUDENT).build();
+		UserGroup newGroup = UserGroup.builder().id(11).name("NG").build();
+
+		when(userRepository.findById(1)).thenReturn(Optional.of(student));
+		when(userRepository.existsByEmail("new@e.com")).thenReturn(false);
+		when(userRepository.existsByUsername("new")).thenReturn(false);
+		when(userGroupRepository.findById(11)).thenReturn(Optional.of(newGroup));
+		when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+		when(userInGroupRepository.findByUserId(1)).thenReturn(Optional.empty());
+
+		// when
+		Mono<AdminStudentResponse> result = adminService.updateStudent(1, req);
+
+		// then
+		StepVerifier.create(result).assertNext(resp -> {
+			assertEquals("new", resp.getUsername());
+			assertEquals(11, resp.getGroupId());
+			verify(userInGroupRepository).save(any());
+		}).verifyComplete();
+	}
+
+	@Test
+	void shouldUpdateStudentRemovingGroup() {
+		// given
+		AdminUpdateStudentRequest req = AdminUpdateStudentRequest.builder().email("old@e.com").username("old")
+				.groupId(null).build();
+		User student = User.builder().id(1).email("old@e.com").username("old").role(Role.STUDENT).build();
+		UserInGroup membership = UserInGroup.builder().userId(1).groupId(10).build();
+
+		when(userRepository.findById(1)).thenReturn(Optional.of(student));
+		when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+		when(userInGroupRepository.findByUserId(1)).thenReturn(Optional.of(membership));
+
+		// when
+		Mono<AdminStudentResponse> result = adminService.updateStudent(1, req);
+
+		// then
+		StepVerifier.create(result).assertNext(resp -> {
+			assertNull(resp.getGroupId());
+			verify(userInGroupRepository).delete(membership);
+		}).verifyComplete();
+	}
+
+	@Test
+	void shouldRejectUpdateUserNotFound() {
+		// given
+		when(userRepository.findById(1)).thenReturn(Optional.empty());
+
+		// when
+		Mono<AdminStudentResponse> result = adminService.updateStudent(1, new AdminUpdateStudentRequest());
+
+		// then
+		StepVerifier.create(result).expectError(UserException.class).verify();
+	}
+
+	@Test
+	void shouldRejectUpdateUsernameTaken() {
+		// given
+		AdminUpdateStudentRequest req = AdminUpdateStudentRequest.builder().username("taken").email("old@e.com")
+				.build();
+		User student = User.builder().id(1).email("old@e.com").username("old").role(Role.STUDENT).build();
+
+		when(userRepository.findById(1)).thenReturn(Optional.of(student));
+		when(userRepository.existsByUsername("taken")).thenReturn(true);
+
+		// when
+		Mono<AdminStudentResponse> result = adminService.updateStudent(1, req);
+
+		// then
+		StepVerifier.create(result).expectErrorSatisfies(err -> {
+			assertEquals(UserErrorCode.USERNAME_ALREADY_TAKEN, ((UserException) err).getErrorCode());
+		}).verify();
+	}
+
+	@Test
+	void shouldRejectUpdateNonStudent() {
+		// given
+		User admin = User.builder().id(1).role(Role.ADMIN).build();
+		when(userRepository.findById(1)).thenReturn(Optional.of(admin));
+
+		// when
+		Mono<AdminStudentResponse> result = adminService.updateStudent(1, new AdminUpdateStudentRequest());
+
+		// then
+		StepVerifier.create(result).expectErrorSatisfies(error -> {
+			assertTrue(error instanceof UserException);
+			assertEquals(UserErrorCode.INVALID_STUDENT_ASSIGNMENT, ((UserException) error).getErrorCode());
+		}).verify();
+	}
+
+	@Test
+	void shouldRejectCreateStudentWhenGroupNotFound() {
+		// given
+		AdminCreateStudentRequest req = AdminCreateStudentRequest.builder().groupId(999).build();
+		when(userGroupRepository.findById(999)).thenReturn(Optional.empty());
+
+		// when
+		Mono<UserResponse> result = adminService.createStudent(req);
+
+		// then
+		StepVerifier.create(result).expectErrorSatisfies(error -> {
+			assertTrue(error instanceof UserGroupException);
+			assertEquals(UserGroupErrorCode.USER_GROUP_NOT_FOUND, ((UserGroupException) error).getErrorCode());
+		}).verify();
+	}
+}
