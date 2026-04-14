@@ -1,0 +1,214 @@
+{
+  "main": {
+    "id": "7a830f8625c806ae",
+    "type": "split",
+    "children": [
+      {
+        "id": "65bc3d90426e1a54",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "ee020aad66197ad9",
+            "type": "leaf",
+            "state": {
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "Podgląd grafu"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "20272a7a0bf9a391",
+    "type": "split",
+    "children": [
+      {
+        "id": "88ab53eae9f2b180",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "54d5f1bf1e7249b1",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Przeglądarka plików"
+            }
+          },
+          {
+            "id": "dfd3dabeea9d8d6a",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Wyszukiwarka"
+            }
+          },
+          {
+            "id": "1b0d7e4a31403132",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Ulubione"
+            }
+          }
+        ],
+        "currentTab": 1
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "a549dc278db6b8d6",
+    "type": "split",
+    "children": [
+      {
+        "id": "64eaba08c4f91339",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "5d13a4ff8781bd5a",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Linki zwrotne"
+            }
+          },
+          {
+            "id": "972d83d49001fc88",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Łącza wychodzące"
+            }
+          },
+          {
+            "id": "ed93f92c5f310f8a",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tagi"
+            }
+          },
+          {
+            "id": "323f1102e70f7ff5",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "Wszystkie atrybuty"
+            }
+          },
+          {
+            "id": "28dfce1c32e84989",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Konspekt"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Otwórz okno szybkiego wyboru": false,
+      "graph:Otwórz podgląd grafu": false,
+      "canvas:Stwórz nową tablicę": false,
+      "daily-notes:Otwórz dzisiejszy dziennik": false,
+      "templates:Wstaw szablon": false,
+      "command-palette:Otwórz listę poleceń": false,
+      "bases:Stwórz nową bazę danych": false
+    }
+  },
+  "active": "ee020aad66197ad9",
+  "lastOpenFiles": [
+    "docs/obsidian/FreeEdu.canvas",
+    "docs/obsidian/Przeplyw - rozpoznawanie mowy.md",
+    "docs/obsidian/Przeplyw - administracja uzytkownikami.md",
+    "docs/obsidian/Przeplyw - student rozwiazuje lekcje.md",
+    "docs/obsidian/Przeplyw - nauczyciel tworzy lekcje.md",
+    "docs/obsidian/Przeplyw - logowanie i sesja.md",
+    "docs/obsidian/Frontend - Lesson Solver.md",
+    "docs/obsidian/Frontend - Student Dashboard.md",
+    "docs/obsidian/Frontend - Teacher Dashboard.md",
+    "docs/obsidian/Frontend - Admin Dashboard.md",
+    "docs/obsidian/Frontend - Login.md",
+    "docs/obsidian/Student Dashboard.md",
+    "docs/obsidian/Teacher Dashboard.md",
+    "docs/obsidian/Admin Dashboard.md",
+    "docs/obsidian/Protected Route.md",
+    "docs/obsidian/Auth Context.md",
+    "docs/obsidian/Bledy API.md",
+    "docs/obsidian/Testy.md",
+    "docs/obsidian/Docker i runtime.md",
+    "docs/obsidian/Rola - Student.md",
+    "docs/obsidian/Rola - Teacher.md",
+    "docs/obsidian/Rola - Admin.md",
+    "docs/obsidian/Domena - postep studenta.md",
+    "docs/obsidian/Domena - zadania.md",
+    "docs/obsidian/Domena - lekcje.md",
+    "docs/obsidian/Domena - grupy.md",
+    "docs/obsidian",
+    "docs/Nowy folder",
+    "docs",
+    "Nowy folder",
+    "Bez nazwy.canvas"
+  ]
+}
