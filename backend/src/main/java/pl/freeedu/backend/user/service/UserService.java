@@ -105,7 +105,7 @@ public class UserService {
 			User user = userRepository.findById(id).orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 
 			if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
-				throw new AuthException(AuthErrorCode.INVALID_CREDENTIALS);
+				throw new AuthException(AuthErrorCode.INVALID_OLD_PASSWORD);
 			}
 
 			user.setPassword(passwordEncoder.encode(request.getNewPassword()));

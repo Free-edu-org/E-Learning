@@ -16,7 +16,6 @@ import {
   Select,
   Skeleton,
   Stack,
-  TextField,
   ToggleButton,
   ToggleButtonGroup,
   Typography,
@@ -26,15 +25,10 @@ import {
   AutoStoriesOutlined as LessonIcon,
   CheckCircleOutlined as CompletedIcon,
   CloseOutlined as CloseIcon,
-  EditOutlined as EditIcon,
-  EmailOutlined as EmailIcon,
-  GroupOutlined as GroupIcon,
   InsightsOutlined as InsightsIcon,
   LockOutlined as LockIcon,
   PersonOutlined as PersonIcon,
-  SaveOutlined as SaveIcon,
   SortOutlined as SortIcon,
-  TodayOutlined as TodayIcon,
   TrendingUpOutlined as ResultIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
@@ -56,7 +50,7 @@ import {
   panelToolbarSx,
 } from "@/components/ui/panel/panelStyles";
 import { useAuth } from "@/context/AuthContext";
-import { formatDate, getErrorMessage } from "@/utils/dashboardUtils";
+import { getErrorMessage } from "@/utils/dashboardUtils";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -127,46 +121,6 @@ function getLessonStatusTag(lesson: StudentLesson) {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-interface ProfileRowProps {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  readOnly?: boolean;
-}
-
-function ProfileRow({ icon, label, value }: ProfileRowProps) {
-  return (
-    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-      <Box
-        sx={{
-          ...panelSurfaceSx,
-          width: 34,
-          height: 34,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexShrink: 0,
-          color: "primary.main",
-        }}
-      >
-        {icon}
-      </Box>
-      <Box sx={{ minWidth: 0 }}>
-        <Typography variant="caption" color="text.secondary" display="block">
-          {label}
-        </Typography>
-        <Typography
-          variant="body2"
-          fontWeight={600}
-          sx={{ overflowWrap: "anywhere" }}
-        >
-          {value}
-        </Typography>
-      </Box>
-    </Box>
-  );
-}
-
 // ── Result Dialog ─────────────────────────────────────────────────────────────
 
 interface ResultDialogProps {
@@ -233,77 +187,6 @@ function ResultDialog({ lesson, onClose }: ResultDialogProps) {
           variant="outlined"
           sx={{ width: "100%", justifyContent: "center" }}
         />
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-// ── Edit Profile Dialog ───────────────────────────────────────────────────────
-
-interface EditProfileDialogProps {
-  user: UserProfile | null;
-  onClose: () => void;
-}
-
-function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
-  const [username, setUsername] = useState(user?.username ?? "");
-  const [email, setEmail] = useState(user?.email ?? "");
-
-  return (
-    <Dialog
-      open
-      onClose={onClose}
-      maxWidth="xs"
-      fullWidth
-      PaperProps={{ sx: { borderRadius: 3 } }}
-    >
-      <DialogTitle
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          pb: 1,
-        }}
-      >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <EditIcon sx={{ color: "primary.main" }} />
-          <Typography variant="h6" fontWeight={700}>
-            Edycja danych
-          </Typography>
-        </Box>
-        <IconButton size="small" onClick={onClose}>
-          <CloseIcon fontSize="small" />
-        </IconButton>
-      </DialogTitle>
-      <DialogContent>
-        <Stack spacing={2} sx={{ pt: 1 }}>
-          <TextField
-            label="Nazwa użytkownika"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            fullWidth
-            size="small"
-          />
-          <TextField
-            label="E-mail"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            fullWidth
-            size="small"
-            type="email"
-          />
-          <Alert severity="info" sx={{ borderRadius: 2, fontSize: "0.8rem" }}>
-            Zmiana danych wymaga potwierdzenia przez administratora.
-          </Alert>
-          <Button
-            variant="contained"
-            startIcon={<SaveIcon />}
-            onClick={onClose}
-            sx={{ ...panelFooterButtonSx, alignSelf: "flex-end" }}
-          >
-            Zapisz
-          </Button>
-        </Stack>
       </DialogContent>
     </Dialog>
   );
@@ -431,7 +314,6 @@ export function StudentDashboard() {
 
   // Dialogs
   const [resultLesson, setResultLesson] = useState<StudentLesson | null>(null);
-  const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [progressOpen, setProgressOpen] = useState(false);
   const [confirmStartLesson, setConfirmStartLesson] =
     useState<StudentLesson | null>(null);
@@ -486,14 +368,6 @@ export function StudentDashboard() {
       ? Math.round((stats.completedLessons / stats.totalLessons) * 100)
       : 0;
 
-  // First group name from any lesson (displayed in profile)
-  const studentGroupName = useMemo(() => {
-    for (const lesson of lessons) {
-      if (lesson.groups.length > 0) return lesson.groups[0].name;
-    }
-    return null;
-  }, [lessons]);
-
   const displayedLessons = useMemo(() => {
     let result = lessons.filter((l) => {
       if (lessonFilter === "ALL") return true;
@@ -526,6 +400,8 @@ export function StudentDashboard() {
           username={user?.username}
           subtitle="Panel ucznia"
           fallbackName="Uczniu"
+          user={user}
+          onUserUpdated={setUser}
         />
 
         {error && (
@@ -590,10 +466,10 @@ export function StudentDashboard() {
           </Stack>
         </Paper>
 
-        {/* ── Info grid: Postępy + Moje konto ── */}
+        {/* ── Info grid: Postępy ── */}
         <Grid container spacing={2} sx={{ mb: 4 }}>
           {/* Postępy - uproszczone */}
-          <Grid size={{ xs: 12, md: 7 }}>
+          <Grid size={{ xs: 12 }}>
             <Paper elevation={0} sx={{ ...panelGridCardSx, minHeight: 200 }}>
               <Box sx={panelGridCardContentSx}>
                 <Box
@@ -637,6 +513,7 @@ export function StudentDashboard() {
                         variant="outlined"
                         size="small"
                         startIcon={<InsightsIcon />}
+                        onClick={() => setProgressOpen(true)}
                         sx={{ ...panelFooterButtonSx }}
                       >
                         Szczegóły postępów
@@ -647,71 +524,6 @@ export function StudentDashboard() {
                   <Alert severity="info" sx={{ borderRadius: 2 }}>
                     Brak danych postępu do wyświetlenia.
                   </Alert>
-                )}
-              </Box>
-            </Paper>
-          </Grid>
-
-          <Grid size={{ xs: 12, md: 5 }}>
-            <Paper elevation={0} sx={{ ...panelGridCardSx, minHeight: 200 }}>
-              <Box sx={panelGridCardContentSx}>
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    mb: 2,
-                  }}
-                >
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <PersonIcon sx={{ color: "primary.main" }} />
-                    <Typography variant="h6" fontWeight={700}>
-                      Moje konto
-                    </Typography>
-                  </Box>
-                  {!loading && (
-                    <Button
-                      size="small"
-                      startIcon={<EditIcon />}
-                      sx={{ ...panelFooterButtonSx, fontSize: "0.78rem" }}
-                    >
-                      Edytuj
-                    </Button>
-                  )}
-                </Box>
-
-                {loading ? (
-                  <Stack spacing={1.5}>
-                    <Skeleton variant="rounded" height={34} />
-                    <Skeleton variant="rounded" height={34} width="80%" />
-                    <Skeleton variant="rounded" height={34} width="65%" />
-                    <Skeleton variant="rounded" height={34} width="75%" />
-                  </Stack>
-                ) : (
-                  <Stack spacing={1.5}>
-                    <ProfileRow
-                      icon={<PersonIcon fontSize="small" />}
-                      label="Login"
-                      value={user?.username ?? "—"}
-                    />
-                    <ProfileRow
-                      icon={<EmailIcon fontSize="small" />}
-                      label="E-mail"
-                      value={user?.email ?? "—"}
-                    />
-                    <ProfileRow
-                      icon={<TodayIcon fontSize="small" />}
-                      label="Konto założone"
-                      value={formatDate(user?.createdAt)}
-                    />
-                    {studentGroupName && (
-                      <ProfileRow
-                        icon={<GroupIcon fontSize="small" />}
-                        label="Grupa"
-                        value={studentGroupName}
-                      />
-                    )}
-                  </Stack>
                 )}
               </Box>
             </Paper>
@@ -1008,12 +820,6 @@ export function StudentDashboard() {
         <ResultDialog
           lesson={resultLesson}
           onClose={() => setResultLesson(null)}
-        />
-      )}
-      {editProfileOpen && (
-        <EditProfileDialog
-          user={user}
-          onClose={() => setEditProfileOpen(false)}
         />
       )}
       {progressOpen && (

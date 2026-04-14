@@ -211,9 +211,22 @@ Default local development base URL is `http://localhost:8080`
 
 **Known Errors:**
 - `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
-- `INVALID_CREDENTIALS` (401 Unauthorized): Old password does not match or token is invalid.
+- `INVALID_OLD_PASSWORD` (401 Unauthorized): Old password does not match.
+- `UNAUTHORIZED` (401 Unauthorized): Token is invalid or missing.
 - `FORBIDDEN` (403 Forbidden): Lack of permissions (not admin and not owner).
 - `USER_NOT_FOUND` (404 Not Found): User does not exist.
+
+**Invalid old password response (401 Unauthorized):**
+```json
+{
+  "type": "about:blank",
+  "title": "Unauthorized",
+  "status": 401,
+  "detail": "Obecne hasło jest nieprawidłowe.",
+  "instance": "/api/v1/users/1/password",
+  "code": "INVALID_OLD_PASSWORD"
+}
+```
 
 ---
 

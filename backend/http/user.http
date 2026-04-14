@@ -38,6 +38,45 @@ Authorization: Bearer {{auth_token}}
   "newPassword": "new"
 }
 
+### Change User Password - wrong old password (401 INVALID_OLD_PASSWORD)
+PUT http://localhost:8080/api/v1/users/1/password
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "oldPassword": "wrong-old-password",
+  "newPassword": "new"
+}
+
+### Change User Password - unauthenticated (401 UNAUTHORIZED)
+PUT http://localhost:8080/api/v1/users/1/password
+Content-Type: application/json
+
+{
+  "oldPassword": "old",
+  "newPassword": "new"
+}
+
+### Change User Password - forbidden for non-owner (403 FORBIDDEN)
+PUT http://localhost:8080/api/v1/users/1/password
+Content-Type: application/json
+Authorization: Bearer {{other_user_auth_token}}
+
+{
+  "oldPassword": "old",
+  "newPassword": "new"
+}
+
+### Change User Password - validation failed (400 VALIDATION_FAILED)
+PUT http://localhost:8080/api/v1/users/1/password
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "oldPassword": "",
+  "newPassword": ""
+}
+
 ### Create Teacher (Requires Admin)
 POST http://localhost:8080/api/v1/users/teacher
 Content-Type: application/json
