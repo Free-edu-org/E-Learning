@@ -8,8 +8,8 @@ import pl.freeedu.backend.lesson.repository.LessonRepository;
 import pl.freeedu.backend.lesson.repository.GroupHasLessonRepository;
 import pl.freeedu.backend.security.service.SecurityService;
 import pl.freeedu.backend.teacher.dto.TeacherStatsResponse;
+import pl.freeedu.backend.teacher.dto.TeacherStudentResponse;
 import pl.freeedu.backend.teacher.repository.TeacherStatsRepository;
-import pl.freeedu.backend.user.dto.UserResponse;
 import pl.freeedu.backend.user.model.Role;
 import pl.freeedu.backend.user.repository.UserRepository;
 import pl.freeedu.backend.user.service.UserMapper;
@@ -91,14 +91,17 @@ public class TeacherService {
 				.flatMapMany(userGroupService::getGroupsByTeacherId);
 	}
 
-	public Flux<UserResponse> getMyStudents() {
+	public Flux<TeacherStudentResponse> getMyStudents() {
 		return securityService.getCurrentUserId().flatMapMany(teacherId -> Mono.fromCallable(() -> {
-			return userRepository.findByGroupsTeacherIdAndRole(teacherId, Role.STUDENT).stream()
-					.map(userMapper::toUserResponse).toList();
+			return userRepository.findStudentsWithGroupByTeacherId(teacherId, Role.STUDENT).stream()
+					.map(proj -> TeacherStudentResponse.builder().id(proj.getId()).username(proj.getUsername())
+							.email(proj.getEmail()).role(proj.getRole().name()).createdAt(proj.getCreatedAt())
+							.groupId(proj.getGroupId()).build())
+					.toList();
 		}).subscribeOn(Schedulers.boundedElastic()).flatMapMany(Flux::fromIterable));
 	}
 
-	public Mono<UserResponse> createStudent(Mono<TeacherCreateStudentRequest> requestMono) {
+	public Mono<TeacherStudentResponse> createStudent(Mono<TeacherCreateStudentRequest> requestMono) {
 		return requestMono.flatMap(request -> securityService.getCurrentUserId()
 				.flatMap(teacherId -> Mono.fromCallable(() -> transactionTemplate.execute(status -> {
 					if (userRepository.existsByEmail(request.getEmail())) {
@@ -122,12 +125,76 @@ public class TeacherService {
 						User savedStudent = userRepository.save(student);
 						userInGroupRepository.save(
 								UserInGroup.builder().userId(savedStudent.getId()).groupId(group.getId()).build());
-						return userMapper.toUserResponse(savedStudent);
+						return TeacherStudentResponse.builder().id(savedStudent.getId())
+								.username(savedStudent.getUsername()).email(savedStudent.getEmail())
+								.role(savedStudent.getRole().name()).createdAt(savedStudent.getCreatedAt())
+								.groupId(group.getId()).build();
 					} catch (DataIntegrityViolationException ex) {
 						if (userRepository.existsByEmail(request.getEmail())) {
 							throw new UserException(UserErrorCode.EMAIL_ALREADY_TAKEN);
 						}
 						if (userRepository.existsByUsername(request.getUsername())) {
+							throw new UserException(UserErrorCode.USERNAME_ALREADY_TAKEN);
+						}
+						throw ex;
+					}
+				})).subscribeOn(Schedulers.boundedElastic())));
+	}
+	public Mono<TeacherStudentResponse> updateStudent(Integer studentId,
+			Mono<pl.freeedu.backend.teacher.dto.TeacherUpdateStudentRequest> requestMono) {
+		return requestMono.flatMap(request -> securityService.getCurrentUserId()
+				.flatMap(teacherId -> Mono.fromCallable(() -> transactionTemplate.execute(status -> {
+					User student = userRepository.findById(studentId)
+							.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
+
+					// Teacher ownership check
+					boolean isStudentsTeacher = userRepository.findStudentsWithGroupByTeacherId(teacherId, Role.STUDENT)
+							.stream().anyMatch(u -> u.getId().equals(studentId));
+					if (!isStudentsTeacher) {
+						throw new org.springframework.security.access.AccessDeniedException(
+								"Missing ownership over student");
+					}
+
+					UserGroup group = userGroupRepository.findById(request.getGroupId())
+							.orElseThrow(() -> new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND));
+
+					if (!teacherId.equals(group.getTeacherId())) {
+						throw new UserGroupException(UserGroupErrorCode.INVALID_ROLE_FOR_GROUP);
+					}
+
+					if (!student.getEmail().equals(request.getEmail())
+							&& userRepository.existsByEmail(request.getEmail())) {
+						throw new UserException(UserErrorCode.EMAIL_ALREADY_TAKEN);
+					}
+					if (!student.getUsername().equals(request.getUsername())
+							&& userRepository.existsByUsername(request.getUsername())) {
+						throw new UserException(UserErrorCode.USERNAME_ALREADY_TAKEN);
+					}
+
+					String originalEmail = student.getEmail();
+					String originalUsername = student.getUsername();
+					student.setEmail(request.getEmail());
+					student.setUsername(request.getUsername());
+
+					try {
+						User savedStudent = userRepository.save(student);
+
+						UserInGroup membership = userInGroupRepository.findByUserId(savedStudent.getId())
+								.orElseGet(() -> UserInGroup.builder().userId(savedStudent.getId()).build());
+						membership.setGroupId(group.getId());
+						userInGroupRepository.save(membership);
+
+						return TeacherStudentResponse.builder().id(savedStudent.getId())
+								.username(savedStudent.getUsername()).email(savedStudent.getEmail())
+								.role(savedStudent.getRole().name()).createdAt(savedStudent.getCreatedAt())
+								.groupId(group.getId()).build();
+					} catch (DataIntegrityViolationException ex) {
+						if (!originalEmail.equals(request.getEmail())
+								&& userRepository.existsByEmail(request.getEmail())) {
+							throw new UserException(UserErrorCode.EMAIL_ALREADY_TAKEN);
+						}
+						if (!originalUsername.equals(request.getUsername())
+								&& userRepository.existsByUsername(request.getUsername())) {
 							throw new UserException(UserErrorCode.USERNAME_ALREADY_TAKEN);
 						}
 						throw ex;

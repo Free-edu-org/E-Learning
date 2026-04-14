@@ -100,7 +100,7 @@ export async function fetchApiText(
       problem = {
         status: response.status,
         title: response.statusText,
-        detail: "WystÄ…piĹ‚ nieoczekiwany bĹ‚Ä…d. SprĂłbuj ponownie pĂłĹşniej.",
+        detail: "Wystąpił nieoczekiwany błąd. Spróbuj ponownie później.",
       };
     }
 
