@@ -13,7 +13,8 @@ Dostarcz precyzyjne testy jednostkowe dla zmian w backendzie, tak aby:
 - zabezpieczyc nowe branch'e i regresje,
 - odzwierciedlic realna logike serwisu i security,
 - testowac konkretne kody bledow, side effecty i brak side effectow,
-- unikac ogolnikowych asercji typu "nie rzuca wyjatku" albo "zwraca cos".
+- unikac ogolnikowych asercji typu "nie rzuca wyjatku" albo "zwraca cos",
+- **BEZWZGLEDNIE nie wprowadzac zadnych zmian w kodzie produkcyjnym (src/main)** - ten skill sluzy tylko do dopisywania testow. Jesli widzisz blad w kodzie, zglos go uzytkownikowi, ale nie naprawiaj go samodzielnie w ramach tego skilla.
 
 ## Zakres domyslny
 
@@ -46,7 +47,7 @@ Struktura kazdego testu:
 2. `when`
 3. `then`
 
-Mozesz uzywac komentarzy `// given`, `// when`, `// then` tylko gdy realnie poprawia czytelnosc. Nazwy testow maja same z siebie komunikowac scenariusz.
+**MANDATORY BDD COMMENTS:** Kazda metoda testowa MUSI zawierac jasno zaznaczone sekcje komentarzami `// given`, `// when`, `// then`. Nie wolno ich pomijac ani laczyc (np. `// when & then` jest niedopuszczalne). Sekcje musza byc wyraznie oddzielone.
 
 Preferowana konwencja nazw:
 - `shouldReturn...When...`
