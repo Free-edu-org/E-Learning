@@ -169,6 +169,8 @@ export function AccountSettingsDialog({
               <FormField>
                 <TextField
                   label="Nazwa użytkownika"
+                  name="account-settings-username"
+                  autoComplete="off"
                   value={username}
                   onChange={(event) => setUsername(event.target.value)}
                   disabled={!user || profileLoading}
@@ -178,6 +180,8 @@ export function AccountSettingsDialog({
               <FormField>
                 <TextField
                   label="E-mail"
+                  name="account-settings-email"
+                  autoComplete="off"
                   type="email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
@@ -202,6 +206,8 @@ export function AccountSettingsDialog({
               <FormField>
                 <TextField
                   label="Obecne hasło"
+                  name="account-settings-current-password"
+                  autoComplete="current-password"
                   type="password"
                   value={oldPassword}
                   onChange={(event) => setOldPassword(event.target.value)}
@@ -212,6 +218,8 @@ export function AccountSettingsDialog({
               <FormField>
                 <TextField
                   label="Nowe hasło"
+                  name="account-settings-new-password"
+                  autoComplete="new-password"
                   type="password"
                   value={newPassword}
                   onChange={(event) => setNewPassword(event.target.value)}
@@ -222,6 +230,8 @@ export function AccountSettingsDialog({
               <FormField>
                 <TextField
                   label="Powtórz nowe hasło"
+                  name="account-settings-confirm-password"
+                  autoComplete="new-password"
                   type="password"
                   value={confirmPassword}
                   onChange={(event) => setConfirmPassword(event.target.value)}

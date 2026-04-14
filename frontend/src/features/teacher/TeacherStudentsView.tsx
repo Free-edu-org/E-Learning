@@ -949,6 +949,8 @@ export function TeacherStudentsView() {
                 <FormField>
                   <TextField
                     label="Nazwa użytkownika"
+                    name="teacher-create-student-username"
+                    autoComplete="off"
                     value={createStudentDraft.username}
                     onChange={(event) =>
                       setCreateStudentDraft((draft) => ({
@@ -964,6 +966,8 @@ export function TeacherStudentsView() {
                 <FormField>
                   <TextField
                     label="E-mail"
+                    name="teacher-create-student-email"
+                    autoComplete="off"
                     type="email"
                     value={createStudentDraft.email}
                     onChange={(event) =>
@@ -980,6 +984,8 @@ export function TeacherStudentsView() {
                 <FormField>
                   <TextField
                     label="Hasło"
+                    name="teacher-create-student-password"
+                    autoComplete="new-password"
                     type="password"
                     value={createStudentDraft.password}
                     onChange={(event) =>
@@ -1069,6 +1075,8 @@ export function TeacherStudentsView() {
                 <FormField>
                   <TextField
                     label="Nazwa użytkownika"
+                    name="teacher-edit-student-username"
+                    autoComplete="off"
                     value={editStudentDraft.username}
                     onChange={(event) =>
                       setEditStudentDraft((draft) => ({
@@ -1084,6 +1092,8 @@ export function TeacherStudentsView() {
                 <FormField>
                   <TextField
                     label="E-mail"
+                    name="teacher-edit-student-email"
+                    autoComplete="off"
                     type="email"
                     value={editStudentDraft.email}
                     onChange={(event) =>

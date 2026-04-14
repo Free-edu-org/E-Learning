@@ -2025,6 +2025,8 @@ export function AdminDashboard() {
                   <FormField>
                     <TextField
                       label="Nazwa użytkownika"
+                      name="admin-user-dialog-username"
+                      autoComplete="off"
                       value={userDraft.username}
                       onChange={(event) =>
                         setUserDraft((current) => ({
@@ -2038,6 +2040,8 @@ export function AdminDashboard() {
                   <FormField>
                     <TextField
                       label="Adres e-mail"
+                      name="admin-user-dialog-email"
+                      autoComplete="off"
                       type="email"
                       value={userDraft.email}
                       onChange={(event) =>
@@ -2056,6 +2060,8 @@ export function AdminDashboard() {
                         <FormField>
                           <TextField
                             label="Hasło"
+                            name="admin-user-dialog-password"
+                            autoComplete="new-password"
                             type="password"
                             value={userDraft.password}
                             onChange={(event) =>

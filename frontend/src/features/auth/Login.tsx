@@ -208,6 +208,8 @@ export function Login() {
           <form onSubmit={handleSubmit}>
             <TextField
               label="Login lub Email"
+              name="username"
+              autoComplete="username"
               type="text"
               fullWidth
               margin="normal"
@@ -220,6 +222,8 @@ export function Login() {
             />
             <TextField
               label="Hasło"
+              name="password"
+              autoComplete="current-password"
               type="password"
               fullWidth
               margin="normal"

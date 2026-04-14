@@ -528,7 +528,6 @@ export function StudentDashboard() {
               </Box>
             </Paper>
           </Grid>
-
         </Grid>
 
         {/* ── Lesson list ── */}
