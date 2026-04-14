@@ -96,6 +96,7 @@ Authorization: Bearer {{auth_token}}
 
 {
   "task": "Say hello in English",
+  "expectedText": "Hello",
   "hint": "Greeting",
   "section": "Speaking"
 }
@@ -107,8 +108,21 @@ Authorization: Bearer {{auth_token}}
 
 {
   "task": "Say goodbye in English",
+  "expectedText": "Goodbye",
   "hint": "Farewell"
 }
+
+### Transcribe speak task audio (STUDENT only)
+POST http://localhost:8080/api/v1/lessons/1/tasks/speak/1/transcribe
+Authorization: Bearer {{auth_token}}
+Content-Type: multipart/form-data; boundary=FreeEduBoundary
+
+--FreeEduBoundary
+Content-Disposition: form-data; name="file"; filename="answer.webm"
+Content-Type: audio/webm
+
+< ./answer.webm
+--FreeEduBoundary--
 
 ### Delete speak task
 DELETE http://localhost:8080/api/v1/lessons/1/tasks/speak/1
@@ -122,7 +136,8 @@ Authorization: Bearer {{auth_token}}
 {
   "answers": [
     { "taskId": 1, "taskType": "choose", "answer": "1" },
-    { "taskId": 2, "taskType": "write", "answer": "went" }
+    { "taskId": 2, "taskType": "write", "answer": "went" },
+    { "taskId": 3, "taskType": "speak", "answer": "Hello" }
   ]
 }
 

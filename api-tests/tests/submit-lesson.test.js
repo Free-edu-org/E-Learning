@@ -73,6 +73,7 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
 
         res = await apiClient.post(`/lessons/${lessonId}/tasks/speak`, {
             task: 'Say "Hello, how are you?"',
+            expectedText: 'Hello, how are you?',
             hint: 'Focus on pronunciation',
             section: 'Speaking'
         });
@@ -265,11 +266,11 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
                     { taskId: chooseTaskId, taskType: 'choose', answer: '0' },        // wrong
                     { taskId: writeTaskId, taskType: 'write', answer: 'wrong' },       // wrong
                     { taskId: scatterTaskId, taskType: 'scatter', answer: 'cat big' }, // wrong
-                    { taskId: speakTaskId, taskType: 'speak', answer: 'anything' }     // always correct
+                    { taskId: speakTaskId, taskType: 'speak', answer: 'anything' }     // wrong
                 ]
             });
             expect(response.status).toBe(200);
-            expect(response.data.score).toBe(1);    // only speak
+            expect(response.data.score).toBe(0);
             expect(response.data.maxScore).toBe(4);
 
             const chooseDetail = response.data.details.find(d => d.taskType === 'choose');
@@ -280,7 +281,8 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
             expect(writeDetail.isCorrect).toBe(false);
 
             const speakDetail = response.data.details.find(d => d.taskType === 'speak');
-            expect(speakDetail.isCorrect).toBe(true);
+            expect(speakDetail.isCorrect).toBe(false);
+            expect(speakDetail.correctAnswer).toBe('Hello, how are you?');
         });
 
         it('should be case-insensitive for write tasks', async () => {
@@ -290,7 +292,7 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
                     { taskId: chooseTaskId, taskType: 'choose', answer: '1' },
                     { taskId: writeTaskId, taskType: 'write', answer: 'CZEŚĆ' },
                     { taskId: scatterTaskId, taskType: 'scatter', answer: 'the cat is big' },
-                    { taskId: speakTaskId, taskType: 'speak', answer: 'test' }
+                    { taskId: speakTaskId, taskType: 'speak', answer: 'Hello, how are you?' }
                 ]
             });
             expect(response.status).toBe(200);
@@ -305,7 +307,7 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
                     { taskId: chooseTaskId, taskType: 'choose', answer: '1' },
                     { taskId: writeTaskId, taskType: 'write', answer: 'cześć' },
                     { taskId: scatterTaskId, taskType: 'scatter', answer: 'THE CAT IS BIG' },
-                    { taskId: speakTaskId, taskType: 'speak', answer: 'test' }
+                    { taskId: speakTaskId, taskType: 'speak', answer: 'Hello, how are you?' }
                 ]
             });
             expect(response.status).toBe(200);
@@ -320,7 +322,7 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
                     { taskId: chooseTaskId, taskType: 'choose', answer: '1' },
                     { taskId: writeTaskId, taskType: 'write', answer: '  cześć  ' },
                     { taskId: scatterTaskId, taskType: 'scatter', answer: 'the cat is big' },
-                    { taskId: speakTaskId, taskType: 'speak', answer: 'test' }
+                    { taskId: speakTaskId, taskType: 'speak', answer: 'Hello, how are you?' }
                 ]
             });
             expect(response.status).toBe(200);
@@ -328,7 +330,7 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
             expect(writeDetail.isCorrect).toBe(true);
         });
 
-        it('should always mark speak task as correct regardless of answer', async () => {
+        it('should mark speak task as wrong when transcription does not match expected text', async () => {
             setAuthToken(studentToken);
             const response = await apiClient.post(`/lessons/${lessonId}/submit`, {
                 answers: [
@@ -340,8 +342,8 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
             });
             expect(response.status).toBe(200);
             const speakDetail = response.data.details.find(d => d.taskType === 'speak');
-            expect(speakDetail.isCorrect).toBe(true);
-            expect(speakDetail.correctAnswer).toBeNull();
+            expect(speakDetail.isCorrect).toBe(false);
+            expect(speakDetail.correctAnswer).toBe('Hello, how are you?');
         });
 
         it('should handle partial submission (fewer answers than total tasks)', async () => {
@@ -349,7 +351,7 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
             const response = await apiClient.post(`/lessons/${lessonId}/submit`, {
                 answers: [
                     { taskId: chooseTaskId, taskType: 'choose', answer: '1' },
-                    { taskId: speakTaskId, taskType: 'speak', answer: 'test' }
+                    { taskId: speakTaskId, taskType: 'speak', answer: 'Hello, how are you?' }
                 ]
             });
             expect(response.status).toBe(200);

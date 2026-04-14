@@ -173,6 +173,12 @@ function getTaskValidationError(
     }
   }
 
+  if (task.type === "speak") {
+    if (!task.correctAnswer.trim()) {
+      return `${position}: tekst do rozpoznania jest wymagany.`;
+    }
+  }
+
   return null;
 }
 
@@ -211,6 +217,7 @@ async function createLessonTask(lessonId: number, task: LessonTaskDraft) {
 
   return taskService.createSpeakTask(lessonId, {
     task: task.task.trim(),
+    expectedText: task.correctAnswer.trim(),
     hint,
     section,
   });
@@ -252,6 +259,7 @@ async function updateLessonTask(
   }
   return taskService.updateSpeakTask(lessonId, backendId, {
     task: task.task.trim(),
+    expectedText: task.correctAnswer.trim(),
     hint,
     section,
   });
@@ -310,7 +318,7 @@ function tasksResponseToDrafts(
         type: "speak",
         task: t.task,
         possibleAnswers: "",
-        correctAnswer: "",
+        correctAnswer: t.expectedText,
         words: "",
         hint: t.hint ?? "",
         section: sec,

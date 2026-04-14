@@ -72,10 +72,10 @@ INSERT INTO scatter_tasks (lesson_id, task, words, correct_answer, hint, section
     (3, 'Ułóż zdanie:', 'blue|The|is|sky', 'The sky is blue', NULL, 'Proste zdania'),
     (3, 'Ułóż poprawne zdanie:', 'like|I|red|color|the', 'I like the red color', 'Zacznij od "I".', 'Proste zdania');
 
-INSERT INTO speak_tasks (lesson_id, task, hint, section) VALUES
-    (3, 'Przeczytaj na głos: "The cat is black and the dog is brown."', 'Zwróć uwagę na wymowę "brown".', 'Proste zdania'),
-    (3, 'Przeczytaj na głos: "I like blue birds and yellow fish."', NULL, 'Proste zdania'),
-    (3, 'Powiedz na głos: "My favorite color is green."', 'Słowo "favorite" wymawiamy fejwryt.', 'Proste zdania');
+INSERT INTO speak_tasks (lesson_id, task, expected_text, hint, section) VALUES
+    (3, 'Przeczytaj na głos: "The cat is black and the dog is brown."', 'The cat is black and the dog is brown', 'Zwróć uwagę na wymowę "brown".', 'Proste zdania'),
+    (3, 'Przeczytaj na głos: "I like blue birds and yellow fish."', 'I like blue birds and yellow fish', NULL, 'Proste zdania'),
+    (3, 'Powiedz na głos: "My favorite color is green."', 'My favorite color is green', 'Słowo "favorite" wymawiamy fejwryt.', 'Proste zdania');
 
 -- ═══════════════════════════════════════════════════════════════
 -- Przypisania

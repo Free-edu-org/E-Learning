@@ -1145,6 +1145,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 ```json
 {
   "task": "Say the sentence: 'Hello, how are you?'",
+  "expectedText": "Hello, how are you?",
   "hint": "Focus on pronunciation",
   "section": "Speaking"
 }
@@ -1153,7 +1154,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 **Success (201 Created):**
 ```json
 {
-  "id": 1, "lessonId": 1, "task": "...", "hint": "...",
+  "id": 1, "lessonId": 1, "task": "...", "expectedText": "...", "hint": "...",
   "section": "...", "createdAt": "..."
 }
 ```
@@ -1187,7 +1188,41 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 
 ---
 
-### 8.14. Submit Lesson Answers
+### 8.14. Transcribe Speak Task Audio
+- **URL**: `/api/v1/lessons/{lessonId}/tasks/speak/{taskId}/transcribe`
+- **Method**: `POST`
+- **Content-Type**: `multipart/form-data`
+- **Authorization**: `STUDENT` only
+- **Description**: Uploads a recorded audio answer, validates student access to the lesson, sends the file to the local STT service, and compares the transcription with `expectedText`.
+
+**Request Parts:**
+- `file`: audio file, for example `audio/webm` from browser `MediaRecorder`.
+
+**Success (200 OK):**
+```json
+{
+  "text": "Hello how are you",
+  "expectedText": "Hello, how are you?",
+  "correct": true,
+  "score": 0.95,
+  "words": [
+    { "expected": "hello", "actual": "hello", "correct": true },
+    { "expected": "how", "actual": "how", "correct": true },
+    { "expected": "are", "actual": "are", "correct": true },
+    { "expected": "you", "actual": "you", "correct": true }
+  ]
+}
+```
+
+**Known Errors:**
+- `STT_AUDIO_REQUIRED` (400): Audio file is missing or empty.
+- `LESSON_NOT_FOUND` (404), `TASK_NOT_FOUND` (404)
+- `LESSON_NOT_ACTIVE` (403), `STUDENT_NO_ACCESS` (403)
+- `STT_SERVICE_UNAVAILABLE` (503): Local STT service is not reachable or failed to transcribe.
+
+---
+
+### 8.15. Submit Lesson Answers
 - **URL**: `/api/v1/lessons/{lessonId}/submit`
 - **Method**: `POST`
 - **Description**: Submits all answers for an active lesson at once. Grades each answer and marks lesson as `COMPLETED`. One-shot — cannot re-submit.
@@ -1198,7 +1233,8 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 {
   "answers": [
     { "taskId": 1, "taskType": "choose", "answer": "1" },
-    { "taskId": 2, "taskType": "write", "answer": "went" }
+    { "taskId": 2, "taskType": "write", "answer": "went" },
+    { "taskId": 3, "taskType": "speak", "answer": "Hello how are you" }
   ]
 }
 ```
@@ -1218,7 +1254,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 **Grading logic:**
 - `choose`: exact string match on correctAnswer index
 - `write` / `scatter`: case-insensitive, trimmed comparison
-- `speak`: always correct (score always given)
+- `speak`: normalized transcription compared with `expectedText`; accepted when similarity is at least `application.stt.min-score` (default `0.85`)
 
 **Known Errors:**
 - `LESSON_NOT_FOUND` (404 Not Found)

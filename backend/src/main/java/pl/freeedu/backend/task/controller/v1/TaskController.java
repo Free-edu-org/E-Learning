@@ -9,7 +9,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
 import pl.freeedu.backend.task.dto.*;
 import pl.freeedu.backend.task.service.TaskService;
@@ -172,6 +174,19 @@ public class TaskController {
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public Mono<Void> deleteSpeakTask(@PathVariable Integer lessonId, @PathVariable Integer taskId) {
 		return taskService.deleteSpeakTask(lessonId, taskId);
+	}
+
+	@Operation(summary = "Transcribe a speak task audio answer")
+	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Audio transcribed and evaluated"),
+			@ApiResponse(responseCode = "400", description = "Audio file is missing", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "403", description = "Lesson is inactive or student has no access", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "404", description = "Lesson or task not found", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "503", description = "STT service unavailable", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
+	@PostMapping(value = "/tasks/speak/{taskId}/transcribe", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	@PreAuthorize("hasRole('STUDENT')")
+	public Mono<SpeakTranscriptionResponse> transcribeSpeakTask(@PathVariable Integer lessonId,
+			@PathVariable Integer taskId, @RequestPart("file") Mono<FilePart> audio) {
+		return taskService.transcribeSpeakTask(lessonId, taskId, audio);
 	}
 
 	// --- Submit lesson answers ---

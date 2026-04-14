@@ -21,6 +21,9 @@ spring:
       - classpath:db/seed
 
 application:
+  stt:
+    base-url: "${STT_BASE_URL:http://localhost:8000}"
+    min-score: "${STT_MIN_SCORE:0.85}"
   security:
     jwt:
       secret-key: "${JWT_SECRET_KEY:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}"

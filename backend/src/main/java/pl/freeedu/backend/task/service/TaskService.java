@@ -1,6 +1,8 @@
 package pl.freeedu.backend.task.service;
 
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.codec.multipart.FilePart;
 import pl.freeedu.backend.lesson.model.Lesson;
 import pl.freeedu.backend.lesson.repository.LessonRepository;
 import pl.freeedu.backend.security.service.SecurityService;
@@ -30,12 +32,15 @@ public class TaskService {
 	private final LessonRepository lessonRepository;
 	private final SecurityService securityService;
 	private final UserInGroupRepository userInGroupRepository;
+	private final SttClient sttClient;
+	private final double sttMinScore;
 
 	public TaskService(ChooseTaskRepository chooseTaskRepository, WriteTaskRepository writeTaskRepository,
 			ScatterTaskRepository scatterTaskRepository, SpeakTaskRepository speakTaskRepository,
 			UserAnswerRepository userAnswerRepository, UserLessonRepository userLessonRepository,
 			LessonRepository lessonRepository, SecurityService securityService,
-			UserInGroupRepository userInGroupRepository) {
+			UserInGroupRepository userInGroupRepository, SttClient sttClient,
+			@Value("${application.stt.min-score}") double sttMinScore) {
 		this.chooseTaskRepository = chooseTaskRepository;
 		this.writeTaskRepository = writeTaskRepository;
 		this.scatterTaskRepository = scatterTaskRepository;
@@ -45,6 +50,8 @@ public class TaskService {
 		this.lessonRepository = lessonRepository;
 		this.securityService = securityService;
 		this.userInGroupRepository = userInGroupRepository;
+		this.sttClient = sttClient;
+		this.sttMinScore = sttMinScore;
 	}
 
 	public Mono<LessonTasksResponse> getLessonTasks(Integer lessonId) {
@@ -199,8 +206,9 @@ public class TaskService {
 	public Mono<SpeakTaskResponse> createSpeakTask(Integer lessonId, Mono<SpeakTaskRequest> requestMono) {
 		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
 			lessonRepository.findById(lessonId).orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_FOUND));
-			SpeakTask task = SpeakTask.builder().lessonId(lessonId).task(request.getTask()).hint(request.getHint())
-					.section(request.getSection()).build();
+			SpeakTask task = SpeakTask.builder().lessonId(lessonId).task(request.getTask())
+					.expectedText(request.getExpectedText()).hint(request.getHint()).section(request.getSection())
+					.build();
 			SpeakTask saved = speakTaskRepository.save(task);
 			return toSpeakTaskResponse(saved);
 		}).subscribeOn(Schedulers.boundedElastic()));
@@ -211,6 +219,7 @@ public class TaskService {
 		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
 			SpeakTask task = getSpeakTaskForLesson(lessonId, taskId);
 			task.setTask(request.getTask());
+			task.setExpectedText(request.getExpectedText());
 			task.setHint(request.getHint());
 			task.setSection(request.getSection());
 			SpeakTask saved = speakTaskRepository.save(task);
@@ -224,6 +233,26 @@ public class TaskService {
 			speakTaskRepository.deleteById(taskId);
 			return (Void) null;
 		}).subscribeOn(Schedulers.boundedElastic()).then();
+	}
+
+	public Mono<SpeakTranscriptionResponse> transcribeSpeakTask(Integer lessonId, Integer taskId,
+			Mono<FilePart> audio) {
+		return securityService.getCurrentUserId().flatMap(userId -> Mono.fromCallable(() -> {
+			Lesson lesson = lessonRepository.findById(lessonId)
+					.orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_FOUND));
+			if (!userInGroupRepository.hasAccessToLesson(userId, lessonId)) {
+				throw new TaskException(TaskErrorCode.STUDENT_NO_ACCESS);
+			}
+			if (!Boolean.TRUE.equals(lesson.getIsActive())) {
+				throw new TaskException(TaskErrorCode.LESSON_NOT_ACTIVE);
+			}
+			return getSpeakTaskForLesson(lessonId, taskId);
+		}).subscribeOn(Schedulers.boundedElastic()))
+				.flatMap(speakTask -> audio
+						.switchIfEmpty(Mono.error(new TaskException(TaskErrorCode.STT_AUDIO_REQUIRED)))
+						.flatMap(filePart -> sttClient.transcribe(filePart)
+								.map(sttResponse -> buildSpeakTranscriptionResponse(speakTask,
+										sttResponse.getText() == null ? "" : sttResponse.getText()))));
 	}
 
 	// --- Submit ---
@@ -278,9 +307,9 @@ public class TaskService {
 								maxScore++;
 							}
 							case "speak" -> {
-								getSpeakTaskForLesson(lessonId, item.getTaskId());
-								correct = true;
-								correctAnswer = null;
+								SpeakTask st = getSpeakTaskForLesson(lessonId, item.getTaskId());
+								correctAnswer = st.getExpectedText();
+								correct = isSpeakAnswerCorrect(item.getAnswer(), correctAnswer);
 								maxScore++;
 							}
 							default -> throw new TaskException(TaskErrorCode.INVALID_TASK_TYPE);
@@ -413,7 +442,85 @@ public class TaskService {
 	}
 
 	private SpeakTaskResponse toSpeakTaskResponse(SpeakTask t) {
-		return SpeakTaskResponse.builder().id(t.getId()).lessonId(t.getLessonId()).task(t.getTask()).hint(t.getHint())
-				.section(t.getSection()).createdAt(t.getCreatedAt()).build();
+		return SpeakTaskResponse.builder().id(t.getId()).lessonId(t.getLessonId()).task(t.getTask())
+				.expectedText(t.getExpectedText()).hint(t.getHint()).section(t.getSection()).createdAt(t.getCreatedAt())
+				.build();
+	}
+
+	private SpeakTranscriptionResponse buildSpeakTranscriptionResponse(SpeakTask speakTask, String transcription) {
+		double score = similarity(transcription, speakTask.getExpectedText());
+		return SpeakTranscriptionResponse.builder().text(transcription).expectedText(speakTask.getExpectedText())
+				.correct(score >= sttMinScore).score(score)
+				.words(buildSpeakWordResults(transcription, speakTask.getExpectedText())).build();
+	}
+
+	private boolean isSpeakAnswerCorrect(String answer, String expectedText) {
+		return similarity(answer, expectedText) >= sttMinScore;
+	}
+
+	private double similarity(String actual, String expected) {
+		String normalizedActual = normalizeSpeechText(actual);
+		String normalizedExpected = normalizeSpeechText(expected);
+		if (normalizedActual.isEmpty() || normalizedExpected.isEmpty()) {
+			return 0.0;
+		}
+		if (normalizedActual.equals(normalizedExpected)) {
+			return 1.0;
+		}
+		int distance = levenshteinDistance(normalizedActual, normalizedExpected);
+		int maxLength = Math.max(normalizedActual.length(), normalizedExpected.length());
+		return Math.max(0.0, 1.0 - ((double) distance / maxLength));
+	}
+
+	private String normalizeSpeechText(String value) {
+		if (value == null) {
+			return "";
+		}
+		return value.toLowerCase(Locale.ROOT).replaceAll("[^\\p{L}\\p{N}\\s]", " ").replaceAll("\\s+", " ").trim();
+	}
+
+	private List<SpeakWordResultDto> buildSpeakWordResults(String actual, String expected) {
+		List<String> actualWords = splitNormalizedWords(actual);
+		List<String> expectedWords = splitNormalizedWords(expected);
+		List<SpeakWordResultDto> results = new ArrayList<>();
+
+		for (int i = 0; i < expectedWords.size(); i++) {
+			String expectedWord = expectedWords.get(i);
+			String actualWord = i < actualWords.size() ? actualWords.get(i) : "";
+			results.add(SpeakWordResultDto.builder().expected(expectedWord).actual(actualWord)
+					.correct(expectedWord.equals(actualWord)).build());
+		}
+
+		return results;
+	}
+
+	private List<String> splitNormalizedWords(String value) {
+		String normalized = normalizeSpeechText(value);
+		if (normalized.isEmpty()) {
+			return Collections.emptyList();
+		}
+		return Arrays.asList(normalized.split(" "));
+	}
+
+	private int levenshteinDistance(String left, String right) {
+		int[] previous = new int[right.length() + 1];
+		int[] current = new int[right.length() + 1];
+
+		for (int j = 0; j <= right.length(); j++) {
+			previous[j] = j;
+		}
+
+		for (int i = 1; i <= left.length(); i++) {
+			current[0] = i;
+			for (int j = 1; j <= right.length(); j++) {
+				int cost = left.charAt(i - 1) == right.charAt(j - 1) ? 0 : 1;
+				current[j] = Math.min(Math.min(current[j - 1] + 1, previous[j] + 1), previous[j - 1] + cost);
+			}
+			int[] tmp = previous;
+			previous = current;
+			current = tmp;
+		}
+
+		return previous[right.length()];
 	}
 }

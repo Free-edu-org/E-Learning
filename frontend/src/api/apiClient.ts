@@ -30,7 +30,8 @@ export async function fetchApi<T>(
   if (token && !headers.has("Authorization")) {
     headers.set("Authorization", `Bearer ${token}`);
   }
-  if (!headers.has("Content-Type")) {
+  const isFormData = options.body instanceof FormData;
+  if (!headers.has("Content-Type") && !isFormData) {
     headers.set("Content-Type", "application/json");
   }
 

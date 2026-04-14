@@ -379,6 +379,17 @@ export function TaskCard({
               />
             )}
 
+            {task.type === "speak" && (
+              <TextField
+                label="Tekst do rozpoznania"
+                value={task.correctAnswer}
+                onChange={(e) => updateField("correctAnswer", e.target.value)}
+                fullWidth
+                placeholder="np. The cat is black and the dog is brown"
+                helperText="Uczen nagra ten tekst, a STT porowna transkrypcje z ta wartoscia."
+              />
+            )}
+
             {/* Common optional fields */}
             <Box
               sx={{
