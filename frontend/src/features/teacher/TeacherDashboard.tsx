@@ -786,6 +786,8 @@ export function TeacherDashboard() {
           username={user?.username}
           subtitle="Panel nauczyciela"
           fallbackName="Nauczycielu"
+          user={user}
+          onUserUpdated={setUser}
         />
 
         {errorUser && (

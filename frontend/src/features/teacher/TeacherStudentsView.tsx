@@ -564,6 +564,8 @@ export function TeacherStudentsView() {
           subtitle="Zarządzanie grupami i uczniami"
           fallbackName="Nauczycielu"
           icon={<GroupIcon sx={{ color: "primary.main" }} />}
+          user={user}
+          onUserUpdated={setUser}
         />
 
         {errorUser && (

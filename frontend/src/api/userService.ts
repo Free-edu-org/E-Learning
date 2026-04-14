@@ -19,6 +19,11 @@ export interface UpdateUserRequest {
   email: string;
 }
 
+export interface ChangePasswordRequest {
+  oldPassword: string;
+  newPassword: string;
+}
+
 export const userService = {
   getCurrentUser: () => fetchApi<UserProfile>("/api/v1/users/me"),
   getUserById: (id: number) => fetchApi<UserProfile>(`/api/v1/users/${id}`),
@@ -34,6 +39,11 @@ export const userService = {
     }),
   updateUser: (id: number, payload: UpdateUserRequest) =>
     fetchApi<UserProfile>(`/api/v1/users/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+  changePassword: (id: number, payload: ChangePasswordRequest) =>
+    fetchApi<void>(`/api/v1/users/${id}/password`, {
       method: "PUT",
       body: JSON.stringify(payload),
     }),

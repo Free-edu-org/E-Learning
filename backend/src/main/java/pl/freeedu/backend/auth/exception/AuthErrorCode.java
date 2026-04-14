@@ -6,7 +6,8 @@ import pl.freeedu.backend.exception.ErrorCode;
 
 @Getter
 public enum AuthErrorCode implements ErrorCode {
-	INVALID_CREDENTIALS("Invalid username/email or password", HttpStatus.UNAUTHORIZED);
+	INVALID_CREDENTIALS("Invalid username/email or password",
+			HttpStatus.UNAUTHORIZED), INVALID_OLD_PASSWORD("Obecne hasło jest nieprawidłowe.", HttpStatus.UNAUTHORIZED);
 
 	private final String defaultMessage;
 	private final HttpStatus status;

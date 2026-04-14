@@ -108,7 +108,7 @@ public class UserController {
 	@Operation(summary = "Change user password", description = "Change a user's password. Requires the old password. Only available to the account owner or an admin.")
 	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Password successfully changed"),
 			@ApiResponse(responseCode = "400", description = "Bad Request - VALIDATION_FAILED", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
-			@ApiResponse(responseCode = "401", description = "Unauthorized - INVALID_CREDENTIALS", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "401", description = "Unauthorized - INVALID_OLD_PASSWORD, UNAUTHORIZED or TOKEN_EXPIRED", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden - lack of permissions", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "404", description = "Not Found - USER_NOT_FOUND", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PutMapping("/{id}/password")

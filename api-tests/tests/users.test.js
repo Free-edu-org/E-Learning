@@ -338,18 +338,24 @@ describe('Users API (/api/v1/users)', () => {
                 expect(loginRes.status).toBe(200);
             });
 
-            it('should allow Admin to change another users password without matching old password? Contract says requires oldPassword. Lets check regular admin change (204 No Content)', async () => {
-                // Testing Admin change. Admin must supply correct old password per the schema requiring old/new. Wait, contract says requires OldPassword. 
-                // Let's test admin path.
+            it('should allow admin to change another users password when old password matches (204 No Content)', async () => {
                 setAuthToken(staticAdminToken);
                 const passwordData = {
-                    oldPassword: newPassword, // Supplying old password
+                    oldPassword: newPassword,
                     newPassword: secondNewPassword
                 };
                 const response = await apiClient.put(`/users/${newStudentId}/password`, passwordData);
 
-                // Spring security usually drops requirement for old password for admins, but let's see. If the contract says requires old password for the request structure, we provide it.
                 expect(response.status).toBe(204);
+            });
+
+            it('should fail if unauthenticated (401 Unauthorized)', async () => {
+                setAuthToken(null);
+                const response = await apiClient.put(`/users/${newStudentId}/password`, {
+                    oldPassword: secondNewPassword,
+                    newPassword: 'unauthenticatedPassword123'
+                });
+                expect(response.status).toBe(401);
             });
 
             it('should deny student from changing another user password (403 Forbidden)', async () => {
@@ -358,7 +364,7 @@ describe('Users API (/api/v1/users)', () => {
                 expect(response.status).toBe(403);
             });
 
-            it('should fail with INVALID_CREDENTIALS if old password is wrong (401 Unauthorized)', async () => {
+            it('should fail with INVALID_OLD_PASSWORD if old password is wrong (401 Unauthorized)', async () => {
                 setAuthToken(newStudentToken);
                 const passwordData = {
                     oldPassword: 'wrongOldPassword',
@@ -366,7 +372,8 @@ describe('Users API (/api/v1/users)', () => {
                 };
                 const response = await apiClient.put(`/users/${newStudentId}/password`, passwordData);
                 expect(response.status).toBe(401);
-                expect(response.data.code).toBe('INVALID_CREDENTIALS');
+                expect(response.data.code).toBe('INVALID_OLD_PASSWORD');
+                expect(response.data.detail).toBe('Obecne hasło jest nieprawidłowe.');
             });
 
             it('should fail with VALIDATION_FAILED for empty passwords (400 Bad Request)', async () => {

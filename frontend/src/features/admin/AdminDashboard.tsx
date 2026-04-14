@@ -31,7 +31,6 @@ import {
   EditOutlined as EditIcon,
   GroupOutlined as GroupIcon,
   ListOutlined as ListIcon,
-  ManageAccountsOutlined as ManageAccountsIcon,
   PeopleOutline as PeopleIcon,
   PersonOutline as PersonIcon,
   RefreshOutlined as RefreshIcon,
@@ -874,7 +873,9 @@ export function AdminDashboard() {
           username={currentUser?.username}
           subtitle="Panel administratora"
           fallbackName="Administratorze"
-          icon={<ManageAccountsIcon sx={{ color: "primary.main" }} />}
+          icon={<PersonIcon sx={{ color: "primary.main" }} />}
+          user={currentUser}
+          onUserUpdated={setCurrentUser}
         />
 
         {currentUserError && (
