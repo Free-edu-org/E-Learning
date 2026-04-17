@@ -70,8 +70,7 @@
               "title": "Ulubione"
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "horizontal",
@@ -177,7 +176,7 @@
       "bases:Stwórz nową bazę danych": false
     }
   },
-  "active": "ee020aad66197ad9",
+  "active": "54d5f1bf1e7249b1",
   "lastOpenFiles": [
     "docs/obsidian/FreeEdu.canvas",
     "docs/obsidian/Przeplyw - rozpoznawanie mowy.md",
