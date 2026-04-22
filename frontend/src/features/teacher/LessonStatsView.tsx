@@ -26,10 +26,16 @@ import {
   YAxis,
 } from "recharts";
 import { lessonService } from "@/api/lessonService";
-import type { LessonStatsResponse, LessonStatsStudentResult } from "@/api/lessonService";
+import type {
+  LessonStatsResponse,
+  LessonStatsStudentResult,
+} from "@/api/lessonService";
 import { DashboardHeader } from "@/components/ui/panel/DashboardHeader";
 import { DashboardTopBar } from "@/components/ui/panel/DashboardTopBar";
-import { panelGridCardSx, panelSurfaceSx } from "@/components/ui/panel/panelStyles";
+import {
+  panelGridCardSx,
+  panelSurfaceSx,
+} from "@/components/ui/panel/panelStyles";
 
 function formatDate(value: string | null): string {
   if (!value) return "—";
@@ -126,7 +132,9 @@ export function LessonStatsView() {
       value: Math.round(r.resultPercent),
     })) ?? [];
 
-  const distributionData = stats ? buildDistributionData(stats.studentResults) : [];
+  const distributionData = stats
+    ? buildDistributionData(stats.studentResults)
+    : [];
 
   return (
     <Box
@@ -141,7 +149,15 @@ export function LessonStatsView() {
         <DashboardHeader subtitle="Panel nauczyciela" />
 
         {/* Back + title */}
-        <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2, mb: 3, mt: 1 }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 2,
+            mb: 3,
+            mt: 1,
+          }}
+        >
           <Button
             startIcon={<ArrowBackIcon />}
             onClick={() => navigate("/teacher")}
@@ -187,7 +203,11 @@ export function LessonStatsView() {
               <StatCard
                 label="Średni wynik"
                 value={`${Math.round(stats.avgScore)}%`}
-                icon={<TrendingUpIcon sx={{ color: "success.main", fontSize: 22 }} />}
+                icon={
+                  <TrendingUpIcon
+                    sx={{ color: "success.main", fontSize: 22 }}
+                  />
+                }
               />
               <StatCard
                 label="Uczniowie, którzy ukończyli"
@@ -253,7 +273,11 @@ export function LessonStatsView() {
                       />
                       <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
                       <Tooltip formatter={(v) => [`${v}%`, "Wynik"]} />
-                      <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                      <Bar
+                        dataKey="value"
+                        fill="#6366f1"
+                        radius={[4, 4, 0, 0]}
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 </Box>
@@ -282,7 +306,11 @@ export function LessonStatsView() {
                       <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                       <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
                       <Tooltip formatter={(v) => [v, "Uczniów"]} />
-                      <Bar dataKey="value" fill="#10b981" radius={[4, 4, 0, 0]} />
+                      <Bar
+                        dataKey="value"
+                        fill="#10b981"
+                        radius={[4, 4, 0, 0]}
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 </Box>
@@ -291,7 +319,11 @@ export function LessonStatsView() {
 
             {/* Detailed results */}
             <Box sx={{ ...panelSurfaceSx, p: 0, overflow: "hidden" }}>
-              <Typography variant="subtitle1" fontWeight={700} sx={{ px: 3, py: 2 }}>
+              <Typography
+                variant="subtitle1"
+                fontWeight={700}
+                sx={{ px: 3, py: 2 }}
+              >
                 Szczegółowe wyniki
               </Typography>
               <Divider />
@@ -369,11 +401,12 @@ export function LessonStatsView() {
                           borderColor: (theme) =>
                             alpha(theme.palette.divider, 0.5),
                           color: "text.secondary",
-                          "&:hover": { borderColor: "primary.main", color: "primary.main" },
+                          "&:hover": {
+                            borderColor: "primary.main",
+                            color: "primary.main",
+                          },
                         }}
-                        onClick={() =>
-                          navigate(`/teacher/students`)
-                        }
+                        onClick={() => navigate(`/teacher/students`)}
                       >
                         Zobacz profil
                       </Button>
