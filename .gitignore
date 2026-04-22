@@ -56,3 +56,6 @@ __pycache__/
 ############################
 coverage/
 **/coverage/
+
+docs/obsidian/.obsidian/workspace.json
+docs/obsidian/.obsidian/workspaces.json
