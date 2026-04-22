@@ -22,6 +22,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import pl.freeedu.backend.usergroup.repository.UserGroupRepository;
 import pl.freeedu.backend.usergroup.repository.UserInGroupRepository;
 import pl.freeedu.backend.teacher.dto.TeacherCreateStudentRequest;
+import pl.freeedu.backend.teacher.dto.LessonStatsResponse;
+import pl.freeedu.backend.teacher.dto.LessonStatsStudentResult;
 import pl.freeedu.backend.user.model.User;
 import pl.freeedu.backend.user.exception.UserException;
 import pl.freeedu.backend.user.exception.UserErrorCode;
@@ -99,6 +101,18 @@ public class TeacherService {
 							.groupId(proj.getGroupId()).build())
 					.toList();
 		}).subscribeOn(Schedulers.boundedElastic()).flatMapMany(Flux::fromIterable));
+	}
+
+	public Mono<LessonStatsResponse> getLessonStats(Integer lessonId) {
+		return Mono.fromCallable(() -> {
+			java.util.List<LessonStatsStudentResult> results = teacherStatsRepository.getLessonStudentResults(lessonId);
+			double avgScore = results.stream().mapToDouble(LessonStatsStudentResult::getResultPercent).average()
+					.orElse(0.0);
+			double bestScore = results.stream().mapToDouble(LessonStatsStudentResult::getResultPercent).max()
+					.orElse(0.0);
+			return LessonStatsResponse.builder().avgScore(avgScore).studentsCompleted(results.size())
+					.bestScore(bestScore).studentResults(results).build();
+		}).subscribeOn(Schedulers.boundedElastic());
 	}
 
 	public Mono<TeacherStudentResponse> createStudent(Mono<TeacherCreateStudentRequest> requestMono) {

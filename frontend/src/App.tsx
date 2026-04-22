@@ -5,6 +5,7 @@ import { useAuth } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Login } from "./features/auth/Login";
 import { TeacherDashboard } from "./features/teacher/TeacherDashboard";
+import { LessonStatsView } from "./features/teacher/LessonStatsView";
 import { TeacherStudentsView } from "./features/teacher/TeacherStudentsView";
 import { AdminDashboard } from "./features/admin/AdminDashboard";
 import { StudentDashboard } from "./features/student/StudentDashboard";
@@ -43,6 +44,10 @@ function App() {
               <Route
                 path="/teacher/students"
                 element={<TeacherStudentsView />}
+              />
+              <Route
+                path="/teacher/lessons/:lessonId/stats"
+                element={<LessonStatsView />}
               />
             </Route>
 

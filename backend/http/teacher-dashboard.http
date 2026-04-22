@@ -10,6 +10,13 @@ Authorization: Bearer {{teacher_token}}
 GET http://localhost:8080/api/v1/teacher/my-groups
 Authorization: Bearer {{teacher_token}}
 
+### Get lesson statistics for a specific lesson (Requires TEACHER)
+GET http://localhost:8080/api/v1/teacher/lessons/1/stats
+Authorization: Bearer {{teacher_token}}
+
+### Get lesson statistics — 401 (no token)
+GET http://localhost:8080/api/v1/teacher/lessons/1/stats
+
 ### Get Teacher's own students (Requires TEACHER)
 GET http://localhost:8080/api/v1/teacher/students
 Authorization: Bearer {{teacher_token}}
@@ -46,5 +53,38 @@ Content-Type: application/json
   "username": "admin_attempt",
   "email": "admin.attempt@example.com",
   "password": "password123",
+  "groupId": 1
+}
+
+### Update student in teacher's own group (Requires TEACHER, groupId mandatory)
+PUT http://localhost:8080/api/v1/teacher/students/15
+Authorization: Bearer {{teacher_token}}
+Content-Type: application/json
+
+{
+  "username": "updated_student",
+  "email": "updated.student@example.com",
+  "groupId": 1
+}
+
+### Update student - foreign teacher group (400 INVALID_ROLE_FOR_GROUP)
+PUT http://localhost:8080/api/v1/teacher/students/15
+Authorization: Bearer {{teacher_token}}
+Content-Type: application/json
+
+{
+  "username": "updated_student",
+  "email": "updated.student@example.com",
+  "groupId": 99
+}
+
+### Update student - student not owned (403 Forbidden)
+PUT http://localhost:8080/api/v1/teacher/students/999
+Authorization: Bearer {{teacher_token}}
+Content-Type: application/json
+
+{
+  "username": "hacked_student",
+  "email": "hacked@example.com",
   "groupId": 1
 }

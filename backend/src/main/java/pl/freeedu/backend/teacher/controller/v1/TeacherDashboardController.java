@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import pl.freeedu.backend.lesson.dto.LessonResponse;
+import pl.freeedu.backend.teacher.dto.LessonStatsResponse;
 import pl.freeedu.backend.teacher.dto.TeacherCreateStudentRequest;
 import pl.freeedu.backend.teacher.dto.TeacherStatsResponse;
 import pl.freeedu.backend.teacher.dto.TeacherStudentResponse;
@@ -59,6 +61,15 @@ public class TeacherDashboardController {
 	@ResponseStatus(HttpStatus.OK)
 	public Flux<UserGroupResponse> getMyGroups() {
 		return teacherService.getMyGroups();
+	}
+
+	@Operation(summary = "Get lesson statistics for teacher")
+	@ApiResponse(responseCode = "200", description = "Lesson statistics scoped to current teacher")
+	@GetMapping("/lessons/{lessonId}/stats")
+	@PreAuthorize("hasRole('TEACHER')")
+	@ResponseStatus(HttpStatus.OK)
+	public Mono<LessonStatsResponse> getLessonStats(@PathVariable Integer lessonId) {
+		return teacherService.getLessonStats(lessonId);
 	}
 
 	@Operation(summary = "Get teacher's students")
