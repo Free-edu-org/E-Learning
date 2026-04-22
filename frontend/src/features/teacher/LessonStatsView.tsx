@@ -30,6 +30,7 @@ import type {
   LessonStatsResponse,
   LessonStatsStudentResult,
 } from "@/api/lessonService";
+import { useAuth } from "@/context/AuthContext";
 import { DashboardHeader } from "@/components/ui/panel/DashboardHeader";
 import { DashboardTopBar } from "@/components/ui/panel/DashboardTopBar";
 import {
@@ -104,6 +105,7 @@ function buildDistributionData(results: LessonStatsStudentResult[]) {
 export function LessonStatsView() {
   const { lessonId } = useParams<{ lessonId: string }>();
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [stats, setStats] = useState<LessonStatsResponse | null>(null);
   const [lessonTitle, setLessonTitle] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -145,8 +147,8 @@ export function LessonStatsView() {
       }}
     >
       <Container maxWidth="lg" sx={{ pt: 3, pb: 6 }}>
-        <DashboardTopBar />
-        <DashboardHeader subtitle="Panel nauczyciela" />
+        <DashboardTopBar onLogout={logout} />
+        <DashboardHeader subtitle="Panel nauczyciela" loading={false} />
 
         {/* Back + title */}
         <Box
@@ -406,7 +408,9 @@ export function LessonStatsView() {
                             color: "primary.main",
                           },
                         }}
-                        onClick={() => navigate(`/teacher/students`)}
+                        onClick={() =>
+                          navigate(`/teacher/students/${student.userId}`)
+                        }
                       >
                         Zobacz profil
                       </Button>

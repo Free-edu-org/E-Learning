@@ -24,6 +24,8 @@ import pl.freeedu.backend.usergroup.repository.UserInGroupRepository;
 import pl.freeedu.backend.teacher.dto.TeacherCreateStudentRequest;
 import pl.freeedu.backend.teacher.dto.LessonStatsResponse;
 import pl.freeedu.backend.teacher.dto.LessonStatsStudentResult;
+import pl.freeedu.backend.lesson.exception.LessonException;
+import pl.freeedu.backend.lesson.exception.LessonErrorCode;
 import pl.freeedu.backend.user.model.User;
 import pl.freeedu.backend.user.exception.UserException;
 import pl.freeedu.backend.user.exception.UserErrorCode;
@@ -104,15 +106,21 @@ public class TeacherService {
 	}
 
 	public Mono<LessonStatsResponse> getLessonStats(Integer lessonId) {
-		return Mono.fromCallable(() -> {
-			java.util.List<LessonStatsStudentResult> results = teacherStatsRepository.getLessonStudentResults(lessonId);
+		return securityService.getCurrentUserId().flatMap(teacherId -> Mono.fromCallable(() -> {
+			pl.freeedu.backend.lesson.model.Lesson lesson = lessonRepository.findById(lessonId)
+					.orElseThrow(() -> new LessonException(LessonErrorCode.LESSON_NOT_FOUND));
+			if (!lesson.getTeacher().getId().equals(teacherId)) {
+				throw new LessonException(LessonErrorCode.NOT_LESSON_OWNER);
+			}
+			java.util.List<LessonStatsStudentResult> results = teacherStatsRepository.getLessonStudentResults(lessonId,
+					teacherId);
 			double avgScore = results.stream().mapToDouble(LessonStatsStudentResult::getResultPercent).average()
 					.orElse(0.0);
 			double bestScore = results.stream().mapToDouble(LessonStatsStudentResult::getResultPercent).max()
 					.orElse(0.0);
 			return LessonStatsResponse.builder().avgScore(avgScore).studentsCompleted(results.size())
 					.bestScore(bestScore).studentResults(results).build();
-		}).subscribeOn(Schedulers.boundedElastic());
+		}).subscribeOn(Schedulers.boundedElastic()));
 	}
 
 	public Mono<TeacherStudentResponse> createStudent(Mono<TeacherCreateStudentRequest> requestMono) {

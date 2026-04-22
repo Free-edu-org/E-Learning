@@ -135,6 +135,38 @@ describe('Teacher Lesson Stats API (GET /api/v1/teacher/lessons/{lessonId}/stats
             const response = await apiClient.get(`/teacher/lessons/${isolatedLessonId}/stats`);
             expect(response.status).toBe(403);
         });
+
+        it('should return 403 for a different TEACHER who does not own the lesson', async () => {
+            // Create a second teacher who doesn't own isolatedLessonId
+            setAuthToken(adminToken);
+            const otherTeacherData = {
+                email: `other.teacher.stats.${Date.now()}@test.com`,
+                username: `other_teacher_stats_${Date.now()}`,
+                password: 'password123'
+            };
+            let res = await apiClient.post('/users/teacher', otherTeacherData);
+            expect(res.status).toBe(201);
+
+            res = await apiClient.post('/auth/login', {
+                identifier: otherTeacherData.username,
+                password: otherTeacherData.password
+            });
+            const otherTeacherToken = res.data.token;
+            const otherTeacherId = (await (async () => {
+                setAuthToken(otherTeacherToken);
+                const r = await apiClient.get('/users/me');
+                return r.data;
+            })()).id;
+
+            try {
+                setAuthToken(otherTeacherToken);
+                const response = await apiClient.get(`/teacher/lessons/${isolatedLessonId}/stats`);
+                expect(response.status).toBe(403);
+            } finally {
+                setAuthToken(adminToken);
+                await apiClient.delete(`/users/${otherTeacherId}`);
+            }
+        });
     });
 
     // ─── Response structure ───────────────────────────────────────────
