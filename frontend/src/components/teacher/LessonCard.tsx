@@ -11,6 +11,7 @@
   Typography,
 } from "@mui/material";
 import {
+  BarChart as BarChartIcon,
   DeleteOutline as DeleteIcon,
   EditOutlined as EditIcon,
   MenuBook as BookIcon,
@@ -31,6 +32,7 @@ interface LessonCardProps {
   onEdit?: (lesson: Lesson) => void;
   onDelete?: (lesson: Lesson) => void;
   onToggleStatus?: (lesson: Lesson) => void;
+  onResults?: (lesson: Lesson) => void;
 }
 
 function formatDate(dateStr: string): string {
@@ -114,6 +116,7 @@ export function LessonCard({
   onEdit,
   onDelete,
   onToggleStatus,
+  onResults,
 }: LessonCardProps) {
   if (listView) {
     return (
@@ -178,6 +181,14 @@ export function LessonCard({
             onClick={() => onEdit?.(lesson)}
           >
             Edytuj
+          </Button>
+          <Button
+            size="small"
+            startIcon={<BarChartIcon fontSize="small" />}
+            sx={{ ...panelFooterButtonSx, color: "text.secondary" }}
+            onClick={() => onResults?.(lesson)}
+          >
+            Wyniki
           </Button>
           <Button
             size="small"
@@ -311,6 +322,16 @@ export function LessonCard({
             onClick={() => onEdit?.(lesson)}
           >
             Edytuj
+          </Button>
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<BarChartIcon fontSize="small" />}
+            fullWidth
+            sx={{ ...panelFooterButtonSx, color: "text.secondary" }}
+            onClick={() => onResults?.(lesson)}
+          >
+            Wyniki
           </Button>
           <Button
             size="small"

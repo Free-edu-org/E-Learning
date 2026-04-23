@@ -36,6 +36,22 @@ export interface TeacherStudentResponse {
   groupId: number;
 }
 
+export interface LessonStatsStudentResult {
+  userId: number;
+  username: string;
+  completedAt: string | null;
+  score: number;
+  maxScore: number;
+  resultPercent: number;
+}
+
+export interface LessonStatsResponse {
+  avgScore: number;
+  studentsCompleted: number;
+  bestScore: number;
+  studentResults: LessonStatsStudentResult[];
+}
+
 export interface CreateTeacherStudentRequest {
   username: string;
   email: string;
@@ -91,4 +107,6 @@ export const lessonService = {
     fetchApi<void>(`/api/v1/lessons/${id}`, {
       method: "DELETE",
     }),
+  getLessonStats: (lessonId: number) =>
+    fetchApi<LessonStatsResponse>(`/api/v1/teacher/lessons/${lessonId}/stats`),
 };

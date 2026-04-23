@@ -582,7 +582,45 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
 
 ---
 
-### 5.3. Get My Groups
+### 5.3. Get Lesson Statistics
+- **URL**: `/api/v1/teacher/lessons/{lessonId}/stats`
+- **Method**: `GET`
+- **Description**: Zwraca statystyki wyników uczniów dla wskazanej lekcji. Scoped do nauczyciela autoryzowanego przez JWT.
+- **Authorization**: `TEACHER`
+
+**Success (200 OK):**
+```json
+{
+  "avgScore": 80.0,
+  "studentsCompleted": 5,
+  "bestScore": 100.0,
+  "studentResults": [
+    {
+      "userId": 8,
+      "username": "jan_kowalski",
+      "completedAt": "2026-01-20T12:00:00",
+      "score": 8,
+      "maxScore": 10,
+      "resultPercent": 80.0
+    }
+  ]
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `avgScore` | Double | Średni wynik procentowy wszystkich uczniów którzy odpowiedzieli na pytania lekcji. |
+| `studentsCompleted` | Integer | Liczba uczniów z zapisanymi odpowiedziami. |
+| `bestScore` | Double | Najwyższy indywidualny wynik procentowy. |
+| `studentResults` | List | Lista wyników per uczeń, posortowana malejąco po `resultPercent`. |
+
+**Known Errors:**
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
+
+---
+
+### 5.4. Get My Groups
 - **URL**: `/api/v1/teacher/my-groups`
 - **Method**: `GET`
 - **Description**: Odtworzenie logiki UserGroup dedykowanej pulpitu Nauczyciela. Zwraca wszystkie grupy stworzone przez logującego się Nauczyciela (`teacherId = currentUserId`).
@@ -592,7 +630,7 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
 
 ---
 
-### 5.4. Get My Students
+### 5.5. Get My Students
 - **URL**: `/api/v1/teacher/students`
 - **Method**: `GET`
 - **Description**: Zwraca listę uczniów przypisanych do grup aktualnie zalogowanego nauczyciela (relacja przez `UserInGroup` oraz `UserGroup.teacherId`).
@@ -606,7 +644,7 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
 
 ---
 
-### 5.5. Create Student (Teacher API)
+### 5.6. Create Student (Teacher API)
 - **URL**: `/api/v1/teacher/students`
 - **Method**: `POST`
 - **Description**: Tworzy konto ucznia i od razu przypisuje go do wskazanej grupy należącej do aktualnie zalogowanego nauczyciela. Pole `groupId` jest **wymagane**.
@@ -645,7 +683,7 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
 
 ---
 
-### 5.6. Update Student (Teacher API)
+### 5.7. Update Student (Teacher API)
 - **URL**: `/api/v1/teacher/students/{id}`
 - **Method**: `PUT`
 - **Description**: Aktualizuje dane ucznia (username, email) oraz przypisaną grupę. Uczeń musi należeć do jednej z grup nauczyciela. `groupId` jest wymagany i docelowa grupa również musi należeć do nauczyciela.

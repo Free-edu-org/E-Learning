@@ -25,6 +25,7 @@ Mapa API spina [[Frontend]], [[API Client]] i kontrolery w [[Backend]].
 ## Teacher
 - `GET /api/v1/teacher/stats` -> [[Teacher Dashboard]]
 - `GET /api/v1/teacher/lessons` -> [[Teacher Dashboard]]
+- `GET /api/v1/teacher/lessons/{lessonId}/stats` -> [[Frontend - Wyniki Lekcji]]
 - `GET /api/v1/teacher/my-groups` -> [[Domena - grupy]]
 - `GET /api/v1/teacher/students` -> [[Teacher Dashboard]]
 - `POST /api/v1/teacher/students` -> [[Przeplyw - administracja uzytkownikami]]

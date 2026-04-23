@@ -388,4 +388,116 @@ describe('Teacher Dashboard Access API (/api/v1/teacher/*)', () => {
             expect(response.data.code).toBe('USERNAME_ALREADY_TAKEN');
         });
     });
+
+    describe('PUT /api/v1/teacher/students/{id}', () => {
+        let updatableStudentId;
+
+        beforeAll(async () => {
+            setAuthToken(teacherToken);
+            const res = await apiClient.post('/teacher/students', {
+                email: `teacher.upd.base.${uniqueId}@example.com`,
+                username: `teacher_upd_base_${uniqueId}`,
+                password: 'password123',
+                groupId: firstTeacherGroupId
+            });
+            expect(res.status).toBe(201);
+            updatableStudentId = res.data.id;
+        });
+
+        afterAll(async () => {
+            setAuthToken(adminToken);
+            if (updatableStudentId) {
+                const response = await apiClient.delete(`/users/${updatableStudentId}`);
+                expect([204, 404]).toContain(response.status);
+            }
+        });
+
+        it('should return 401 when unauthenticated', async () => {
+            setAuthToken(null);
+            const response = await apiClient.put(`/teacher/students/${updatableStudentId}`, {
+                email: `unauth.upd.${uniqueId}@example.com`,
+                username: `unauth_upd_${uniqueId}`,
+                groupId: firstTeacherGroupId
+            });
+            expect(response.status).toBe(401);
+        });
+
+        it('should return 403 for STUDENT', async () => {
+            setAuthToken(studentToken);
+            const response = await apiClient.put(`/teacher/students/${updatableStudentId}`, {
+                email: `stud.upd.${uniqueId}@example.com`,
+                username: `stud_upd_${uniqueId}`,
+                groupId: firstTeacherGroupId
+            });
+            expect(response.status).toBe(403);
+        });
+
+        it('should return 403 for ADMIN', async () => {
+            setAuthToken(adminToken);
+            const response = await apiClient.put(`/teacher/students/${updatableStudentId}`, {
+                email: `admin.upd.${uniqueId}@example.com`,
+                username: `admin_upd_${uniqueId}`,
+                groupId: firstTeacherGroupId
+            });
+            expect(response.status).toBe(403);
+        });
+
+        it('should update student in own group for TEACHER (200)', async () => {
+            const uid = Date.now();
+            setAuthToken(teacherToken);
+            const response = await apiClient.put(`/teacher/students/${updatableStudentId}`, {
+                email: `teacher.upd.ok.${uid}@example.com`,
+                username: `teacher_upd_ok_${uid}`,
+                groupId: firstTeacherGroupId
+            });
+            expect(response.status).toBe(200);
+            expect(response.data.id).toBe(updatableStudentId);
+            expect(response.data.role).toBe('STUDENT');
+            expect(response.data.groupId).toBe(firstTeacherGroupId);
+        });
+
+        it('should return 400 INVALID_ROLE_FOR_GROUP when moving student to foreign group', async () => {
+            const uid = Date.now();
+            setAuthToken(teacherToken);
+            const response = await apiClient.put(`/teacher/students/${updatableStudentId}`, {
+                email: `teacher.upd.fg.${uid}@example.com`,
+                username: `teacher_upd_fg_${uid}`,
+                groupId: secondTeacherGroupId
+            });
+            expect(response.status).toBe(400);
+            expect(response.data.code).toBe('INVALID_ROLE_FOR_GROUP');
+        });
+
+        it('should return 404 USER_NOT_FOUND for non-existent student', async () => {
+            setAuthToken(teacherToken);
+            const response = await apiClient.put('/teacher/students/999999', {
+                email: `notfound.upd.${uniqueId}@example.com`,
+                username: `notfound_upd_${uniqueId}`,
+                groupId: firstTeacherGroupId
+            });
+            expect(response.status).toBe(404);
+            expect(response.data.code).toBe('USER_NOT_FOUND');
+        });
+
+        it('should return 403 when updating student not owned by teacher', async () => {
+            setAuthToken(teacherToken);
+            const response = await apiClient.put(`/teacher/students/${foreignTeacherStudentId}`, {
+                email: `teacher.hijack.${uniqueId}@example.com`,
+                username: `teacher_hijack_${uniqueId}`,
+                groupId: firstTeacherGroupId
+            });
+            expect(response.status).toBe(403);
+        });
+
+        it('should return 400 VALIDATION_FAILED for invalid payload', async () => {
+            setAuthToken(teacherToken);
+            const response = await apiClient.put(`/teacher/students/${updatableStudentId}`, {
+                email: 'not-an-email',
+                username: '',
+                groupId: firstTeacherGroupId
+            });
+            expect(response.status).toBe(400);
+            expect(response.data.code).toBe('VALIDATION_FAILED');
+        });
+    });
 });

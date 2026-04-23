@@ -7,6 +7,7 @@ Polaczenia:
 - [[Rola - Admin]] moze zarzadzac lekcjami
 - [[Rola - Student]] widzi aktywne lekcje przypisane przez [[Domena - grupy]]
 - [[Domena - postep studenta]] zapisuje stan lekcji dla ucznia
+- [[Frontend - Wyniki Lekcji]] prezentuje wyniki uczniow per lekcja
 
 Endpointy:
 - `GET /api/v1/lessons`
@@ -14,6 +15,7 @@ Endpointy:
 - `PUT /api/v1/lessons/{id}`
 - `PATCH /api/v1/lessons/{id}/status`
 - `DELETE /api/v1/lessons/{id}`
+- `GET /api/v1/teacher/lessons/{lessonId}/stats` — statystyki wynikow uczniow dla lekcji
 
 Zrodla:
 - [LessonController.java](../../backend/src/main/java/pl/freeedu/backend/lesson/controller/LessonController.java)

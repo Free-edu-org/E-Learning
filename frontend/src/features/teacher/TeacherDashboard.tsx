@@ -901,6 +901,7 @@ export function TeacherDashboard() {
                 onEdit={openEditLessonDialog}
                 onDelete={openDeleteDialog}
                 onToggleStatus={handleToggleLessonStatus}
+                onResults={(l) => navigate(`/teacher/lessons/${l.id}/stats`)}
               />
             ))}
           </Box>
@@ -913,6 +914,7 @@ export function TeacherDashboard() {
                   onEdit={openEditLessonDialog}
                   onDelete={openDeleteDialog}
                   onToggleStatus={handleToggleLessonStatus}
+                  onResults={(l) => navigate(`/teacher/lessons/${l.id}/stats`)}
                 />
               </Grid>
             ))}
