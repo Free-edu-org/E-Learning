@@ -41,6 +41,7 @@ export interface TeacherStudentResponse {
 export interface LessonStatsStudentResult {
   userId: number;
   username: string;
+  avatarUrl?: string | null;
   completedAt: string | null;
   score: number;
   maxScore: number;

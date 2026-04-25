@@ -321,7 +321,7 @@ export function AccountSettingsDialog({
                 sx={{ mt: 1, maxWidth: 320 }}
               >
                 {presets.map((preset) => (
-                  <Grid item key={preset}>
+                  <Grid key={preset}>
                     <IconButton
                       onClick={() => handlePresetSelect(preset)}
                       disabled={!user || avatarLoading}

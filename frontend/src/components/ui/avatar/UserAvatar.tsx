@@ -13,8 +13,8 @@ export function UserAvatar({
   sx,
   ...props
 }: UserAvatarProps) {
-  const isPreset = avatarUrl?.startsWith("preset:");
-  const presetName = isPreset ? avatarUrl.substring(7) : null;
+  const isPreset = !!avatarUrl?.startsWith("preset:");
+  const presetName = isPreset && avatarUrl ? avatarUrl.substring(7) : null;
   const resolvedSrc = isPreset
     ? `/avatars/${presetName}.svg`
     : avatarUrl
