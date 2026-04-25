@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Alert,
@@ -15,6 +15,7 @@ import {
 } from "@mui/material";
 import {
   ArrowBackOutlined as BackIcon,
+  AttachFileOutlined as AttachIcon,
   CheckCircleOutlineOutlined as ReadyIcon,
   GroupsOutlined as GroupsIcon,
   SaveOutlined as SaveIcon,
@@ -68,6 +69,8 @@ export function TeacherLessonCreateView() {
   const [savedDraftSignature, setSavedDraftSignature] = useState(() =>
     JSON.stringify(emptyLessonDraft),
   );
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
+  const attachmentInputRef = useRef<HTMLInputElement>(null);
 
   const chooseTasksCount = draft.tasks.filter(
     (task) => task.type === "choose",
@@ -148,6 +151,7 @@ export function TeacherLessonCreateView() {
       );
 
       let nextFeedback: DialogFeedbackState;
+      let attachmentFailed = false;
 
       if (taskOperations.length > 0) {
         const results = await Promise.allSettled(taskOperations);
@@ -172,6 +176,25 @@ export function TeacherLessonCreateView() {
         nextFeedback = {
           severity: "success",
           message: "Lekcja została utworzona.",
+        };
+      }
+
+      if (attachmentFile) {
+        try {
+          await lessonService.uploadAttachment(createdLesson.id, attachmentFile);
+        } catch {
+          attachmentFailed = true;
+        }
+      }
+
+      if (attachmentFailed) {
+        nextFeedback = {
+          severity: "warning",
+          message:
+            (nextFeedback.severity === "success"
+              ? nextFeedback.message
+              : nextFeedback.message + " ") +
+            " Nie udało się przesłać załącznika — możesz dodać go w widoku edycji.",
         };
       }
 
@@ -371,6 +394,53 @@ export function TeacherLessonCreateView() {
                     />
                   )}
                 />
+              </FormSection>
+
+              <FormSection
+                title="Załącznik (opcjonalnie)"
+                description="Plik z notatkami do lekcji (PDF, TXT, DOCX, DOC, ODT, max 10 MB)."
+              >
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+                  <input
+                    ref={attachmentInputRef}
+                    type="file"
+                    accept="application/pdf,text/plain,.txt,.docx,.doc,.odt,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword,application/vnd.oasis.opendocument.text"
+                    style={{ display: "none" }}
+                    onChange={(e) => setAttachmentFile(e.target.files?.[0] ?? null)}
+                  />
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<AttachIcon />}
+                    onClick={() => attachmentInputRef.current?.click()}
+                  >
+                    Wybierz plik
+                  </Button>
+                  {attachmentFile ? (
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                    >
+                      {attachmentFile.name}
+                    </Typography>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">
+                      Brak wybranego pliku
+                    </Typography>
+                  )}
+                  {attachmentFile && (
+                    <Button
+                      size="small"
+                      onClick={() => {
+                        setAttachmentFile(null);
+                        if (attachmentInputRef.current) attachmentInputRef.current.value = "";
+                      }}
+                    >
+                      Usuń
+                    </Button>
+                  )}
+                </Box>
               </FormSection>
 
               <FormSection

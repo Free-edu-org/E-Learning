@@ -7,13 +7,19 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
-import org.springframework.http.ProblemDetail;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import pl.freeedu.backend.lesson.dto.LessonAttachmentResponse;
 import pl.freeedu.backend.lesson.dto.LessonRequest;
 import pl.freeedu.backend.lesson.dto.LessonResponse;
 import pl.freeedu.backend.lesson.dto.LessonStatusRequest;
+import pl.freeedu.backend.lesson.service.LessonAttachmentService;
 import pl.freeedu.backend.lesson.service.LessonService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -24,9 +30,11 @@ import reactor.core.publisher.Mono;
 public class LessonController {
 
 	private final LessonService lessonService;
+	private final LessonAttachmentService lessonAttachmentService;
 
-	public LessonController(LessonService lessonService) {
+	public LessonController(LessonService lessonService, LessonAttachmentService lessonAttachmentService) {
 		this.lessonService = lessonService;
+		this.lessonAttachmentService = lessonAttachmentService;
 	}
 
 	@Operation(summary = "Get list of lessons (with filters)")
@@ -80,5 +88,39 @@ public class LessonController {
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public Mono<Void> deleteLesson(@PathVariable Integer id) {
 		return lessonService.deleteLesson(id);
+	}
+
+	@Operation(summary = "Upload PDF attachment for a lesson")
+	@ApiResponses(value = {@ApiResponse(responseCode = "201", description = "Attachment uploaded successfully"),
+			@ApiResponse(responseCode = "400", description = "Invalid file type or file too large", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "404", description = "Lesson not found")})
+	@PostMapping(value = "/{lessonId}/attachments", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonId))")
+	@ResponseStatus(HttpStatus.CREATED)
+	public Mono<LessonAttachmentResponse> uploadAttachment(@PathVariable Integer lessonId,
+			@RequestPart("file") FilePart filePart) {
+		return lessonAttachmentService.uploadAttachment(lessonId, filePart);
+	}
+
+	@Operation(summary = "Download PDF attachment for a lesson")
+	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "PDF file"),
+			@ApiResponse(responseCode = "404", description = "Lesson or attachment not found")})
+	@GetMapping("/{lessonId}/attachments/{attachmentId}")
+	@PreAuthorize("@securityService.isAdmin(authentication) or "
+			+ "(hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonId)) or "
+			+ "(hasRole('STUDENT') and @securityService.hasStudentAccessToLesson(authentication, #lessonId))")
+	public Mono<ResponseEntity<Resource>> downloadAttachment(@PathVariable Integer lessonId,
+			@PathVariable Integer attachmentId) {
+		return lessonAttachmentService.downloadAttachment(lessonId, attachmentId);
+	}
+
+	@Operation(summary = "Delete PDF attachment for a lesson")
+	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Attachment deleted"),
+			@ApiResponse(responseCode = "404", description = "Lesson or attachment not found")})
+	@DeleteMapping("/{lessonId}/attachments/{attachmentId}")
+	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonId))")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public Mono<Void> deleteAttachment(@PathVariable Integer lessonId, @PathVariable Integer attachmentId) {
+		return lessonAttachmentService.deleteAttachment(lessonId, attachmentId);
 	}
 }

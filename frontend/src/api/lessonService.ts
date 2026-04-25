@@ -1,4 +1,4 @@
-import { fetchApi } from "./apiClient";
+import { fetchApi, fetchApiBlob } from "./apiClient";
 import type { LessonResultDetailsResponse } from "./studentService";
 
 export interface Group {
@@ -8,6 +8,14 @@ export interface Group {
   studentCount?: number;
   teacherId?: number | null;
   createdAt?: string;
+}
+
+export interface LessonAttachment {
+  id: number;
+  originalFileName: string;
+  contentType: string;
+  fileSize: number;
+  createdAt: string;
 }
 
 export interface Lesson {
@@ -20,6 +28,7 @@ export interface Lesson {
   teacherAvatarUrl?: string | null;
   createdAt: string;
   groups: Group[];
+  attachment?: LessonAttachment | null;
 }
 
 export interface TeacherStats {
@@ -122,5 +131,19 @@ export const lessonService = {
   resetStudentLessonProgress: (lessonId: number, userId: number) =>
     fetchApi<void>(`/api/v1/lessons/${lessonId}/users/${userId}/reset`, {
       method: "POST",
+    }),
+  uploadAttachment: (lessonId: number, file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return fetchApi<LessonAttachment>(`/api/v1/lessons/${lessonId}/attachments`, {
+      method: "POST",
+      body: formData,
+    });
+  },
+  downloadAttachment: (lessonId: number, attachmentId: number) =>
+    fetchApiBlob(`/api/v1/lessons/${lessonId}/attachments/${attachmentId}`),
+  deleteAttachment: (lessonId: number, attachmentId: number) =>
+    fetchApi<void>(`/api/v1/lessons/${lessonId}/attachments/${attachmentId}`, {
+      method: "DELETE",
     }),
 };

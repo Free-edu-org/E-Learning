@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import pl.freeedu.backend.lesson.dto.GroupDto;
+import pl.freeedu.backend.lesson.dto.LessonAttachmentResponse;
 
 @Data
 @Builder
@@ -28,4 +29,5 @@ public class StudentLessonResponse {
 	private Integer score;
 	private Integer maxScore;
 	private Double resultPercent;
+	private LessonAttachmentResponse attachment;
 }

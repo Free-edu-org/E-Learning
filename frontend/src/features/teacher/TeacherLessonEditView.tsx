@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Alert,
@@ -10,13 +10,18 @@ import {
   Chip,
   CircularProgress,
   Container,
+  IconButton,
   Stack,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import {
   ArrowBackOutlined as BackIcon,
+  AttachFileOutlined as AttachIcon,
   CheckCircleOutlineOutlined as ReadyIcon,
+  DeleteOutlineOutlined as DeleteIcon,
+  DownloadOutlined as DownloadIcon,
   GroupsOutlined as GroupsIcon,
   MicOutlined as SpeakIcon,
   RadioButtonCheckedOutlined as ChooseIcon,
@@ -25,7 +30,7 @@ import {
   TaskAltOutlined as TasksIcon,
   EditNoteOutlined as WriteIcon,
 } from "@mui/icons-material";
-import { lessonService, type Lesson } from "@/api/lessonService";
+import { lessonService, type Lesson, type LessonAttachment } from "@/api/lessonService";
 import { taskService } from "@/api/taskService";
 import { userService, type UserProfile } from "@/api/userService";
 import { TaskEditor } from "@/components/teacher/TaskEditor";
@@ -89,6 +94,12 @@ export function TeacherLessonEditView() {
   const [savedDraftSignature, setSavedDraftSignature] = useState<string | null>(
     null,
   );
+  const [attachment, setAttachment] = useState<LessonAttachment | null>(null);
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
+  const [attachmentUploading, setAttachmentUploading] = useState(false);
+  const [attachmentDeleting, setAttachmentDeleting] = useState(false);
+  const [attachmentFeedback, setAttachmentFeedback] = useState<string | null>(null);
+  const attachmentInputRef = useRef<HTMLInputElement>(null);
 
   const chooseTasksCount = draft.tasks.filter(
     (task) => task.type === "choose",
@@ -151,6 +162,7 @@ export function TeacherLessonEditView() {
 
         setLesson(matchedLesson);
         setAvailableGroups(groups);
+        setAttachment(matchedLesson.attachment ?? null);
         setDraft(buildDraftFromLesson(matchedLesson, []));
         setOriginalTasks([]);
         setLoading(false);
@@ -334,6 +346,7 @@ export function TeacherLessonEditView() {
       };
 
       setLesson(refreshedLesson);
+      setAttachment(refreshedLesson.attachment ?? null);
 
       if (refreshedTasksResponse) {
         const refreshedTasks = tasksResponseToDrafts(refreshedTasksResponse);
@@ -358,6 +371,57 @@ export function TeacherLessonEditView() {
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleUploadAttachment = async () => {
+    if (!lesson || !attachmentFile || attachmentUploading) return;
+    setAttachmentUploading(true);
+    setAttachmentFeedback(null);
+    try {
+      const result = await lessonService.uploadAttachment(lesson.id, attachmentFile);
+      setAttachment(result);
+      setAttachmentFile(null);
+      if (attachmentInputRef.current) {
+        attachmentInputRef.current.value = "";
+      }
+      setAttachmentFeedback("Plik został przesłany.");
+    } catch {
+      setAttachmentFeedback("Nie udało się przesłać pliku. Sprawdź format (PDF, TXT, DOCX, DOC, ODT) i rozmiar (max 10 MB).");
+    } finally {
+      setAttachmentUploading(false);
+    }
+  };
+
+  const handleDeleteAttachment = async () => {
+    if (!lesson || !attachment || attachmentDeleting) return;
+    setAttachmentDeleting(true);
+    setAttachmentFeedback(null);
+    try {
+      await lessonService.deleteAttachment(lesson.id, attachment.id);
+      setAttachment(null);
+      setAttachmentFeedback("Załącznik został usunięty.");
+    } catch {
+      setAttachmentFeedback("Nie udało się usunąć załącznika.");
+    } finally {
+      setAttachmentDeleting(false);
+    }
+  };
+
+  const handleDownloadAttachment = async () => {
+    if (!lesson || !attachment) return;
+    try {
+      const blob = await lessonService.downloadAttachment(lesson.id, attachment.id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = attachment.originalFileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      setAttachmentFeedback("Nie udało się pobrać pliku.");
     }
   };
 
@@ -556,7 +620,98 @@ export function TeacherLessonEditView() {
               </FormSection>
 
               <FormSection
-                title="Zadania"
+                title="Załącznik"
+                description="Opcjonalny plik z notatkami nauczyciela (PDF, TXT, DOCX, DOC, ODT, max 10 MB). Dostępny dla uczniów mających dostęp do tej lekcji."
+              >
+                <Stack spacing={1.5}>
+                  {attachmentFeedback && (
+                    <Alert
+                      severity={attachmentFeedback.includes("udało") && !attachmentFeedback.startsWith("Nie") ? "success" : attachmentFeedback.startsWith("Nie") ? "error" : "success"}
+                      onClose={() => setAttachmentFeedback(null)}
+                    >
+                      {attachmentFeedback}
+                    </Alert>
+                  )}
+
+                  {attachment ? (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        p: 1.5,
+                        border: "1px solid",
+                        borderColor: "divider",
+                        borderRadius: 1,
+                      }}
+                    >
+                      <AttachIcon fontSize="small" color="action" />
+                      <Typography
+                        variant="body2"
+                        sx={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                      >
+                        {attachment.originalFileName}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0 }}>
+                        {(attachment.fileSize / 1024 / 1024).toFixed(2)} MB
+                      </Typography>
+                      <Tooltip title="Pobierz">
+                        <IconButton size="small" onClick={handleDownloadAttachment}>
+                          <DownloadIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Usuń">
+                        <IconButton size="small" onClick={handleDeleteAttachment} disabled={attachmentDeleting} color="error">
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">
+                      Brak załącznika.
+                    </Typography>
+                  )}
+
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+                    <input
+                      ref={attachmentInputRef}
+                      type="file"
+                      accept="application/pdf,text/plain,.txt,.docx,.doc,.odt,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword,application/vnd.oasis.opendocument.text"
+                      style={{ display: "none" }}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] ?? null;
+                        setAttachmentFile(file);
+                        setAttachmentFeedback(null);
+                      }}
+                    />
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<AttachIcon />}
+                      onClick={() => attachmentInputRef.current?.click()}
+                    >
+                      Wybierz plik
+                    </Button>
+                    {attachmentFile && (
+                      <>
+                        <Typography variant="body2" color="text.secondary" sx={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {attachmentFile.name}
+                        </Typography>
+                        <Button
+                          size="small"
+                          variant="contained"
+                          onClick={handleUploadAttachment}
+                          disabled={attachmentUploading}
+                        >
+                          {attachmentUploading ? "Przesyłanie..." : "Prześlij"}
+                        </Button>
+                      </>
+                    )}
+                  </Box>
+                </Stack>
+              </FormSection>
+
+              <FormSection
                 description="Edytuj, dodaj lub usuń zadania przypisane do lekcji."
               >
                 {tasksLoading ? (

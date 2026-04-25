@@ -31,13 +31,16 @@ public class LessonService {
 	private final GroupHasLessonRepository groupHasLessonRepository;
 	private final LessonMapper lessonMapper;
 	private final SecurityService securityService;
+	private final LessonAttachmentService lessonAttachmentService;
 
 	public LessonService(LessonRepository lessonRepository, GroupHasLessonRepository groupHasLessonRepository,
-			LessonMapper lessonMapper, SecurityService securityService) {
+			LessonMapper lessonMapper, SecurityService securityService,
+			LessonAttachmentService lessonAttachmentService) {
 		this.lessonRepository = lessonRepository;
 		this.groupHasLessonRepository = groupHasLessonRepository;
 		this.lessonMapper = lessonMapper;
 		this.securityService = securityService;
+		this.lessonAttachmentService = lessonAttachmentService;
 	}
 
 	public Flux<LessonResponse> getLessons(String search, Integer groupId, Boolean status, String sort) {
@@ -84,6 +87,7 @@ public class LessonService {
 					LessonResponse resp = lessonMapper.toResponse(lesson);
 					List<GroupDto> groups = groupHasLessonRepository.findGroupsForLesson(lesson.getId());
 					resp.setGroups(groups);
+					lessonAttachmentService.findByLessonId(lesson.getId()).ifPresent(resp::setAttachment);
 					return resp;
 				}).subscribeOn(Schedulers.boundedElastic()));
 	}
@@ -105,6 +109,7 @@ public class LessonService {
 
 					LessonResponse resp = lessonMapper.toResponse(saved);
 					resp.setGroups(groupHasLessonRepository.findGroupsForLesson(saved.getId()));
+					lessonAttachmentService.findByLessonId(saved.getId()).ifPresent(resp::setAttachment);
 					return resp;
 				}).subscribeOn(Schedulers.boundedElastic())));
 	}
@@ -129,6 +134,7 @@ public class LessonService {
 					Lesson reloaded = lessonRepository.findById(saved.getId()).orElse(saved);
 					LessonResponse resp = lessonMapper.toResponse(reloaded);
 					resp.setGroups(groupHasLessonRepository.findGroupsForLesson(saved.getId()));
+					lessonAttachmentService.findByLessonId(saved.getId()).ifPresent(resp::setAttachment);
 					return resp;
 				}).subscribeOn(Schedulers.boundedElastic())));
 	}
@@ -149,6 +155,7 @@ public class LessonService {
 				.fromCallable(() -> lessonRepository.findById(id)
 						.orElseThrow(() -> new LessonException(LessonErrorCode.LESSON_NOT_FOUND)))
 				.subscribeOn(Schedulers.boundedElastic()).flatMap(lesson -> Mono.fromCallable(() -> {
+					lessonAttachmentService.deleteAttachmentsByLessonId(id);
 					groupHasLessonRepository.deleteByLessonId(id);
 					lessonRepository.delete(lesson);
 					return (Void) null;

@@ -21,13 +21,13 @@ spring:
       - classpath:db/seed
 
   codec:
-    max-in-memory-size: 3MB
+    max-in-memory-size: 15MB
 
   webflux:
     multipart:
       max-parts: 1
       max-headers-size: 16KB
-      max-disk-usage-per-part: 2MB
+      max-disk-usage-per-part: 10MB
     static-path-pattern: /uploads/**
 
   web:

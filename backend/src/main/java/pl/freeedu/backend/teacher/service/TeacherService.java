@@ -19,6 +19,7 @@ import reactor.core.scheduler.Schedulers;
 import pl.freeedu.backend.usergroup.dto.UserGroupResponse;
 import pl.freeedu.backend.usergroup.service.UserGroupService;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import pl.freeedu.backend.lesson.service.LessonAttachmentService;
 import pl.freeedu.backend.usergroup.repository.UserGroupRepository;
 import pl.freeedu.backend.usergroup.repository.UserInGroupRepository;
 import pl.freeedu.backend.teacher.dto.TeacherCreateStudentRequest;
@@ -54,13 +55,14 @@ public class TeacherService {
 	private final UserInGroupRepository userInGroupRepository;
 	private final TransactionTemplate transactionTemplate;
 	private final LessonResultDetailsService lessonResultDetailsService;
+	private final LessonAttachmentService lessonAttachmentService;
 
 	public TeacherService(TeacherStatsRepository teacherStatsRepository, LessonRepository lessonRepository,
 			GroupHasLessonRepository groupHasLessonRepository, LessonMapper lessonMapper,
 			SecurityService securityService, UserGroupService userGroupService, UserRepository userRepository,
 			UserMapper userMapper, PasswordEncoder passwordEncoder, UserGroupRepository userGroupRepository,
 			UserInGroupRepository userInGroupRepository, TransactionTemplate transactionTemplate,
-			LessonResultDetailsService lessonResultDetailsService) {
+			LessonResultDetailsService lessonResultDetailsService, LessonAttachmentService lessonAttachmentService) {
 		this.teacherStatsRepository = teacherStatsRepository;
 		this.lessonRepository = lessonRepository;
 		this.groupHasLessonRepository = groupHasLessonRepository;
@@ -74,6 +76,7 @@ public class TeacherService {
 		this.userInGroupRepository = userInGroupRepository;
 		this.transactionTemplate = transactionTemplate;
 		this.lessonResultDetailsService = lessonResultDetailsService;
+		this.lessonAttachmentService = lessonAttachmentService;
 	}
 
 	public Mono<TeacherStatsResponse> getStats() {
@@ -93,6 +96,7 @@ public class TeacherService {
 				.concatMap(lesson -> Mono.fromCallable(() -> {
 					LessonResponse resp = lessonMapper.toResponse(lesson);
 					resp.setGroups(groupHasLessonRepository.findGroupsForLesson(lesson.getId()));
+					lessonAttachmentService.findByLessonId(lesson.getId()).ifPresent(resp::setAttachment);
 					return resp;
 				}).subscribeOn(Schedulers.boundedElastic()));
 	}
