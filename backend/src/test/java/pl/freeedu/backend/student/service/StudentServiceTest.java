@@ -11,6 +11,7 @@ import pl.freeedu.backend.lesson.mapper.LessonMapper;
 import pl.freeedu.backend.lesson.model.Lesson;
 import pl.freeedu.backend.lesson.repository.GroupHasLessonRepository;
 import pl.freeedu.backend.lesson.repository.LessonRepository;
+import pl.freeedu.backend.lesson.service.LessonAttachmentService;
 import pl.freeedu.backend.security.service.SecurityService;
 import pl.freeedu.backend.student.dto.StudentLessonResponse;
 import pl.freeedu.backend.student.dto.StudentProgressResponse;
@@ -52,6 +53,9 @@ class StudentServiceTest {
 	private LessonMapper lessonMapper;
 	@Mock
 	private LessonResultDetailsService lessonResultDetailsService;
+
+	@Mock
+	private LessonAttachmentService lessonAttachmentService;
 
 	@InjectMocks
 	private StudentService studentService;

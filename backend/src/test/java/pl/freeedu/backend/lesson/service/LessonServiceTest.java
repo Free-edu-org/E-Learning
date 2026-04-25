@@ -13,7 +13,8 @@ import pl.freeedu.backend.lesson.mapper.LessonMapper;
 import pl.freeedu.backend.lesson.model.Lesson;
 import pl.freeedu.backend.lesson.repository.GroupHasLessonRepository;
 import pl.freeedu.backend.lesson.repository.LessonRepository;
-import pl.freeedu.backend.security.service.SecurityService;import reactor.core.publisher.Flux;
+import pl.freeedu.backend.security.service.SecurityService;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -39,6 +40,9 @@ class LessonServiceTest {
 
 	@Mock
 	private SecurityService securityService;
+
+	@Mock
+	private LessonAttachmentService lessonAttachmentService;
 
 	@InjectMocks
 	private LessonService lessonService;

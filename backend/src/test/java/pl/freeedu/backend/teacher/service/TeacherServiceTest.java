@@ -19,6 +19,7 @@ import pl.freeedu.backend.lesson.mapper.LessonMapper;
 import pl.freeedu.backend.lesson.model.Lesson;
 import pl.freeedu.backend.lesson.repository.GroupHasLessonRepository;
 import pl.freeedu.backend.lesson.repository.LessonRepository;
+import pl.freeedu.backend.lesson.service.LessonAttachmentService;
 import pl.freeedu.backend.security.service.SecurityService;
 import pl.freeedu.backend.task.dto.LessonResultDetailsResponse;
 import pl.freeedu.backend.task.exception.TaskErrorCode;
@@ -78,6 +79,9 @@ class TeacherServiceTest {
 	private TransactionTemplate transactionTemplate;
 	@Mock
 	private LessonResultDetailsService lessonResultDetailsService;
+
+	@Mock
+	private LessonAttachmentService lessonAttachmentService;
 
 	@InjectMocks
 	private TeacherService teacherService;
