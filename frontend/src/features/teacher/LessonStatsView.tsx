@@ -368,7 +368,11 @@ export function LessonStatsView() {
                       }}
                     >
                       {/* Name + date */}
-                      <UserAvatar avatarUrl={student.avatarUrl} username={student.username} size={36} />
+                      <UserAvatar
+                        avatarUrl={student.avatarUrl}
+                        username={student.username}
+                        size={36}
+                      />
                       <Box sx={{ flex: 1, minWidth: 0 }}>
                         <Typography variant="body2" fontWeight={600} noWrap>
                           {student.username}

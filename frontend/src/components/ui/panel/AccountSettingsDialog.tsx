@@ -1,5 +1,15 @@
 import { useEffect, useState, useRef } from "react";
-import { Box, Button, Grid, IconButton, Stack, TextField, Typography, Tooltip, Collapse } from "@mui/material";
+import {
+  Box,
+  Button,
+  Grid,
+  IconButton,
+  Stack,
+  TextField,
+  Typography,
+  Tooltip,
+  Collapse,
+} from "@mui/material";
 import {
   LockOutlined as LockIcon,
   ManageAccountsOutlined as ManageAccountsIcon,
@@ -158,12 +168,17 @@ export function AccountSettingsDialog({
     }
   };
 
-  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
     if (!file || !user) return;
 
     if (file.size > 2 * 1024 * 1024) {
-      setFeedback({ severity: "error", message: "Plik jest za duży. Maksymalny rozmiar to 2 MB." });
+      setFeedback({
+        severity: "error",
+        message: "Plik jest za duży. Maksymalny rozmiar to 2 MB.",
+      });
       return;
     }
 
@@ -172,9 +187,15 @@ export function AccountSettingsDialog({
     try {
       const updatedUser = await userService.uploadAvatar(user.id, file);
       onUserUpdated(updatedUser);
-      setFeedback({ severity: "success", message: "Awatar został zaktualizowany." });
+      setFeedback({
+        severity: "success",
+        message: "Awatar został zaktualizowany.",
+      });
     } catch (error) {
-      setFeedback({ severity: "error", message: getErrorMessage(error, "Nie udało się wgrać awatara.") });
+      setFeedback({
+        severity: "error",
+        message: getErrorMessage(error, "Nie udało się wgrać awatara."),
+      });
     } finally {
       setAvatarLoading(false);
       if (fileInputRef.current) {
@@ -185,15 +206,24 @@ export function AccountSettingsDialog({
 
   const handlePresetSelect = async (presetName: string) => {
     if (!user) return;
-    
+
     setFeedback(null);
     setAvatarLoading(true);
     try {
-      const updatedUser = await userService.setPresetAvatar(user.id, presetName);
+      const updatedUser = await userService.setPresetAvatar(
+        user.id,
+        presetName,
+      );
       onUserUpdated(updatedUser);
-      setFeedback({ severity: "success", message: "Awatar został zaktualizowany." });
+      setFeedback({
+        severity: "success",
+        message: "Awatar został zaktualizowany.",
+      });
     } catch (error) {
-      setFeedback({ severity: "error", message: getErrorMessage(error, "Nie udało się zmienić awatara.") });
+      setFeedback({
+        severity: "error",
+        message: getErrorMessage(error, "Nie udało się zmienić awatara."),
+      });
     } finally {
       setAvatarLoading(false);
     }
@@ -213,7 +243,14 @@ export function AccountSettingsDialog({
           </AppDialogStatus>
         )}
         <Stack spacing={2.25}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 1 }}>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              mb: 1,
+            }}
+          >
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp"
@@ -222,49 +259,68 @@ export function AccountSettingsDialog({
               onChange={handleAvatarUpload}
             />
             <Tooltip title="Kliknij, aby wgrać awatar z dysku">
-              <IconButton 
+              <IconButton
                 onClick={() => fileInputRef.current?.click()}
                 disabled={!user || avatarLoading}
-                sx={{ 
-                  p: 0, 
-                  position: 'relative', 
-                  '&:hover::after': { 
-                    content: '""', 
-                    position: 'absolute', 
-                    top: 0, left: 0, right: 0, bottom: 0, 
-                    bgcolor: 'rgba(0,0,0,0.4)', 
-                    borderRadius: '50%',
-                    transition: 'background-color 0.2s'
+                sx={{
+                  p: 0,
+                  position: "relative",
+                  "&:hover::after": {
+                    content: '""',
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    bgcolor: "rgba(0,0,0,0.4)",
+                    borderRadius: "50%",
+                    transition: "background-color 0.2s",
                   },
-                  '&:hover .upload-icon': { opacity: 1 }
+                  "&:hover .upload-icon": { opacity: 1 },
                 }}
               >
-                <UserAvatar avatarUrl={user?.avatarUrl} username={user?.username} size={100} />
-                <UploadIcon 
+                <UserAvatar
+                  avatarUrl={user?.avatarUrl}
+                  username={user?.username}
+                  size={100}
+                />
+                <UploadIcon
                   className="upload-icon"
-                  sx={{ 
-                    position: 'absolute', 
-                    color: 'white', 
-                    opacity: 0, 
-                    transition: 'opacity 0.2s',
+                  sx={{
+                    position: "absolute",
+                    color: "white",
+                    opacity: 0,
+                    transition: "opacity 0.2s",
                     zIndex: 1,
-                    fontSize: 32
-                  }} 
+                    fontSize: 32,
+                  }}
                 />
               </IconButton>
             </Tooltip>
 
-            <Button 
-              size="small" 
-              onClick={() => setPresetsExpanded(!presetsExpanded)} 
-              sx={{ mt: 1.5, textTransform: 'none' }}
-              endIcon={<ExpandMoreIcon sx={{ transform: presetsExpanded ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />}
+            <Button
+              size="small"
+              onClick={() => setPresetsExpanded(!presetsExpanded)}
+              sx={{ mt: 1.5, textTransform: "none" }}
+              endIcon={
+                <ExpandMoreIcon
+                  sx={{
+                    transform: presetsExpanded ? "rotate(180deg)" : "none",
+                    transition: "0.2s",
+                  }}
+                />
+              }
             >
               Wybierz z wbudowanych
             </Button>
-            
+
             <Collapse in={presetsExpanded}>
-              <Grid container spacing={1} justifyContent="center" sx={{ mt: 1, maxWidth: 320 }}>
+              <Grid
+                container
+                spacing={1}
+                justifyContent="center"
+                sx={{ mt: 1, maxWidth: 320 }}
+              >
                 {presets.map((preset) => (
                   <Grid item key={preset}>
                     <IconButton
@@ -272,10 +328,13 @@ export function AccountSettingsDialog({
                       disabled={!user || avatarLoading}
                       sx={{
                         p: 0.5,
-                        border: user?.avatarUrl === `preset:${preset}` ? '2px solid' : '2px solid transparent',
-                        borderColor: 'primary.main',
-                        transition: 'transform 0.2s',
-                        '&:hover': { transform: 'scale(1.1)' }
+                        border:
+                          user?.avatarUrl === `preset:${preset}`
+                            ? "2px solid"
+                            : "2px solid transparent",
+                        borderColor: "primary.main",
+                        transition: "transform 0.2s",
+                        "&:hover": { transform: "scale(1.1)" },
                       }}
                     >
                       <UserAvatar avatarUrl={`preset:${preset}`} size={48} />

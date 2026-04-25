@@ -137,26 +137,26 @@ export function LessonCard({
       >
         <StatusDot active={lesson.isActive} />
 
-          <Stack direction="row" spacing={1.25} alignItems="center">
-            <UserAvatar 
-              avatarUrl={lesson.teacherAvatarUrl} 
-              username={lesson.teacherName} 
-              size={28} 
-            />
-            <Box sx={{ minWidth: 0 }}>
-              <Typography
-                variant="body2"
-                fontWeight={700}
-                color="primary.main"
-                noWrap
-              >
-                {lesson.title}
-              </Typography>
-              <Typography variant="caption" color="text.secondary" noWrap>
-                {lesson.theme}
-              </Typography>
-            </Box>
-          </Stack>
+        <Stack direction="row" spacing={1.25} alignItems="center">
+          <UserAvatar
+            avatarUrl={lesson.teacherAvatarUrl}
+            username={lesson.teacherName}
+            size={28}
+          />
+          <Box sx={{ minWidth: 0 }}>
+            <Typography
+              variant="body2"
+              fontWeight={700}
+              color="primary.main"
+              noWrap
+            >
+              {lesson.title}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" noWrap>
+              {lesson.theme}
+            </Typography>
+          </Box>
+        </Stack>
 
         <Box
           sx={{
@@ -235,10 +235,10 @@ export function LessonCard({
         <Box
           sx={{ display: "flex", alignItems: "flex-start", gap: 1.5, mb: 0.5 }}
         >
-          <UserAvatar 
-            avatarUrl={lesson.teacherAvatarUrl} 
-            username={lesson.teacherName} 
-            size={32} 
+          <UserAvatar
+            avatarUrl={lesson.teacherAvatarUrl}
+            username={lesson.teacherName}
+            size={32}
             sx={{ mt: 0.2 }}
           />
           <Typography

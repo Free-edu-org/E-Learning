@@ -1280,10 +1280,10 @@ export function AdminDashboard() {
                               flexWrap="wrap"
                               useFlexGap
                             >
-                              <UserAvatar 
-                                avatarUrl={user.avatarUrl} 
-                                username={user.username} 
-                                size={28} 
+                              <UserAvatar
+                                avatarUrl={user.avatarUrl}
+                                username={user.username}
+                                size={28}
                               />
                               <Typography
                                 variant="body1"
@@ -1424,11 +1424,15 @@ export function AdminDashboard() {
                                 spacing={2}
                               >
                                 <Box sx={{ minWidth: 0, flex: 1 }}>
-                                  <Stack direction="row" spacing={1.5} alignItems="center">
-                                    <UserAvatar 
-                                      avatarUrl={user.avatarUrl} 
-                                      username={user.username} 
-                                      size={40} 
+                                  <Stack
+                                    direction="row"
+                                    spacing={1.5}
+                                    alignItems="center"
+                                  >
+                                    <UserAvatar
+                                      avatarUrl={user.avatarUrl}
+                                      username={user.username}
+                                      size={40}
                                     />
                                     <Typography
                                       variant="body1"
@@ -1776,11 +1780,24 @@ export function AdminDashboard() {
                                 color="text.secondary"
                               >
                                 Właściciel:{" "}
-                                <Stack direction="row" spacing={0.75} alignItems="center" component="span" sx={{ display: 'inline-flex', verticalAlign: 'middle' }}>
-                                  <UserAvatar 
-                                    avatarUrl={teacherAvatarById.get(group.teacherId ?? -1)} 
-                                    username={teacherNameById.get(group.teacherId ?? -1)} 
-                                    size={20} 
+                                <Stack
+                                  direction="row"
+                                  spacing={0.75}
+                                  alignItems="center"
+                                  component="span"
+                                  sx={{
+                                    display: "inline-flex",
+                                    verticalAlign: "middle",
+                                  }}
+                                >
+                                  <UserAvatar
+                                    avatarUrl={teacherAvatarById.get(
+                                      group.teacherId ?? -1,
+                                    )}
+                                    username={teacherNameById.get(
+                                      group.teacherId ?? -1,
+                                    )}
+                                    size={20}
                                   />
                                   <Box
                                     component="span"
@@ -1789,8 +1806,9 @@ export function AdminDashboard() {
                                       color: "text.primary",
                                     }}
                                   >
-                                    {teacherNameById.get(group.teacherId ?? -1) ??
-                                      "Brak danych"}
+                                    {teacherNameById.get(
+                                      group.teacherId ?? -1,
+                                    ) ?? "Brak danych"}
                                   </Box>
                                 </Stack>
                               </Typography>
@@ -1899,11 +1917,24 @@ export function AdminDashboard() {
                                     sx={{ mt: 1, ...panelSingleLineSx }}
                                   >
                                     Właściciel:{" "}
-                                    <Stack direction="row" spacing={0.75} alignItems="center" component="span" sx={{ display: 'inline-flex', verticalAlign: 'middle' }}>
-                                      <UserAvatar 
-                                        avatarUrl={teacherAvatarById.get(group.teacherId ?? -1)} 
-                                        username={teacherNameById.get(group.teacherId ?? -1)} 
-                                        size={18} 
+                                    <Stack
+                                      direction="row"
+                                      spacing={0.75}
+                                      alignItems="center"
+                                      component="span"
+                                      sx={{
+                                        display: "inline-flex",
+                                        verticalAlign: "middle",
+                                      }}
+                                    >
+                                      <UserAvatar
+                                        avatarUrl={teacherAvatarById.get(
+                                          group.teacherId ?? -1,
+                                        )}
+                                        username={teacherNameById.get(
+                                          group.teacherId ?? -1,
+                                        )}
+                                        size={18}
                                       />
                                       <Box
                                         component="span"
@@ -1912,8 +1943,9 @@ export function AdminDashboard() {
                                           color: "text.primary",
                                         }}
                                       >
-                                        {teacherNameById.get(group.teacherId ?? -1) ??
-                                          "Brak danych"}
+                                        {teacherNameById.get(
+                                          group.teacherId ?? -1,
+                                        ) ?? "Brak danych"}
                                       </Box>
                                     </Stack>
                                   </Typography>
@@ -2241,10 +2273,24 @@ export function AdminDashboard() {
                   >
                     <MenuItem value="">Bez właściciela</MenuItem>
                     {teachers.map((teacher) => (
-                      <MenuItem key={teacher.id} value={teacher.id} sx={{ py: 1 }}>
-                        <Stack direction="row" spacing={1.5} alignItems="center">
-                          <UserAvatar avatarUrl={teacher.avatarUrl} username={teacher.username} size={24} />
-                          <Typography variant="body2">{teacher.username}</Typography>
+                      <MenuItem
+                        key={teacher.id}
+                        value={teacher.id}
+                        sx={{ py: 1 }}
+                      >
+                        <Stack
+                          direction="row"
+                          spacing={1.5}
+                          alignItems="center"
+                        >
+                          <UserAvatar
+                            avatarUrl={teacher.avatarUrl}
+                            username={teacher.username}
+                            size={24}
+                          />
+                          <Typography variant="body2">
+                            {teacher.username}
+                          </Typography>
                         </Stack>
                       </MenuItem>
                     ))}
@@ -2378,18 +2424,29 @@ export function AdminDashboard() {
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Właściciel:{" "}
-                    <Stack direction="row" spacing={0.75} alignItems="center" component="span" sx={{ display: 'inline-flex', verticalAlign: 'middle' }}>
-                      <UserAvatar 
-                        avatarUrl={teacherAvatarById.get(membershipDialog?.teacherId ?? -1)} 
-                        username={teacherNameById.get(membershipDialog?.teacherId ?? -1)} 
-                        size={18} 
+                    <Stack
+                      direction="row"
+                      spacing={0.75}
+                      alignItems="center"
+                      component="span"
+                      sx={{ display: "inline-flex", verticalAlign: "middle" }}
+                    >
+                      <UserAvatar
+                        avatarUrl={teacherAvatarById.get(
+                          membershipDialog?.teacherId ?? -1,
+                        )}
+                        username={teacherNameById.get(
+                          membershipDialog?.teacherId ?? -1,
+                        )}
+                        size={18}
                       />
                       <Box
                         component="span"
                         sx={{ fontWeight: 700, color: "text.primary" }}
                       >
-                        {teacherNameById.get(membershipDialog?.teacherId ?? -1) ??
-                          "Brak danych"}
+                        {teacherNameById.get(
+                          membershipDialog?.teacherId ?? -1,
+                        ) ?? "Brak danych"}
                       </Box>
                     </Stack>
                   </Typography>
@@ -2422,11 +2479,16 @@ export function AdminDashboard() {
                           justifyContent="space-between"
                           alignItems="center"
                         >
-                          <Stack direction="row" spacing={1.5} alignItems="center" sx={{ minWidth: 0, flex: 1 }}>
-                            <UserAvatar 
-                              avatarUrl={student.avatarUrl} 
-                              username={student.username} 
-                              size={32} 
+                          <Stack
+                            direction="row"
+                            spacing={1.5}
+                            alignItems="center"
+                            sx={{ minWidth: 0, flex: 1 }}
+                          >
+                            <UserAvatar
+                              avatarUrl={student.avatarUrl}
+                              username={student.username}
+                              size={32}
                             />
                             <Box sx={{ minWidth: 0 }}>
                               <Typography

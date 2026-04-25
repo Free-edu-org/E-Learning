@@ -21,9 +21,7 @@ export function UserAvatar({
       ? `http://localhost:8080${avatarUrl}`
       : undefined;
 
-  const initials = username
-    ? username.substring(0, 2).toUpperCase()
-    : "?";
+  const initials = username ? username.substring(0, 2).toUpperCase() : "?";
 
   return (
     <Avatar

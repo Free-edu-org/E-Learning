@@ -39,14 +39,20 @@ export function DashboardHeader({
 }: DashboardHeaderProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsEnabled = Boolean(user && onUserUpdated);
-  
+
   const isAvatar = Boolean(user && !icon);
-  
-  const headerIcon = icon ?? (user ? (
-    <UserAvatar avatarUrl={user.avatarUrl} username={user.username} size={48} />
-  ) : (
-    <SchoolIcon sx={{ color: "primary.main" }} />
-  ));
+
+  const headerIcon =
+    icon ??
+    (user ? (
+      <UserAvatar
+        avatarUrl={user.avatarUrl}
+        username={user.username}
+        size={48}
+      />
+    ) : (
+      <SchoolIcon sx={{ color: "primary.main" }} />
+    ));
 
   const iconBoxSx = {
     ...(isAvatar ? {} : panelSurfaceSx),
@@ -54,7 +60,7 @@ export function DashboardHeader({
     height: 48,
     p: isAvatar ? 0 : undefined,
     boxShadow: isAvatar ? 0 : 1,
-    overflow: 'visible',
+    overflow: "visible",
   };
 
   return (
