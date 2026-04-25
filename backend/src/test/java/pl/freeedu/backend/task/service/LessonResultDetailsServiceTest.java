@@ -35,6 +35,8 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -176,6 +178,94 @@ class LessonResultDetailsServiceTest {
 			assertEquals(1, response.getTasks().size());
 			assertEquals("blue", response.getTasks().getFirst().getUserAnswer());
 			assertTrue(response.getTasks().getFirst().getIsCorrect());
+		}).verifyComplete();
+	}
+
+	@Test
+	void shouldReturnLessonNotFoundWhenLessonDoesNotExist() {
+		// given
+		Integer lessonId = 404;
+		Integer userId = 13;
+
+		when(lessonRepository.findById(lessonId)).thenReturn(Optional.empty());
+
+		// when
+		Mono<LessonResultDetailsResponse> result = lessonResultDetailsService.getCompletedLessonResult(lessonId,
+				userId);
+
+		// then
+		StepVerifier.create(result).expectErrorSatisfies(error -> {
+			assertTrue(error instanceof TaskException);
+			assertEquals(TaskErrorCode.LESSON_NOT_FOUND, ((TaskException) error).getErrorCode());
+		}).verify();
+		verify(userRepository, never()).findById(userId);
+	}
+
+	@Test
+	void shouldReturnLessonResultNotFoundWhenUserDoesNotExist() {
+		// given
+		Integer lessonId = 7;
+		Integer userId = 404;
+
+		when(lessonRepository.findById(lessonId))
+				.thenReturn(Optional.of(Lesson.builder().id(lessonId).title("Past Simple").build()));
+		when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+		// when
+		Mono<LessonResultDetailsResponse> result = lessonResultDetailsService.getCompletedLessonResult(lessonId,
+				userId);
+
+		// then
+		StepVerifier.create(result).expectErrorSatisfies(error -> {
+			assertTrue(error instanceof TaskException);
+			assertEquals(TaskErrorCode.LESSON_RESULT_NOT_FOUND, ((TaskException) error).getErrorCode());
+		}).verify();
+		verify(userLessonRepository, never()).findByUserIdAndLessonId(userId, lessonId);
+	}
+
+	@Test
+	void shouldKeepOriginalChooseAnswerWhenIndexIsInvalidAndReturnZeroPercentForMissingMaxScore() {
+		// given
+		Integer lessonId = 11;
+		Integer userId = 22;
+
+		when(lessonRepository.findById(lessonId))
+				.thenReturn(Optional.of(Lesson.builder().id(lessonId).title("Choose edge cases").build()));
+		when(userRepository.findById(userId)).thenReturn(Optional.of(User.builder().id(userId).username("ola")
+				.email("ola@example.com").password("x").role(Role.STUDENT).build()));
+		when(userLessonRepository.findByUserIdAndLessonId(userId, lessonId)).thenReturn(Optional.of(UserLesson.builder()
+				.userId(userId).lessonId(lessonId).status(UserLessonStatus.COMPLETED).score(2).maxScore(0).build()));
+		when(chooseTaskRepository.findByLessonId(lessonId)).thenReturn(List.of(
+				ChooseTask.builder().id(31).lessonId(lessonId).task("Blank answer").possibleAnswers("red|green")
+						.correctAnswer(1).build(),
+				ChooseTask.builder().id(32).lessonId(lessonId).task("Out of range").possibleAnswers("cat|dog")
+						.correctAnswer(1).build(),
+				ChooseTask.builder().id(33).lessonId(lessonId).task("Non numeric").possibleAnswers("sun|moon")
+						.correctAnswer(0).build()));
+		when(writeTaskRepository.findByLessonId(lessonId)).thenReturn(List.of());
+		when(scatterTaskRepository.findByLessonId(lessonId)).thenReturn(List.of());
+		when(speakTaskRepository.findByLessonId(lessonId)).thenReturn(List.of());
+		when(userAnswerRepository.findByUserIdAndLessonId(userId, lessonId)).thenReturn(List.of(
+				UserAnswer.builder().lessonId(lessonId).userId(userId).taskId(31).taskType("choose_tasks").answer(" ")
+						.isCorrect(false).build(),
+				UserAnswer.builder().lessonId(lessonId).userId(userId).taskId(32).taskType("choose_tasks").answer("8")
+						.isCorrect(false).build(),
+				UserAnswer.builder().lessonId(lessonId).userId(userId).taskId(33).taskType("choose_tasks")
+						.answer("green").isCorrect(false).build()));
+
+		// when
+		Mono<LessonResultDetailsResponse> result = lessonResultDetailsService.getCompletedLessonResult(lessonId,
+				userId);
+
+		// then
+		StepVerifier.create(result).assertNext(response -> {
+			assertEquals(0.0, response.getResultPercent());
+			assertEquals(" ", response.getTasks().get(0).getUserAnswer());
+			assertEquals("8", response.getTasks().get(1).getUserAnswer());
+			assertEquals("green", response.getTasks().get(2).getUserAnswer());
+			assertEquals("green", response.getTasks().get(0).getCorrectAnswer());
+			assertEquals("dog", response.getTasks().get(1).getCorrectAnswer());
+			assertEquals("sun", response.getTasks().get(2).getCorrectAnswer());
 		}).verifyComplete();
 	}
 }

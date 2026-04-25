@@ -69,10 +69,18 @@ export function TeacherLessonCreateView() {
     JSON.stringify(emptyLessonDraft),
   );
 
-  const chooseTasksCount = draft.tasks.filter((task) => task.type === "choose").length;
-  const writeTasksCount = draft.tasks.filter((task) => task.type === "write").length;
-  const scatterTasksCount = draft.tasks.filter((task) => task.type === "scatter").length;
-  const speakTasksCount = draft.tasks.filter((task) => task.type === "speak").length;
+  const chooseTasksCount = draft.tasks.filter(
+    (task) => task.type === "choose",
+  ).length;
+  const writeTasksCount = draft.tasks.filter(
+    (task) => task.type === "write",
+  ).length;
+  const scatterTasksCount = draft.tasks.filter(
+    (task) => task.type === "scatter",
+  ).length;
+  const speakTasksCount = draft.tasks.filter(
+    (task) => task.type === "speak",
+  ).length;
   const draftSignature = useMemo(() => JSON.stringify(draft), [draft]);
 
   useEffect(() => {
@@ -169,7 +177,10 @@ export function TeacherLessonCreateView() {
 
       setFeedback(nextFeedback);
       setSavedDraftSignature(draftSignature);
-      window.setTimeout(() => navigate(`/teacher/lessons/${createdLesson.id}/edit`), 700);
+      window.setTimeout(
+        () => navigate(`/teacher/lessons/${createdLesson.id}/edit`),
+        700,
+      );
     } catch (createError) {
       setFeedback({
         severity: "error",
@@ -233,11 +244,19 @@ export function TeacherLessonCreateView() {
             >
               Powrót do panelu nauczyciela
             </Button>
-            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+            <Stack
+              direction="row"
+              spacing={1}
+              alignItems="center"
+              flexWrap="wrap"
+            >
               <Typography
                 variant="h5"
                 fontWeight={700}
-                sx={{ fontSize: { xs: "1.6rem", sm: "2rem" }, lineHeight: 1.15 }}
+                sx={{
+                  fontSize: { xs: "1.6rem", sm: "2rem" },
+                  lineHeight: 1.15,
+                }}
               >
                 Utwórz lekcję
               </Typography>
@@ -251,7 +270,6 @@ export function TeacherLessonCreateView() {
               Podaj tytuł, temat i opcjonalnie dodaj zadania od razu.
             </Typography>
           </Box>
-
         </Box>
 
         {error && (
@@ -270,7 +288,9 @@ export function TeacherLessonCreateView() {
             }}
           >
             <Stack spacing={{ xs: 2, md: 2.25 }} sx={{ minWidth: 0 }}>
-              {feedback && <Alert severity={feedback.severity}>{feedback.message}</Alert>}
+              {feedback && (
+                <Alert severity={feedback.severity}>{feedback.message}</Alert>
+              )}
 
               <FormSection>
                 <Stack spacing={{ xs: 1.75, md: 2.25 }}>
@@ -321,7 +341,9 @@ export function TeacherLessonCreateView() {
                     }))
                   }
                   getOptionLabel={(option) => option.name}
-                  isOptionEqualToValue={(option, value) => option.id === value.id}
+                  isOptionEqualToValue={(option, value) =>
+                    option.id === value.id
+                  }
                   disableCloseOnSelect
                   noOptionsText="Brak dostępnych grup"
                   renderTags={(tagValue, getTagProps) =>
@@ -342,7 +364,9 @@ export function TeacherLessonCreateView() {
                     <TextField
                       {...params}
                       placeholder={
-                        draft.groupIds.length === 0 ? "Wybierz grupy..." : undefined
+                        draft.groupIds.length === 0
+                          ? "Wybierz grupy..."
+                          : undefined
                       }
                     />
                   )}
@@ -363,7 +387,6 @@ export function TeacherLessonCreateView() {
                   }
                 />
               </FormSection>
-
             </Stack>
 
             <Stack
@@ -381,19 +404,25 @@ export function TeacherLessonCreateView() {
                       Podsumowanie
                     </Typography>
                     <Stack spacing={1.25}>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
                         <ReadyIcon fontSize="small" color="primary" />
                         <Typography variant="body2">
                           {draft.title.trim() ? draft.title : "Bez tytułu"}
                         </Typography>
                       </Box>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
                         <GroupsIcon fontSize="small" color="primary" />
                         <Typography variant="body2">
                           Grup: {draft.groupIds.length}
                         </Typography>
                       </Box>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
                         <TasksIcon fontSize="small" color="primary" />
                         <Typography variant="body2">
                           Zadań: {draft.tasks.length}
@@ -405,8 +434,23 @@ export function TeacherLessonCreateView() {
                         Typy zadań
                       </Typography>
                       <Box sx={{ display: "grid", gap: 0.75 }}>
-                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1, minWidth: 0 }}>
-                          <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: 1,
+                            minWidth: 0,
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                              minWidth: 0,
+                            }}
+                          >
                             <ChooseIcon fontSize="small" color="action" />
                             <Typography variant="body2" sx={{ minWidth: 0 }}>
                               Jednokrotny wybór
@@ -414,22 +458,67 @@ export function TeacherLessonCreateView() {
                           </Box>
                           <Chip label={chooseTasksCount} size="small" />
                         </Box>
-                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1, minWidth: 0 }}>
-                          <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: 1,
+                            minWidth: 0,
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                              minWidth: 0,
+                            }}
+                          >
                             <WriteIcon fontSize="small" color="action" />
                             <Typography variant="body2">Pisanie</Typography>
                           </Box>
                           <Chip label={writeTasksCount} size="small" />
                         </Box>
-                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1, minWidth: 0 }}>
-                          <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: 1,
+                            minWidth: 0,
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                              minWidth: 0,
+                            }}
+                          >
                             <ScatterIcon fontSize="small" color="action" />
                             <Typography variant="body2">Rozsypanka</Typography>
                           </Box>
                           <Chip label={scatterTasksCount} size="small" />
                         </Box>
-                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1, minWidth: 0 }}>
-                          <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: 1,
+                            minWidth: 0,
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                              minWidth: 0,
+                            }}
+                          >
                             <SpeakIcon fontSize="small" color="action" />
                             <Typography variant="body2">Mówienie</Typography>
                           </Box>

@@ -41,7 +41,10 @@ function getTaskTypeLabel(
 
 function splitPipeList(value: string | null | undefined): string[] {
   if (!value) return [];
-  return value.split("|").map((item) => item.trim()).filter(Boolean);
+  return value
+    .split("|")
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
 export function LessonResultDetailsPanel({
@@ -74,7 +77,11 @@ export function LessonResultDetailsPanel({
             {result.lessonTitle}
           </Typography>
           {performerLabel && (
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ mt: 0.75 }}
+            >
               Wykonał: {performerLabel}
             </Typography>
           )}
@@ -212,7 +219,12 @@ export function LessonResultDetailsPanel({
                       >
                         Zestaw odpowiedzi
                       </Typography>
-                      <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        useFlexGap
+                        flexWrap="wrap"
+                      >
                         {possibleAnswers.map((answer) => (
                           <Chip
                             key={answer}
@@ -235,7 +247,12 @@ export function LessonResultDetailsPanel({
                       >
                         Pula wyrazów
                       </Typography>
-                      <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        useFlexGap
+                        flexWrap="wrap"
+                      >
                         {scatterWords.map((word) => (
                           <Chip
                             key={word}
@@ -271,7 +288,11 @@ export function LessonResultDetailsPanel({
                       <Typography variant="caption" color="text.secondary">
                         Odpowiedź ucznia
                       </Typography>
-                      <Typography variant="body2" fontWeight={600} sx={{ mt: 0.75 }}>
+                      <Typography
+                        variant="body2"
+                        fontWeight={600}
+                        sx={{ mt: 0.75 }}
+                      >
                         {task.userAnswer?.trim()
                           ? task.userAnswer
                           : "Brak odpowiedzi"}
@@ -282,13 +303,18 @@ export function LessonResultDetailsPanel({
                       sx={{
                         p: 2,
                         borderRadius: 2,
-                        bgcolor: (theme) => alpha(theme.palette.primary.main, 0.06),
+                        bgcolor: (theme) =>
+                          alpha(theme.palette.primary.main, 0.06),
                       }}
                     >
                       <Typography variant="caption" color="text.secondary">
                         Poprawna odpowiedź
                       </Typography>
-                      <Typography variant="body2" fontWeight={600} sx={{ mt: 0.75 }}>
+                      <Typography
+                        variant="body2"
+                        fontWeight={600}
+                        sx={{ mt: 0.75 }}
+                      >
                         {task.correctAnswer?.trim()
                           ? task.correctAnswer
                           : "Brak zapisanej poprawnej odpowiedzi"}

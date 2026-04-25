@@ -133,7 +133,10 @@ export function getTaskValidationError(
   return null;
 }
 
-export async function createLessonTask(lessonId: number, task: LessonTaskDraft) {
+export async function createLessonTask(
+  lessonId: number,
+  task: LessonTaskDraft,
+) {
   const hint = task.hint.trim() || undefined;
   const section = task.section.trim() || undefined;
 

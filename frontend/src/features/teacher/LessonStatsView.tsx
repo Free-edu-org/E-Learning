@@ -108,7 +108,11 @@ function StatCard({
         >
           {label}
         </Typography>
-        <Typography variant="subtitle1" fontWeight={800} sx={{ lineHeight: 1.05 }}>
+        <Typography
+          variant="subtitle1"
+          fontWeight={800}
+          sx={{ lineHeight: 1.05 }}
+        >
           {value}
         </Typography>
       </Box>
@@ -307,7 +311,10 @@ export function LessonStatsView() {
             <Box
               sx={{
                 display: "grid",
-                gridTemplateColumns: { xs: "1fr", sm: "repeat(3, minmax(0, 1fr))" },
+                gridTemplateColumns: {
+                  xs: "1fr",
+                  sm: "repeat(3, minmax(0, 1fr))",
+                },
                 gap: 1.25,
                 mb: 2.25,
               }}

@@ -13,6 +13,8 @@ import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 import pl.freeedu.backend.lesson.dto.LessonResponse;
+import pl.freeedu.backend.lesson.exception.LessonErrorCode;
+import pl.freeedu.backend.lesson.exception.LessonException;
 import pl.freeedu.backend.lesson.mapper.LessonMapper;
 import pl.freeedu.backend.lesson.model.Lesson;
 import pl.freeedu.backend.lesson.repository.GroupHasLessonRepository;
@@ -308,6 +310,45 @@ class TeacherServiceTest {
 			assertTrue(error instanceof TaskException);
 			assertEquals(TaskErrorCode.STUDENT_NO_ACCESS, ((TaskException) error).getErrorCode());
 		}).verify();
+		verify(lessonResultDetailsService, never()).getCompletedLessonResult(anyInt(), anyInt());
+	}
+
+	@Test
+	void shouldRejectDetailedLessonResultWhenLessonDoesNotExist() {
+		// given
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
+		when(lessonRepository.findById(3)).thenReturn(Optional.empty());
+
+		// when
+		Mono<LessonResultDetailsResponse> result = teacherService.getLessonResultDetails(3, 21);
+
+		// then
+		StepVerifier.create(result).expectErrorSatisfies(error -> {
+			assertTrue(error instanceof LessonException);
+			assertEquals(LessonErrorCode.LESSON_NOT_FOUND, ((LessonException) error).getErrorCode());
+		}).verify();
+		verify(userInGroupRepository, never()).hasAccessToLesson(anyInt(), anyInt());
+		verify(lessonResultDetailsService, never()).getCompletedLessonResult(anyInt(), anyInt());
+	}
+
+	@Test
+	void shouldRejectDetailedLessonResultWhenTeacherIsNotLessonOwner() {
+		// given
+		User otherTeacher = User.builder().id(99).build();
+		Lesson lesson = Lesson.builder().id(3).teacher(otherTeacher).build();
+
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
+		when(lessonRepository.findById(3)).thenReturn(Optional.of(lesson));
+
+		// when
+		Mono<LessonResultDetailsResponse> result = teacherService.getLessonResultDetails(3, 21);
+
+		// then
+		StepVerifier.create(result).expectErrorSatisfies(error -> {
+			assertTrue(error instanceof LessonException);
+			assertEquals(LessonErrorCode.NOT_LESSON_OWNER, ((LessonException) error).getErrorCode());
+		}).verify();
+		verify(userInGroupRepository, never()).hasAccessToLesson(anyInt(), anyInt());
 		verify(lessonResultDetailsService, never()).getCompletedLessonResult(anyInt(), anyInt());
 	}
 }

@@ -14,11 +14,16 @@ import { LessonResultDetailsPanel } from "@/components/results/LessonResultDetai
 import { getErrorMessage } from "@/utils/dashboardUtils";
 
 export function TeacherLessonResultView() {
-  const { lessonId, userId } = useParams<{ lessonId: string; userId: string }>();
+  const { lessonId, userId } = useParams<{
+    lessonId: string;
+    userId: string;
+  }>();
   const navigate = useNavigate();
   const { logout } = useAuth();
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [result, setResult] = useState<LessonResultDetailsResponse | null>(null);
+  const [result, setResult] = useState<LessonResultDetailsResponse | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [loadingUser, setLoadingUser] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +50,10 @@ export function TeacherLessonResultView() {
       .then(setResult)
       .catch((err: unknown) =>
         setError(
-          getErrorMessage(err, "Nie udało się pobrać szczegółów wyniku ucznia."),
+          getErrorMessage(
+            err,
+            "Nie udało się pobrać szczegółów wyniku ucznia.",
+          ),
         ),
       )
       .finally(() => setLoading(false));

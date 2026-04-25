@@ -247,6 +247,15 @@ describe('Lesson Result Details API', () => {
             expect(response.status).toBe(404);
             expect(response.data.code).toBe('LESSON_RESULT_NOT_FOUND');
         });
+
+        it('should return 404 LESSON_NOT_FOUND when lesson does not exist', async () => {
+            setAuthToken(teacherToken);
+
+            const response = await apiClient.get(`/teacher/lessons/999999/students/${studentId}/result`);
+
+            expect(response.status).toBe(404);
+            expect(response.data.code).toBe('LESSON_NOT_FOUND');
+        });
     });
 
     describe('GET /api/v1/student/lessons/{lessonId}/result', () => {
@@ -303,6 +312,15 @@ describe('Lesson Result Details API', () => {
 
             expect(response.status).toBe(404);
             expect(response.data.code).toBe('LESSON_RESULT_NOT_FOUND');
+        });
+
+        it('should return 404 LESSON_NOT_FOUND when lesson does not exist', async () => {
+            setAuthToken(studentToken);
+
+            const response = await apiClient.get('/student/lessons/999999/result');
+
+            expect(response.status).toBe(404);
+            expect(response.data.code).toBe('LESSON_NOT_FOUND');
         });
     });
 });

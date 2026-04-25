@@ -18,7 +18,9 @@ export function StudentLessonResultView() {
   const navigate = useNavigate();
   const { logout } = useAuth();
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [result, setResult] = useState<LessonResultDetailsResponse | null>(null);
+  const [result, setResult] = useState<LessonResultDetailsResponse | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [loadingUser, setLoadingUser] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +46,10 @@ export function StudentLessonResultView() {
       .then(setResult)
       .catch((err: unknown) =>
         setError(
-          getErrorMessage(err, "Nie udało się pobrać szczegółów wyniku lekcji."),
+          getErrorMessage(
+            err,
+            "Nie udało się pobrać szczegółów wyniku lekcji.",
+          ),
         ),
       )
       .finally(() => setLoading(false));

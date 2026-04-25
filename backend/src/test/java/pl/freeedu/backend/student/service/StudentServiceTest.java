@@ -231,4 +231,22 @@ class StudentServiceTest {
 		}).verify();
 		verify(lessonResultDetailsService, never()).getCompletedLessonResult(anyInt(), anyInt());
 	}
+
+	@Test
+	void shouldRejectDetailedLessonResultWhenLessonDoesNotExist() {
+		// given
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
+		when(lessonRepository.findById(5)).thenReturn(Optional.empty());
+
+		// when
+		Mono<LessonResultDetailsResponse> result = studentService.getLessonResultDetails(5);
+
+		// then
+		StepVerifier.create(result).expectErrorSatisfies(error -> {
+			assertTrue(error instanceof TaskException);
+			assertEquals(TaskErrorCode.LESSON_NOT_FOUND, ((TaskException) error).getErrorCode());
+		}).verify();
+		verify(userInGroupRepository, never()).hasAccessToLesson(anyInt(), anyInt());
+		verify(lessonResultDetailsService, never()).getCompletedLessonResult(anyInt(), anyInt());
+	}
 }

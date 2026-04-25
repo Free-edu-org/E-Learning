@@ -190,7 +190,10 @@ function ResultDialog({ lesson, onClose, onOpenDetails }: ResultDialogProps) {
         />
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose} sx={{ textTransform: "none", fontWeight: 600 }}>
+        <Button
+          onClick={onClose}
+          sx={{ textTransform: "none", fontWeight: 600 }}
+        >
           Zamknij
         </Button>
         <Button

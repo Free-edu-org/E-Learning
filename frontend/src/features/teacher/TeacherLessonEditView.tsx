@@ -86,12 +86,22 @@ export function TeacherLessonEditView() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
-  const [savedDraftSignature, setSavedDraftSignature] = useState<string | null>(null);
+  const [savedDraftSignature, setSavedDraftSignature] = useState<string | null>(
+    null,
+  );
 
-  const chooseTasksCount = draft.tasks.filter((task) => task.type === "choose").length;
-  const writeTasksCount = draft.tasks.filter((task) => task.type === "write").length;
-  const scatterTasksCount = draft.tasks.filter((task) => task.type === "scatter").length;
-  const speakTasksCount = draft.tasks.filter((task) => task.type === "speak").length;
+  const chooseTasksCount = draft.tasks.filter(
+    (task) => task.type === "choose",
+  ).length;
+  const writeTasksCount = draft.tasks.filter(
+    (task) => task.type === "write",
+  ).length;
+  const scatterTasksCount = draft.tasks.filter(
+    (task) => task.type === "scatter",
+  ).length;
+  const speakTasksCount = draft.tasks.filter(
+    (task) => task.type === "speak",
+  ).length;
   const draftSignature = useMemo(() => JSON.stringify(draft), [draft]);
 
   useEffect(() => {
@@ -129,7 +139,9 @@ export function TeacherLessonEditView() {
           return;
         }
 
-        const matchedLesson = lessons.find((item) => item.id === numericLessonId);
+        const matchedLesson = lessons.find(
+          (item) => item.id === numericLessonId,
+        );
         if (!matchedLesson) {
           setError("Nie znaleziono lekcji do edycji.");
           setLoading(false);
@@ -144,7 +156,8 @@ export function TeacherLessonEditView() {
         setLoading(false);
 
         try {
-          const tasksResponse = await taskService.getLessonTasks(numericLessonId);
+          const tasksResponse =
+            await taskService.getLessonTasks(numericLessonId);
           if (cancelled) {
             return;
           }
@@ -200,7 +213,10 @@ export function TeacherLessonEditView() {
   }, [lessonId]);
 
   const handleBack = () => {
-    if (savedDraftSignature !== null && draftSignature === savedDraftSignature) {
+    if (
+      savedDraftSignature !== null &&
+      draftSignature === savedDraftSignature
+    ) {
       navigate("/teacher");
       return;
     }
@@ -248,7 +264,9 @@ export function TeacherLessonEditView() {
         const originalIds = new Set(originalTasks.map((task) => task.id));
         const currentIds = new Set(draft.tasks.map((task) => task.id));
 
-        const tasksToDelete = originalTasks.filter((task) => !currentIds.has(task.id));
+        const tasksToDelete = originalTasks.filter(
+          (task) => !currentIds.has(task.id),
+        );
         const tasksToCreate = draft.tasks.filter(
           (task) => !parseBackendDraftId(task.id),
         );
@@ -270,7 +288,9 @@ export function TeacherLessonEditView() {
         for (const task of tasksToUpdate) {
           const parsed = parseBackendDraftId(task.id);
           if (parsed) {
-            taskOperations.push(updateLessonTask(lesson.id, parsed.backendId, task));
+            taskOperations.push(
+              updateLessonTask(lesson.id, parsed.backendId, task),
+            );
           }
         }
 
@@ -299,16 +319,19 @@ export function TeacherLessonEditView() {
 
       const [refreshedLessons, refreshedTasksResponse] = await Promise.all([
         lessonService.getTeacherLessons(),
-        tasksAvailable ? taskService.getLessonTasks(lesson.id) : Promise.resolve(null),
+        tasksAvailable
+          ? taskService.getLessonTasks(lesson.id)
+          : Promise.resolve(null),
       ]);
 
-      const refreshedLesson =
-        refreshedLessons.find((item) => item.id === lesson.id) ?? {
-          ...lesson,
-          title: draft.title,
-          theme: draft.theme,
-          groups: draft.groupIds,
-        };
+      const refreshedLesson = refreshedLessons.find(
+        (item) => item.id === lesson.id,
+      ) ?? {
+        ...lesson,
+        title: draft.title,
+        theme: draft.theme,
+        groups: draft.groupIds,
+      };
 
       setLesson(refreshedLesson);
 
@@ -388,11 +411,19 @@ export function TeacherLessonEditView() {
             >
               Powrót do panelu nauczyciela
             </Button>
-            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+            <Stack
+              direction="row"
+              spacing={1}
+              alignItems="center"
+              flexWrap="wrap"
+            >
               <Typography
                 variant="h5"
                 fontWeight={700}
-                sx={{ fontSize: { xs: "1.6rem", sm: "2rem" }, lineHeight: 1.15 }}
+                sx={{
+                  fontSize: { xs: "1.6rem", sm: "2rem" },
+                  lineHeight: 1.15,
+                }}
               >
                 Edytuj lekcję
               </Typography>
@@ -415,7 +446,6 @@ export function TeacherLessonEditView() {
               </Typography>
             )}
           </Box>
-
         </Box>
 
         {loading && (
@@ -440,7 +470,9 @@ export function TeacherLessonEditView() {
             }}
           >
             <Stack spacing={{ xs: 2, md: 2.25 }} sx={{ minWidth: 0 }}>
-              {feedback && <Alert severity={feedback.severity}>{feedback.message}</Alert>}
+              {feedback && (
+                <Alert severity={feedback.severity}>{feedback.message}</Alert>
+              )}
 
               <FormSection>
                 <Stack spacing={{ xs: 1.75, md: 2.25 }}>
@@ -491,7 +523,9 @@ export function TeacherLessonEditView() {
                     }))
                   }
                   getOptionLabel={(option) => option.name}
-                  isOptionEqualToValue={(option, value) => option.id === value.id}
+                  isOptionEqualToValue={(option, value) =>
+                    option.id === value.id
+                  }
                   disableCloseOnSelect
                   noOptionsText="Brak dostępnych grup"
                   renderTags={(tagValue, getTagProps) =>
@@ -512,7 +546,9 @@ export function TeacherLessonEditView() {
                     <TextField
                       {...params}
                       placeholder={
-                        draft.groupIds.length === 0 ? "Wybierz grupy..." : undefined
+                        draft.groupIds.length === 0
+                          ? "Wybierz grupy..."
+                          : undefined
                       }
                     />
                   )}
@@ -524,7 +560,9 @@ export function TeacherLessonEditView() {
                 description="Edytuj, dodaj lub usuń zadania przypisane do lekcji."
               >
                 {tasksLoading ? (
-                  <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+                  <Box
+                    sx={{ display: "flex", justifyContent: "center", py: 4 }}
+                  >
                     <CircularProgress size={32} />
                   </Box>
                 ) : tasksAvailable ? (
@@ -540,11 +578,11 @@ export function TeacherLessonEditView() {
                   />
                 ) : (
                   <Alert severity="warning">
-                    Zadania nie zostały załadowane. Spróbuj odświeżyć widok później.
+                    Zadania nie zostały załadowane. Spróbuj odświeżyć widok
+                    później.
                   </Alert>
                 )}
               </FormSection>
-
             </Stack>
 
             <Stack
@@ -562,19 +600,25 @@ export function TeacherLessonEditView() {
                       Podsumowanie
                     </Typography>
                     <Stack spacing={1.25}>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
                         <ReadyIcon fontSize="small" color="primary" />
                         <Typography variant="body2">
                           {draft.title.trim() ? draft.title : "Bez tytułu"}
                         </Typography>
                       </Box>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
                         <GroupsIcon fontSize="small" color="primary" />
                         <Typography variant="body2">
                           Grup: {draft.groupIds.length}
                         </Typography>
                       </Box>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
                         <TasksIcon fontSize="small" color="primary" />
                         <Typography variant="body2">
                           Zadań: {draft.tasks.length}
@@ -586,8 +630,23 @@ export function TeacherLessonEditView() {
                         Typy zadań
                       </Typography>
                       <Box sx={{ display: "grid", gap: 0.75 }}>
-                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1, minWidth: 0 }}>
-                          <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: 1,
+                            minWidth: 0,
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                              minWidth: 0,
+                            }}
+                          >
                             <ChooseIcon fontSize="small" color="action" />
                             <Typography variant="body2" sx={{ minWidth: 0 }}>
                               Jednokrotny wybór
@@ -595,22 +654,67 @@ export function TeacherLessonEditView() {
                           </Box>
                           <Chip label={chooseTasksCount} size="small" />
                         </Box>
-                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1, minWidth: 0 }}>
-                          <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: 1,
+                            minWidth: 0,
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                              minWidth: 0,
+                            }}
+                          >
                             <WriteIcon fontSize="small" color="action" />
                             <Typography variant="body2">Pisanie</Typography>
                           </Box>
                           <Chip label={writeTasksCount} size="small" />
                         </Box>
-                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1, minWidth: 0 }}>
-                          <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: 1,
+                            minWidth: 0,
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                              minWidth: 0,
+                            }}
+                          >
                             <ScatterIcon fontSize="small" color="action" />
                             <Typography variant="body2">Rozsypanka</Typography>
                           </Box>
                           <Chip label={scatterTasksCount} size="small" />
                         </Box>
-                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1, minWidth: 0 }}>
-                          <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: 1,
+                            minWidth: 0,
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                              minWidth: 0,
+                            }}
+                          >
                             <SpeakIcon fontSize="small" color="action" />
                             <Typography variant="body2">Mówienie</Typography>
                           </Box>
