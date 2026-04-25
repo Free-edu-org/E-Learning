@@ -1,8 +1,9 @@
-import { BrowserRouter, Routes, Route, Navigate, Outlet, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { AppThemeProvider } from "./context/ThemeContext";
 import { AuthProvider } from "./context/AuthContext";
 import { useAuth } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { useRef, useEffect } from "react";
 import { AppErrorBoundary } from "./components/error/AppErrorBoundary";
 import { ErrorPage } from "./components/error/ErrorPage";
 import { useApiErrorHandler } from "./utils/apiErrorEvents";
@@ -40,17 +41,30 @@ function RoleBasedRedirect() {
 function ErrorGuard() {
   const { apiError, clearApiError } = useApiErrorHandler();
   const navigate = useNavigate();
+  const location = useLocation();
+  const prevPathnameRef = useRef(location.pathname);
+
+  // Auto-clear error only after the URL has actually changed.
+  // This prevents the old route from re-mounting and re-firing the failed API call.
+  useEffect(() => {
+    if (prevPathnameRef.current !== location.pathname) {
+      prevPathnameRef.current = location.pathname;
+      if (apiError) {
+        clearApiError();
+      }
+    }
+  }, [location.pathname, apiError, clearApiError]);
 
   const handleReturn = () => {
-    clearApiError();
-    navigate("/");
+    // Only navigate — the useEffect above will clear the error
+    // once React Router has finished changing the URL.
+    navigate("/", { replace: true });
   };
 
   if (apiError) {
     return (
       <ErrorPage
         type={apiError.type}
-        message={apiError.message}
         onReturn={handleReturn}
       />
     );

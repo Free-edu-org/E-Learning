@@ -66,15 +66,9 @@ export async function fetchApi<T>(
     if (response.status >= 500) {
       dispatchApiError({ type: "maintenance" });
     } else if (response.status === 403) {
-      dispatchApiError({
-        type: "denied",
-        message: problem.detail,
-      });
+      dispatchApiError({ type: "denied" });
     } else if (response.status === 404) {
-      dispatchApiError({
-        type: "404",
-        message: problem.detail,
-      });
+      dispatchApiError({ type: "404" });
     }
 
     throw new ApiError(problem);
@@ -131,15 +125,9 @@ export async function fetchApiText(
     if (response.status >= 500) {
       dispatchApiError({ type: "maintenance" });
     } else if (response.status === 403) {
-      dispatchApiError({
-        type: "denied",
-        message: problem.detail,
-      });
+      dispatchApiError({ type: "denied" });
     } else if (response.status === 404) {
-      dispatchApiError({
-        type: "404",
-        message: problem.detail,
-      });
+      dispatchApiError({ type: "404" });
     }
 
     throw new ApiError(problem);

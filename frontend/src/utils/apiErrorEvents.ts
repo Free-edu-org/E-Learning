@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { ErrorType } from "@/components/error/ErrorPage";
 
 /**
@@ -26,6 +26,8 @@ export function dispatchApiError(detail: ApiGlobalErrorDetail) {
 export function useApiErrorHandler() {
   const [error, setError] = useState<ApiGlobalErrorDetail | null>(null);
 
+  const clearApiError = useCallback(() => setError(null), []);
+
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent<ApiGlobalErrorDetail>).detail;
@@ -36,5 +38,6 @@ export function useApiErrorHandler() {
     return () => window.removeEventListener(API_ERROR_EVENT, handler);
   }, []);
 
-  return { apiError: error, clearApiError: () => setError(null) };
+  return { apiError: error, clearApiError };
 }
+
