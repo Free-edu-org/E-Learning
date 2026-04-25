@@ -1,3 +1,5 @@
+import { dispatchApiError } from "@/utils/apiErrorEvents";
+
 export interface ProblemDetail {
   type?: string;
   title?: string;
@@ -40,6 +42,7 @@ export async function fetchApi<T>(
     response = await fetch(url, { ...options, headers });
   } catch {
     // Network error
+    dispatchApiError({ type: "maintenance" });
     throw new Error("NETWORK_ERROR");
   }
 
@@ -57,6 +60,21 @@ export async function fetchApi<T>(
 
     if (response.status === 401 && problem.code === "TOKEN_EXPIRED") {
       window.dispatchEvent(new Event("auth:expired"));
+    }
+
+    // Dispatch global error events for critical HTTP statuses
+    if (response.status >= 500) {
+      dispatchApiError({ type: "maintenance" });
+    } else if (response.status === 403) {
+      dispatchApiError({
+        type: "denied",
+        message: problem.detail,
+      });
+    } else if (response.status === 404) {
+      dispatchApiError({
+        type: "404",
+        message: problem.detail,
+      });
     }
 
     throw new ApiError(problem);
@@ -90,6 +108,7 @@ export async function fetchApiText(
   try {
     response = await fetch(url, { ...options, headers });
   } catch {
+    dispatchApiError({ type: "maintenance" });
     throw new Error("NETWORK_ERROR");
   }
 
@@ -107,6 +126,20 @@ export async function fetchApiText(
 
     if (response.status === 401 && problem.code === "TOKEN_EXPIRED") {
       window.dispatchEvent(new Event("auth:expired"));
+    }
+
+    if (response.status >= 500) {
+      dispatchApiError({ type: "maintenance" });
+    } else if (response.status === 403) {
+      dispatchApiError({
+        type: "denied",
+        message: problem.detail,
+      });
+    } else if (response.status === 404) {
+      dispatchApiError({
+        type: "404",
+        message: problem.detail,
+      });
     }
 
     throw new ApiError(problem);
