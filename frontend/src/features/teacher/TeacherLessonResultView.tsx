@@ -20,6 +20,12 @@ export function TeacherLessonResultView() {
   }>();
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const numericLessonId = Number(lessonId);
+  const numericUserId = Number(userId);
+  const routeError =
+    Number.isNaN(numericLessonId) || Number.isNaN(numericUserId)
+      ? "Nieprawidlowy identyfikator wyniku."
+      : null;
   const [user, setUser] = useState<UserProfile | null>(null);
   const [result, setResult] = useState<LessonResultDetailsResponse | null>(
     null,
@@ -37,11 +43,7 @@ export function TeacherLessonResultView() {
   }, []);
 
   useEffect(() => {
-    const numericLessonId = Number(lessonId);
-    const numericUserId = Number(userId);
-    if (Number.isNaN(numericLessonId) || Number.isNaN(numericUserId)) {
-      setError("Nieprawidłowy identyfikator wyniku.");
-      setLoading(false);
+    if (routeError) {
       return;
     }
 
@@ -52,12 +54,12 @@ export function TeacherLessonResultView() {
         setError(
           getErrorMessage(
             err,
-            "Nie udało się pobrać szczegółów wyniku ucznia.",
+            "Nie udalo sie pobrac szczegolow wyniku ucznia.",
           ),
         ),
       )
       .finally(() => setLoading(false));
-  }, [lessonId, userId]);
+  }, [numericLessonId, numericUserId, routeError]);
 
   return (
     <Box
@@ -96,12 +98,14 @@ export function TeacherLessonResultView() {
             mt: { xs: 0.5, sm: 1 },
           }}
         >
-          Powrót do wyników lekcji
+          Powrot do wynikow lekcji
         </Button>
 
-        {loading && <CircularProgress />}
-        {error && <Alert severity="error">{error}</Alert>}
-        {result && !loading && (
+        {!routeError && loading && <CircularProgress />}
+        {(routeError || error) && (
+          <Alert severity="error">{routeError ?? error}</Alert>
+        )}
+        {result && !loading && !routeError && (
           <LessonResultDetailsPanel
             result={result}
             performerLabel={result.username}
