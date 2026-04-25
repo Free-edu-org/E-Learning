@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Alert,
@@ -13,6 +13,7 @@ import { alpha } from "@mui/material/styles";
 import {
   ArrowBack as ArrowBackIcon,
   EmojiEvents as TrophyIcon,
+  Replay as ReplayIcon,
   TrendingUp as TrendingUpIcon,
   Visibility as VisibilityIcon,
 } from "@mui/icons-material";
@@ -32,19 +33,29 @@ import type {
 } from "@/api/lessonService";
 import { userService, type UserProfile } from "@/api/userService";
 import { useAuth } from "@/context/AuthContext";
+import {
+  AppDialog,
+  AppDialogBody,
+  AppDialogFooter,
+  AppDialogHeader,
+} from "@/components/ui/dialog/AppDialog";
+import { FormActions } from "@/components/ui/form/FormLayout";
 import { DashboardHeader } from "@/components/ui/panel/DashboardHeader";
 import { DashboardTopBar } from "@/components/ui/panel/DashboardTopBar";
 import { UserAvatar } from "@/components/ui/avatar/UserAvatar";
 import {
   panelGridCardSx,
+  panelFooterButtonSx,
   panelSurfaceSx,
 } from "@/components/ui/panel/panelStyles";
 
 function formatDate(value: string | null): string {
-  if (!value) return "—";
+  if (!value) return "-";
   const d = new Date(value);
-  if (isNaN(d.getTime())) return "—";
-  return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.${d.getFullYear()}`;
+  if (isNaN(d.getTime())) return "-";
+  const date = `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.${d.getFullYear()}`;
+  const time = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return `${date} ${time}`;
 }
 
 function scoreColor(percent: number): string {
@@ -114,6 +125,13 @@ export function LessonStatsView() {
   const [loading, setLoading] = useState(true);
   const [loadingUser, setLoadingUser] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionFeedback, setActionFeedback] = useState<{
+    severity: "success" | "error";
+    message: string;
+  } | null>(null);
+  const [resettingUserIds, setResettingUserIds] = useState<number[]>([]);
+  const [resetConfirmStudent, setResetConfirmStudent] =
+    useState<LessonStatsStudentResult | null>(null);
 
   useEffect(() => {
     userService
@@ -136,9 +154,42 @@ export function LessonStatsView() {
         const lesson = lessons.find((l) => l.id === id);
         if (lesson) setLessonTitle(lesson.title);
       })
-      .catch(() => setError("Nie udało się wczytać statystyk lekcji."))
+      .catch(() => setError("Nie udało się wczytać wyników lekcji."))
       .finally(() => setLoading(false));
   }, [lessonId]);
+
+  const handleResetStudentProgress = async (
+    student: LessonStatsStudentResult,
+  ) => {
+    if (!lessonId) return;
+    const numericLessonId = Number(lessonId);
+    if (isNaN(numericLessonId)) return;
+
+    setActionFeedback(null);
+    setResettingUserIds((prev) => [...prev, student.userId]);
+
+    try {
+      await lessonService.resetStudentLessonProgress(
+        numericLessonId,
+        student.userId,
+      );
+      const refreshedStats =
+        await lessonService.getLessonStats(numericLessonId);
+      setStats(refreshedStats);
+      setActionFeedback({
+        severity: "success",
+        message: `Zresetowano wynik ucznia ${student.username}.`,
+      });
+    } catch {
+      setActionFeedback({
+        severity: "error",
+        message: `Nie udało się zresetować wyniku ucznia ${student.username}.`,
+      });
+    } finally {
+      setResettingUserIds((prev) => prev.filter((id) => id !== student.userId));
+      setResetConfirmStudent(null);
+    }
+  };
 
   const studentChartData =
     stats?.studentResults.map((r) => ({
@@ -207,6 +258,11 @@ export function LessonStatsView() {
         {error && (
           <Alert severity="error" sx={{ mb: 3 }}>
             {error}
+          </Alert>
+        )}
+        {actionFeedback && (
+          <Alert severity={actionFeedback.severity} sx={{ mb: 3 }}>
+            {actionFeedback.message}
           </Alert>
         )}
 
@@ -352,7 +408,7 @@ export function LessonStatsView() {
               {stats.studentResults.length === 0 ? (
                 <Box sx={{ px: 3, py: 4, textAlign: "center" }}>
                   <Typography variant="body2" color="text.secondary">
-                    Brak wyników — żaden uczeń nie ukończył jeszcze tej lekcji.
+                    Brak wyników - żaden uczeń nie ukończył jeszcze tej lekcji.
                   </Typography>
                 </Box>
               ) : (
@@ -414,30 +470,51 @@ export function LessonStatsView() {
                         </Typography>
                       </Box>
 
-                      {/* View profile */}
-                      <Button
-                        size="small"
-                        startIcon={<VisibilityIcon fontSize="small" />}
-                        sx={{
-                          textTransform: "none",
-                          fontWeight: 600,
-                          fontSize: "0.8rem",
-                          borderRadius: 2,
-                          border: "1px solid",
-                          borderColor: (theme) =>
-                            alpha(theme.palette.divider, 0.5),
-                          color: "text.secondary",
-                          "&:hover": {
-                            borderColor: "primary.main",
-                            color: "primary.main",
-                          },
-                        }}
-                        onClick={() =>
-                          navigate(`/teacher/students/${student.userId}`)
-                        }
+                      <Box
+                        sx={{ display: "flex", gap: 1, alignItems: "center" }}
                       >
-                        Zobacz profil
-                      </Button>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          color="warning"
+                          startIcon={<ReplayIcon fontSize="small" />}
+                          sx={{
+                            textTransform: "none",
+                            fontWeight: 600,
+                            fontSize: "0.8rem",
+                            borderRadius: 2,
+                          }}
+                          disabled={resettingUserIds.includes(student.userId)}
+                          onClick={() => setResetConfirmStudent(student)}
+                        >
+                          {resettingUserIds.includes(student.userId)
+                            ? "Resetowanie..."
+                            : "Resetuj wynik"}
+                        </Button>
+                        <Button
+                          size="small"
+                          startIcon={<VisibilityIcon fontSize="small" />}
+                          sx={{
+                            textTransform: "none",
+                            fontWeight: 600,
+                            fontSize: "0.8rem",
+                            borderRadius: 2,
+                            border: "1px solid",
+                            borderColor: (theme) =>
+                              alpha(theme.palette.divider, 0.5),
+                            color: "text.secondary",
+                            "&:hover": {
+                              borderColor: "primary.main",
+                              color: "primary.main",
+                            },
+                          }}
+                          onClick={() =>
+                            navigate(`/teacher/students/${student.userId}`)
+                          }
+                        >
+                          Zobacz profil
+                        </Button>
+                      </Box>
                     </Box>
                     {idx < stats.studentResults.length - 1 && <Divider />}
                   </Box>
@@ -446,6 +523,70 @@ export function LessonStatsView() {
             </Box>
           </>
         )}
+
+        <AppDialog
+          open={Boolean(resetConfirmStudent)}
+          onClose={() => {
+            if (
+              resetConfirmStudent &&
+              resettingUserIds.includes(resetConfirmStudent.userId)
+            ) {
+              return;
+            }
+            setResetConfirmStudent(null);
+          }}
+          maxWidth="xs"
+        >
+          <AppDialogHeader
+            icon={<ReplayIcon />}
+            title="Resetuj wynik"
+            subtitle={
+              resetConfirmStudent
+                ? `Zresetować wynik ucznia "${resetConfirmStudent.username}"?`
+                : undefined
+            }
+          />
+          <AppDialogBody>
+            <Typography variant="body2" color="text.secondary">
+              Ta operacja usunie bieżący wynik i pozwoli uczniowi rozpocząć
+              lekcję od nowa.
+            </Typography>
+          </AppDialogBody>
+          <AppDialogFooter>
+            <FormActions>
+              <Button
+                onClick={() => setResetConfirmStudent(null)}
+                disabled={
+                  resetConfirmStudent
+                    ? resettingUserIds.includes(resetConfirmStudent.userId)
+                    : false
+                }
+                sx={{ ...panelFooterButtonSx, color: "text.secondary" }}
+              >
+                Anuluj
+              </Button>
+              <Button
+                variant="contained"
+                color="warning"
+                startIcon={<ReplayIcon />}
+                disabled={
+                  !resetConfirmStudent ||
+                  resettingUserIds.includes(resetConfirmStudent.userId)
+                }
+                onClick={() => {
+                  if (!resetConfirmStudent) return;
+                  void handleResetStudentProgress(resetConfirmStudent);
+                }}
+                sx={panelFooterButtonSx}
+              >
+                {resetConfirmStudent &&
+                resettingUserIds.includes(resetConfirmStudent.userId)
+                  ? "Resetowanie..."
+                  : "Potwierdź reset"}
+              </Button>
+            </FormActions>
+          </AppDialogFooter>
+        </AppDialog>
       </Container>
     </Box>
   );

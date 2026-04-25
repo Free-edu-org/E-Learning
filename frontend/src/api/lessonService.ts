@@ -112,4 +112,8 @@ export const lessonService = {
     }),
   getLessonStats: (lessonId: number) =>
     fetchApi<LessonStatsResponse>(`/api/v1/teacher/lessons/${lessonId}/stats`),
+  resetStudentLessonProgress: (lessonId: number, userId: number) =>
+    fetchApi<void>(`/api/v1/lessons/${lessonId}/users/${userId}/reset`, {
+      method: "POST",
+    }),
 };
