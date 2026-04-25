@@ -1283,7 +1283,7 @@ export function AdminDashboard() {
                               <UserAvatar
                                 avatarUrl={user.avatarUrl}
                                 username={user.username}
-                                size={28}
+                                size={20}
                               />
                               <Typography
                                 variant="body1"
@@ -1432,7 +1432,7 @@ export function AdminDashboard() {
                                     <UserAvatar
                                       avatarUrl={user.avatarUrl}
                                       username={user.username}
-                                      size={40}
+                                      size={28}
                                     />
                                     <Typography
                                       variant="body1"

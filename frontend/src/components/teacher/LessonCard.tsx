@@ -138,11 +138,6 @@ export function LessonCard({
         <StatusDot active={lesson.isActive} />
 
         <Stack direction="row" spacing={1.25} alignItems="center">
-          <UserAvatar
-            avatarUrl={lesson.teacherAvatarUrl}
-            username={lesson.teacherName}
-            size={28}
-          />
           <Box sx={{ minWidth: 0 }}>
             <Typography
               variant="body2"
@@ -235,12 +230,6 @@ export function LessonCard({
         <Box
           sx={{ display: "flex", alignItems: "flex-start", gap: 1.5, mb: 0.5 }}
         >
-          <UserAvatar
-            avatarUrl={lesson.teacherAvatarUrl}
-            username={lesson.teacherName}
-            size={32}
-            sx={{ mt: 0.2 }}
-          />
           <Typography
             variant="body1"
             fontWeight={700}
@@ -254,7 +243,7 @@ export function LessonCard({
         <Typography
           variant="body2"
           color="text.secondary"
-          sx={{ mb: 1.5, ml: "26px" }}
+          sx={{ mb: 1.5 }}
         >
           {lesson.theme}
         </Typography>
