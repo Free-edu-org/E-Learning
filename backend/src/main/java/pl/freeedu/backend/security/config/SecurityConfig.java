@@ -82,9 +82,9 @@ public class SecurityConfig {
 				.authorizeExchange(exchanges -> exchanges.pathMatchers("/api/v1/auth/**").permitAll()
 						.pathMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**", "/webjars/**")
 						.permitAll().pathMatchers(HttpMethod.GET, "/uploads/avatars/**").permitAll()
-						.pathMatchers("/api/v1/admin/**").hasRole("ADMIN").pathMatchers("/api/v1/teacher/**")
-						.hasRole("TEACHER").pathMatchers("/api/v1/student/**").hasRole("STUDENT").anyExchange()
-						.authenticated())
+						.pathMatchers("/uploads/attachments/**").denyAll().pathMatchers("/api/v1/admin/**")
+						.hasRole("ADMIN").pathMatchers("/api/v1/teacher/**").hasRole("TEACHER")
+						.pathMatchers("/api/v1/student/**").hasRole("STUDENT").anyExchange().authenticated())
 				.addFilterAt(jwtAuthenticationFilter, SecurityWebFiltersOrder.AUTHENTICATION).build();
 	}
 

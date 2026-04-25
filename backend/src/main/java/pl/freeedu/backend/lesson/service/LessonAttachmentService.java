@@ -35,7 +35,7 @@ public class LessonAttachmentService {
 			"doc", "application/vnd.oasis.opendocument.text", "odt");
 
 	private static final long MAX_FILE_SIZE_BYTES = 10L * 1024 * 1024; // 10 MB
-	private static final String ATTACHMENT_DIR = "attachments";
+	private static final String ATTACHMENT_DIR = "uploads/attachments";
 
 	private final LessonAttachmentRepository lessonAttachmentRepository;
 	private final LessonRepository lessonRepository;
