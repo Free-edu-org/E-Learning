@@ -27,4 +27,6 @@ public class AdminStudentResponse {
 	private String groupName;
 
 	private LocalDateTime createdAt;
+
+	private String avatarUrl;
 }

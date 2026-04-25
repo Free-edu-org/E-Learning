@@ -97,6 +97,7 @@ import {
 } from "@/components/ui/panel/panelStyles";
 import { useAuth } from "@/context/AuthContext";
 import { uiTokens } from "@/theme/uiTokens";
+import { UserAvatar } from "@/components/ui/avatar/UserAvatar";
 
 type UserRole = "TEACHER" | "STUDENT";
 type UserFilter = "ALL" | UserRole;
@@ -258,6 +259,7 @@ export function AdminDashboard() {
 
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [currentUserError, setCurrentUserError] = useState<string | null>(null);
+  const [loadingCurrentUser, setLoadingCurrentUser] = useState(true);
   const [adminStats, setAdminStats] = useState<AdminStats | null>(null);
   const [statsError, setStatsError] = useState<string | null>(null);
 
@@ -445,6 +447,11 @@ export function AdminDashboard() {
     [teachers],
   );
 
+  const teacherAvatarById = useMemo(
+    () => new Map(teachers.map((teacher) => [teacher.id, teacher.avatarUrl])),
+    [teachers],
+  );
+
   const quickActionTileSx = [
     panelSurfaceSx,
     panelSurfaceActionSx,
@@ -519,7 +526,8 @@ export function AdminDashboard() {
         setCurrentUserError(
           getErrorMessage(error, "Nie udało się pobrać danych administratora."),
         ),
-      );
+      )
+      .finally(() => setLoadingCurrentUser(false));
 
     loadAdminStats();
     loadUsers();
@@ -869,11 +877,10 @@ export function AdminDashboard() {
 
         {/* ── Greeting header ── */}
         <DashboardHeader
-          loading={false}
+          loading={loadingCurrentUser}
           username={currentUser?.username}
           subtitle="Panel administratora"
           fallbackName="Administratorze"
-          icon={<PersonIcon sx={{ color: "primary.main" }} />}
           user={currentUser}
           onUserUpdated={setCurrentUser}
         />
@@ -1273,6 +1280,11 @@ export function AdminDashboard() {
                               flexWrap="wrap"
                               useFlexGap
                             >
+                              <UserAvatar
+                                avatarUrl={user.avatarUrl}
+                                username={user.username}
+                                size={20}
+                              />
                               <Typography
                                 variant="body1"
                                 fontWeight={700}
@@ -1412,14 +1424,25 @@ export function AdminDashboard() {
                                 spacing={2}
                               >
                                 <Box sx={{ minWidth: 0, flex: 1 }}>
-                                  <Typography
-                                    variant="body1"
-                                    fontWeight={700}
-                                    color="primary.main"
-                                    sx={panelTitleSx}
+                                  <Stack
+                                    direction="row"
+                                    spacing={1.5}
+                                    alignItems="center"
                                   >
-                                    {user.username}
-                                  </Typography>
+                                    <UserAvatar
+                                      avatarUrl={user.avatarUrl}
+                                      username={user.username}
+                                      size={28}
+                                    />
+                                    <Typography
+                                      variant="body1"
+                                      fontWeight={700}
+                                      color="primary.main"
+                                      sx={panelTitleSx}
+                                    >
+                                      {user.username}
+                                    </Typography>
+                                  </Stack>
                                   <Typography
                                     variant="body2"
                                     color="text.secondary"
@@ -1757,16 +1780,37 @@ export function AdminDashboard() {
                                 color="text.secondary"
                               >
                                 Właściciel:{" "}
-                                <Box
+                                <Stack
+                                  direction="row"
+                                  spacing={0.75}
+                                  alignItems="center"
                                   component="span"
                                   sx={{
-                                    fontWeight: 700,
-                                    color: "text.primary",
+                                    display: "inline-flex",
+                                    verticalAlign: "middle",
                                   }}
                                 >
-                                  {teacherNameById.get(group.teacherId ?? -1) ??
-                                    "Brak danych"}
-                                </Box>
+                                  <UserAvatar
+                                    avatarUrl={teacherAvatarById.get(
+                                      group.teacherId ?? -1,
+                                    )}
+                                    username={teacherNameById.get(
+                                      group.teacherId ?? -1,
+                                    )}
+                                    size={20}
+                                  />
+                                  <Box
+                                    component="span"
+                                    sx={{
+                                      fontWeight: 700,
+                                      color: "text.primary",
+                                    }}
+                                  >
+                                    {teacherNameById.get(
+                                      group.teacherId ?? -1,
+                                    ) ?? "Brak danych"}
+                                  </Box>
+                                </Stack>
                               </Typography>
                               <Typography
                                 variant="body2"
@@ -1873,17 +1917,37 @@ export function AdminDashboard() {
                                     sx={{ mt: 1, ...panelSingleLineSx }}
                                   >
                                     Właściciel:{" "}
-                                    <Box
+                                    <Stack
+                                      direction="row"
+                                      spacing={0.75}
+                                      alignItems="center"
                                       component="span"
                                       sx={{
-                                        fontWeight: 700,
-                                        color: "text.primary",
+                                        display: "inline-flex",
+                                        verticalAlign: "middle",
                                       }}
                                     >
-                                      {teacherNameById.get(
-                                        group.teacherId ?? -1,
-                                      ) ?? "Brak danych"}
-                                    </Box>
+                                      <UserAvatar
+                                        avatarUrl={teacherAvatarById.get(
+                                          group.teacherId ?? -1,
+                                        )}
+                                        username={teacherNameById.get(
+                                          group.teacherId ?? -1,
+                                        )}
+                                        size={18}
+                                      />
+                                      <Box
+                                        component="span"
+                                        sx={{
+                                          fontWeight: 700,
+                                          color: "text.primary",
+                                        }}
+                                      >
+                                        {teacherNameById.get(
+                                          group.teacherId ?? -1,
+                                        ) ?? "Brak danych"}
+                                      </Box>
+                                    </Stack>
                                   </Typography>
                                 </Box>
                                 <Chip
@@ -2209,8 +2273,25 @@ export function AdminDashboard() {
                   >
                     <MenuItem value="">Bez właściciela</MenuItem>
                     {teachers.map((teacher) => (
-                      <MenuItem key={teacher.id} value={teacher.id}>
-                        {teacher.username}
+                      <MenuItem
+                        key={teacher.id}
+                        value={teacher.id}
+                        sx={{ py: 1 }}
+                      >
+                        <Stack
+                          direction="row"
+                          spacing={1.5}
+                          alignItems="center"
+                        >
+                          <UserAvatar
+                            avatarUrl={teacher.avatarUrl}
+                            username={teacher.username}
+                            size={24}
+                          />
+                          <Typography variant="body2">
+                            {teacher.username}
+                          </Typography>
+                        </Stack>
                       </MenuItem>
                     ))}
                   </TextField>
@@ -2343,13 +2424,31 @@ export function AdminDashboard() {
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Właściciel:{" "}
-                    <Box
+                    <Stack
+                      direction="row"
+                      spacing={0.75}
+                      alignItems="center"
                       component="span"
-                      sx={{ fontWeight: 700, color: "text.primary" }}
+                      sx={{ display: "inline-flex", verticalAlign: "middle" }}
                     >
-                      {teacherNameById.get(membershipDialog?.teacherId ?? -1) ??
-                        "Brak danych"}
-                    </Box>
+                      <UserAvatar
+                        avatarUrl={teacherAvatarById.get(
+                          membershipDialog?.teacherId ?? -1,
+                        )}
+                        username={teacherNameById.get(
+                          membershipDialog?.teacherId ?? -1,
+                        )}
+                        size={18}
+                      />
+                      <Box
+                        component="span"
+                        sx={{ fontWeight: 700, color: "text.primary" }}
+                      >
+                        {teacherNameById.get(
+                          membershipDialog?.teacherId ?? -1,
+                        ) ?? "Brak danych"}
+                      </Box>
+                    </Stack>
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Uczniowie w grupie: {currentMembershipStudents.length}
@@ -2380,22 +2479,34 @@ export function AdminDashboard() {
                           justifyContent="space-between"
                           alignItems="center"
                         >
-                          <Box sx={{ minWidth: 0, flex: 1 }}>
-                            <Typography
-                              variant="body2"
-                              fontWeight={700}
-                              sx={{ overflowWrap: "anywhere" }}
-                            >
-                              {student.username}
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                              sx={{ overflowWrap: "anywhere" }}
-                            >
-                              {student.email}
-                            </Typography>
-                          </Box>
+                          <Stack
+                            direction="row"
+                            spacing={1.5}
+                            alignItems="center"
+                            sx={{ minWidth: 0, flex: 1 }}
+                          >
+                            <UserAvatar
+                              avatarUrl={student.avatarUrl}
+                              username={student.username}
+                              size={32}
+                            />
+                            <Box sx={{ minWidth: 0 }}>
+                              <Typography
+                                variant="body2"
+                                fontWeight={700}
+                                sx={{ overflowWrap: "anywhere" }}
+                              >
+                                {student.username}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ overflowWrap: "anywhere" }}
+                              >
+                                {student.email}
+                              </Typography>
+                            </Box>
+                          </Stack>
                           <Button
                             size="small"
                             color="error"

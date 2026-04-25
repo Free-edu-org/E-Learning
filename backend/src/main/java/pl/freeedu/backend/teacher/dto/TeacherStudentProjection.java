@@ -11,4 +11,5 @@ public interface TeacherStudentProjection {
 	Role getRole();
 	LocalDateTime getCreatedAt();
 	Integer getGroupId();
+	String getAvatarUrl();
 }

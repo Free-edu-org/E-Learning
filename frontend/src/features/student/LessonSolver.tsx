@@ -492,7 +492,7 @@ export function LessonSolver() {
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: pageBg, pb: 6 }}>
       <Container maxWidth="xl" sx={{ pt: 4, position: "relative" }}>
-        <DashboardTopBar onLogout={handleLogout} />
+        <DashboardTopBar onLogout={handleLogout} hideLogout={true} />
 
         {/* Back button */}
         <Button

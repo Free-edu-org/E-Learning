@@ -88,6 +88,7 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
             expect(response.data.isActive).toBe(false); // default
             expect(response.data.teacherId).toBeDefined();
             expect(response.data.teacherName).toBeDefined();
+            expect(response.data.teacherAvatarUrl).toBeDefined();
             expect(response.data.createdAt).toBeDefined();
             expect(Array.isArray(response.data.groups)).toBe(true);
             createdLessonId = response.data.id;
@@ -150,6 +151,7 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
             expect(response.data.length).toBeGreaterThan(0);
             const lesson = response.data.find(l => l.id === createdLessonId);
             expect(lesson).toBeDefined();
+            expect(lesson).toHaveProperty('teacherAvatarUrl');
         });
 
         it('should list lessons as ADMIN (200)', async () => {

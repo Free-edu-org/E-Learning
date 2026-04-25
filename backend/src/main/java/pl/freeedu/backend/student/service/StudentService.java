@@ -93,13 +93,13 @@ public class StudentService {
 			Integer score = userLesson != null ? userLesson.getScore() : null;
 			Integer maxScore = userLesson != null ? userLesson.getMaxScore() : null;
 
-			studentLessons
-					.add(StudentLessonResponse.builder().id(lessonResponse.getId()).title(lessonResponse.getTitle())
-							.theme(lessonResponse.getTheme()).isActive(lessonResponse.getIsActive())
-							.teacherId(lessonResponse.getTeacherId()).teacherName(lessonResponse.getTeacherName())
-							.createdAt(lessonResponse.getCreatedAt()).groups(lessonResponse.getGroups())
-							.status(userLesson != null ? userLesson.getStatus().name() : "NOT_STARTED").score(score)
-							.maxScore(maxScore).resultPercent(toPercent(score, maxScore)).build());
+			studentLessons.add(StudentLessonResponse.builder().id(lessonResponse.getId())
+					.title(lessonResponse.getTitle()).theme(lessonResponse.getTheme())
+					.isActive(lessonResponse.getIsActive()).teacherId(lessonResponse.getTeacherId())
+					.teacherName(lessonResponse.getTeacherName()).teacherAvatarUrl(lessonResponse.getTeacherAvatarUrl())
+					.createdAt(lessonResponse.getCreatedAt()).groups(lessonResponse.getGroups())
+					.status(userLesson != null ? userLesson.getStatus().name() : "NOT_STARTED").score(score)
+					.maxScore(maxScore).resultPercent(toPercent(score, maxScore)).build());
 		}
 
 		studentLessons.sort(Comparator.comparing(StudentLessonResponse::getCreatedAt,

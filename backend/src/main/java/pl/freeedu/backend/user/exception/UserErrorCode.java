@@ -10,7 +10,13 @@ public enum UserErrorCode implements ErrorCode {
 			HttpStatus.CONFLICT), USERNAME_ALREADY_TAKEN("Username is already taken",
 					HttpStatus.CONFLICT), INVALID_TEACHER_ASSIGNMENT("Selected teacher must have role TEACHER",
 							HttpStatus.BAD_REQUEST), INVALID_STUDENT_ASSIGNMENT("Selected user must have role STUDENT",
-									HttpStatus.BAD_REQUEST);
+									HttpStatus.BAD_REQUEST), AVATAR_INVALID_FILE_TYPE(
+											"Niedozwolony typ pliku. Dozwolone formaty: JPEG, PNG.",
+											HttpStatus.BAD_REQUEST), AVATAR_FILE_TOO_LARGE(
+													"Plik jest za duży. Maksymalny rozmiar to 2 MB.",
+													HttpStatus.BAD_REQUEST), AVATAR_INVALID_PRESET(
+															"Wybrany preset awatara jest nieprawidłowy.",
+															HttpStatus.BAD_REQUEST);
 
 	private final String defaultMessage;
 	private final HttpStatus status;
