@@ -13,11 +13,17 @@ import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 import pl.freeedu.backend.lesson.dto.LessonResponse;
+import pl.freeedu.backend.lesson.exception.LessonErrorCode;
+import pl.freeedu.backend.lesson.exception.LessonException;
 import pl.freeedu.backend.lesson.mapper.LessonMapper;
 import pl.freeedu.backend.lesson.model.Lesson;
 import pl.freeedu.backend.lesson.repository.GroupHasLessonRepository;
 import pl.freeedu.backend.lesson.repository.LessonRepository;
 import pl.freeedu.backend.security.service.SecurityService;
+import pl.freeedu.backend.task.dto.LessonResultDetailsResponse;
+import pl.freeedu.backend.task.exception.TaskErrorCode;
+import pl.freeedu.backend.task.exception.TaskException;
+import pl.freeedu.backend.task.service.LessonResultDetailsService;
 import pl.freeedu.backend.teacher.dto.*;
 import pl.freeedu.backend.usergroup.dto.UserGroupResponse;
 import pl.freeedu.backend.teacher.repository.TeacherStatsRepository;
@@ -70,6 +76,8 @@ class TeacherServiceTest {
 	private UserInGroupRepository userInGroupRepository;
 	@Mock
 	private TransactionTemplate transactionTemplate;
+	@Mock
+	private LessonResultDetailsService lessonResultDetailsService;
 
 	@InjectMocks
 	private TeacherService teacherService;
@@ -260,5 +268,87 @@ class TeacherServiceTest {
 			assertEquals("s1", s.getUsername());
 			assertEquals("preset:avatar_3", s.getAvatarUrl());
 		}).verifyComplete();
+	}
+
+	@Test
+	void shouldGetDetailedLessonResultForStudent() {
+		// given
+		User teacher = User.builder().id(10).build();
+		Lesson lesson = Lesson.builder().id(3).teacher(teacher).build();
+		LessonResultDetailsResponse details = LessonResultDetailsResponse.builder().lessonId(3).userId(21).build();
+
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
+		when(lessonRepository.findById(3)).thenReturn(Optional.of(lesson));
+		when(userInGroupRepository.hasAccessToLesson(21, 3)).thenReturn(true);
+		when(lessonResultDetailsService.getCompletedLessonResult(3, 21)).thenReturn(Mono.just(details));
+
+		// when
+		Mono<LessonResultDetailsResponse> result = teacherService.getLessonResultDetails(3, 21);
+
+		// then
+		StepVerifier.create(result).assertNext(response -> {
+			assertEquals(3, response.getLessonId());
+			assertEquals(21, response.getUserId());
+		}).verifyComplete();
+	}
+
+	@Test
+	void shouldRejectDetailedLessonResultWhenStudentHasNoLessonAccess() {
+		// given
+		User teacher = User.builder().id(10).build();
+		Lesson lesson = Lesson.builder().id(3).teacher(teacher).build();
+
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
+		when(lessonRepository.findById(3)).thenReturn(Optional.of(lesson));
+		when(userInGroupRepository.hasAccessToLesson(21, 3)).thenReturn(false);
+
+		// when
+		Mono<LessonResultDetailsResponse> result = teacherService.getLessonResultDetails(3, 21);
+
+		// then
+		StepVerifier.create(result).expectErrorSatisfies(error -> {
+			assertTrue(error instanceof TaskException);
+			assertEquals(TaskErrorCode.STUDENT_NO_ACCESS, ((TaskException) error).getErrorCode());
+		}).verify();
+		verify(lessonResultDetailsService, never()).getCompletedLessonResult(anyInt(), anyInt());
+	}
+
+	@Test
+	void shouldRejectDetailedLessonResultWhenLessonDoesNotExist() {
+		// given
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
+		when(lessonRepository.findById(3)).thenReturn(Optional.empty());
+
+		// when
+		Mono<LessonResultDetailsResponse> result = teacherService.getLessonResultDetails(3, 21);
+
+		// then
+		StepVerifier.create(result).expectErrorSatisfies(error -> {
+			assertTrue(error instanceof LessonException);
+			assertEquals(LessonErrorCode.LESSON_NOT_FOUND, ((LessonException) error).getErrorCode());
+		}).verify();
+		verify(userInGroupRepository, never()).hasAccessToLesson(anyInt(), anyInt());
+		verify(lessonResultDetailsService, never()).getCompletedLessonResult(anyInt(), anyInt());
+	}
+
+	@Test
+	void shouldRejectDetailedLessonResultWhenTeacherIsNotLessonOwner() {
+		// given
+		User otherTeacher = User.builder().id(99).build();
+		Lesson lesson = Lesson.builder().id(3).teacher(otherTeacher).build();
+
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
+		when(lessonRepository.findById(3)).thenReturn(Optional.of(lesson));
+
+		// when
+		Mono<LessonResultDetailsResponse> result = teacherService.getLessonResultDetails(3, 21);
+
+		// then
+		StepVerifier.create(result).expectErrorSatisfies(error -> {
+			assertTrue(error instanceof LessonException);
+			assertEquals(LessonErrorCode.NOT_LESSON_OWNER, ((LessonException) error).getErrorCode());
+		}).verify();
+		verify(userInGroupRepository, never()).hasAccessToLesson(anyInt(), anyInt());
+		verify(lessonResultDetailsService, never()).getCompletedLessonResult(anyInt(), anyInt());
 	}
 }

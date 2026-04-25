@@ -26,6 +26,10 @@ import pl.freeedu.backend.teacher.dto.LessonStatsResponse;
 import pl.freeedu.backend.teacher.dto.LessonStatsStudentResult;
 import pl.freeedu.backend.lesson.exception.LessonException;
 import pl.freeedu.backend.lesson.exception.LessonErrorCode;
+import pl.freeedu.backend.task.dto.LessonResultDetailsResponse;
+import pl.freeedu.backend.task.exception.TaskErrorCode;
+import pl.freeedu.backend.task.exception.TaskException;
+import pl.freeedu.backend.task.service.LessonResultDetailsService;
 import pl.freeedu.backend.user.model.User;
 import pl.freeedu.backend.user.exception.UserException;
 import pl.freeedu.backend.user.exception.UserErrorCode;
@@ -49,12 +53,14 @@ public class TeacherService {
 	private final UserGroupRepository userGroupRepository;
 	private final UserInGroupRepository userInGroupRepository;
 	private final TransactionTemplate transactionTemplate;
+	private final LessonResultDetailsService lessonResultDetailsService;
 
 	public TeacherService(TeacherStatsRepository teacherStatsRepository, LessonRepository lessonRepository,
 			GroupHasLessonRepository groupHasLessonRepository, LessonMapper lessonMapper,
 			SecurityService securityService, UserGroupService userGroupService, UserRepository userRepository,
 			UserMapper userMapper, PasswordEncoder passwordEncoder, UserGroupRepository userGroupRepository,
-			UserInGroupRepository userInGroupRepository, TransactionTemplate transactionTemplate) {
+			UserInGroupRepository userInGroupRepository, TransactionTemplate transactionTemplate,
+			LessonResultDetailsService lessonResultDetailsService) {
 		this.teacherStatsRepository = teacherStatsRepository;
 		this.lessonRepository = lessonRepository;
 		this.groupHasLessonRepository = groupHasLessonRepository;
@@ -67,6 +73,7 @@ public class TeacherService {
 		this.userGroupRepository = userGroupRepository;
 		this.userInGroupRepository = userInGroupRepository;
 		this.transactionTemplate = transactionTemplate;
+		this.lessonResultDetailsService = lessonResultDetailsService;
 	}
 
 	public Mono<TeacherStatsResponse> getStats() {
@@ -121,6 +128,21 @@ public class TeacherService {
 			return LessonStatsResponse.builder().avgScore(avgScore).studentsCompleted(results.size())
 					.bestScore(bestScore).studentResults(results).build();
 		}).subscribeOn(Schedulers.boundedElastic()));
+	}
+
+	public Mono<LessonResultDetailsResponse> getLessonResultDetails(Integer lessonId, Integer studentId) {
+		return securityService.getCurrentUserId().flatMap(teacherId -> Mono.fromCallable(() -> {
+			pl.freeedu.backend.lesson.model.Lesson lesson = lessonRepository.findById(lessonId)
+					.orElseThrow(() -> new LessonException(LessonErrorCode.LESSON_NOT_FOUND));
+			if (!lesson.getTeacher().getId().equals(teacherId)) {
+				throw new LessonException(LessonErrorCode.NOT_LESSON_OWNER);
+			}
+			if (!userInGroupRepository.hasAccessToLesson(studentId, lessonId)) {
+				throw new TaskException(TaskErrorCode.STUDENT_NO_ACCESS);
+			}
+			return studentId;
+		}).subscribeOn(Schedulers.boundedElastic())).flatMap(
+				validStudentId -> lessonResultDetailsService.getCompletedLessonResult(lessonId, validStudentId));
 	}
 
 	public Mono<TeacherStudentResponse> createStudent(Mono<TeacherCreateStudentRequest> requestMono) {

@@ -77,20 +77,42 @@ function StatCard({
     <Box
       sx={{
         ...panelGridCardSx,
-        flex: 1,
-        minWidth: 180,
-        p: 2.5,
+        minWidth: 0,
+        px: 1.75,
+        py: 1.25,
         display: "flex",
-        flexDirection: "column",
-        gap: 0.5,
+        alignItems: "center",
+        gap: 1,
+        minHeight: 72,
       }}
     >
-      <Typography variant="caption" color="text.secondary">
-        {label}
-      </Typography>
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}>
+      <Box
+        sx={{
+          width: 28,
+          height: 28,
+          borderRadius: 2,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
+          flexShrink: 0,
+        }}
+      >
         {icon}
-        <Typography variant="h6" fontWeight={700}>
+      </Box>
+      <Box sx={{ minWidth: 0 }}>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ display: "block", lineHeight: 1.1, mb: 0.35 }}
+        >
+          {label}
+        </Typography>
+        <Typography
+          variant="subtitle1"
+          fontWeight={800}
+          sx={{ lineHeight: 1.05 }}
+        >
           {value}
         </Typography>
       </Box>
@@ -209,7 +231,15 @@ export function LessonStatsView() {
           theme.palette.mode === "dark" ? "background.default" : "#eef1f8",
       }}
     >
-      <Container maxWidth="lg" sx={{ pt: 3, pb: 6 }}>
+      <Container
+        maxWidth="xl"
+        sx={{
+          pt: { xs: 2, sm: 3, md: 4 },
+          pb: { xs: 4, md: 6 },
+          px: { xs: 2, sm: 3 },
+          position: "relative",
+        }}
+      >
         <DashboardTopBar onLogout={logout} />
         <DashboardHeader
           loading={loadingUser}
@@ -225,9 +255,10 @@ export function LessonStatsView() {
           sx={{
             display: "flex",
             alignItems: "flex-start",
-            gap: 2,
-            mb: 3,
-            mt: 1,
+            gap: { xs: 1.5, sm: 2 },
+            mb: { xs: 2, sm: 3 },
+            mt: { xs: 0.5, sm: 1 },
+            flexWrap: "wrap",
           }}
         >
           <Button
@@ -237,12 +268,20 @@ export function LessonStatsView() {
           >
             Powrót
           </Button>
-          <Box>
-            <Typography variant="h5" fontWeight={700}>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography
+              variant="h5"
+              fontWeight={700}
+              sx={{ fontSize: { xs: "1.6rem", sm: "2rem" }, lineHeight: 1.15 }}
+            >
               Wyniki lekcji
             </Typography>
             {lessonTitle && (
-              <Typography variant="body2" color="text.secondary">
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ mt: 0.75, maxWidth: { md: 720 } }}
+              >
                 {lessonTitle}
               </Typography>
             )}
@@ -271,10 +310,13 @@ export function LessonStatsView() {
             {/* Top stat cards */}
             <Box
               sx={{
-                display: "flex",
-                gap: 2,
-                flexWrap: "wrap",
-                mb: 3,
+                display: "grid",
+                gridTemplateColumns: {
+                  xs: "1fr",
+                  sm: "repeat(3, minmax(0, 1fr))",
+                },
+                gap: 1.25,
+                mb: 2.25,
               }}
             >
               <StatCard
@@ -282,7 +324,7 @@ export function LessonStatsView() {
                 value={`${Math.round(stats.avgScore)}%`}
                 icon={
                   <TrendingUpIcon
-                    sx={{ color: "success.main", fontSize: 22 }}
+                    sx={{ color: "success.main", fontSize: 16 }}
                   />
                 }
               />
@@ -292,8 +334,8 @@ export function LessonStatsView() {
                 icon={
                   <Box
                     sx={{
-                      width: 22,
-                      height: 22,
+                      width: 14,
+                      height: 14,
                       borderRadius: "50%",
                       bgcolor: "primary.main",
                       display: "flex",
@@ -306,7 +348,7 @@ export function LessonStatsView() {
               <StatCard
                 label="Najlepszy wynik"
                 value={`${Math.round(stats.bestScore)}%`}
-                icon={<TrophyIcon sx={{ color: "#ca8a04", fontSize: 22 }} />}
+                icon={<TrophyIcon sx={{ color: "#ca8a04", fontSize: 16 }} />}
               />
             </Box>
 
@@ -509,10 +551,12 @@ export function LessonStatsView() {
                             },
                           }}
                           onClick={() =>
-                            navigate(`/teacher/students/${student.userId}`)
+                            navigate(
+                              `/teacher/lessons/${lessonId}/students/${student.userId}/result`,
+                            )
                           }
                         >
-                          Zobacz profil
+                          Szczegóły
                         </Button>
                       </Box>
                     </Box>

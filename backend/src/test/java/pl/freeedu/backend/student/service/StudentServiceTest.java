@@ -15,9 +15,13 @@ import pl.freeedu.backend.security.service.SecurityService;
 import pl.freeedu.backend.student.dto.StudentLessonResponse;
 import pl.freeedu.backend.student.dto.StudentProgressResponse;
 import pl.freeedu.backend.student.dto.StudentStatsResponse;
+import pl.freeedu.backend.task.dto.LessonResultDetailsResponse;
+import pl.freeedu.backend.task.exception.TaskErrorCode;
+import pl.freeedu.backend.task.exception.TaskException;
 import pl.freeedu.backend.task.model.UserLesson;
 import pl.freeedu.backend.task.model.UserLessonStatus;
 import pl.freeedu.backend.task.repository.UserLessonRepository;
+import pl.freeedu.backend.task.service.LessonResultDetailsService;
 import pl.freeedu.backend.usergroup.model.UserInGroup;
 import pl.freeedu.backend.usergroup.repository.UserInGroupRepository;
 import reactor.core.publisher.Flux;
@@ -46,6 +50,8 @@ class StudentServiceTest {
 	private UserLessonRepository userLessonRepository;
 	@Mock
 	private LessonMapper lessonMapper;
+	@Mock
+	private LessonResultDetailsService lessonResultDetailsService;
 
 	@InjectMocks
 	private StudentService studentService;
@@ -187,5 +193,60 @@ class StudentServiceTest {
 		// But let's use ReflectionTestUtils for precise branch testing
 		return (String) org.springframework.test.util.ReflectionTestUtils.invokeMethod(studentService, "buildSummary",
 				total, completed, inProgress, 80.0);
+	}
+
+	@Test
+	void shouldGetDetailedLessonResultForCurrentStudent() {
+		// given
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
+		when(lessonRepository.findById(5)).thenReturn(Optional.of(Lesson.builder().id(5).build()));
+		when(userInGroupRepository.hasAccessToLesson(10, 5)).thenReturn(true);
+		when(lessonResultDetailsService.getCompletedLessonResult(5, 10))
+				.thenReturn(Mono.just(LessonResultDetailsResponse.builder().lessonId(5).userId(10).build()));
+
+		// when
+		Mono<LessonResultDetailsResponse> result = studentService.getLessonResultDetails(5);
+
+		// then
+		StepVerifier.create(result).assertNext(response -> {
+			assertEquals(5, response.getLessonId());
+			assertEquals(10, response.getUserId());
+		}).verifyComplete();
+	}
+
+	@Test
+	void shouldRejectDetailedLessonResultWhenStudentHasNoAccess() {
+		// given
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
+		when(lessonRepository.findById(5)).thenReturn(Optional.of(Lesson.builder().id(5).build()));
+		when(userInGroupRepository.hasAccessToLesson(10, 5)).thenReturn(false);
+
+		// when
+		Mono<LessonResultDetailsResponse> result = studentService.getLessonResultDetails(5);
+
+		// then
+		StepVerifier.create(result).expectErrorSatisfies(error -> {
+			assertTrue(error instanceof TaskException);
+			assertEquals(TaskErrorCode.STUDENT_NO_ACCESS, ((TaskException) error).getErrorCode());
+		}).verify();
+		verify(lessonResultDetailsService, never()).getCompletedLessonResult(anyInt(), anyInt());
+	}
+
+	@Test
+	void shouldRejectDetailedLessonResultWhenLessonDoesNotExist() {
+		// given
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
+		when(lessonRepository.findById(5)).thenReturn(Optional.empty());
+
+		// when
+		Mono<LessonResultDetailsResponse> result = studentService.getLessonResultDetails(5);
+
+		// then
+		StepVerifier.create(result).expectErrorSatisfies(error -> {
+			assertTrue(error instanceof TaskException);
+			assertEquals(TaskErrorCode.LESSON_NOT_FOUND, ((TaskException) error).getErrorCode());
+		}).verify();
+		verify(userInGroupRepository, never()).hasAccessToLesson(anyInt(), anyInt());
+		verify(lessonResultDetailsService, never()).getCompletedLessonResult(anyInt(), anyInt());
 	}
 }

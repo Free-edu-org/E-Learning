@@ -17,6 +17,21 @@ Authorization: Bearer {{teacher_token}}
 ### Get lesson statistics — 401 (no token)
 GET http://localhost:8080/api/v1/teacher/lessons/1/stats
 
+### Get detailed lesson result for a student (Requires TEACHER)
+GET http://localhost:8080/api/v1/teacher/lessons/1/students/1/result
+Authorization: Bearer {{teacher_token}}
+
+### Get detailed lesson result for a student — 401 (no token)
+GET http://localhost:8080/api/v1/teacher/lessons/1/students/1/result
+
+### Get detailed lesson result for a student — 404 LESSON_NOT_FOUND
+GET http://localhost:8080/api/v1/teacher/lessons/999999/students/1/result
+Authorization: Bearer {{teacher_token}}
+
+### Get detailed lesson result for a student — 403 STUDENT_NO_ACCESS
+GET http://localhost:8080/api/v1/teacher/lessons/1/students/999999/result
+Authorization: Bearer {{teacher_token}}
+
 ### Get Teacher's own students (Requires TEACHER)
 GET http://localhost:8080/api/v1/teacher/students
 Authorization: Bearer {{teacher_token}}
