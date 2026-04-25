@@ -134,7 +134,7 @@ public class UserController {
 		return userService.deleteUser(id);
 	}
 
-	@Operation(summary = "Upload avatar", description = "Upload a custom avatar image (JPEG/PNG/WEBP, max 2 MB). Only the account owner or admin can change the avatar.")
+	@Operation(summary = "Upload avatar", description = "Upload a custom avatar image (JPEG/PNG, max 2 MB). Only the account owner or admin can change the avatar.")
 	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Avatar uploaded successfully"),
 			@ApiResponse(responseCode = "400", description = "Bad Request - AVATAR_INVALID_FILE_TYPE or AVATAR_FILE_TOO_LARGE", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "401", description = "Unauthorized - invalid token", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),

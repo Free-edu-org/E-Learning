@@ -128,7 +128,7 @@ public class UserService {
 		}).subscribeOn(Schedulers.boundedElastic()).then();
 	}
 
-	private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of("image/jpeg", "image/png", "image/webp");
+	private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of("image/jpeg", "image/png");
 	private static final long MAX_AVATAR_SIZE_BYTES = 2L * 1024 * 1024; // 2 MB
 	private static final String AVATAR_DIR = "uploads/avatars";
 	private static final Set<String> ALLOWED_PRESETS = Set.of("avatar_1", "avatar_2", "avatar_3", "avatar_4",
@@ -150,7 +150,6 @@ public class UserService {
 			String extension = switch (baseType) {
 				case "image/jpeg" -> "jpg";
 				case "image/png" -> "png";
-				case "image/webp" -> "webp";
 				default -> "bin";
 			};
 			String fileName = id + "." + extension;
@@ -161,7 +160,7 @@ public class UserService {
 				try {
 					Files.createDirectories(dir);
 					// Delete previous avatar files for this user (any extension)
-					for (String ext : new String[]{"jpg", "png", "webp"}) {
+					for (String ext : new String[]{"jpg", "png"}) {
 						Files.deleteIfExists(dir.resolve(id + "." + ext));
 					}
 					return filePath;

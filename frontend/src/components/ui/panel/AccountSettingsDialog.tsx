@@ -252,7 +252,7 @@ export function AccountSettingsDialog({
           >
             <input
               type="file"
-              accept="image/jpeg,image/png,image/webp"
+              accept="image/jpeg,image/png"
               hidden
               ref={fileInputRef}
               onChange={handleAvatarUpload}

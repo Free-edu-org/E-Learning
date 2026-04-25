@@ -250,7 +250,7 @@ Default local development base URL is `http://localhost:8080`
 ### 2.8. Upload Avatar
 - **URL**: `/api/v1/users/{id}/avatar`
 - **Method**: `POST`
-- **Description**: Uploads a custom avatar image (JPEG, PNG, WEBP). Maximum file size is 2 MB. Requires `ADMIN` authority OR the requesting user ID must match the parameter ID.
+- **Description**: Uploads a custom avatar image (JPEG, PNG). Maximum file size is 2 MB. Requires `ADMIN` authority OR the requesting user ID must match the parameter ID.
 
 **Request:** `multipart/form-data`
 - `file`: The image file to upload.
@@ -263,12 +263,12 @@ Default local development base URL is `http://localhost:8080`
   "email": "user@example.com",
   "role": "STUDENT",
   "createdAt": "2026-03-02T21:00:00",
-  "avatarUrl": "/uploads/avatars/1.webp"
+  "avatarUrl": "/uploads/avatars/1.jpg"
 }
 ```
 
 **Known Errors:**
-- `AVATAR_INVALID_FILE_TYPE` (400 Bad Request): File format is not JPEG, PNG, or WEBP.
+- `AVATAR_INVALID_FILE_TYPE` (400 Bad Request): File format is not JPEG or PNG.
 - `AVATAR_FILE_TOO_LARGE` (400 Bad Request): File is larger than 2 MB.
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
 - `FORBIDDEN` (403 Forbidden): Lack of permissions (not admin and not owner).
