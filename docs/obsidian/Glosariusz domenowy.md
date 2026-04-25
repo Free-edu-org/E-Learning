@@ -5,6 +5,7 @@ Ta notatka tlumaczy nazwy biznesowe na miejsca w kodzie. Traktuj ja jako pierwsz
 | Pojecie biznesowe | Znaczenie w systemie | Nazwy techniczne w kodzie | Powiazane notatki |
 |---|---|---|---|
 | Uzytkownik | Konto osoby w systemie. Ma role i dane logowania. | `User`, `UserResponse`, `UserRepository` | [[Domena - uzytkownicy]], [[Security]] |
+| Awatar | Obraz profilu uzytkownika. Moze byc presetem albo uploadowanym plikiem. | `avatarUrl`, `SetPresetAvatarRequest`, `UserAvatar` | [[Awatary uzytkownikow]] |
 | Rola | Uprawnienie wysokiego poziomu: admin, nauczyciel albo uczen. | `Role.ADMIN`, `Role.TEACHER`, `Role.STUDENT` | [[Macierz rol i uprawnien]] |
 | Admin | Osoba zarzadzajaca systemem i kontami. | `/api/v1/admin/**`, `AdminService` | [[Rola - Admin]] |
 | Nauczyciel | Tworzy lekcje, zadania, grupy i zarzadza swoimi uczniami. | `TeacherService`, `/api/v1/teacher/**` | [[Rola - Teacher]] |

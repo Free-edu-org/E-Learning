@@ -1,11 +1,12 @@
 # API Client
 
-[[Frontend]] wysyla zadania do [[Backend]] przez `fetchApi`. Klient dokleja token JWT z `localStorage`, ustawia `Content-Type: application/json` dla zwyklych requestow i obsluguje `FormData` dla transkrypcji audio.
+[[Frontend]] wysyla zadania do [[Backend]] przez `fetchApi`. Klient dokleja token JWT z `localStorage`, ustawia `Content-Type: application/json` dla zwyklych requestow i obsluguje `FormData` dla transkrypcji audio oraz uploadu awatara.
 
 Polaczenia:
 - [[Przeplyw - logowanie i sesja]] zapisuje token po odpowiedzi z `/api/v1/auth/login`
 - [[Frontend - Lesson Solver]] korzysta z [[Domena - zadania]] i [[Domena - postep studenta]]
 - [[Przeplyw - rozpoznawanie mowy]] wysyla multipart do endpointu transkrypcji
+- [[Awatary uzytkownikow]] korzystaja z multipart uploadu i zwyklego requestu JSON dla presetu
 - blad `TOKEN_EXPIRED` emituje zdarzenie `auth:expired`
 
 Serwisy frontendowe:
@@ -15,9 +16,10 @@ Serwisy frontendowe:
 - `studentService.ts` -> [[Student Dashboard]] i [[Domena - postep studenta]]
 - `taskService.ts` -> [[Domena - zadania]]
 - `userGroupService.ts` -> [[Domena - grupy]]
-- `userService.ts` -> [[Domena - uzytkownicy]]
+- `userService.ts` -> [[Domena - uzytkownicy]] i [[Awatary uzytkownikow]]
 
 Zrodla:
 - [apiClient.ts](../../frontend/src/api/apiClient.ts)
 - [authService.ts](../../frontend/src/api/authService.ts)
 - [taskService.ts](../../frontend/src/api/taskService.ts)
+- [userService.ts](../../frontend/src/api/userService.ts)

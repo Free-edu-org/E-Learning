@@ -2,9 +2,12 @@
 
 Backendowy admin dashboard dostarcza statystyki, liste nauczycieli i liste studentow dla [[Frontend - Admin Dashboard]].
 
+Listy uzytkownikow przenosza tez `avatarUrl`, dzieki czemu frontend moze pokazac awatary nauczycieli i uczniow w panelu admina. Szczegoly mechanizmu sa w [[Awatary uzytkownikow]].
+
 Polaczenia:
 - [[Rola - Admin]]
 - [[Domena - uzytkownicy]]
+- [[Awatary uzytkownikow]]
 - [[Mapa API]]
 - [[Przeplyw - administracja uzytkownikami]]
 

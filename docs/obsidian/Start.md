@@ -54,6 +54,7 @@ Deployment i runtime:
 
 Domena:
 - [[Glosariusz domenowy]]
+- [[Awatary uzytkownikow]]
 - [[Macierz rol i uprawnien]]
 - [[Rola - Admin]]
 - [[Rola - Teacher]]
@@ -94,6 +95,7 @@ Decyzje i szablony:
 ## Najwazniejsze obszary domenowe
 
 - [[Domena - uzytkownicy]]
+- [[Awatary uzytkownikow]]
 - [[Domena - grupy]]
 - [[Domena - lekcje]]
 - [[Domena - zadania]]

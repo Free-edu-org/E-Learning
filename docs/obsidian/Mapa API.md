@@ -15,7 +15,12 @@ Szczegoly kontraktu, DTO, statusow bledow i zasad aktualizacji sa w [[Kontrakt A
 - `GET /api/v1/users/{id}` -> [[Domena - uzytkownicy]]
 - `PUT /api/v1/users/{id}` -> [[Domena - uzytkownicy]]
 - `PUT /api/v1/users/{id}/password` -> [[Domena - uzytkownicy]]
+- `POST /api/v1/users/{id}/avatar` -> [[Awatary uzytkownikow]]
+- `PUT /api/v1/users/{id}/avatar/preset` -> [[Awatary uzytkownikow]]
 - `DELETE /api/v1/users/{id}` -> [[Domena - uzytkownicy]]
+
+## Static uploads
+- `GET /uploads/avatars/**` -> [[Awatary uzytkownikow]]
 
 ## Admin
 - `GET /api/v1/admin/stats` -> [[Admin Dashboard]]

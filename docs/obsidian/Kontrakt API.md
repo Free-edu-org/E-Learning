@@ -17,6 +17,7 @@ Przy zmianie endpointu aktualizuj razem:
 |---|---|---|---|
 | Auth | `POST /api/v1/auth/login` | public | [[Przeplyw - logowanie i sesja]] |
 | Users | `/api/v1/users/**` | authenticated + owner/admin | [[Domena - uzytkownicy]] |
+| User avatars | `/api/v1/users/{id}/avatar`, `/api/v1/users/{id}/avatar/preset`, `/uploads/avatars/**` | owner/admin, public read dla plikow | [[Awatary uzytkownikow]] |
 | Admin BFF | `/api/v1/admin/**` | `ADMIN` | [[Rola - Admin]] |
 | Teacher BFF | `/api/v1/teacher/**` | `TEACHER` | [[Rola - Teacher]] |
 | Student BFF | `/api/v1/student/**` | `STUDENT` | [[Rola - Student]] |
@@ -28,7 +29,7 @@ Przy zmianie endpointu aktualizuj razem:
 
 DTO sa trzymane per modul:
 - `auth/dto`: logowanie i token.
-- `user/dto`: profil, rejestracja, zmiana hasla.
+- `user/dto`: profil, rejestracja, zmiana hasla, wybor presetu awatara.
 - `admin/dto`: dashboard admina i zarzadzanie uczniami.
 - `teacher/dto`: dashboard nauczyciela, statystyki lekcji, uczniowie nauczyciela.
 - `student/dto`: dashboard ucznia, lekcje i postep.
@@ -46,6 +47,11 @@ DTO sa trzymane per modul:
 | `404` | Brak zasobu. | `USER_NOT_FOUND`, `LESSON_NOT_FOUND`, `USER_GROUP_NOT_FOUND`. |
 | `409` | Konflikt unikalnosci albo reguly przypisania. | email zajety, username zajety, uczen juz w grupie. |
 | `503` | Niedostepna integracja zewnetrzna. | STT dla zadania `speak`. |
+
+Bledy awatarow:
+- `AVATAR_INVALID_FILE_TYPE` -> upload nie jest JPEG/PNG.
+- `AVATAR_FILE_TOO_LARGE` -> plik przekracza 2 MB.
+- `AVATAR_INVALID_PRESET` -> preset nie jest na liscie dozwolonych.
 
 ## Autoryzacja i ownership
 
@@ -85,7 +91,18 @@ GET /api/v1/users/me
 Authorization: Bearer <token>
 ```
 
+```http
+PUT /api/v1/users/1/avatar/preset
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "presetName": "avatar_3"
+}
+```
+
 Powiazane:
 - [[Mapa API]]
 - [[Bledy API]]
+- [[Awatary uzytkownikow]]
 - [[Testy]]

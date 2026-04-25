@@ -24,6 +24,7 @@ Macierz laczy widoki, endpointy i reguly ownership. Szczegolowe checki sa w [[Se
 | Czyta wlasny profil | tak | tak | tak | `GET /api/v1/users/me`. |
 | Czyta profil innej osoby | tak | czesciowo | nie | Teacher tylko swojego ucznia. |
 | Edytuje profil | tak | tylko siebie | tylko siebie | Admin albo owner. |
+| Zmienia awatar | tak | tylko siebie | tylko siebie | Admin albo owner; upload JPEG/PNG albo preset. |
 | Usuwa konto | tak | tylko siebie | tylko siebie | Admin albo owner. |
 | Tworzy lekcje | tak | tak | nie | `POST /api/v1/lessons`. |
 | Edytuje lekcje | tak | tylko wlasciciel | nie | `isLessonOwner`. |
@@ -46,6 +47,7 @@ Macierz laczy widoki, endpointy i reguly ownership. Szczegolowe checki sa w [[Se
 - Student nie powinien ponownie rozwiazywac lekcji oznaczonej jako zakonczona, chyba ze postep zostal zresetowany.
 - Admin moze wykonywac operacje administracyjne, ale publiczne endpointy nadal powinny pozostac minimalne.
 - Zmiana hasla wymaga starego hasla dla wlasciciela konta.
+- Zmiana awatara musi byc ograniczona do admina albo wlasciciela konta.
 - STT musi zwrocic blad kontrolowany, gdy serwis transkrypcji nie odpowiada.
 
 ## Szybka mapa
@@ -69,3 +71,4 @@ Zrodla:
 - [SecurityConfig.java](../../backend/src/main/java/pl/freeedu/backend/security/config/SecurityConfig.java)
 - [SecurityService.java](../../backend/src/main/java/pl/freeedu/backend/security/service/SecurityService.java)
 - [App.tsx](../../frontend/src/App.tsx)
+- [[Awatary uzytkownikow]]

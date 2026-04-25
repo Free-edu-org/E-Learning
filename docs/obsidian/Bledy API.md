@@ -8,6 +8,7 @@ Obszary:
 - `GlobalErrorCode` -> bledy wspolne
 - `AuthErrorCode` -> [[Przeplyw - logowanie i sesja]]
 - `UserErrorCode` -> [[Domena - uzytkownicy]]
+- bledy awatara `AVATAR_INVALID_FILE_TYPE`, `AVATAR_FILE_TOO_LARGE`, `AVATAR_INVALID_PRESET` -> [[Awatary uzytkownikow]]
 - `UserGroupErrorCode` -> [[Domena - grupy]]
 - `LessonErrorCode` -> [[Domena - lekcje]]
 - `TaskErrorCode` -> [[Domena - zadania]] i [[Domena - postep studenta]]

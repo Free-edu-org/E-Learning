@@ -15,6 +15,13 @@ Integracje z backendem:
 - [[Przeplyw - logowanie i sesja]]
 - [[Przeplyw - nauczyciel tworzy lekcje]]
 - [[Przeplyw - student rozwiazuje lekcje]]
+- [[Awatary uzytkownikow]]
+
+Wspolne elementy UI:
+- `UserAvatar` renderuje preset `preset:avatar_X`, uploadowany plik albo inicjaly uzytkownika.
+- `DashboardHeader` pokazuje awatar zalogowanego uzytkownika i otwiera ustawienia konta.
+- `AccountSettingsDialog` obsluguje upload pliku awatara oraz wybor wbudowanego presetu.
+- presety SVG sa w `frontend/public/avatars`.
 
 Routing:
 - `/login` -> [[Frontend - Login]]
@@ -28,3 +35,5 @@ Najwazniejsze pliki:
 - [App.tsx](../../frontend/src/App.tsx)
 - [package.json](../../frontend/package.json)
 - [apiClient.ts](../../frontend/src/api/apiClient.ts)
+- [UserAvatar.tsx](../../frontend/src/components/ui/avatar/UserAvatar.tsx)
+- [AccountSettingsDialog.tsx](../../frontend/src/components/ui/panel/AccountSettingsDialog.tsx)
