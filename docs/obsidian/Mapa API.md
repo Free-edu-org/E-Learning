@@ -2,6 +2,8 @@
 
 Mapa API spina [[Frontend]], [[API Client]] i kontrolery w [[Backend]].
 
+Szczegoly kontraktu, DTO, statusow bledow i zasad aktualizacji sa w [[Kontrakt API]]. Reguly dostepu sa zebrane w [[Macierz rol i uprawnien]].
+
 ## Auth
 - `POST /api/v1/auth/login` -> [[Przeplyw - logowanie i sesja]]
 

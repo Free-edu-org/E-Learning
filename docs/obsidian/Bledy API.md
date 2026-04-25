@@ -2,6 +2,8 @@
 
 Bledy API sa mapowane przez globalny handler i kody domenowe.
 
+Statusy HTTP, przyklady requestow i zasady utrzymywania kontraktu sa opisane w [[Kontrakt API]].
+
 Obszary:
 - `GlobalErrorCode` -> bledy wspolne
 - `AuthErrorCode` -> [[Przeplyw - logowanie i sesja]]
