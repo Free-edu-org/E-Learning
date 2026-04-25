@@ -6,6 +6,8 @@ Lokalne srodowisko sklada sie z czterech kontenerow:
 - `frontend` -> [[Frontend]]
 - `stt-service` -> [[STT Service]]
 
+Pelna sciezka startu lokalnego jest w [[Uruchomienie lokalne]], a najczestsze awarie w [[Troubleshooting]].
+
 ```mermaid
 flowchart TD
   Compose["docker-compose.yml"] --> MySQL["mysql:9.6"]

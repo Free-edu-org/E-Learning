@@ -33,6 +33,7 @@ Wazne ograniczenia:
 - `user_in_group` ma `UNIQUE (user_id)`, czyli uczen nalezy do jednej grupy.
 - `user_lessons` ma `UNIQUE (user_id, lesson_id)`, czyli jeden stan postepu na pare uczen-lekcja.
 - zadania maja wspolne pola `hint` i `section`.
+- `users.avatar_url` przechowuje preset awatara albo sciezke do pliku uploadowanego przez backend -> [[Awatary uzytkownikow]]
 
 Zrodla:
 - [migrations](../../backend/src/main/resources/db/migration)

@@ -5,6 +5,8 @@ Projekt ma trzy warstwy walidacji:
 - testy API w `api-tests/tests`
 - pliki `.http` w `backend/http`
 
+Standard dopisywania testow przy zmianach jest w [[Standardy kodowania i testow]], a powiazanie testow z endpointami w [[Kontrakt API]].
+
 Polaczenia:
 - [[Backend]] -> testy serwisow i security
 - [[Mapa API]] -> testy kontraktu API

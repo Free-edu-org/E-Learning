@@ -2,6 +2,8 @@
 
 Mapa API spina [[Frontend]], [[API Client]] i kontrolery w [[Backend]].
 
+Szczegoly kontraktu, DTO, statusow bledow i zasad aktualizacji sa w [[Kontrakt API]]. Reguly dostepu sa zebrane w [[Macierz rol i uprawnien]].
+
 ## Auth
 - `POST /api/v1/auth/login` -> [[Przeplyw - logowanie i sesja]]
 
@@ -13,7 +15,12 @@ Mapa API spina [[Frontend]], [[API Client]] i kontrolery w [[Backend]].
 - `GET /api/v1/users/{id}` -> [[Domena - uzytkownicy]]
 - `PUT /api/v1/users/{id}` -> [[Domena - uzytkownicy]]
 - `PUT /api/v1/users/{id}/password` -> [[Domena - uzytkownicy]]
+- `POST /api/v1/users/{id}/avatar` -> [[Awatary uzytkownikow]]
+- `PUT /api/v1/users/{id}/avatar/preset` -> [[Awatary uzytkownikow]]
 - `DELETE /api/v1/users/{id}` -> [[Domena - uzytkownicy]]
+
+## Static uploads
+- `GET /uploads/avatars/**` -> [[Awatary uzytkownikow]]
 
 ## Admin
 - `GET /api/v1/admin/stats` -> [[Admin Dashboard]]
