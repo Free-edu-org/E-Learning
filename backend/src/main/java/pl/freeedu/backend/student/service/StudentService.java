@@ -18,9 +18,13 @@ import pl.freeedu.backend.security.service.SecurityService;
 import pl.freeedu.backend.student.dto.StudentLessonResponse;
 import pl.freeedu.backend.student.dto.StudentProgressResponse;
 import pl.freeedu.backend.student.dto.StudentStatsResponse;
+import pl.freeedu.backend.task.dto.LessonResultDetailsResponse;
+import pl.freeedu.backend.task.exception.TaskErrorCode;
+import pl.freeedu.backend.task.exception.TaskException;
 import pl.freeedu.backend.task.model.UserLesson;
 import pl.freeedu.backend.task.model.UserLessonStatus;
 import pl.freeedu.backend.task.repository.UserLessonRepository;
+import pl.freeedu.backend.task.service.LessonResultDetailsService;
 import pl.freeedu.backend.usergroup.repository.UserInGroupRepository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -35,16 +39,19 @@ public class StudentService {
 	private final LessonRepository lessonRepository;
 	private final UserLessonRepository userLessonRepository;
 	private final LessonMapper lessonMapper;
+	private final LessonResultDetailsService lessonResultDetailsService;
 
 	public StudentService(SecurityService securityService, UserInGroupRepository userInGroupRepository,
 			GroupHasLessonRepository groupHasLessonRepository, LessonRepository lessonRepository,
-			UserLessonRepository userLessonRepository, LessonMapper lessonMapper) {
+			UserLessonRepository userLessonRepository, LessonMapper lessonMapper,
+			LessonResultDetailsService lessonResultDetailsService) {
 		this.securityService = securityService;
 		this.userInGroupRepository = userInGroupRepository;
 		this.groupHasLessonRepository = groupHasLessonRepository;
 		this.lessonRepository = lessonRepository;
 		this.userLessonRepository = userLessonRepository;
 		this.lessonMapper = lessonMapper;
+		this.lessonResultDetailsService = lessonResultDetailsService;
 	}
 
 	public Mono<StudentStatsResponse> getStats() {
@@ -57,6 +64,17 @@ public class StudentService {
 
 	public Mono<StudentProgressResponse> getProgress() {
 		return loadDashboardSnapshot().map(StudentDashboardSnapshot::progress);
+	}
+
+	public Mono<LessonResultDetailsResponse> getLessonResultDetails(Integer lessonId) {
+		return securityService.getCurrentUserId().flatMap(userId -> Mono.fromCallable(() -> {
+			lessonRepository.findById(lessonId).orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_FOUND));
+			if (!userInGroupRepository.hasAccessToLesson(userId, lessonId)) {
+				throw new TaskException(TaskErrorCode.STUDENT_NO_ACCESS);
+			}
+			return userId;
+		}).subscribeOn(Schedulers.boundedElastic()))
+				.flatMap(userId -> lessonResultDetailsService.getCompletedLessonResult(lessonId, userId));
 	}
 
 	private Mono<StudentDashboardSnapshot> loadDashboardSnapshot() {

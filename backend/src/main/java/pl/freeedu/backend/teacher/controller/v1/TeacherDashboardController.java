@@ -20,6 +20,7 @@ import pl.freeedu.backend.teacher.dto.LessonStatsResponse;
 import pl.freeedu.backend.teacher.dto.TeacherCreateStudentRequest;
 import pl.freeedu.backend.teacher.dto.TeacherStatsResponse;
 import pl.freeedu.backend.teacher.dto.TeacherStudentResponse;
+import pl.freeedu.backend.task.dto.LessonResultDetailsResponse;
 import pl.freeedu.backend.teacher.service.TeacherService;
 import pl.freeedu.backend.usergroup.dto.UserGroupResponse;
 import reactor.core.publisher.Flux;
@@ -70,6 +71,16 @@ public class TeacherDashboardController {
 	@ResponseStatus(HttpStatus.OK)
 	public Mono<LessonStatsResponse> getLessonStats(@PathVariable Integer lessonId) {
 		return teacherService.getLessonStats(lessonId);
+	}
+
+	@Operation(summary = "Get detailed lesson result for a student")
+	@ApiResponse(responseCode = "200", description = "Detailed lesson result scoped to current teacher and selected student")
+	@GetMapping("/lessons/{lessonId}/students/{userId}/result")
+	@PreAuthorize("hasRole('TEACHER')")
+	@ResponseStatus(HttpStatus.OK)
+	public Mono<LessonResultDetailsResponse> getLessonResultDetails(@PathVariable Integer lessonId,
+			@PathVariable Integer userId) {
+		return teacherService.getLessonResultDetails(lessonId, userId);
 	}
 
 	@Operation(summary = "Get teacher's students")

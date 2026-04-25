@@ -6,12 +6,14 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import pl.freeedu.backend.student.dto.StudentLessonResponse;
 import pl.freeedu.backend.student.dto.StudentProgressResponse;
 import pl.freeedu.backend.student.dto.StudentStatsResponse;
+import pl.freeedu.backend.task.dto.LessonResultDetailsResponse;
 import pl.freeedu.backend.student.service.StudentService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -52,5 +54,14 @@ public class StudentDashboardController {
 	@ResponseStatus(HttpStatus.OK)
 	public Mono<StudentProgressResponse> getMyProgress() {
 		return studentService.getProgress();
+	}
+
+	@Operation(summary = "Get detailed result of student's completed lesson")
+	@ApiResponse(responseCode = "200", description = "Detailed result scoped to current student")
+	@GetMapping("/lessons/{lessonId}/result")
+	@PreAuthorize("hasRole('STUDENT')")
+	@ResponseStatus(HttpStatus.OK)
+	public Mono<LessonResultDetailsResponse> getLessonResultDetails(@PathVariable Integer lessonId) {
+		return studentService.getLessonResultDetails(lessonId);
 	}
 }

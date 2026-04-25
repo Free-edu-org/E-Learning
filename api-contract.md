@@ -686,6 +686,71 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
 
 ---
 
+### 5.3.1. Get Detailed Lesson Result For Selected Student
+- **URL**: `/api/v1/teacher/lessons/{lessonId}/students/{userId}/result`
+- **Method**: `GET`
+- **Description**: Zwraca szczegolowy wynik ukonczonej lekcji dla wskazanego ucznia. Endpoint jest scoped do nauczyciela-owner'a lekcji.
+- **Authorization**: `TEACHER`
+
+**Success (200 OK):**
+```json
+{
+  "lessonId": 12,
+  "lessonTitle": "Present Simple - lesson 1",
+  "userId": 8,
+  "username": "jan_kowalski",
+  "score": 4,
+  "maxScore": 5,
+  "resultPercent": 80.0,
+  "completedAt": "2026-03-21T10:25:00",
+  "tasks": [
+    {
+      "taskId": 101,
+      "taskType": "choose",
+      "section": "Grammar",
+      "taskText": "Choose the correct answer",
+      "hint": "Look at the subject.",
+      "userAnswer": "go",
+      "correctAnswer": "goes",
+      "isCorrect": false,
+      "possibleAnswers": "go|goes|going",
+      "words": null
+    }
+  ]
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `lessonId` | Integer | ID lekcji. |
+| `lessonTitle` | String | Tytul lekcji. |
+| `userId` | Integer | ID ucznia, ktorego wynik jest zwracany. |
+| `username` | String | Username ucznia. |
+| `score` | Integer | Zdobyte punkty. |
+| `maxScore` | Integer | Maksymalna liczba punktow. |
+| `resultPercent` | Double | Wynik procentowy zaokraglony do jednego miejsca po przecinku. |
+| `completedAt` | String (ISO datetime) | Czas zakonczenia lekcji. |
+| `tasks` | List | Lista zadan w stabilnej kolejnosci prezentacyjnej. |
+| `tasks[].taskId` | Integer | ID zadania w aktualnej lekcji. |
+| `tasks[].taskType` | String | `choose`, `write`, `scatter` albo `speak`. |
+| `tasks[].section` | String or null | Sekcja zadania, jesli jest ustawiona. |
+| `tasks[].taskText` | String | Tresc zadania. |
+| `tasks[].hint` | String or null | Podpowiedz zapisana dla zadania. |
+| `tasks[].userAnswer` | String or null | Zapisana odpowiedz ucznia. Dla `choose` zwracana jest wartosc tekstowa, nie indeks. |
+| `tasks[].correctAnswer` | String or null | Poprawna odpowiedz. |
+| `tasks[].isCorrect` | Boolean | Status poprawnosci odpowiedzi. |
+| `tasks[].possibleAnswers` | String or null | Lista mozliwych odpowiedzi rozdzielona `|` dla `choose`. |
+| `tasks[].words` | String or null | Lista slow rozdzielona `|` dla `scatter`. |
+
+**Known Errors:**
+- `LESSON_NOT_FOUND` (404 Not Found)
+- `STUDENT_NO_ACCESS` (403 Forbidden): Wskazany uczen nie ma dostepu do tej lekcji.
+- `LESSON_RESULT_NOT_FOUND` (404 Not Found): Brak ukonczonego wyniku dla user+lesson.
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access or nauczyciel nie jest ownerem lekcji.
+
+---
+
 ### 5.4. Get My Groups
 - **URL**: `/api/v1/teacher/my-groups`
 - **Method**: `GET`
@@ -1016,6 +1081,23 @@ Warstwa BFF dla uczniow.
 | `resultPercent` | Double or null | Wynik procentowy, jesli lekcja ma zapisany rezultat. |
 
 **Known Errors:**
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
+
+---
+
+### 7.2.1. Get Detailed Result Of Completed Lesson
+- **URL**: `/api/v1/student/lessons/{lessonId}/result`
+- **Method**: `GET`
+- **Description**: Zwraca trwaly widok szczegolowego wyniku ukonczonej lekcji dla aktualnie zalogowanego ucznia.
+- **Authorization**: `STUDENT`
+
+**Success (200 OK):** Response ma ten sam shape jak `GET /api/v1/teacher/lessons/{lessonId}/students/{userId}/result`.
+
+**Known Errors:**
+- `LESSON_NOT_FOUND` (404 Not Found)
+- `STUDENT_NO_ACCESS` (403 Forbidden): Uczen nie ma dostepu do tej lekcji.
+- `LESSON_RESULT_NOT_FOUND` (404 Not Found): Brak ukonczonego wyniku dla tej lekcji.
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
 - `FORBIDDEN` (403 Forbidden): Token role does not permit access.
 

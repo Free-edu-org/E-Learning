@@ -438,6 +438,8 @@ export function TeacherDashboard() {
     setCreateDialogOpen(true);
   };
 
+  void openCreateLessonDialog;
+
   const closeCreateLessonDialog = () => {
     if (createDialogLoading) return;
     setCreateDialogOpen(false);
@@ -543,6 +545,8 @@ export function TeacherDashboard() {
       setEditTasksLoading(false);
     }
   }, []);
+
+  void openEditLessonDialog;
 
   const closeEditLessonDialog = () => {
     if (editDialogLoading) return;
@@ -835,7 +839,7 @@ export function TeacherDashboard() {
             icon={<AddIcon sx={{ fontSize: 32 }} />}
             title="Utwórz lekcję"
             subtitle="Nowa lekcja z zadaniami"
-            onClick={openCreateLessonDialog}
+            onClick={() => navigate("/teacher/lessons/new")}
           />
           <ActionButton
             icon={
@@ -898,7 +902,9 @@ export function TeacherDashboard() {
                 key={lesson.id}
                 lesson={lesson}
                 listView
-                onEdit={openEditLessonDialog}
+                onEdit={(selectedLesson) =>
+                  navigate(`/teacher/lessons/${selectedLesson.id}/edit`)
+                }
                 onDelete={openDeleteDialog}
                 onToggleStatus={handleToggleLessonStatus}
                 onResults={(l) => navigate(`/teacher/lessons/${l.id}/stats`)}
@@ -911,7 +917,9 @@ export function TeacherDashboard() {
               <Grid key={lesson.id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
                 <LessonCard
                   lesson={lesson}
-                  onEdit={openEditLessonDialog}
+                  onEdit={(selectedLesson) =>
+                    navigate(`/teacher/lessons/${selectedLesson.id}/edit`)
+                  }
                   onDelete={openDeleteDialog}
                   onToggleStatus={handleToggleLessonStatus}
                   onResults={(l) => navigate(`/teacher/lessons/${l.id}/stats`)}

@@ -337,6 +337,10 @@ export function LessonSolver() {
   };
 
   const goBack = () => navigate("/student");
+  const openResultDetails = () => {
+    if (!lessonId) return;
+    navigate(`/student/lessons/${lessonId}/result`);
+  };
 
   const requestExit = () => {
     if (shouldBlockExit) {
@@ -1025,6 +1029,7 @@ export function LessonSolver() {
         result={submitResult}
         onClose={() => setResultDialogOpen(false)}
         onBackToDashboard={goBack}
+        onOpenDetails={openResultDetails}
       />
     </Box>
   );

@@ -1,4 +1,5 @@
 import { fetchApi } from "./apiClient";
+import type { LessonResultDetailsResponse } from "./studentService";
 
 export interface Group {
   id: number;
@@ -54,6 +55,8 @@ export interface LessonStatsResponse {
   bestScore: number;
   studentResults: LessonStatsStudentResult[];
 }
+
+export type { LessonResultDetailsResponse };
 
 export interface CreateTeacherStudentRequest {
   username: string;
@@ -112,6 +115,10 @@ export const lessonService = {
     }),
   getLessonStats: (lessonId: number) =>
     fetchApi<LessonStatsResponse>(`/api/v1/teacher/lessons/${lessonId}/stats`),
+  getLessonResultDetails: (lessonId: number, userId: number) =>
+    fetchApi<LessonResultDetailsResponse>(
+      `/api/v1/teacher/lessons/${lessonId}/students/${userId}/result`,
+    ),
   resetStudentLessonProgress: (lessonId: number, userId: number) =>
     fetchApi<void>(`/api/v1/lessons/${lessonId}/users/${userId}/reset`, {
       method: "POST",

@@ -17,6 +17,13 @@ Authorization: Bearer {{teacher_token}}
 ### Get lesson statistics — 401 (no token)
 GET http://localhost:8080/api/v1/teacher/lessons/1/stats
 
+### Get detailed lesson result for a student (Requires TEACHER)
+GET http://localhost:8080/api/v1/teacher/lessons/1/students/1/result
+Authorization: Bearer {{teacher_token}}
+
+### Get detailed lesson result for a student — 401 (no token)
+GET http://localhost:8080/api/v1/teacher/lessons/1/students/1/result
+
 ### Get Teacher's own students (Requires TEACHER)
 GET http://localhost:8080/api/v1/teacher/students
 Authorization: Bearer {{teacher_token}}

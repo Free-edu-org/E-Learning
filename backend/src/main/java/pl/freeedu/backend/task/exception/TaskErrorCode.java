@@ -17,7 +17,10 @@ public enum TaskErrorCode implements ErrorCode {
 													HttpStatus.BAD_REQUEST), STT_SERVICE_UNAVAILABLE(
 															"Speech-to-text service is unavailable",
 															HttpStatus.SERVICE_UNAVAILABLE), LESSON_NOT_FOUND(
-																	"Lesson not found", HttpStatus.NOT_FOUND);
+																	"Lesson not found",
+																	HttpStatus.NOT_FOUND), LESSON_RESULT_NOT_FOUND(
+																			"Lesson result not found",
+																			HttpStatus.NOT_FOUND);
 
 	private final String defaultMessage;
 	private final HttpStatus status;

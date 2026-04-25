@@ -126,9 +126,10 @@ function getLessonStatusTag(lesson: StudentLesson) {
 interface ResultDialogProps {
   lesson: StudentLesson | null;
   onClose: () => void;
+  onOpenDetails: (lessonId: number) => void;
 }
 
-function ResultDialog({ lesson, onClose }: ResultDialogProps) {
+function ResultDialog({ lesson, onClose, onOpenDetails }: ResultDialogProps) {
   const theme = useTheme();
   if (!lesson) return null;
 
@@ -188,6 +189,18 @@ function ResultDialog({ lesson, onClose }: ResultDialogProps) {
           sx={{ width: "100%", justifyContent: "center" }}
         />
       </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Button onClick={onClose} sx={{ textTransform: "none", fontWeight: 600 }}>
+          Zamknij
+        </Button>
+        <Button
+          variant="contained"
+          onClick={() => onOpenDetails(lesson.id)}
+          sx={{ textTransform: "none", fontWeight: 600, borderRadius: 2 }}
+        >
+          Przejdź do szczegółów
+        </Button>
+      </DialogActions>
     </Dialog>
   );
 }
@@ -760,29 +773,27 @@ export function StudentDashboard() {
                             <Button
                               fullWidth
                               variant="outlined"
-                              startIcon={<CompletedIcon />}
-                              sx={{
-                                ...panelFooterButtonSx,
-                                color: "success.main",
-                                borderColor: alpha(
-                                  theme.palette.success.main,
-                                  0.4,
-                                ),
-                              }}
-                            >
-                              Ukończono
-                            </Button>
-                            <Button
-                              variant="outlined"
                               startIcon={<ResultIcon />}
                               onClick={() => setResultLesson(lesson)}
                               sx={{
                                 ...panelFooterButtonSx,
-                                minWidth: "auto",
                                 px: 2,
                               }}
                             >
                               Wynik
+                            </Button>
+                            <Button
+                              fullWidth
+                              variant="contained"
+                              onClick={() =>
+                                navigate(`/student/lessons/${lesson.id}/result`)
+                              }
+                              sx={{
+                                ...panelFooterButtonSx,
+                                px: 2,
+                              }}
+                            >
+                              Szczegóły
                             </Button>
                           </Stack>
                         ) : isLocked ? (
@@ -822,6 +833,7 @@ export function StudentDashboard() {
         <ResultDialog
           lesson={resultLesson}
           onClose={() => setResultLesson(null)}
+          onOpenDetails={(id) => navigate(`/student/lessons/${id}/result`)}
         />
       )}
       {progressOpen && (

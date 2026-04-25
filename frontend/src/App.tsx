@@ -5,11 +5,15 @@ import { useAuth } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Login } from "./features/auth/Login";
 import { TeacherDashboard } from "./features/teacher/TeacherDashboard";
+import { TeacherLessonCreateView } from "./features/teacher/TeacherLessonCreateView";
+import { TeacherLessonEditView } from "./features/teacher/TeacherLessonEditView";
 import { LessonStatsView } from "./features/teacher/LessonStatsView";
+import { TeacherLessonResultView } from "./features/teacher/TeacherLessonResultView";
 import { TeacherStudentsView } from "./features/teacher/TeacherStudentsView";
 import { AdminDashboard } from "./features/admin/AdminDashboard";
 import { StudentDashboard } from "./features/student/StudentDashboard";
 import { LessonSolver } from "./features/student/LessonSolver";
+import { StudentLessonResultView } from "./features/student/StudentLessonResultView";
 
 /** Redirects to the correct dashboard based on the user's role. */
 function RoleBasedRedirect() {
@@ -46,8 +50,20 @@ function App() {
                 element={<TeacherStudentsView />}
               />
               <Route
+                path="/teacher/lessons/new"
+                element={<TeacherLessonCreateView />}
+              />
+              <Route
+                path="/teacher/lessons/:lessonId/edit"
+                element={<TeacherLessonEditView />}
+              />
+              <Route
                 path="/teacher/lessons/:lessonId/stats"
                 element={<LessonStatsView />}
+              />
+              <Route
+                path="/teacher/lessons/:lessonId/students/:userId/result"
+                element={<TeacherLessonResultView />}
               />
             </Route>
 
@@ -60,6 +76,10 @@ function App() {
               <Route
                 path="/student/lessons/:lessonId"
                 element={<LessonSolver />}
+              />
+              <Route
+                path="/student/lessons/:lessonId/result"
+                element={<StudentLessonResultView />}
               />
             </Route>
 

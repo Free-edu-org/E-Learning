@@ -21,6 +21,7 @@ interface LessonResultDialogProps {
   result: SubmitAnswersResponse | null;
   onClose: () => void;
   onBackToDashboard: () => void;
+  onOpenDetails: () => void;
 }
 
 export function LessonResultDialog({
@@ -28,6 +29,7 @@ export function LessonResultDialog({
   result,
   onClose,
   onBackToDashboard,
+  onOpenDetails,
 }: LessonResultDialogProps) {
   const theme = useTheme();
 
@@ -145,19 +147,23 @@ export function LessonResultDialog({
               <Typography variant="body2" fontWeight={500}>
                 Zadanie {index + 1}
               </Typography>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ ml: "auto" }}
-              >
-                {detail.taskType}
-              </Typography>
             </Stack>
           ))}
         </Stack>
       </AppDialogBody>
 
       <AppDialogFooter>
+        <Button
+          variant="outlined"
+          onClick={onOpenDetails}
+          sx={{
+            textTransform: "none",
+            fontWeight: 600,
+            borderRadius: 2,
+          }}
+        >
+          Szczegóły
+        </Button>
         <Button
           variant="contained"
           startIcon={<BackIcon />}

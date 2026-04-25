@@ -59,10 +59,39 @@ export interface SubmitAnswersResponse {
   details: SubmitAnswerDetail[];
 }
 
+export interface LessonResultTaskDetail {
+  taskId: number;
+  taskType: "choose" | "write" | "scatter" | "speak";
+  section: string | null;
+  taskText: string;
+  hint: string | null;
+  userAnswer: string | null;
+  correctAnswer: string | null;
+  isCorrect: boolean;
+  possibleAnswers: string | null;
+  words: string | null;
+}
+
+export interface LessonResultDetailsResponse {
+  lessonId: number;
+  lessonTitle: string;
+  userId: number;
+  username: string;
+  score: number;
+  maxScore: number;
+  resultPercent: number;
+  completedAt: string | null;
+  tasks: LessonResultTaskDetail[];
+}
+
 export const studentService = {
   getStats: () => fetchApi<StudentStats>("/api/v1/student/stats"),
   getLessons: () => fetchApi<StudentLesson[]>("/api/v1/student/lessons"),
   getProgress: () => fetchApi<StudentProgress>("/api/v1/student/progress"),
+  getLessonResultDetails: (lessonId: number) =>
+    fetchApi<LessonResultDetailsResponse>(
+      `/api/v1/student/lessons/${lessonId}/result`,
+    ),
   submitAnswers: (lessonId: number, payload: SubmitAnswersRequest) =>
     fetchApi<SubmitAnswersResponse>(`/api/v1/lessons/${lessonId}/submit`, {
       method: "POST",
