@@ -224,11 +224,7 @@ export function ErrorPage({
           />
 
           {/* Actions */}
-          <Stack
-            direction="row"
-            spacing={2}
-            sx={{ pt: 1 }}
-          >
+          <Stack direction="row" spacing={2} sx={{ pt: 1 }}>
             <Button
               variant="contained"
               size="large"
@@ -248,8 +244,7 @@ export function ErrorPage({
                   boxShadow: `0 6px 28px ${alpha(config.color, 0.4)}`,
                   transform: "translateY(-1px)",
                 },
-                transition:
-                  "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+                transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
               }}
             >
               Powrót do panelu

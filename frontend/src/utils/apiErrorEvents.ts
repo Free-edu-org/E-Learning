@@ -40,4 +40,3 @@ export function useApiErrorHandler() {
 
   return { apiError: error, clearApiError };
 }
-

@@ -1,4 +1,12 @@
-import { BrowserRouter, Routes, Route, Navigate, Outlet, useNavigate, useLocation } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  Outlet,
+  useNavigate,
+  useLocation,
+} from "react-router-dom";
 import { AppThemeProvider } from "./context/ThemeContext";
 import { AuthProvider } from "./context/AuthContext";
 import { useAuth } from "./context/AuthContext";
@@ -62,12 +70,7 @@ function ErrorGuard() {
   };
 
   if (apiError) {
-    return (
-      <ErrorPage
-        type={apiError.type}
-        onReturn={handleReturn}
-      />
-    );
+    return <ErrorPage type={apiError.type} onReturn={handleReturn} />;
   }
 
   return <Outlet />;
@@ -141,4 +144,3 @@ function App() {
 }
 
 export default App;
-
