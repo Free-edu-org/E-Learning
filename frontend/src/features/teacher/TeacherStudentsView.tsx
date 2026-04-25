@@ -35,7 +35,6 @@ import {
   ExpandMoreOutlined as ExpandMoreIcon,
   GroupOutlined as GroupIcon,
   PersonAddOutlined as PersonAddIcon,
-  PersonOutlined as PersonIcon,
   RefreshOutlined as RefreshIcon,
   SaveOutlined as SaveIcon,
   SearchOutlined as SearchIcon,
@@ -69,6 +68,7 @@ import {
   panelSurfaceSx,
   panelToolbarSx,
 } from "@/components/ui/panel/panelStyles";
+import { UserAvatar } from "@/components/ui/avatar/UserAvatar";
 import { uiTokens } from "@/theme/uiTokens";
 
 type DialogFeedbackState = {
@@ -545,6 +545,15 @@ export function TeacherStudentsView() {
       <Container maxWidth="xl" sx={{ pt: 4, position: "relative" }}>
         <DashboardTopBar onLogout={handleLogout} />
 
+        <DashboardHeader
+          loading={loadingUser}
+          username={user?.username}
+          subtitle="Zarządzanie grupami i uczniami"
+          fallbackName="Nauczycielu"
+          user={user}
+          onUserUpdated={setUser}
+        />
+
         <Button
           startIcon={<BackIcon />}
           onClick={() => navigate("/teacher")}
@@ -552,21 +561,13 @@ export function TeacherStudentsView() {
             textTransform: "none",
             fontWeight: 600,
             mb: 2,
+            mt: -1, // Subtle pull up to header
             color: "text.secondary",
+            "&:hover": { bgcolor: "transparent", color: "primary.main" },
           }}
         >
           Wróć do panelu
         </Button>
-
-        <DashboardHeader
-          loading={loadingUser}
-          username={user?.username}
-          subtitle="Zarządzanie grupami i uczniami"
-          fallbackName="Nauczycielu"
-          icon={<GroupIcon sx={{ color: "primary.main" }} />}
-          user={user}
-          onUserUpdated={setUser}
-        />
 
         {errorUser && (
           <Alert severity="warning" sx={{ mb: 3, borderRadius: 2 }}>
@@ -859,8 +860,11 @@ export function TeacherStudentsView() {
                                   fontSize="small"
                                   sx={{ color: "text.disabled", flexShrink: 0 }}
                                 />
-                                <PersonIcon
-                                  sx={{ color: "primary.main", flexShrink: 0 }}
+                                <UserAvatar
+                                  avatarUrl={student.avatarUrl}
+                                  username={student.username}
+                                  size={32}
+                                  sx={{ flexShrink: 0 }}
                                 />
                                 <Box sx={{ minWidth: 0 }}>
                                   <Typography

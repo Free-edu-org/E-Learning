@@ -1,4 +1,4 @@
-﻿import {
+import {
   Box,
   Button,
   Card,
@@ -6,6 +6,7 @@
   CardContent,
   Chip,
   Divider,
+  Stack,
   Switch,
   Tooltip,
   Typography,
@@ -14,7 +15,6 @@ import {
   BarChart as BarChartIcon,
   DeleteOutline as DeleteIcon,
   EditOutlined as EditIcon,
-  MenuBook as BookIcon,
 } from "@mui/icons-material";
 import type { Lesson } from "@/api/lessonService";
 import {
@@ -136,19 +136,21 @@ export function LessonCard({
       >
         <StatusDot active={lesson.isActive} />
 
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography
-            variant="body2"
-            fontWeight={700}
-            color="primary.main"
-            noWrap
-          >
-            {lesson.title}
-          </Typography>
-          <Typography variant="caption" color="text.secondary" noWrap>
-            {lesson.theme}
-          </Typography>
-        </Box>
+        <Stack direction="row" spacing={1.25} alignItems="center">
+          <Box sx={{ minWidth: 0 }}>
+            <Typography
+              variant="body2"
+              fontWeight={700}
+              color="primary.main"
+              noWrap
+            >
+              {lesson.title}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" noWrap>
+              {lesson.theme}
+            </Typography>
+          </Box>
+        </Stack>
 
         <Box
           sx={{
@@ -225,11 +227,8 @@ export function LessonCard({
         }}
       >
         <Box
-          sx={{ display: "flex", alignItems: "flex-start", gap: 1, mb: 0.5 }}
+          sx={{ display: "flex", alignItems: "flex-start", gap: 1.5, mb: 0.5 }}
         >
-          <BookIcon
-            sx={{ color: "primary.main", fontSize: 18, mt: 0.3, flexShrink: 0 }}
-          />
           <Typography
             variant="body1"
             fontWeight={700}
@@ -240,11 +239,7 @@ export function LessonCard({
           </Typography>
         </Box>
 
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{ mb: 1.5, ml: "26px" }}
-        >
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
           {lesson.theme}
         </Typography>
 

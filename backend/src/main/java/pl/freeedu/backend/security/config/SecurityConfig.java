@@ -21,6 +21,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsConfigurationSource;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
+import org.springframework.http.HttpMethod;
 import java.util.Arrays;
 
 import pl.freeedu.backend.security.jwt.JwtAuthenticationFilter;
@@ -80,9 +81,10 @@ public class SecurityConfig {
 				.securityContextRepository(NoOpServerSecurityContextRepository.getInstance())
 				.authorizeExchange(exchanges -> exchanges.pathMatchers("/api/v1/auth/**").permitAll()
 						.pathMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**", "/webjars/**")
-						.permitAll().pathMatchers("/api/v1/admin/**").hasRole("ADMIN")
-						.pathMatchers("/api/v1/teacher/**").hasRole("TEACHER").pathMatchers("/api/v1/student/**")
-						.hasRole("STUDENT").anyExchange().authenticated())
+						.permitAll().pathMatchers(HttpMethod.GET, "/uploads/avatars/**").permitAll()
+						.pathMatchers("/api/v1/admin/**").hasRole("ADMIN").pathMatchers("/api/v1/teacher/**")
+						.hasRole("TEACHER").pathMatchers("/api/v1/student/**").hasRole("STUDENT").anyExchange()
+						.authenticated())
 				.addFilterAt(jwtAuthenticationFilter, SecurityWebFiltersOrder.AUTHENTICATION).build();
 	}
 

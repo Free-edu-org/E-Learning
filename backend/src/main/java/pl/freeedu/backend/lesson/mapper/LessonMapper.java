@@ -11,5 +11,6 @@ public interface LessonMapper {
 	@Mapping(target = "groups", ignore = true)
 	@Mapping(source = "teacher.id", target = "teacherId")
 	@Mapping(source = "teacher.username", target = "teacherName")
+	@Mapping(source = "teacher.avatarUrl", target = "teacherAvatarUrl")
 	LessonResponse toResponse(Lesson lesson);
 }

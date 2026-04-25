@@ -19,4 +19,5 @@ public class LessonStatsStudentResult {
 	private Integer score;
 	private Integer maxScore;
 	private Double resultPercent;
+	private String avatarUrl;
 }

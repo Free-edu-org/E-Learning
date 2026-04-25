@@ -8,6 +8,7 @@ import { alpha } from "@mui/material/styles";
 import type { UserProfile } from "@/api/userService";
 import { AccountSettingsDialog } from "@/components/ui/panel/AccountSettingsDialog";
 import { panelSurfaceSx } from "@/components/ui/panel/panelStyles";
+import { UserAvatar } from "@/components/ui/avatar/UserAvatar";
 
 interface DashboardHeaderProps {
   loading: boolean;
@@ -17,7 +18,7 @@ interface DashboardHeaderProps {
   subtitle: string;
   /** Fallback name used when username is null/empty */
   fallbackName?: string;
-  /** Custom icon rendered inside the logo box. Defaults to SchoolIcon. */
+  /** Custom icon rendered inside the logo box. Defaults to UserAvatar or SchoolIcon. */
   icon?: ReactNode;
   user?: UserProfile | null;
   onUserUpdated?: (user: UserProfile) => void;
@@ -38,13 +39,28 @@ export function DashboardHeader({
 }: DashboardHeaderProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsEnabled = Boolean(user && onUserUpdated);
-  const headerIcon = icon ?? <SchoolIcon sx={{ color: "primary.main" }} />;
+
+  const isAvatar = Boolean(user && !icon);
+
+  const headerIcon =
+    icon ??
+    (user ? (
+      <UserAvatar
+        avatarUrl={user.avatarUrl}
+        username={user.username}
+        size={48}
+      />
+    ) : (
+      <SchoolIcon sx={{ color: "primary.main" }} />
+    ));
 
   const iconBoxSx = {
-    ...panelSurfaceSx,
-    width: 44,
-    height: 44,
-    boxShadow: 1,
+    ...(isAvatar ? {} : panelSurfaceSx),
+    width: 48,
+    height: 48,
+    p: isAvatar ? 0 : undefined,
+    boxShadow: isAvatar ? 0 : 1,
+    overflow: "visible",
   };
 
   return (

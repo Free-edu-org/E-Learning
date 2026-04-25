@@ -80,7 +80,7 @@ public class LessonService {
 
 			return filtered;
 		}).subscribeOn(Schedulers.boundedElastic()).flatMapMany(Flux::fromIterable)
-				.flatMap(lesson -> Mono.fromCallable(() -> {
+				.concatMap(lesson -> Mono.fromCallable(() -> {
 					LessonResponse resp = lessonMapper.toResponse(lesson);
 					List<GroupDto> groups = groupHasLessonRepository.findGroupsForLesson(lesson.getId());
 					resp.setGroups(groups);

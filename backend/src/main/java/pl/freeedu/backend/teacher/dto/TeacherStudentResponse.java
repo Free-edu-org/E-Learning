@@ -18,4 +18,5 @@ public class TeacherStudentResponse {
 	private String role;
 	private LocalDateTime createdAt;
 	private Integer groupId;
+	private String avatarUrl;
 }

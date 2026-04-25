@@ -9,13 +9,17 @@ import { useAppTheme } from "@/context/ThemeContext";
 
 interface DashboardTopBarProps {
   onLogout: () => void;
+  hideLogout?: boolean;
 }
 
 /**
  * Shared top-right bar rendered in Student and Teacher dashboards.
  * Contains the dark/light mode toggle and the logout button.
  */
-export function DashboardTopBar({ onLogout }: DashboardTopBarProps) {
+export function DashboardTopBar({
+  onLogout,
+  hideLogout = false,
+}: DashboardTopBarProps) {
   const theme = useTheme();
   const { toggleColorMode } = useAppTheme();
 
@@ -56,20 +60,22 @@ export function DashboardTopBar({ onLogout }: DashboardTopBarProps) {
           }}
         />
       </Box>
-      <Button
-        variant="outlined"
-        size="small"
-        startIcon={<LogoutIcon />}
-        onClick={onLogout}
-        sx={{
-          borderRadius: 2,
-          textTransform: "none",
-          fontWeight: 600,
-          bgcolor: "background.paper",
-        }}
-      >
-        Wyloguj
-      </Button>
+      {!hideLogout && (
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<LogoutIcon />}
+          onClick={onLogout}
+          sx={{
+            borderRadius: 2,
+            textTransform: "none",
+            fontWeight: 600,
+            bgcolor: "background.paper",
+          }}
+        >
+          Wyloguj
+        </Button>
+      )}
     </Box>
   );
 }

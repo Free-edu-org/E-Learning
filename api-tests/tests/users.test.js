@@ -220,6 +220,7 @@ describe('Users API (/api/v1/users)', () => {
                 expect(response.data.email).toBe(staticStudent1.email);
                 expect(response.data.username).toBe(staticStudent1.username);
                 expect(response.data.role).toBe('STUDENT');
+                expect(response.data).toHaveProperty('avatarUrl');
             });
 
             it('should fail without token (401 Unauthorized)', async () => {
@@ -239,6 +240,7 @@ describe('Users API (/api/v1/users)', () => {
                 const response = await apiClient.get(`/users/${newStudentId}`);
                 expect(response.status).toBe(200);
                 expect(response.data.id).toBe(newStudentId);
+                expect(response.data).toHaveProperty('avatarUrl');
             });
 
             it('should allow access if ADMIN (200 OK)', async () => {
@@ -272,6 +274,7 @@ describe('Users API (/api/v1/users)', () => {
                 expect(response.status).toBe(200);
                 expect(response.data.email).toBe(updateData.email);
                 expect(response.data.username).toBe(updateData.username);
+                expect(response.data).toHaveProperty('avatarUrl');
             });
 
             it('should allow admin to update another profile (200 OK)', async () => {

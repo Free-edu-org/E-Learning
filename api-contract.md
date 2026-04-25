@@ -126,7 +126,8 @@ Default local development base URL is `http://localhost:8080`
   "username": "student1",
   "email": "user@example.com",
   "role": "STUDENT",
-  "createdAt": "2026-03-02T21:00:00"
+  "createdAt": "2026-03-02T21:00:00",
+  "avatarUrl": "preset:avatar_1"
 }
 ```
 
@@ -148,7 +149,8 @@ Default local development base URL is `http://localhost:8080`
   "username": "student1",
   "email": "user@example.com",
   "role": "STUDENT",
-  "createdAt": "2026-03-02T21:00:00"
+  "createdAt": "2026-03-02T21:00:00",
+  "avatarUrl": "preset:avatar_1"
 }
 ```
 
@@ -239,6 +241,68 @@ Default local development base URL is `http://localhost:8080`
 *(Empty Response Body)*
 
 **Known Errors:**
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Lack of permissions (not admin and not owner).
+- `USER_NOT_FOUND` (404 Not Found): User does not exist.
+
+---
+
+### 2.8. Upload Avatar
+- **URL**: `/api/v1/users/{id}/avatar`
+- **Method**: `POST`
+- **Description**: Uploads a custom avatar image (JPEG, PNG). Maximum file size is 2 MB. Requires `ADMIN` authority OR the requesting user ID must match the parameter ID.
+
+**Request:** `multipart/form-data`
+- `file`: The image file to upload.
+
+**Success (200 OK):**
+```json
+{
+  "id": 1,
+  "username": "student1",
+  "email": "user@example.com",
+  "role": "STUDENT",
+  "createdAt": "2026-03-02T21:00:00",
+  "avatarUrl": "/uploads/avatars/1.jpg"
+}
+```
+
+**Known Errors:**
+- `AVATAR_INVALID_FILE_TYPE` (400 Bad Request): File format is not JPEG or PNG.
+- `AVATAR_FILE_TOO_LARGE` (400 Bad Request): File is larger than 2 MB.
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Lack of permissions (not admin and not owner).
+- `USER_NOT_FOUND` (404 Not Found): User does not exist.
+
+---
+
+### 2.9. Set Preset Avatar
+- **URL**: `/api/v1/users/{id}/avatar/preset`
+- **Method**: `PUT`
+- **Description**: Sets the user's avatar to one of the predefined presets (e.g., `avatar_1`, `avatar_2`). Requires `ADMIN` authority OR the requesting user ID must match the parameter ID.
+
+**Request Body (JSON):**
+```json
+{
+  "presetName": "avatar_3"
+}
+```
+
+**Success (200 OK):**
+```json
+{
+  "id": 1,
+  "username": "student1",
+  "email": "user@example.com",
+  "role": "STUDENT",
+  "createdAt": "2026-03-02T21:00:00",
+  "avatarUrl": "preset:avatar_3"
+}
+```
+
+**Known Errors:**
+- `AVATAR_INVALID_PRESET` (400 Bad Request): Preset name is not in the allowed list.
+- `VALIDATION_FAILED` (400 Bad Request): Request body is missing or invalid.
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
 - `FORBIDDEN` (403 Forbidden): Lack of permissions (not admin and not owner).
 - `USER_NOT_FOUND` (404 Not Found): User does not exist.
@@ -436,6 +500,7 @@ Poniżej znajdziesz opis endpointów do zarządzania lekcjami. Ścieżka bazowa:
     "isActive": true,
     "teacherId": 3,
     "teacherName": "pan_tomasz",
+    "teacherAvatarUrl": "preset:avatar_3",
     "createdAt": "2026-03-21T10:00:00",
     "groups": [ { "id": 1, "name": "Angielski A1" } ]
   }
@@ -450,6 +515,7 @@ Poniżej znajdziesz opis endpointów do zarządzania lekcjami. Ścieżka bazowa:
 | `isActive` | Boolean               | Czy lekcja jest aktywna |
 | `teacherId` | Integer               | ID nauczyciela, który utworzył lekcję |
 | `teacherName` | String                | Username nauczyciela |
+| `teacherAvatarUrl` | String                | URL do awatara nauczyciela (preset:name lub /uploads/...) |
 | `createdAt` | String (ISO datetime) | Data utworzenia |
 | `groups` | List<GroupDto>        | Lista grup przypisanych do lekcji (id, name) |
 
@@ -668,7 +734,8 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
   "email": "new.student@example.com",
   "role": "STUDENT",
   "createdAt": "2026-03-30T20:15:00",
-  "groupId": 1
+  "groupId": 1,
+  "avatarUrl": "preset:avatar_1"
 }
 ```
 
@@ -706,7 +773,8 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
   "email": "updated.student@example.com",
   "role": "STUDENT",
   "createdAt": "2026-03-30T20:15:00",
-  "groupId": 2
+  "groupId": 2,
+  "avatarUrl": "preset:avatar_5"
 }
 ```
 
@@ -919,6 +987,7 @@ Warstwa BFF dla uczniow.
     "isActive": true,
     "teacherId": 3,
     "teacherName": "pan_tomasz",
+    "teacherAvatarUrl": "preset:avatar_3",
     "createdAt": "2026-03-21T10:00:00",
     "groups": [
       { "id": 1, "name": "Angielski A1" }

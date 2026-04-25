@@ -83,7 +83,7 @@ public class TeacherService {
 	public Flux<LessonResponse> getLessons() {
 		return securityService.getCurrentUserId().subscribeOn(Schedulers.boundedElastic())
 				.flatMapMany(teacherId -> Flux.fromIterable(lessonRepository.findByTeacher_Id(teacherId)))
-				.flatMap(lesson -> Mono.fromCallable(() -> {
+				.concatMap(lesson -> Mono.fromCallable(() -> {
 					LessonResponse resp = lessonMapper.toResponse(lesson);
 					resp.setGroups(groupHasLessonRepository.findGroupsForLesson(lesson.getId()));
 					return resp;
@@ -100,7 +100,7 @@ public class TeacherService {
 			return userRepository.findStudentsWithGroupByTeacherId(teacherId, Role.STUDENT).stream()
 					.map(proj -> TeacherStudentResponse.builder().id(proj.getId()).username(proj.getUsername())
 							.email(proj.getEmail()).role(proj.getRole().name()).createdAt(proj.getCreatedAt())
-							.groupId(proj.getGroupId()).build())
+							.groupId(proj.getGroupId()).avatarUrl(proj.getAvatarUrl()).build())
 					.toList();
 		}).subscribeOn(Schedulers.boundedElastic()).flatMapMany(Flux::fromIterable));
 	}
@@ -150,7 +150,7 @@ public class TeacherService {
 						return TeacherStudentResponse.builder().id(savedStudent.getId())
 								.username(savedStudent.getUsername()).email(savedStudent.getEmail())
 								.role(savedStudent.getRole().name()).createdAt(savedStudent.getCreatedAt())
-								.groupId(group.getId()).build();
+								.groupId(group.getId()).avatarUrl(savedStudent.getAvatarUrl()).build();
 					} catch (DataIntegrityViolationException ex) {
 						if (userRepository.existsByEmail(request.getEmail())) {
 							throw new UserException(UserErrorCode.EMAIL_ALREADY_TAKEN);
@@ -209,7 +209,7 @@ public class TeacherService {
 						return TeacherStudentResponse.builder().id(savedStudent.getId())
 								.username(savedStudent.getUsername()).email(savedStudent.getEmail())
 								.role(savedStudent.getRole().name()).createdAt(savedStudent.getCreatedAt())
-								.groupId(group.getId()).build();
+								.groupId(group.getId()).avatarUrl(savedStudent.getAvatarUrl()).build();
 					} catch (DataIntegrityViolationException ex) {
 						if (!originalEmail.equals(request.getEmail())
 								&& userRepository.existsByEmail(request.getEmail())) {

@@ -31,6 +31,8 @@ services:
       STT_BASE_URL: http://stt-service:8000
     ports:
       - "${BACKEND_PORT}:8080"
+    volumes:
+      - uploads_data:/app/uploads
     depends_on:
       mysql:
         condition: service_healthy
@@ -60,3 +62,4 @@ services:
 
 volumes:
   mysql_data:
+  uploads_data:
