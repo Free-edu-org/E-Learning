@@ -35,6 +35,38 @@ Authorization: Bearer {{auth_token}}
 DELETE http://localhost:8080/api/v1/lessons/1
 Authorization: Bearer {{auth_token}}
 
+### Upload lesson attachment (PDF/TXT/DOCX/DOC/ODT) (requires ADMIN or lesson owner TEACHER)
+POST http://localhost:8080/api/v1/lessons/1/attachments
+Content-Type: multipart/form-data; boundary=boundary
+Authorization: Bearer {{auth_token}}
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="notes.pdf"
+Content-Type: application/pdf
+
+< ./notes.pdf
+--boundary--
+
+### Upload lesson attachment — TXT example
+POST http://localhost:8080/api/v1/lessons/1/attachments
+Content-Type: multipart/form-data; boundary=boundary
+Authorization: Bearer {{auth_token}}
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="notes.txt"
+Content-Type: text/plain
+
+< ./notes.txt
+--boundary--
+
+### Download lesson attachment (requires ADMIN, lesson owner TEACHER, or STUDENT with lesson access)
+GET http://localhost:8080/api/v1/lessons/1/attachments/1
+Authorization: Bearer {{auth_token}}
+
+### Delete lesson attachment (requires ADMIN or lesson owner TEACHER)
+DELETE http://localhost:8080/api/v1/lessons/1/attachments/1
+Authorization: Bearer {{auth_token}}
+
 ### Create lesson with invalid payload (expect 400)
 POST http://localhost:8080/api/v1/lessons
 Content-Type: application/json

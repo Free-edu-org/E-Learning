@@ -518,6 +518,7 @@ Poniżej znajdziesz opis endpointów do zarządzania lekcjami. Ścieżka bazowa:
 | `teacherAvatarUrl` | String                | URL do awatara nauczyciela (preset:name lub /uploads/...) |
 | `createdAt` | String (ISO datetime) | Data utworzenia |
 | `groups` | List<GroupDto>        | Lista grup przypisanych do lekcji (id, name) |
+| `attachment` | LessonAttachmentResponse \| null | Metadane załącznika (PDF/TXT/DOCX/DOC/ODT) lub `null` |
 
 **Known Errors:**
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
@@ -603,6 +604,113 @@ Zwraca zaktualizowaną reprezentację `LessonResponse`.
 - `LESSON_NOT_FOUND` (404 Not Found)
 - `UNAUTHORIZED` (401 Unauthorized)
 - `FORBIDDEN` (403 Forbidden)
+
+---
+
+### 4.6. Upload lesson attachment
+- **URL**: `/api/v1/lessons/{lessonId}/attachments`
+- **Method**: `POST`
+- **Content-Type**: `multipart/form-data`
+- **Description**: Przesyła plik jako załącznik do lekcji. Jeżeli lekcja już ma załącznik, poprzedni jest usuwany i zastępowany nowym. Tylko jeden załącznik na lekcję.
+- **Authorization**: `ADMIN` lub właściciel lekcji (`TEACHER`)
+
+**Form part:**
+- `file` (binary) — plik, max 10 MB
+
+**Dozwolone typy plików:**
+
+| MIME type | Rozszerzenie |
+|-----------|--------------|
+| `application/pdf` | `.pdf` |
+| `text/plain` | `.txt` |
+| `application/vnd.openxmlformats-officedocument.wordprocessingml.document` | `.docx` |
+| `application/msword` | `.doc` |
+| `application/vnd.oasis.opendocument.text` | `.odt` |
+
+**Success (201 Created):**
+```json
+{
+  "id": 1,
+  "originalFileName": "notatki.pdf",
+  "contentType": "application/pdf",
+  "fileSize": 204800,
+  "createdAt": "2026-04-25T10:00:00"
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | Integer | ID załącznika |
+| `originalFileName` | String | Oryginalna nazwa pliku |
+| `contentType` | String | Typ MIME przesłanego pliku (np. `application/pdf`, `text/plain`) |
+| `fileSize` | Long | Rozmiar pliku w bajtach |
+| `createdAt` | String (ISO datetime) | Data przesłania |
+
+**Known Errors:**
+- `LESSON_NOT_FOUND` (404 Not Found)
+- `ATTACHMENT_INVALID_FILE_TYPE` (400 Bad Request): Niedozwolony typ pliku. Dozwolone: PDF, TXT, DOCX, DOC, ODT.
+- `ATTACHMENT_FILE_TOO_LARGE` (400 Bad Request): Plik przekracza 10 MB.
+- `UNAUTHORIZED` (401 Unauthorized)
+- `FORBIDDEN` (403 Forbidden)
+
+---
+
+### 4.7. Download attachment
+- **URL**: `/api/v1/lessons/{lessonId}/attachments/{attachmentId}`
+- **Method**: `GET`
+- **Description**: Pobiera plik załącznika. Wymaga autoryzacji — nie jest dostępny publicznie. Uczeń może pobrać załącznik tylko jeśli ma dostęp do tej lekcji.
+- **Authorization**: `ADMIN`, właściciel lekcji (`TEACHER`) lub uczeń mający dostęp do lekcji (`STUDENT`)
+
+**Success (200 OK):**
+- Response body: binary file (`Content-Type` zgodny z typem przesłanego pliku)
+- Header: `Content-Disposition: attachment; filename="<originalFileName>"`
+
+**Known Errors:**
+- `LESSON_NOT_FOUND` (404 Not Found)
+- `ATTACHMENT_NOT_FOUND` (404 Not Found)
+- `UNAUTHORIZED` (401 Unauthorized)
+- `FORBIDDEN` (403 Forbidden)
+
+---
+
+### 4.8. Delete lesson attachment
+- **URL**: `/api/v1/lessons/{lessonId}/attachments/{attachmentId}`
+- **Method**: `DELETE`
+- **Description**: Usuwa załącznik z lekcji. Plik jest fizycznie usuwany z dysku.
+- **Authorization**: `ADMIN` lub właściciel lekcji (`TEACHER`)
+
+**Success (204 No Content):** *(Empty Response Body)*
+
+**Known Errors:**
+- `LESSON_NOT_FOUND` (404 Not Found)
+- `ATTACHMENT_NOT_FOUND` (404 Not Found)
+- `UNAUTHORIZED` (401 Unauthorized)
+- `FORBIDDEN` (403 Forbidden)
+
+---
+
+**LessonResponse** (`attachment` field — present in all lesson endpoints):
+```json
+{
+  "id": 12,
+  "title": "Present Simple - lesson 1",
+  "theme": "Grammar",
+  "isActive": true,
+  "teacherId": 3,
+  "teacherName": "pan_tomasz",
+  "teacherAvatarUrl": "preset:avatar_3",
+  "createdAt": "2026-03-21T10:00:00",
+  "groups": [ { "id": 1, "name": "Angielski A1" } ],
+  "attachment": {
+    "id": 1,
+    "originalFileName": "notatki.pdf",
+    "contentType": "application/pdf",
+    "fileSize": 204800,
+    "createdAt": "2026-04-25T10:00:00"
+  }
+}
+```
+Pole `attachment` ma wartość `null` jeśli lekcja nie ma załącznika.
 
 ---
 

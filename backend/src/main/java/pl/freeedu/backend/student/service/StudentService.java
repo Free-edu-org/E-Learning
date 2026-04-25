@@ -14,6 +14,7 @@ import pl.freeedu.backend.lesson.mapper.LessonMapper;
 import pl.freeedu.backend.lesson.model.Lesson;
 import pl.freeedu.backend.lesson.repository.GroupHasLessonRepository;
 import pl.freeedu.backend.lesson.repository.LessonRepository;
+import pl.freeedu.backend.lesson.service.LessonAttachmentService;
 import pl.freeedu.backend.security.service.SecurityService;
 import pl.freeedu.backend.student.dto.StudentLessonResponse;
 import pl.freeedu.backend.student.dto.StudentProgressResponse;
@@ -40,11 +41,12 @@ public class StudentService {
 	private final UserLessonRepository userLessonRepository;
 	private final LessonMapper lessonMapper;
 	private final LessonResultDetailsService lessonResultDetailsService;
+	private final LessonAttachmentService lessonAttachmentService;
 
 	public StudentService(SecurityService securityService, UserInGroupRepository userInGroupRepository,
 			GroupHasLessonRepository groupHasLessonRepository, LessonRepository lessonRepository,
 			UserLessonRepository userLessonRepository, LessonMapper lessonMapper,
-			LessonResultDetailsService lessonResultDetailsService) {
+			LessonResultDetailsService lessonResultDetailsService, LessonAttachmentService lessonAttachmentService) {
 		this.securityService = securityService;
 		this.userInGroupRepository = userInGroupRepository;
 		this.groupHasLessonRepository = groupHasLessonRepository;
@@ -52,6 +54,7 @@ public class StudentService {
 		this.userLessonRepository = userLessonRepository;
 		this.lessonMapper = lessonMapper;
 		this.lessonResultDetailsService = lessonResultDetailsService;
+		this.lessonAttachmentService = lessonAttachmentService;
 	}
 
 	public Mono<StudentStatsResponse> getStats() {
@@ -100,6 +103,8 @@ public class StudentService {
 		Map<Integer, UserLesson> userLessonsByLessonId = userLessonRepository
 				.findByUserIdAndLessonIdIn(userId, lessonIds).stream()
 				.collect(Collectors.toMap(UserLesson::getLessonId, Function.identity()));
+		Map<Integer, pl.freeedu.backend.lesson.dto.LessonAttachmentResponse> attachments = lessonAttachmentService
+				.findByLessonIds(lessonIds);
 
 		List<StudentLessonResponse> studentLessons = new ArrayList<>();
 		for (Lesson lesson : lessons) {
@@ -117,7 +122,8 @@ public class StudentService {
 					.teacherName(lessonResponse.getTeacherName()).teacherAvatarUrl(lessonResponse.getTeacherAvatarUrl())
 					.createdAt(lessonResponse.getCreatedAt()).groups(lessonResponse.getGroups())
 					.status(userLesson != null ? userLesson.getStatus().name() : "NOT_STARTED").score(score)
-					.maxScore(maxScore).resultPercent(toPercent(score, maxScore)).build());
+					.maxScore(maxScore).resultPercent(toPercent(score, maxScore))
+					.attachment(attachments.get(lesson.getId())).build());
 		}
 
 		studentLessons.sort(Comparator.comparing(StudentLessonResponse::getCreatedAt,

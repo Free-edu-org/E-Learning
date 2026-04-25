@@ -41,6 +41,9 @@ class LessonServiceTest {
 	@Mock
 	private SecurityService securityService;
 
+	@Mock
+	private LessonAttachmentService lessonAttachmentService;
+
 	@InjectMocks
 	private LessonService lessonService;
 
