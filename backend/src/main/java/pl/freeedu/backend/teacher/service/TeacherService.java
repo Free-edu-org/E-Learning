@@ -2,6 +2,7 @@ package pl.freeedu.backend.teacher.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
+import pl.freeedu.backend.lesson.dto.LessonAttachmentResponse;
 import pl.freeedu.backend.lesson.dto.LessonResponse;
 import pl.freeedu.backend.lesson.mapper.LessonMapper;
 import pl.freeedu.backend.lesson.repository.LessonRepository;
@@ -39,6 +40,9 @@ import pl.freeedu.backend.usergroup.exception.UserGroupErrorCode;
 import pl.freeedu.backend.usergroup.model.UserGroup;
 import pl.freeedu.backend.usergroup.model.UserInGroup;
 import org.springframework.dao.DataIntegrityViolationException;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 @Service
 public class TeacherService {
 
@@ -92,13 +96,22 @@ public class TeacherService {
 
 	public Flux<LessonResponse> getLessons() {
 		return securityService.getCurrentUserId().subscribeOn(Schedulers.boundedElastic())
-				.flatMapMany(teacherId -> Flux.fromIterable(lessonRepository.findByTeacher_Id(teacherId)))
-				.concatMap(lesson -> Mono.fromCallable(() -> {
-					LessonResponse resp = lessonMapper.toResponse(lesson);
-					resp.setGroups(groupHasLessonRepository.findGroupsForLesson(lesson.getId()));
-					lessonAttachmentService.findByLessonId(lesson.getId()).ifPresent(resp::setAttachment);
-					return resp;
-				}).subscribeOn(Schedulers.boundedElastic()));
+				.flatMapMany(teacherId -> Mono.fromCallable(() -> {
+					List<pl.freeedu.backend.lesson.model.Lesson> lessons = lessonRepository.findByTeacher_Id(teacherId);
+					List<Integer> lessonIds = lessons.stream().map(pl.freeedu.backend.lesson.model.Lesson::getId)
+							.collect(Collectors.toList());
+					Map<Integer, LessonAttachmentResponse> attachments = lessonAttachmentService
+							.findByLessonIds(lessonIds);
+					return lessons.stream().map(lesson -> {
+						LessonResponse resp = lessonMapper.toResponse(lesson);
+						resp.setGroups(groupHasLessonRepository.findGroupsForLesson(lesson.getId()));
+						LessonAttachmentResponse attachment = attachments.get(lesson.getId());
+						if (attachment != null) {
+							resp.setAttachment(attachment);
+						}
+						return resp;
+					}).collect(Collectors.toList());
+				}).subscribeOn(Schedulers.boundedElastic()).flatMapMany(Flux::fromIterable));
 	}
 
 	public Flux<UserGroupResponse> getMyGroups() {

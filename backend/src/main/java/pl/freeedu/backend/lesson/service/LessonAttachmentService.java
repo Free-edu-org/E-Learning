@@ -21,9 +21,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class LessonAttachmentService {
@@ -33,7 +35,7 @@ public class LessonAttachmentService {
 			"doc", "application/vnd.oasis.opendocument.text", "odt");
 
 	private static final long MAX_FILE_SIZE_BYTES = 10L * 1024 * 1024; // 10 MB
-	private static final String ATTACHMENT_DIR = "uploads/attachments";
+	private static final String ATTACHMENT_DIR = "attachments";
 
 	private final LessonAttachmentRepository lessonAttachmentRepository;
 	private final LessonRepository lessonRepository;
@@ -69,15 +71,6 @@ public class LessonAttachmentService {
 			return Mono.fromCallable(() -> {
 				try {
 					Files.createDirectories(dir);
-					// Delete previous attachment file if exists
-					lessonAttachmentRepository.findByLessonId(lessonId).ifPresent(existing -> {
-						try {
-							Files.deleteIfExists(dir.resolve(existing.getStoredFileName()));
-						} catch (IOException e) {
-							// ignore, best-effort cleanup
-						}
-						lessonAttachmentRepository.delete(existing);
-					});
 					return filePath;
 				} catch (IOException e) {
 					throw new RuntimeException("Failed to prepare attachment directory", e);
@@ -90,6 +83,15 @@ public class LessonAttachmentService {
 								Files.deleteIfExists(path);
 								throw new LessonException(LessonErrorCode.ATTACHMENT_FILE_TOO_LARGE);
 							}
+							// New file is safely stored — now replace the old one
+							lessonAttachmentRepository.findByLessonId(lessonId).ifPresent(existing -> {
+								try {
+									Files.deleteIfExists(dir.resolve(existing.getStoredFileName()));
+								} catch (IOException e) {
+									// ignore, best-effort cleanup
+								}
+								lessonAttachmentRepository.delete(existing);
+							});
 							LessonAttachment attachment = LessonAttachment.builder().lessonId(lessonId)
 									.originalFileName(originalName).storedFileName(storedName).contentType(baseType)
 									.fileSize(fileSize).build();
@@ -164,6 +166,14 @@ public class LessonAttachmentService {
 
 	public Optional<LessonAttachmentResponse> findByLessonId(Integer lessonId) {
 		return lessonAttachmentRepository.findByLessonId(lessonId).map(this::toResponse);
+	}
+
+	public Map<Integer, LessonAttachmentResponse> findByLessonIds(Collection<Integer> lessonIds) {
+		if (lessonIds.isEmpty()) {
+			return Map.of();
+		}
+		return lessonAttachmentRepository.findByLessonIdIn(lessonIds).stream()
+				.collect(Collectors.toMap(LessonAttachment::getLessonId, this::toResponse));
 	}
 
 	private LessonAttachmentResponse toResponse(LessonAttachment attachment) {

@@ -121,9 +121,9 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonId}/attachments)', () => {
             expect(lesson.attachment.originalFileName).toBe('notes.pdf');
         });
 
-        it('should reject non-PDF file (400 ATTACHMENT_INVALID_FILE_TYPE)', async () => {
+        it('should reject unsupported file type (400 ATTACHMENT_INVALID_FILE_TYPE)', async () => {
             setAuthToken(teacherToken);
-            const form = makePdfForm(NOT_PDF, 'notes.txt', 'text/plain');
+            const form = makePdfForm(NOT_PDF, 'photo.png', 'image/png');
             const res = await apiClient.post(
                 `/lessons/${lessonId}/attachments`,
                 form,

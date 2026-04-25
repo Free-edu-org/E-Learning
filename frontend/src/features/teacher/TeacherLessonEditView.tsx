@@ -767,7 +767,10 @@ export function TeacherLessonEditView() {
                 </Stack>
               </FormSection>
 
-              <FormSection description="Edytuj, dodaj lub usuń zadania przypisane do lekcji.">
+              <FormSection
+                title="Zadania"
+                description="Edytuj, dodaj lub usuń zadania przypisane do lekcji."
+              >
                 {tasksLoading ? (
                   <Box
                     sx={{ display: "flex", justifyContent: "center", py: 4 }}

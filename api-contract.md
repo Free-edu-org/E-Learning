@@ -518,7 +518,7 @@ Poniżej znajdziesz opis endpointów do zarządzania lekcjami. Ścieżka bazowa:
 | `teacherAvatarUrl` | String                | URL do awatara nauczyciela (preset:name lub /uploads/...) |
 | `createdAt` | String (ISO datetime) | Data utworzenia |
 | `groups` | List<GroupDto>        | Lista grup przypisanych do lekcji (id, name) |
-| `attachment` | LessonAttachmentResponse \| null | Metadane załącznika PDF lub `null` |
+| `attachment` | LessonAttachmentResponse \| null | Metadane załącznika (PDF/TXT/DOCX/DOC/ODT) lub `null` |
 
 **Known Errors:**
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
@@ -607,7 +607,7 @@ Zwraca zaktualizowaną reprezentację `LessonResponse`.
 
 ---
 
-### 4.6. Upload PDF attachment
+### 4.6. Upload lesson attachment
 - **URL**: `/api/v1/lessons/{lessonId}/attachments`
 - **Method**: `POST`
 - **Content-Type**: `multipart/form-data`
@@ -642,13 +642,13 @@ Zwraca zaktualizowaną reprezentację `LessonResponse`.
 |-------|------|-------------|
 | `id` | Integer | ID załącznika |
 | `originalFileName` | String | Oryginalna nazwa pliku |
-| `contentType` | String | Typ MIME (`application/pdf`) |
+| `contentType` | String | Typ MIME przesłanego pliku (np. `application/pdf`, `text/plain`) |
 | `fileSize` | Long | Rozmiar pliku w bajtach |
 | `createdAt` | String (ISO datetime) | Data przesłania |
 
 **Known Errors:**
 - `LESSON_NOT_FOUND` (404 Not Found)
-- `ATTACHMENT_INVALID_FILE_TYPE` (400 Bad Request): Plik nie jest PDF.
+- `ATTACHMENT_INVALID_FILE_TYPE` (400 Bad Request): Niedozwolony typ pliku. Dozwolone: PDF, TXT, DOCX, DOC, ODT.
 - `ATTACHMENT_FILE_TOO_LARGE` (400 Bad Request): Plik przekracza 10 MB.
 - `UNAUTHORIZED` (401 Unauthorized)
 - `FORBIDDEN` (403 Forbidden)
@@ -673,10 +673,10 @@ Zwraca zaktualizowaną reprezentację `LessonResponse`.
 
 ---
 
-### 4.8. Delete PDF attachment
+### 4.8. Delete lesson attachment
 - **URL**: `/api/v1/lessons/{lessonId}/attachments/{attachmentId}`
 - **Method**: `DELETE`
-- **Description**: Usuwa załącznik PDF z lekcji. Plik jest fizycznie usuwany z dysku.
+- **Description**: Usuwa załącznik z lekcji. Plik jest fizycznie usuwany z dysku.
 - **Authorization**: `ADMIN` lub właściciel lekcji (`TEACHER`)
 
 **Success (204 No Content):** *(Empty Response Body)*

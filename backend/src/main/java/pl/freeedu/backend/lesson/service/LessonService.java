@@ -1,7 +1,7 @@
 package pl.freeedu.backend.lesson.service;
 
 import org.springframework.stereotype.Service;
-import pl.freeedu.backend.lesson.dto.GroupDto;
+import pl.freeedu.backend.lesson.dto.LessonAttachmentResponse;
 import pl.freeedu.backend.lesson.dto.LessonRequest;
 import pl.freeedu.backend.lesson.dto.LessonResponse;
 import pl.freeedu.backend.lesson.dto.LessonStatusRequest;
@@ -20,6 +20,7 @@ import reactor.core.scheduler.Schedulers;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -81,15 +82,19 @@ public class LessonService {
 			}
 			filtered.sort(comparator);
 
-			return filtered;
-		}).subscribeOn(Schedulers.boundedElastic()).flatMapMany(Flux::fromIterable)
-				.concatMap(lesson -> Mono.fromCallable(() -> {
-					LessonResponse resp = lessonMapper.toResponse(lesson);
-					List<GroupDto> groups = groupHasLessonRepository.findGroupsForLesson(lesson.getId());
-					resp.setGroups(groups);
-					lessonAttachmentService.findByLessonId(lesson.getId()).ifPresent(resp::setAttachment);
-					return resp;
-				}).subscribeOn(Schedulers.boundedElastic()));
+			List<Integer> lessonIds = filtered.stream().map(Lesson::getId).collect(Collectors.toList());
+			Map<Integer, LessonAttachmentResponse> attachments = lessonAttachmentService.findByLessonIds(lessonIds);
+
+			return filtered.stream().map(lesson -> {
+				LessonResponse resp = lessonMapper.toResponse(lesson);
+				resp.setGroups(groupHasLessonRepository.findGroupsForLesson(lesson.getId()));
+				LessonAttachmentResponse attachment = attachments.get(lesson.getId());
+				if (attachment != null) {
+					resp.setAttachment(attachment);
+				}
+				return resp;
+			}).collect(Collectors.toList());
+		}).subscribeOn(Schedulers.boundedElastic()).flatMapMany(Flux::fromIterable);
 	}
 
 	public Mono<LessonResponse> createLesson(Mono<LessonRequest> requestMono) {
