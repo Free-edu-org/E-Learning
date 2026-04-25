@@ -17,7 +17,6 @@ import {
   EditOutlined as EditIcon,
 } from "@mui/icons-material";
 import type { Lesson } from "@/api/lessonService";
-import { UserAvatar } from "@/components/ui/avatar/UserAvatar";
 import {
   outlinedMetaChipSx,
   panelCardFooterSx,
