@@ -30,7 +30,11 @@ import {
   TaskAltOutlined as TasksIcon,
   EditNoteOutlined as WriteIcon,
 } from "@mui/icons-material";
-import { lessonService, type Lesson, type LessonAttachment } from "@/api/lessonService";
+import {
+  lessonService,
+  type Lesson,
+  type LessonAttachment,
+} from "@/api/lessonService";
 import { taskService } from "@/api/taskService";
 import { userService, type UserProfile } from "@/api/userService";
 import { TaskEditor } from "@/components/teacher/TaskEditor";
@@ -98,7 +102,9 @@ export function TeacherLessonEditView() {
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
   const [attachmentUploading, setAttachmentUploading] = useState(false);
   const [attachmentDeleting, setAttachmentDeleting] = useState(false);
-  const [attachmentFeedback, setAttachmentFeedback] = useState<string | null>(null);
+  const [attachmentFeedback, setAttachmentFeedback] = useState<string | null>(
+    null,
+  );
   const attachmentInputRef = useRef<HTMLInputElement>(null);
 
   const chooseTasksCount = draft.tasks.filter(
@@ -379,7 +385,10 @@ export function TeacherLessonEditView() {
     setAttachmentUploading(true);
     setAttachmentFeedback(null);
     try {
-      const result = await lessonService.uploadAttachment(lesson.id, attachmentFile);
+      const result = await lessonService.uploadAttachment(
+        lesson.id,
+        attachmentFile,
+      );
       setAttachment(result);
       setAttachmentFile(null);
       if (attachmentInputRef.current) {
@@ -387,7 +396,9 @@ export function TeacherLessonEditView() {
       }
       setAttachmentFeedback("Plik został przesłany.");
     } catch {
-      setAttachmentFeedback("Nie udało się przesłać pliku. Sprawdź format (PDF, TXT, DOCX, DOC, ODT) i rozmiar (max 10 MB).");
+      setAttachmentFeedback(
+        "Nie udało się przesłać pliku. Sprawdź format (PDF, TXT, DOCX, DOC, ODT) i rozmiar (max 10 MB).",
+      );
     } finally {
       setAttachmentUploading(false);
     }
@@ -411,7 +422,10 @@ export function TeacherLessonEditView() {
   const handleDownloadAttachment = async () => {
     if (!lesson || !attachment) return;
     try {
-      const blob = await lessonService.downloadAttachment(lesson.id, attachment.id);
+      const blob = await lessonService.downloadAttachment(
+        lesson.id,
+        attachment.id,
+      );
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -626,7 +640,14 @@ export function TeacherLessonEditView() {
                 <Stack spacing={1.5}>
                   {attachmentFeedback && (
                     <Alert
-                      severity={attachmentFeedback.includes("udało") && !attachmentFeedback.startsWith("Nie") ? "success" : attachmentFeedback.startsWith("Nie") ? "error" : "success"}
+                      severity={
+                        attachmentFeedback.includes("udało") &&
+                        !attachmentFeedback.startsWith("Nie")
+                          ? "success"
+                          : attachmentFeedback.startsWith("Nie")
+                            ? "error"
+                            : "success"
+                      }
                       onClose={() => setAttachmentFeedback(null)}
                     >
                       {attachmentFeedback}
@@ -648,20 +669,38 @@ export function TeacherLessonEditView() {
                       <AttachIcon fontSize="small" color="action" />
                       <Typography
                         variant="body2"
-                        sx={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                        sx={{
+                          flex: 1,
+                          minWidth: 0,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
                       >
                         {attachment.originalFileName}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0 }}>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ flexShrink: 0 }}
+                      >
                         {(attachment.fileSize / 1024 / 1024).toFixed(2)} MB
                       </Typography>
                       <Tooltip title="Pobierz">
-                        <IconButton size="small" onClick={handleDownloadAttachment}>
+                        <IconButton
+                          size="small"
+                          onClick={handleDownloadAttachment}
+                        >
                           <DownloadIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="Usuń">
-                        <IconButton size="small" onClick={handleDeleteAttachment} disabled={attachmentDeleting} color="error">
+                        <IconButton
+                          size="small"
+                          onClick={handleDeleteAttachment}
+                          disabled={attachmentDeleting}
+                          color="error"
+                        >
                           <DeleteIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
@@ -672,7 +711,14 @@ export function TeacherLessonEditView() {
                     </Typography>
                   )}
 
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      flexWrap: "wrap",
+                    }}
+                  >
                     <input
                       ref={attachmentInputRef}
                       type="file"
@@ -694,7 +740,17 @@ export function TeacherLessonEditView() {
                     </Button>
                     {attachmentFile && (
                       <>
-                        <Typography variant="body2" color="text.secondary" sx={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{
+                            flex: 1,
+                            minWidth: 0,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
                           {attachmentFile.name}
                         </Typography>
                         <Button
@@ -711,9 +767,7 @@ export function TeacherLessonEditView() {
                 </Stack>
               </FormSection>
 
-              <FormSection
-                description="Edytuj, dodaj lub usuń zadania przypisane do lekcji."
-              >
+              <FormSection description="Edytuj, dodaj lub usuń zadania przypisane do lekcji.">
                 {tasksLoading ? (
                   <Box
                     sx={{ display: "flex", justifyContent: "center", py: 4 }}

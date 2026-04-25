@@ -135,10 +135,13 @@ export const lessonService = {
   uploadAttachment: (lessonId: number, file: File) => {
     const formData = new FormData();
     formData.append("file", file);
-    return fetchApi<LessonAttachment>(`/api/v1/lessons/${lessonId}/attachments`, {
-      method: "POST",
-      body: formData,
-    });
+    return fetchApi<LessonAttachment>(
+      `/api/v1/lessons/${lessonId}/attachments`,
+      {
+        method: "POST",
+        body: formData,
+      },
+    );
   },
   downloadAttachment: (lessonId: number, attachmentId: number) =>
     fetchApiBlob(`/api/v1/lessons/${lessonId}/attachments/${attachmentId}`),

@@ -181,7 +181,10 @@ export function TeacherLessonCreateView() {
 
       if (attachmentFile) {
         try {
-          await lessonService.uploadAttachment(createdLesson.id, attachmentFile);
+          await lessonService.uploadAttachment(
+            createdLesson.id,
+            attachmentFile,
+          );
         } catch {
           attachmentFailed = true;
         }
@@ -400,13 +403,22 @@ export function TeacherLessonCreateView() {
                 title="Załącznik (opcjonalnie)"
                 description="Plik z notatkami do lekcji (PDF, TXT, DOCX, DOC, ODT, max 10 MB)."
               >
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    flexWrap: "wrap",
+                  }}
+                >
                   <input
                     ref={attachmentInputRef}
                     type="file"
                     accept="application/pdf,text/plain,.txt,.docx,.doc,.odt,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword,application/vnd.oasis.opendocument.text"
                     style={{ display: "none" }}
-                    onChange={(e) => setAttachmentFile(e.target.files?.[0] ?? null)}
+                    onChange={(e) =>
+                      setAttachmentFile(e.target.files?.[0] ?? null)
+                    }
                   />
                   <Button
                     size="small"
@@ -420,7 +432,13 @@ export function TeacherLessonCreateView() {
                     <Typography
                       variant="body2"
                       color="text.secondary"
-                      sx={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                      sx={{
+                        flex: 1,
+                        minWidth: 0,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
                     >
                       {attachmentFile.name}
                     </Typography>
@@ -434,7 +452,8 @@ export function TeacherLessonCreateView() {
                       size="small"
                       onClick={() => {
                         setAttachmentFile(null);
-                        if (attachmentInputRef.current) attachmentInputRef.current.value = "";
+                        if (attachmentInputRef.current)
+                          attachmentInputRef.current.value = "";
                       }}
                     >
                       Usuń
