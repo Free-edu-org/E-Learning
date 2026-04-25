@@ -1,6 +1,12 @@
 package pl.freeedu.backend.user.service;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Set;
 import java.util.function.BiFunction;
+import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import pl.freeedu.backend.auth.exception.AuthErrorCode;
@@ -120,5 +126,76 @@ public class UserService {
 			userRepository.delete(user);
 			return (Void) null;
 		}).subscribeOn(Schedulers.boundedElastic()).then();
+	}
+
+	private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of("image/jpeg", "image/png", "image/webp");
+	private static final long MAX_AVATAR_SIZE_BYTES = 2L * 1024 * 1024; // 2 MB
+	private static final String AVATAR_DIR = "uploads/avatars";
+	private static final Set<String> ALLOWED_PRESETS = Set.of("avatar_1", "avatar_2", "avatar_3", "avatar_4",
+			"avatar_5", "avatar_6", "avatar_7", "avatar_8", "avatar_9", "avatar_10", "avatar_11", "avatar_12");
+
+	public Mono<UserResponse> uploadAvatar(Integer id, FilePart filePart) {
+		return Mono.fromCallable(() -> {
+			String contentType = filePart.headers().getContentType() != null
+					? filePart.headers().getContentType().toString()
+					: "";
+			String baseType = contentType.contains(";")
+					? contentType.substring(0, contentType.indexOf(';')).trim()
+					: contentType.trim();
+			if (!ALLOWED_CONTENT_TYPES.contains(baseType)) {
+				throw new UserException(UserErrorCode.AVATAR_INVALID_FILE_TYPE);
+			}
+			return baseType;
+		}).subscribeOn(Schedulers.boundedElastic()).flatMap(baseType -> {
+			String extension = switch (baseType) {
+				case "image/jpeg" -> "jpg";
+				case "image/png" -> "png";
+				case "image/webp" -> "webp";
+				default -> "bin";
+			};
+			String fileName = id + "." + extension;
+			Path dir = Paths.get(AVATAR_DIR);
+			Path filePath = dir.resolve(fileName);
+
+			return Mono.fromCallable(() -> {
+				try {
+					Files.createDirectories(dir);
+					// Delete previous avatar files for this user (any extension)
+					for (String ext : new String[]{"jpg", "png", "webp"}) {
+						Files.deleteIfExists(dir.resolve(id + "." + ext));
+					}
+					return filePath;
+				} catch (IOException e) {
+					throw new RuntimeException("Failed to prepare avatar directory", e);
+				}
+			}).subscribeOn(Schedulers.boundedElastic()).flatMap(path -> filePart.transferTo(path).thenReturn(path))
+					.flatMap(path -> Mono.fromCallable(() -> {
+						try {
+							long fileSize = Files.size(path);
+							if (fileSize > MAX_AVATAR_SIZE_BYTES) {
+								Files.deleteIfExists(path);
+								throw new UserException(UserErrorCode.AVATAR_FILE_TOO_LARGE);
+							}
+							String avatarUrl = "/uploads/avatars/" + path.getFileName().toString();
+							User user = userRepository.findById(id)
+									.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
+							user.setAvatarUrl(avatarUrl);
+							return userMapper.toUserResponse(userRepository.save(user));
+						} catch (IOException e) {
+							throw new RuntimeException("Failed to process avatar file", e);
+						}
+					}).subscribeOn(Schedulers.boundedElastic()));
+		});
+	}
+
+	public Mono<UserResponse> setPresetAvatar(Integer id, String presetName) {
+		return Mono.fromCallable(() -> {
+			if (!ALLOWED_PRESETS.contains(presetName)) {
+				throw new UserException(UserErrorCode.AVATAR_INVALID_PRESET);
+			}
+			User user = userRepository.findById(id).orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
+			user.setAvatarUrl("preset:" + presetName);
+			return userMapper.toUserResponse(userRepository.save(user));
+		}).subscribeOn(Schedulers.boundedElastic());
 	}
 }

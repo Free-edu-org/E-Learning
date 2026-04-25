@@ -49,6 +49,7 @@ import {
   panelSurfaceSx,
   panelToolbarSx,
 } from "@/components/ui/panel/panelStyles";
+import { UserAvatar } from "@/components/ui/avatar/UserAvatar";
 import { useAuth } from "@/context/AuthContext";
 import { getErrorMessage } from "@/utils/dashboardUtils";
 
@@ -731,8 +732,10 @@ export function StudentDashboard() {
                             mb: 1.5,
                           }}
                         >
-                          <PersonIcon
-                            sx={{ fontSize: 18, color: "text.secondary" }}
+                          <UserAvatar
+                            avatarUrl={lesson.teacherAvatarUrl}
+                            username={lesson.teacherName}
+                            size={20}
                           />
                           <Typography
                             variant="body2"

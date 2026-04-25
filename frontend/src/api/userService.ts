@@ -6,6 +6,7 @@ export interface UserProfile {
   email: string;
   role: string;
   createdAt: string;
+  avatarUrl?: string | null;
 }
 
 export interface CreateUserRequest {
@@ -50,5 +51,18 @@ export const userService = {
   deleteUser: (id: number) =>
     fetchApi<void>(`/api/v1/users/${id}`, {
       method: "DELETE",
+    }),
+  uploadAvatar: (id: number, file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return fetchApi<UserProfile>(`/api/v1/users/${id}/avatar`, {
+      method: "POST",
+      body: formData,
+    });
+  },
+  setPresetAvatar: (id: number, presetName: string) =>
+    fetchApi<UserProfile>(`/api/v1/users/${id}/avatar/preset`, {
+      method: "PUT",
+      body: JSON.stringify({ presetName }),
     }),
 };

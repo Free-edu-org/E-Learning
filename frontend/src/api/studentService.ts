@@ -27,6 +27,7 @@ export interface StudentLesson {
   isActive: boolean;
   teacherId: number;
   teacherName: string;
+  teacherAvatarUrl?: string | null;
   createdAt: string;
   groups: StudentLessonGroup[];
   status: "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED";

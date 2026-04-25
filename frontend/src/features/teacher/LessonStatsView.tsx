@@ -30,9 +30,11 @@ import type {
   LessonStatsResponse,
   LessonStatsStudentResult,
 } from "@/api/lessonService";
+import { userService, type UserProfile } from "@/api/userService";
 import { useAuth } from "@/context/AuthContext";
 import { DashboardHeader } from "@/components/ui/panel/DashboardHeader";
 import { DashboardTopBar } from "@/components/ui/panel/DashboardTopBar";
+import { UserAvatar } from "@/components/ui/avatar/UserAvatar";
 import {
   panelGridCardSx,
   panelSurfaceSx,
@@ -108,8 +110,18 @@ export function LessonStatsView() {
   const { logout } = useAuth();
   const [stats, setStats] = useState<LessonStatsResponse | null>(null);
   const [lessonTitle, setLessonTitle] = useState<string>("");
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingUser, setLoadingUser] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    userService
+      .getCurrentUser()
+      .then(setUser)
+      .catch(() => {})
+      .finally(() => setLoadingUser(false));
+  }, []);
 
   useEffect(() => {
     if (!lessonId) return;
@@ -148,7 +160,14 @@ export function LessonStatsView() {
     >
       <Container maxWidth="lg" sx={{ pt: 3, pb: 6 }}>
         <DashboardTopBar onLogout={logout} />
-        <DashboardHeader subtitle="Panel nauczyciela" loading={false} />
+        <DashboardHeader
+          loading={loadingUser}
+          username={user?.username}
+          subtitle="Panel nauczyciela"
+          fallbackName="Nauczycielu"
+          user={user}
+          onUserUpdated={setUser}
+        />
 
         {/* Back + title */}
         <Box
@@ -349,6 +368,7 @@ export function LessonStatsView() {
                       }}
                     >
                       {/* Name + date */}
+                      <UserAvatar avatarUrl={student.avatarUrl} username={student.username} size={36} />
                       <Box sx={{ flex: 1, minWidth: 0 }}>
                         <Typography variant="body2" fontWeight={600} noWrap>
                           {student.username}

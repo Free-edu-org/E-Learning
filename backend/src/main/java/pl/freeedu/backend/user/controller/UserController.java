@@ -2,10 +2,13 @@ package pl.freeedu.backend.user.controller;
 
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import pl.freeedu.backend.user.dto.RegisterUserRequest;
 import pl.freeedu.backend.user.dto.ChangePasswordRequest;
+import pl.freeedu.backend.user.dto.SetPresetAvatarRequest;
 import pl.freeedu.backend.user.dto.UpdateUserRequest;
 import pl.freeedu.backend.user.dto.UserResponse;
 import pl.freeedu.backend.user.service.UserService;
@@ -129,5 +132,30 @@ public class UserController {
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public Mono<Void> deleteUser(@PathVariable Integer id) {
 		return userService.deleteUser(id);
+	}
+
+	@Operation(summary = "Upload avatar", description = "Upload a custom avatar image (JPEG/PNG/WEBP, max 2 MB). Only the account owner or admin can change the avatar.")
+	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Avatar uploaded successfully"),
+			@ApiResponse(responseCode = "400", description = "Bad Request - AVATAR_INVALID_FILE_TYPE or AVATAR_FILE_TOO_LARGE", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "401", description = "Unauthorized - invalid token", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden - lack of permissions", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "404", description = "Not Found - USER_NOT_FOUND", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
+	@PostMapping(value = "/{id}/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	@PreAuthorize("hasRole('ADMIN') or @securityService.isOwner(authentication, #id)")
+	public Mono<UserResponse> uploadAvatar(@PathVariable Integer id, @RequestPart("file") FilePart filePart) {
+		return userService.uploadAvatar(id, filePart);
+	}
+
+	@Operation(summary = "Set preset avatar", description = "Select one of the built-in avatar presets. Only the account owner or admin can change the avatar.")
+	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Preset avatar set successfully"),
+			@ApiResponse(responseCode = "400", description = "Bad Request - AVATAR_INVALID_PRESET", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "401", description = "Unauthorized - invalid token", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden - lack of permissions", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "404", description = "Not Found - USER_NOT_FOUND", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
+	@PutMapping("/{id}/avatar/preset")
+	@PreAuthorize("hasRole('ADMIN') or @securityService.isOwner(authentication, #id)")
+	public Mono<UserResponse> setPresetAvatar(@PathVariable Integer id,
+			@Valid @RequestBody Mono<SetPresetAvatarRequest> requestMono) {
+		return requestMono.flatMap(req -> userService.setPresetAvatar(id, req.getPresetName()));
 	}
 }

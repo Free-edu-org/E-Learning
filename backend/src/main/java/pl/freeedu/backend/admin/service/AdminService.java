@@ -161,7 +161,8 @@ public class AdminService {
 
 			return AdminStudentResponse.builder().id(savedStudent.getId()).email(savedStudent.getEmail())
 					.username(savedStudent.getUsername()).role(savedStudent.getRole()).groupId(finalGroupId)
-					.groupName(finalGroupName).createdAt(savedStudent.getCreatedAt()).build();
+					.groupName(finalGroupName).createdAt(savedStudent.getCreatedAt())
+					.avatarUrl(savedStudent.getAvatarUrl()).build();
 		})).subscribeOn(Schedulers.boundedElastic());
 	}
 
@@ -179,6 +180,7 @@ public class AdminService {
 
 		return AdminStudentResponse.builder().id(student.getId()).email(student.getEmail())
 				.username(student.getUsername()).role(student.getRole()).groupId(groupId)
-				.groupName(group != null ? group.getName() : null).createdAt(student.getCreatedAt()).build();
+				.groupName(group != null ? group.getName() : null).createdAt(student.getCreatedAt())
+				.avatarUrl(student.getAvatarUrl()).build();
 	}
 }

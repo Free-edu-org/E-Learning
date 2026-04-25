@@ -16,6 +16,7 @@ export interface Lesson {
   isActive: boolean;
   teacherId?: number;
   teacherName?: string;
+  teacherAvatarUrl?: string | null;
   createdAt: string;
   groups: Group[];
 }
@@ -34,6 +35,7 @@ export interface TeacherStudentResponse {
   role: string;
   createdAt: string;
   groupId: number;
+  avatarUrl?: string | null;
 }
 
 export interface LessonStatsStudentResult {

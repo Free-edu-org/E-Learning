@@ -21,6 +21,7 @@ public class StudentLessonResponse {
 	private Boolean isActive;
 	private Integer teacherId;
 	private String teacherName;
+	private String teacherAvatarUrl;
 	private LocalDateTime createdAt;
 	private List<GroupDto> groups;
 	private String status;
