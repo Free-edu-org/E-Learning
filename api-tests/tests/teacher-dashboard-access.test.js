@@ -179,6 +179,7 @@ describe('Teacher Dashboard Access API (/api/v1/teacher/*)', () => {
         expect(Array.isArray(response.data)).toBe(true);
         response.data.forEach((lesson) => {
             expect(lesson.teacherId).toBe(teacherId);
+            expect(lesson).toHaveProperty('teacherAvatarUrl');
         });
 
         setAuthToken(secondTeacherToken);
@@ -186,6 +187,7 @@ describe('Teacher Dashboard Access API (/api/v1/teacher/*)', () => {
         expect(secondTeacherResponse.status).toBe(200);
         secondTeacherResponse.data.forEach((lesson) => {
             expect(lesson.teacherId).toBe(secondTeacherId);
+            expect(lesson).toHaveProperty('teacherAvatarUrl');
         });
     });
 
@@ -247,6 +249,7 @@ describe('Teacher Dashboard Access API (/api/v1/teacher/*)', () => {
         expect(returnedIds).not.toContain(foreignTeacherStudentId);
         response.data.forEach((u) => {
             expect(u.role).toBe('STUDENT');
+            expect(u).toHaveProperty('avatarUrl');
         });
     });
 
@@ -309,6 +312,7 @@ describe('Teacher Dashboard Access API (/api/v1/teacher/*)', () => {
             expect(response.data.username).toBe(`teacher_new_student_${uniqueId}`);
             expect(response.data).toHaveProperty('id');
             expect(response.data).toHaveProperty('createdAt');
+            expect(response.data).toHaveProperty('avatarUrl');
             createdStudentIds.push(response.data.id);
 
             // Verify created student appears in teacher's students list
@@ -454,6 +458,7 @@ describe('Teacher Dashboard Access API (/api/v1/teacher/*)', () => {
             expect(response.data.id).toBe(updatableStudentId);
             expect(response.data.role).toBe('STUDENT');
             expect(response.data.groupId).toBe(firstTeacherGroupId);
+            expect(response.data).toHaveProperty('avatarUrl');
         });
 
         it('should return 400 INVALID_ROLE_FOR_GROUP when moving student to foreign group', async () => {

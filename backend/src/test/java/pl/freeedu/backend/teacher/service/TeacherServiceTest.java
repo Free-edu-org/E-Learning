@@ -108,13 +108,17 @@ class TeacherServiceTest {
 		Lesson lesson = Lesson.builder().id(1).teacher(teacher).build();
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
 		when(lessonRepository.findByTeacher_Id(10)).thenReturn(List.of(lesson));
-		when(lessonMapper.toResponse(lesson)).thenReturn(LessonResponse.builder().id(1).build());
+		when(lessonMapper.toResponse(lesson))
+				.thenReturn(LessonResponse.builder().id(1).teacherAvatarUrl("preset:avatar_1").build());
 
 		// when
 		Flux<LessonResponse> result = teacherService.getLessons();
 
 		// then
-		StepVerifier.create(result).assertNext(resp -> assertEquals(1, resp.getId())).verifyComplete();
+		StepVerifier.create(result).assertNext(resp -> {
+			assertEquals(1, resp.getId());
+			assertEquals("preset:avatar_1", resp.getTeacherAvatarUrl());
+		}).verifyComplete();
 	}
 
 	@Test
@@ -141,6 +145,7 @@ class TeacherServiceTest {
 		// then
 		StepVerifier.create(result).assertNext(resp -> {
 			assertEquals(1, resp.getId());
+			assertEquals("s", resp.getUsername());
 			verify(userInGroupRepository).save(any());
 		}).verifyComplete();
 	}
@@ -216,26 +221,44 @@ class TeacherServiceTest {
 	}
 
 	@Test
-	void shouldGetMyGroupsAndStudents() {
+	void shouldGetMyGroups() {
 		// given
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
-		when(userGroupService.getGroupsByTeacherId(10)).thenReturn(Flux.empty());
-		when(userRepository.findStudentsWithGroupByTeacherId(10, Role.STUDENT)).thenReturn(Collections.emptyList());
+		UserGroupResponse group = UserGroupResponse.builder().id(5).name("G1").build();
+		when(userGroupService.getGroupsByTeacherId(10)).thenReturn(Flux.just(group));
 
-		// when
-		// (Aggregation of results below)
-
-		// then
-		// 1. Get My Groups
 		// when
 		Flux<UserGroupResponse> groups = teacherService.getMyGroups();
-		// then
-		StepVerifier.create(groups).verifyComplete();
 
-		// 2. Get My Students
+		// then
+		StepVerifier.create(groups).assertNext(g -> {
+			assertEquals(5, g.getId());
+			assertEquals("G1", g.getName());
+		}).verifyComplete();
+	}
+
+	@Test
+	void shouldGetMyStudents() {
+		// given
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
+		TeacherStudentProjection proj = mock(TeacherStudentProjection.class);
+		when(proj.getId()).thenReturn(1);
+		when(proj.getUsername()).thenReturn("s1");
+		when(proj.getEmail()).thenReturn("s1@e.com");
+		when(proj.getRole()).thenReturn(Role.STUDENT);
+		when(proj.getCreatedAt()).thenReturn(null);
+		when(proj.getGroupId()).thenReturn(5);
+		when(proj.getAvatarUrl()).thenReturn("preset:avatar_3");
+		when(userRepository.findStudentsWithGroupByTeacherId(10, Role.STUDENT)).thenReturn(List.of(proj));
+
 		// when
 		Flux<TeacherStudentResponse> students = teacherService.getMyStudents();
+
 		// then
-		StepVerifier.create(students).verifyComplete();
+		StepVerifier.create(students).assertNext(s -> {
+			assertEquals(1, s.getId());
+			assertEquals("s1", s.getUsername());
+			assertEquals("preset:avatar_3", s.getAvatarUrl());
+		}).verifyComplete();
 	}
 }

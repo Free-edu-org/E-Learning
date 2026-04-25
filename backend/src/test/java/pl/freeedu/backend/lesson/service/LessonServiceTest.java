@@ -51,8 +51,10 @@ class LessonServiceTest {
 				.build();
 		Lesson lesson2 = Lesson.builder().id(2).title("B").isActive(false).createdAt(LocalDateTime.now()).build();
 		when(lessonRepository.findAll()).thenReturn(List.of(lesson1, lesson2));
-		when(lessonMapper.toResponse(lesson1)).thenReturn(LessonResponse.builder().id(1).build());
-		when(lessonMapper.toResponse(lesson2)).thenReturn(LessonResponse.builder().id(2).build());
+		when(lessonMapper.toResponse(lesson1))
+				.thenReturn(LessonResponse.builder().id(1).teacherAvatarUrl("preset:avatar_1").build());
+		when(lessonMapper.toResponse(lesson2))
+				.thenReturn(LessonResponse.builder().id(2).teacherAvatarUrl("preset:avatar_2").build());
 		when(groupHasLessonRepository.findGroupsForLesson(1)).thenReturn(List.of());
 		when(groupHasLessonRepository.findGroupsForLesson(2)).thenReturn(List.of());
 
@@ -68,6 +70,7 @@ class LessonServiceTest {
 		StepVerifier.create(result1.collectList()).assertNext(list -> {
 			assertEquals(1, list.size());
 			assertEquals(1, list.get(0).getId());
+			assertEquals("preset:avatar_1", list.get(0).getTeacherAvatarUrl());
 		}).verifyComplete();
 
 		// 2. No filters, sort name_desc
@@ -111,7 +114,8 @@ class LessonServiceTest {
 			l.setId(99);
 			return l;
 		});
-		when(lessonMapper.toResponse(any())).thenReturn(LessonResponse.builder().id(99).build());
+		when(lessonMapper.toResponse(any()))
+				.thenReturn(LessonResponse.builder().id(99).teacherAvatarUrl("preset:avatar_1").build());
 		when(groupHasLessonRepository.findGroupsForLesson(99)).thenReturn(List.of());
 
 		// when
@@ -120,6 +124,7 @@ class LessonServiceTest {
 		// then
 		StepVerifier.create(result).assertNext(resp -> {
 			assertEquals(99, resp.getId());
+			assertEquals("preset:avatar_1", resp.getTeacherAvatarUrl());
 			verify(groupHasLessonRepository, times(1)).saveAll(any());
 		}).verifyComplete();
 	}

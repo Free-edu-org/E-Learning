@@ -500,6 +500,7 @@ Poniżej znajdziesz opis endpointów do zarządzania lekcjami. Ścieżka bazowa:
     "isActive": true,
     "teacherId": 3,
     "teacherName": "pan_tomasz",
+    "teacherAvatarUrl": "preset:avatar_3",
     "createdAt": "2026-03-21T10:00:00",
     "groups": [ { "id": 1, "name": "Angielski A1" } ]
   }
@@ -514,6 +515,7 @@ Poniżej znajdziesz opis endpointów do zarządzania lekcjami. Ścieżka bazowa:
 | `isActive` | Boolean               | Czy lekcja jest aktywna |
 | `teacherId` | Integer               | ID nauczyciela, który utworzył lekcję |
 | `teacherName` | String                | Username nauczyciela |
+| `teacherAvatarUrl` | String                | URL do awatara nauczyciela (preset:name lub /uploads/...) |
 | `createdAt` | String (ISO datetime) | Data utworzenia |
 | `groups` | List<GroupDto>        | Lista grup przypisanych do lekcji (id, name) |
 
@@ -732,7 +734,8 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
   "email": "new.student@example.com",
   "role": "STUDENT",
   "createdAt": "2026-03-30T20:15:00",
-  "groupId": 1
+  "groupId": 1,
+  "avatarUrl": "preset:avatar_1"
 }
 ```
 
@@ -770,7 +773,8 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
   "email": "updated.student@example.com",
   "role": "STUDENT",
   "createdAt": "2026-03-30T20:15:00",
-  "groupId": 2
+  "groupId": 2,
+  "avatarUrl": "preset:avatar_5"
 }
 ```
 
@@ -983,6 +987,7 @@ Warstwa BFF dla uczniow.
     "isActive": true,
     "teacherId": 3,
     "teacherName": "pan_tomasz",
+    "teacherAvatarUrl": "preset:avatar_3",
     "createdAt": "2026-03-21T10:00:00",
     "groups": [
       { "id": 1, "name": "Angielski A1" }
