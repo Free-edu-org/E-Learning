@@ -27,7 +27,6 @@ import {
   CloseOutlined as CloseIcon,
   InsightsOutlined as InsightsIcon,
   LockOutlined as LockIcon,
-  PersonOutlined as PersonIcon,
   SortOutlined as SortIcon,
   TrendingUpOutlined as ResultIcon,
 } from "@mui/icons-material";

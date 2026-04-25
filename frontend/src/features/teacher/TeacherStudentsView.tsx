@@ -35,7 +35,6 @@ import {
   ExpandMoreOutlined as ExpandMoreIcon,
   GroupOutlined as GroupIcon,
   PersonAddOutlined as PersonAddIcon,
-  PersonOutlined as PersonIcon,
   RefreshOutlined as RefreshIcon,
   SaveOutlined as SaveIcon,
   SearchOutlined as SearchIcon,

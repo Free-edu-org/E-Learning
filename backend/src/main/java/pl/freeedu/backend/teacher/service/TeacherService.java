@@ -83,7 +83,7 @@ public class TeacherService {
 	public Flux<LessonResponse> getLessons() {
 		return securityService.getCurrentUserId().subscribeOn(Schedulers.boundedElastic())
 				.flatMapMany(teacherId -> Flux.fromIterable(lessonRepository.findByTeacher_Id(teacherId)))
-				.flatMap(lesson -> Mono.fromCallable(() -> {
+				.concatMap(lesson -> Mono.fromCallable(() -> {
 					LessonResponse resp = lessonMapper.toResponse(lesson);
 					resp.setGroups(groupHasLessonRepository.findGroupsForLesson(lesson.getId()));
 					return resp;
