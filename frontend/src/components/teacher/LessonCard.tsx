@@ -240,11 +240,7 @@ export function LessonCard({
           </Typography>
         </Box>
 
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{ mb: 1.5 }}
-        >
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
           {lesson.theme}
         </Typography>
 

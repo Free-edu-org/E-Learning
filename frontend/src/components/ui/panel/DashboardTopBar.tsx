@@ -16,7 +16,10 @@ interface DashboardTopBarProps {
  * Shared top-right bar rendered in Student and Teacher dashboards.
  * Contains the dark/light mode toggle and the logout button.
  */
-export function DashboardTopBar({ onLogout, hideLogout = false }: DashboardTopBarProps) {
+export function DashboardTopBar({
+  onLogout,
+  hideLogout = false,
+}: DashboardTopBarProps) {
   const theme = useTheme();
   const { toggleColorMode } = useAppTheme();
 
