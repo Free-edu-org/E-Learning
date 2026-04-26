@@ -6,6 +6,7 @@ import {
   CircularProgress,
   Container,
   Grid,
+  IconButton,
   LinearProgress,
   Paper,
   Skeleton,
@@ -17,11 +18,13 @@ import { alpha, useTheme, type Theme } from "@mui/material/styles";
 import {
   ArrowBackOutlined as BackIcon,
   ArrowForwardOutlined as NextIcon,
-  SendOutlined as SubmitIcon,
+  AttachFileOutlined as AttachFileIcon,
+  DownloadOutlined as DownloadIcon,
   LightbulbOutlined as HintIcon,
+  SendOutlined as SubmitIcon,
   WarningAmberOutlined as WarningIcon,
 } from "@mui/icons-material";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   taskService,
   type LessonTasksResponse,
@@ -37,6 +40,8 @@ import {
   type SubmitAnswerDetail,
   type SubmitAnswersResponse,
 } from "@/api/studentService";
+import { lessonService } from "@/api/lessonService";
+import type { LessonAttachment } from "@/api/lessonService";
 import { ApiError } from "@/api/apiClient";
 import { DashboardTopBar } from "@/components/ui/panel/DashboardTopBar";
 import { useAuth } from "@/context/AuthContext";
@@ -131,9 +136,42 @@ function flattenTasks(lessonData: LessonTasksResponse): FlatTask[] {
 export function LessonSolver() {
   const { lessonId } = useParams<{ lessonId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { logout } = useAuth();
   const theme = useTheme();
   const unloadSubmitSentRef = useRef(false);
+
+  const attachments =
+    (location.state as { attachments?: LessonAttachment[] } | null)
+      ?.attachments ?? [];
+  const [downloadingAttachmentId, setDownloadingAttachmentId] = useState<
+    number | null
+  >(null);
+  const [attachmentDownloadError, setAttachmentDownloadError] = useState<
+    string | null
+  >(null);
+
+  const handleDownloadAttachment = async (att: LessonAttachment) => {
+    if (!lessonId) return;
+    setDownloadingAttachmentId(att.id);
+    setAttachmentDownloadError(null);
+    try {
+      const blob = await lessonService.downloadAttachment(
+        Number(lessonId),
+        att.id,
+      );
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = att.originalFileName;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setAttachmentDownloadError("Nie udało się pobrać załącznika.");
+    } finally {
+      setDownloadingAttachmentId(null);
+    }
+  };
 
   const [lessonData, setLessonData] = useState<LessonTasksResponse | null>(
     null,
@@ -925,6 +963,105 @@ export function LessonSolver() {
                           </Typography>
                         </Stack>
                       </Box>
+
+                      {/* Attachment section */}
+                      {attachments.length > 0 && (
+                        <Box
+                          sx={{
+                            mt: 2,
+                            pt: 2,
+                            borderTop: "1px solid",
+                            borderColor: "divider",
+                          }}
+                        >
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            fontWeight={700}
+                            display="block"
+                            sx={{ mb: 1 }}
+                          >
+                            Materiały ({attachments.length})
+                          </Typography>
+                          {attachmentDownloadError && (
+                            <Typography
+                              variant="caption"
+                              color="error"
+                              display="block"
+                              sx={{ mb: 0.5 }}
+                            >
+                              {attachmentDownloadError}
+                            </Typography>
+                          )}
+                          <Stack spacing={0.75}>
+                            {attachments.map((att) => {
+                              const isDownloading =
+                                downloadingAttachmentId === att.id;
+                              return (
+                                <Box
+                                  key={att.id}
+                                  sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 1,
+                                    px: 1.25,
+                                    py: 0.75,
+                                    borderRadius: 2,
+                                    bgcolor: (t) =>
+                                      alpha(t.palette.info.main, 0.07),
+                                    border: "1px solid",
+                                    borderColor: (t) =>
+                                      alpha(t.palette.info.main, 0.18),
+                                  }}
+                                >
+                                  <AttachFileIcon
+                                    sx={{
+                                      fontSize: 14,
+                                      color: "info.main",
+                                      flexShrink: 0,
+                                    }}
+                                  />
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    sx={{
+                                      flex: 1,
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                      whiteSpace: "nowrap",
+                                    }}
+                                  >
+                                    {att.originalFileName}
+                                  </Typography>
+                                  <Tooltip title="Pobierz">
+                                    <span>
+                                      <IconButton
+                                        size="small"
+                                        disabled={isDownloading}
+                                        onClick={() =>
+                                          void handleDownloadAttachment(att)
+                                        }
+                                        sx={{ p: 0.25 }}
+                                      >
+                                        {isDownloading ? (
+                                          <CircularProgress size={13} />
+                                        ) : (
+                                          <DownloadIcon
+                                            sx={{
+                                              fontSize: 15,
+                                              color: "info.main",
+                                            }}
+                                          />
+                                        )}
+                                      </IconButton>
+                                    </span>
+                                  </Tooltip>
+                                </Box>
+                              );
+                            })}
+                          </Stack>
+                        </Box>
+                      )}
                     </Paper>
                   </Grid>
                 </Grid>

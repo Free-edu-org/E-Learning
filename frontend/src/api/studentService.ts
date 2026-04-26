@@ -20,6 +20,14 @@ export interface StudentLessonGroup {
   name: string;
 }
 
+export interface StudentLessonAttachment {
+  id: number;
+  originalFileName: string;
+  contentType: string;
+  fileSize: number;
+  createdAt: string;
+}
+
 export interface StudentLesson {
   id: number;
   title: string;
@@ -34,6 +42,7 @@ export interface StudentLesson {
   score: number | null;
   maxScore: number | null;
   resultPercent: number | null;
+  attachments: StudentLessonAttachment[];
 }
 
 export interface SubmitAnswerItem {

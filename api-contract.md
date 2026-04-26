@@ -518,7 +518,7 @@ Poniżej znajdziesz opis endpointów do zarządzania lekcjami. Ścieżka bazowa:
 | `teacherAvatarUrl` | String                | URL do awatara nauczyciela (preset:name lub /uploads/...) |
 | `createdAt` | String (ISO datetime) | Data utworzenia |
 | `groups` | List<GroupDto>        | Lista grup przypisanych do lekcji (id, name) |
-| `attachment` | LessonAttachmentResponse \| null | Metadane załącznika (PDF/TXT/DOCX/DOC/ODT) lub `null` |
+| `attachments` | List<LessonAttachmentResponse> | Lista załączników lekcji (maks. 5). Pusta lista jeśli brak załączników. |
 
 **Known Errors:**
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
@@ -611,7 +611,7 @@ Zwraca zaktualizowaną reprezentację `LessonResponse`.
 - **URL**: `/api/v1/lessons/{lessonId}/attachments`
 - **Method**: `POST`
 - **Content-Type**: `multipart/form-data`
-- **Description**: Przesyła plik jako załącznik do lekcji. Jeżeli lekcja już ma załącznik, poprzedni jest usuwany i zastępowany nowym. Tylko jeden załącznik na lekcję.
+- **Description**: Przesyła plik jako załącznik do lekcji. Lekcja może mieć maksymalnie 5 załączników.
 - **Authorization**: `ADMIN` lub właściciel lekcji (`TEACHER`)
 
 **Form part:**
@@ -648,6 +648,7 @@ Zwraca zaktualizowaną reprezentację `LessonResponse`.
 
 **Known Errors:**
 - `LESSON_NOT_FOUND` (404 Not Found)
+- `ATTACHMENT_LIMIT_REACHED` (400 Bad Request): Lekcja posiada już 5 załączników.
 - `ATTACHMENT_INVALID_FILE_TYPE` (400 Bad Request): Niedozwolony typ pliku. Dozwolone: PDF, TXT, DOCX, DOC, ODT.
 - `ATTACHMENT_FILE_TOO_LARGE` (400 Bad Request): Plik przekracza 10 MB.
 - `UNAUTHORIZED` (401 Unauthorized)
@@ -689,7 +690,7 @@ Zwraca zaktualizowaną reprezentację `LessonResponse`.
 
 ---
 
-**LessonResponse** (`attachment` field — present in all lesson endpoints):
+**LessonResponse** (`attachments` field — present in all lesson endpoints):
 ```json
 {
   "id": 12,
@@ -701,16 +702,18 @@ Zwraca zaktualizowaną reprezentację `LessonResponse`.
   "teacherAvatarUrl": "preset:avatar_3",
   "createdAt": "2026-03-21T10:00:00",
   "groups": [ { "id": 1, "name": "Angielski A1" } ],
-  "attachment": {
-    "id": 1,
-    "originalFileName": "notatki.pdf",
-    "contentType": "application/pdf",
-    "fileSize": 204800,
-    "createdAt": "2026-04-25T10:00:00"
-  }
+  "attachments": [
+    {
+      "id": 1,
+      "originalFileName": "notatki.pdf",
+      "contentType": "application/pdf",
+      "fileSize": 204800,
+      "createdAt": "2026-04-25T10:00:00"
+    }
+  ]
 }
 ```
-Pole `attachment` ma wartość `null` jeśli lekcja nie ma załącznika.
+Pole `attachments` jest pustą listą `[]` jeśli lekcja nie ma załączników. Maks. 5 elementów.
 
 ---
 
@@ -1168,7 +1171,16 @@ Warstwa BFF dla uczniow.
     "status": "COMPLETED",
     "score": 4,
     "maxScore": 5,
-    "resultPercent": 80.0
+    "resultPercent": 80.0,
+    "attachments": [
+      {
+        "id": 1,
+        "originalFileName": "notatki.pdf",
+        "contentType": "application/pdf",
+        "fileSize": 204800,
+        "createdAt": "2026-04-25T10:00:00"
+      }
+    ]
   }
 ]
 ```
@@ -1187,6 +1199,7 @@ Warstwa BFF dla uczniow.
 | `score` | Integer or null | Zdobyta liczba punktow dla lekcji z zapisanym postepem. |
 | `maxScore` | Integer or null | Maksymalna liczba punktow dla biezacej proby. |
 | `resultPercent` | Double or null | Wynik procentowy, jesli lekcja ma zapisany rezultat. |
+| `attachments` | List<LessonAttachmentResponse> | Lista załączników lekcji (maks. 5). Pusta lista jeśli brak. Pobieranie: `GET /api/v1/lessons/{lessonId}/attachments/{attachmentId}`. |
 
 **Known Errors:**
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.

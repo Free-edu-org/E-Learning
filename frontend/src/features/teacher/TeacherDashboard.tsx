@@ -9,6 +9,7 @@ import {
   Container,
   Grid,
   Skeleton,
+  Snackbar,
   Stack,
   TextField,
   Typography,
@@ -382,6 +383,12 @@ export function TeacherDashboard() {
   const [deleteDialogFeedback, setDeleteDialogFeedback] =
     useState<DialogFeedbackState | null>(null);
 
+  // ── Snackbar notifications ──
+  const [snackbar, setSnackbar] = useState<{
+    message: string;
+    severity: "success" | "error";
+  } | null>(null);
+
   useEffect(() => {
     userService
       .getCurrentUser()
@@ -672,6 +679,12 @@ export function TeacherDashboard() {
 
     try {
       await lessonService.updateLessonStatus(lesson.id, newStatus);
+      setSnackbar({
+        message: newStatus
+          ? `Lekcja „${lesson.title}" została aktywowana.`
+          : `Lekcja „${lesson.title}" została dezaktywowana.`,
+        severity: "success",
+      });
       // Refresh stats only (active count changed)
       const s = await lessonService.getTeacherStats();
       setStats(s);
@@ -682,6 +695,10 @@ export function TeacherDashboard() {
           l.id === lesson.id ? { ...l, isActive: !newStatus } : l,
         ),
       );
+      setSnackbar({
+        message: "Nie udało się zmienić statusu lekcji.",
+        severity: "error",
+      });
     }
   }, []);
 
@@ -1276,6 +1293,22 @@ export function TeacherDashboard() {
           </AppDialogFooter>
         </AppDialog>
       </Container>
+
+      <Snackbar
+        open={snackbar != null}
+        autoHideDuration={3500}
+        onClose={() => setSnackbar(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          severity={snackbar?.severity}
+          variant="filled"
+          onClose={() => setSnackbar(null)}
+          sx={{ borderRadius: 2 }}
+        >
+          {snackbar?.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

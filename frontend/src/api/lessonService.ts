@@ -28,7 +28,7 @@ export interface Lesson {
   teacherAvatarUrl?: string | null;
   createdAt: string;
   groups: Group[];
-  attachment?: LessonAttachment | null;
+  attachments: LessonAttachment[];
 }
 
 export interface TeacherStats {

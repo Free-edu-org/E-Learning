@@ -83,15 +83,13 @@ public class LessonService {
 			filtered.sort(comparator);
 
 			List<Integer> lessonIds = filtered.stream().map(Lesson::getId).collect(Collectors.toList());
-			Map<Integer, LessonAttachmentResponse> attachments = lessonAttachmentService.findByLessonIds(lessonIds);
+			Map<Integer, List<LessonAttachmentResponse>> attachmentsMap = lessonAttachmentService
+					.findByLessonIds(lessonIds);
 
 			return filtered.stream().map(lesson -> {
 				LessonResponse resp = lessonMapper.toResponse(lesson);
 				resp.setGroups(groupHasLessonRepository.findGroupsForLesson(lesson.getId()));
-				LessonAttachmentResponse attachment = attachments.get(lesson.getId());
-				if (attachment != null) {
-					resp.setAttachment(attachment);
-				}
+				resp.setAttachments(attachmentsMap.getOrDefault(lesson.getId(), List.of()));
 				return resp;
 			}).collect(Collectors.toList());
 		}).subscribeOn(Schedulers.boundedElastic()).flatMapMany(Flux::fromIterable);
@@ -114,7 +112,7 @@ public class LessonService {
 
 					LessonResponse resp = lessonMapper.toResponse(saved);
 					resp.setGroups(groupHasLessonRepository.findGroupsForLesson(saved.getId()));
-					lessonAttachmentService.findByLessonId(saved.getId()).ifPresent(resp::setAttachment);
+					resp.setAttachments(lessonAttachmentService.findByLessonId(saved.getId()));
 					return resp;
 				}).subscribeOn(Schedulers.boundedElastic())));
 	}
@@ -139,7 +137,7 @@ public class LessonService {
 					Lesson reloaded = lessonRepository.findById(saved.getId()).orElse(saved);
 					LessonResponse resp = lessonMapper.toResponse(reloaded);
 					resp.setGroups(groupHasLessonRepository.findGroupsForLesson(saved.getId()));
-					lessonAttachmentService.findByLessonId(saved.getId()).ifPresent(resp::setAttachment);
+					resp.setAttachments(lessonAttachmentService.findByLessonId(saved.getId()));
 					return resp;
 				}).subscribeOn(Schedulers.boundedElastic())));
 	}

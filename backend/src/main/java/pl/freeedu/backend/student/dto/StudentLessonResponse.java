@@ -29,5 +29,5 @@ public class StudentLessonResponse {
 	private Integer score;
 	private Integer maxScore;
 	private Double resultPercent;
-	private LessonAttachmentResponse attachment;
+	private List<LessonAttachmentResponse> attachments;
 }

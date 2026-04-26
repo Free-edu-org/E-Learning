@@ -1,9 +1,11 @@
 import { useEffect, useState, useRef } from "react";
 import {
+  Alert,
   Box,
   Button,
   Grid,
   IconButton,
+  Snackbar,
   Stack,
   TextField,
   Tooltip,
@@ -62,6 +64,7 @@ export function AccountSettingsDialog({
   const [presetsExpanded, setPresetsExpanded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
+  const [avatarSnackbar, setAvatarSnackbar] = useState(false);
 
   const presets = Array.from({ length: 12 }, (_, i) => `avatar_${i + 1}`);
 
@@ -186,10 +189,7 @@ export function AccountSettingsDialog({
     try {
       const updatedUser = await userService.uploadAvatar(user.id, file);
       onUserUpdated(updatedUser);
-      setFeedback({
-        severity: "success",
-        message: "Awatar został zaktualizowany.",
-      });
+      setAvatarSnackbar(true);
     } catch (error) {
       setFeedback({
         severity: "error",
@@ -214,10 +214,7 @@ export function AccountSettingsDialog({
         presetName,
       );
       onUserUpdated(updatedUser);
-      setFeedback({
-        severity: "success",
-        message: "Awatar został zaktualizowany.",
-      });
+      setAvatarSnackbar(true);
     } catch (error) {
       setFeedback({
         severity: "error",
@@ -229,220 +226,237 @@ export function AccountSettingsDialog({
   };
 
   return (
-    <AppDialog open={open} onClose={closeDialog} maxWidth="sm">
-      <AppDialogHeader
-        icon={<ManageAccountsIcon />}
-        title="Ustawienia konta"
-        subtitle="Zmień swoje dane lub hasło."
-      />
-      <AppDialogBody>
-        {feedback && (
-          <AppDialogStatus severity={feedback.severity}>
-            {feedback.message}
-          </AppDialogStatus>
-        )}
-        <Stack spacing={2.25}>
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              mb: 1,
-            }}
-          >
-            <input
-              type="file"
-              accept="image/jpeg,image/png"
-              hidden
-              ref={fileInputRef}
-              onChange={handleAvatarUpload}
-            />
-            <Tooltip title="Kliknij, aby wgrać awatar z dysku">
-              <IconButton
-                onClick={() => fileInputRef.current?.click()}
-                disabled={!user || avatarLoading}
-                sx={{
-                  p: 0,
-                  position: "relative",
-                  "&:hover::after": {
-                    content: '""',
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    bgcolor: "rgba(0,0,0,0.4)",
-                    borderRadius: "50%",
-                    transition: "background-color 0.2s",
-                  },
-                  "&:hover .upload-icon": { opacity: 1 },
-                }}
-              >
-                <UserAvatar
-                  avatarUrl={user?.avatarUrl}
-                  username={user?.username}
-                  size={100}
-                />
-                <UploadIcon
-                  className="upload-icon"
-                  sx={{
-                    position: "absolute",
-                    color: "white",
-                    opacity: 0,
-                    transition: "opacity 0.2s",
-                    zIndex: 1,
-                    fontSize: 32,
-                  }}
-                />
-              </IconButton>
-            </Tooltip>
-
-            <Button
-              size="small"
-              onClick={() => setPresetsExpanded(!presetsExpanded)}
-              sx={{ mt: 1.5, textTransform: "none" }}
-              endIcon={
-                <ExpandMoreIcon
-                  sx={{
-                    transform: presetsExpanded ? "rotate(180deg)" : "none",
-                    transition: "0.2s",
-                  }}
-                />
-              }
+    <>
+      <AppDialog open={open} onClose={closeDialog} maxWidth="sm">
+        <AppDialogHeader
+          icon={<ManageAccountsIcon />}
+          title="Ustawienia konta"
+          subtitle="Zmień swoje dane lub hasło."
+        />
+        <AppDialogBody>
+          {feedback && (
+            <AppDialogStatus severity={feedback.severity}>
+              {feedback.message}
+            </AppDialogStatus>
+          )}
+          <Stack spacing={2.25}>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                mb: 1,
+              }}
             >
-              Wybierz z wbudowanych
+              <input
+                type="file"
+                accept="image/jpeg,image/png"
+                hidden
+                ref={fileInputRef}
+                onChange={handleAvatarUpload}
+              />
+              <Tooltip title="Kliknij, aby wgrać awatar z dysku">
+                <IconButton
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={!user || avatarLoading}
+                  sx={{
+                    p: 0,
+                    position: "relative",
+                    "&:hover::after": {
+                      content: '""',
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      bgcolor: "rgba(0,0,0,0.4)",
+                      borderRadius: "50%",
+                      transition: "background-color 0.2s",
+                    },
+                    "&:hover .upload-icon": { opacity: 1 },
+                  }}
+                >
+                  <UserAvatar
+                    avatarUrl={user?.avatarUrl}
+                    username={user?.username}
+                    size={100}
+                  />
+                  <UploadIcon
+                    className="upload-icon"
+                    sx={{
+                      position: "absolute",
+                      color: "white",
+                      opacity: 0,
+                      transition: "opacity 0.2s",
+                      zIndex: 1,
+                      fontSize: 32,
+                    }}
+                  />
+                </IconButton>
+              </Tooltip>
+
+              <Button
+                size="small"
+                onClick={() => setPresetsExpanded(!presetsExpanded)}
+                sx={{ mt: 1.5, textTransform: "none" }}
+                endIcon={
+                  <ExpandMoreIcon
+                    sx={{
+                      transform: presetsExpanded ? "rotate(180deg)" : "none",
+                      transition: "0.2s",
+                    }}
+                  />
+                }
+              >
+                Wybierz z wbudowanych
+              </Button>
+
+              <Collapse in={presetsExpanded}>
+                <Grid
+                  container
+                  spacing={1}
+                  justifyContent="center"
+                  sx={{ mt: 1, maxWidth: 320 }}
+                >
+                  {presets.map((preset) => (
+                    <Grid key={preset}>
+                      <IconButton
+                        onClick={() => handlePresetSelect(preset)}
+                        disabled={!user || avatarLoading}
+                        sx={{
+                          p: 0.5,
+                          border:
+                            user?.avatarUrl === `preset:${preset}`
+                              ? "2px solid"
+                              : "2px solid transparent",
+                          borderColor: "primary.main",
+                          transition: "transform 0.2s",
+                          "&:hover": { transform: "scale(1.1)" },
+                        }}
+                      >
+                        <UserAvatar avatarUrl={`preset:${preset}`} size={48} />
+                      </IconButton>
+                    </Grid>
+                  ))}
+                </Grid>
+              </Collapse>
+            </Box>
+
+            <FormSection title="Dane konta">
+              <Stack spacing={2}>
+                <FormField>
+                  <TextField
+                    label="Nazwa użytkownika"
+                    name="account-settings-username"
+                    autoComplete="off"
+                    value={username}
+                    onChange={(event) => setUsername(event.target.value)}
+                    disabled={!user || profileLoading}
+                    fullWidth
+                  />
+                </FormField>
+                <FormField>
+                  <TextField
+                    label="E-mail"
+                    name="account-settings-email"
+                    autoComplete="off"
+                    type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    disabled={!user || profileLoading}
+                    fullWidth
+                  />
+                </FormField>
+                <Button
+                  variant="contained"
+                  startIcon={<SaveIcon />}
+                  onClick={saveProfile}
+                  disabled={!user || profileLoading}
+                  sx={{ ...panelFooterButtonSx, alignSelf: "flex-end" }}
+                >
+                  {profileLoading ? "Zapisywanie..." : "Zapisz dane"}
+                </Button>
+              </Stack>
+            </FormSection>
+
+            <FormSection title="Zmiana hasła">
+              <Stack spacing={2}>
+                <FormField>
+                  <TextField
+                    label="Obecne hasło"
+                    name="account-settings-current-password"
+                    autoComplete="current-password"
+                    type="password"
+                    value={oldPassword}
+                    onChange={(event) => setOldPassword(event.target.value)}
+                    disabled={!user || passwordLoading}
+                    fullWidth
+                  />
+                </FormField>
+                <FormField>
+                  <TextField
+                    label="Nowe hasło"
+                    name="account-settings-new-password"
+                    autoComplete="new-password"
+                    type="password"
+                    value={newPassword}
+                    onChange={(event) => setNewPassword(event.target.value)}
+                    disabled={!user || passwordLoading}
+                    fullWidth
+                  />
+                </FormField>
+                <FormField>
+                  <TextField
+                    label="Powtórz nowe hasło"
+                    name="account-settings-confirm-password"
+                    autoComplete="new-password"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(event) => setConfirmPassword(event.target.value)}
+                    disabled={!user || passwordLoading}
+                    fullWidth
+                  />
+                </FormField>
+                <Button
+                  variant="outlined"
+                  startIcon={<LockIcon />}
+                  onClick={savePassword}
+                  disabled={!user || passwordLoading}
+                  sx={{ ...panelFooterButtonSx, alignSelf: "flex-end" }}
+                >
+                  {passwordLoading ? "Zapisywanie..." : "Zmień hasło"}
+                </Button>
+              </Stack>
+            </FormSection>
+          </Stack>
+        </AppDialogBody>
+        <AppDialogFooter>
+          <FormActions>
+            <Button
+              onClick={closeDialog}
+              disabled={profileLoading || passwordLoading}
+              sx={{ ...panelFooterButtonSx, color: "text.secondary" }}
+            >
+              Zamknij
             </Button>
-
-            <Collapse in={presetsExpanded}>
-              <Grid
-                container
-                spacing={1}
-                justifyContent="center"
-                sx={{ mt: 1, maxWidth: 320 }}
-              >
-                {presets.map((preset) => (
-                  <Grid key={preset}>
-                    <IconButton
-                      onClick={() => handlePresetSelect(preset)}
-                      disabled={!user || avatarLoading}
-                      sx={{
-                        p: 0.5,
-                        border:
-                          user?.avatarUrl === `preset:${preset}`
-                            ? "2px solid"
-                            : "2px solid transparent",
-                        borderColor: "primary.main",
-                        transition: "transform 0.2s",
-                        "&:hover": { transform: "scale(1.1)" },
-                      }}
-                    >
-                      <UserAvatar avatarUrl={`preset:${preset}`} size={48} />
-                    </IconButton>
-                  </Grid>
-                ))}
-              </Grid>
-            </Collapse>
-          </Box>
-
-          <FormSection title="Dane konta">
-            <Stack spacing={2}>
-              <FormField>
-                <TextField
-                  label="Nazwa użytkownika"
-                  name="account-settings-username"
-                  autoComplete="off"
-                  value={username}
-                  onChange={(event) => setUsername(event.target.value)}
-                  disabled={!user || profileLoading}
-                  fullWidth
-                />
-              </FormField>
-              <FormField>
-                <TextField
-                  label="E-mail"
-                  name="account-settings-email"
-                  autoComplete="off"
-                  type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  disabled={!user || profileLoading}
-                  fullWidth
-                />
-              </FormField>
-              <Button
-                variant="contained"
-                startIcon={<SaveIcon />}
-                onClick={saveProfile}
-                disabled={!user || profileLoading}
-                sx={{ ...panelFooterButtonSx, alignSelf: "flex-end" }}
-              >
-                {profileLoading ? "Zapisywanie..." : "Zapisz dane"}
-              </Button>
-            </Stack>
-          </FormSection>
-
-          <FormSection title="Zmiana hasła">
-            <Stack spacing={2}>
-              <FormField>
-                <TextField
-                  label="Obecne hasło"
-                  name="account-settings-current-password"
-                  autoComplete="current-password"
-                  type="password"
-                  value={oldPassword}
-                  onChange={(event) => setOldPassword(event.target.value)}
-                  disabled={!user || passwordLoading}
-                  fullWidth
-                />
-              </FormField>
-              <FormField>
-                <TextField
-                  label="Nowe hasło"
-                  name="account-settings-new-password"
-                  autoComplete="new-password"
-                  type="password"
-                  value={newPassword}
-                  onChange={(event) => setNewPassword(event.target.value)}
-                  disabled={!user || passwordLoading}
-                  fullWidth
-                />
-              </FormField>
-              <FormField>
-                <TextField
-                  label="Powtórz nowe hasło"
-                  name="account-settings-confirm-password"
-                  autoComplete="new-password"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(event) => setConfirmPassword(event.target.value)}
-                  disabled={!user || passwordLoading}
-                  fullWidth
-                />
-              </FormField>
-              <Button
-                variant="outlined"
-                startIcon={<LockIcon />}
-                onClick={savePassword}
-                disabled={!user || passwordLoading}
-                sx={{ ...panelFooterButtonSx, alignSelf: "flex-end" }}
-              >
-                {passwordLoading ? "Zapisywanie..." : "Zmień hasło"}
-              </Button>
-            </Stack>
-          </FormSection>
-        </Stack>
-      </AppDialogBody>
-      <AppDialogFooter>
-        <FormActions>
-          <Button
-            onClick={closeDialog}
-            disabled={profileLoading || passwordLoading}
-            sx={{ ...panelFooterButtonSx, color: "text.secondary" }}
-          >
-            Zamknij
-          </Button>
-        </FormActions>
-      </AppDialogFooter>
-    </AppDialog>
+          </FormActions>
+        </AppDialogFooter>
+      </AppDialog>
+      <Snackbar
+        open={avatarSnackbar}
+        autoHideDuration={3500}
+        onClose={() => setAvatarSnackbar(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          severity="success"
+          variant="filled"
+          onClose={() => setAvatarSnackbar(false)}
+          sx={{ borderRadius: 2 }}
+        >
+          Awatar został zaktualizowany.
+        </Alert>
+      </Snackbar>
+    </>
   );
 }

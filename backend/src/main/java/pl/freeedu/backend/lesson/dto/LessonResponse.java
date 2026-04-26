@@ -26,6 +26,6 @@ public class LessonResponse {
 	// aggregated groups assigned to lesson
 	private List<GroupDto> groups;
 
-	// optional PDF attachment
-	private LessonAttachmentResponse attachment;
+	// file attachments (up to 5)
+	private List<LessonAttachmentResponse> attachments;
 }
