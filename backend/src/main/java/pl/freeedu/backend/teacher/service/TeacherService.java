@@ -100,15 +100,12 @@ public class TeacherService {
 					List<pl.freeedu.backend.lesson.model.Lesson> lessons = lessonRepository.findByTeacher_Id(teacherId);
 					List<Integer> lessonIds = lessons.stream().map(pl.freeedu.backend.lesson.model.Lesson::getId)
 							.collect(Collectors.toList());
-					Map<Integer, LessonAttachmentResponse> attachments = lessonAttachmentService
+					Map<Integer, List<LessonAttachmentResponse>> attachments = lessonAttachmentService
 							.findByLessonIds(lessonIds);
 					return lessons.stream().map(lesson -> {
 						LessonResponse resp = lessonMapper.toResponse(lesson);
 						resp.setGroups(groupHasLessonRepository.findGroupsForLesson(lesson.getId()));
-						LessonAttachmentResponse attachment = attachments.get(lesson.getId());
-						if (attachment != null) {
-							resp.setAttachment(attachment);
-						}
+						resp.setAttachments(attachments.getOrDefault(lesson.getId(), List.of()));
 						return resp;
 					}).collect(Collectors.toList());
 				}).subscribeOn(Schedulers.boundedElastic()).flatMapMany(Flux::fromIterable));

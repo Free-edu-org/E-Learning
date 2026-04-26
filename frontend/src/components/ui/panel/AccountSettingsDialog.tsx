@@ -1,8 +1,10 @@
 import { useEffect, useState, useRef, useMemo } from "react";
 import {
+  Alert,
   Box,
   Button,
   IconButton,
+  Snackbar,
   Stack,
   TextField,
   Collapse,
@@ -68,6 +70,7 @@ export function AccountSettingsDialog({
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [presetsExpanded, setPresetsExpanded] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
+  const [avatarSnackbar, setAvatarSnackbar] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const presets = useMemo(
@@ -97,7 +100,6 @@ export function AccountSettingsDialog({
     onClose();
   };
 
-  // Helper to clear errors when switching modes
   const resetFeedback = () => setFeedback(null);
 
   const handleSaveProfile = async () => {
@@ -106,7 +108,6 @@ export function AccountSettingsDialog({
     const trimmedUsername = username.trim();
     const trimmedEmail = email.trim();
 
-    // Field-level validation (handled by helperText, but check here too)
     if (isEditingUsername && !trimmedUsername) {
       setFeedback({
         severity: "error",
@@ -124,7 +125,6 @@ export function AccountSettingsDialog({
         return;
       }
       if (trimmedEmail !== confirmEmail.trim()) {
-        // This is already shown by emailMatchError helperText
         return;
       }
     }
@@ -166,7 +166,6 @@ export function AccountSettingsDialog({
     }
 
     if (newPassword !== confirmPassword) {
-      // Handled by live validation helperText
       return;
     }
 
@@ -211,10 +210,7 @@ export function AccountSettingsDialog({
     try {
       const updatedUser = await userService.uploadAvatar(user.id, file);
       onUserUpdated(updatedUser);
-      setFeedback({
-        severity: "success",
-        message: "Zdjęcie profilowe zostało zmienione.",
-      });
+      setAvatarSnackbar(true);
     } catch {
       setFeedback({
         severity: "error",
@@ -236,7 +232,7 @@ export function AccountSettingsDialog({
         presetName,
       );
       onUserUpdated(updatedUser);
-      setFeedback({ severity: "success", message: "Awatar został zmieniony." });
+      setAvatarSnackbar(true);
     } catch {
       setFeedback({
         severity: "error",
@@ -283,382 +279,351 @@ export function AccountSettingsDialog({
   }, [email, confirmEmail]);
 
   return (
-    <AppDialog
-      open={open}
-      onClose={closeDialog}
-      maxWidth="sm"
-      paperSx={{ borderRadius: "24px" }}
-      PaperProps={{
-        className: `modern-dialog-paper animate-in ${isDark ? "dark" : ""}`,
-      }}
-    >
-      <Box className="settings-header">
-        <Box className="settings-header-content">
-          <Box className="settings-header-icon-box">
-            <SettingsIcon />
+    <>
+      <AppDialog
+        open={open}
+        onClose={closeDialog}
+        maxWidth="sm"
+        paperSx={{ borderRadius: "24px" }}
+        PaperProps={{
+          className: `modern-dialog-paper animate-in ${isDark ? "dark" : ""}`,
+        }}
+      >
+        <Box className="settings-header">
+          <Box className="settings-header-content">
+            <Box className="settings-header-icon-box">
+              <SettingsIcon />
+            </Box>
+            <Typography className="settings-header-title">
+              Ustawienia konta
+            </Typography>
+            <Typography className="settings-header-subtitle">
+              Zarządzaj swoim profilem i bezpieczeństwem
+            </Typography>
           </Box>
-          <Typography className="settings-header-title">
-            Ustawienia konta
-          </Typography>
-          <Typography className="settings-header-subtitle">
-            Zarządzaj swoim profilem i bezpieczeństwem
-          </Typography>
         </Box>
-      </Box>
 
-      <Box className="settings-body">
-        {feedback && feedback.severity === "success" && (
-          <AppDialogStatus severity="success">
-            {feedback.message}
-          </AppDialogStatus>
-        )}
-
-        {/* Global Error Banner - Only for errors not related to specific fields being edited */}
-        {feedback &&
-          feedback.severity === "error" &&
-          !passwordExpanded &&
-          !isEditingEmail &&
-          !isEditingUsername && (
-            <AppDialogStatus severity="error">
+        <Box className="settings-body">
+          {feedback && feedback.severity === "success" && (
+            <AppDialogStatus severity="success">
               {feedback.message}
             </AppDialogStatus>
           )}
 
-        {/* Avatar Section */}
-        <Box className="avatar-section">
-          <input
-            type="file"
-            accept="image/*"
-            hidden
-            ref={fileInputRef}
-            onChange={handleAvatarUpload}
-          />
-          <Box
-            className="avatar-container"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <UserAvatar
-              avatarUrl={user?.avatarUrl}
-              username={user?.username}
-              size={102}
+          {feedback &&
+            feedback.severity === "error" &&
+            !passwordExpanded &&
+            !isEditingEmail &&
+            !isEditingUsername && (
+              <AppDialogStatus severity="error">
+                {feedback.message}
+              </AppDialogStatus>
+            )}
+
+          {/* Avatar Section */}
+          <Box className="avatar-section">
+            <input
+              type="file"
+              accept="image/*"
+              hidden
+              ref={fileInputRef}
+              onChange={handleAvatarUpload}
             />
-            {avatarLoading ? (
-              <Box className="avatar-overlay" style={{ opacity: 1 }}>
-                <CircularProgress size={24} color="inherit" />
-              </Box>
-            ) : (
-              <Box className="avatar-overlay">
-                <UploadIcon />
-                <span>Zmień zdjęcie</span>
-              </Box>
-            )}
-          </Box>
-
-          <Button
-            className="presets-toggle"
-            endIcon={
-              <ExpandMoreIcon
-                style={{
-                  transform: presetsExpanded ? "rotate(180deg)" : "none",
-                  transition: "0.2s",
-                }}
-              />
-            }
-            onClick={() => setPresetsExpanded(!presetsExpanded)}
-          >
-            Wybierz z presetów
-          </Button>
-
-          <Collapse in={presetsExpanded}>
-            <Box className="presets-grid">
-              {presets.map((p) => (
-                <Box
-                  key={p}
-                  className={`preset-item ${user?.avatarUrl === `preset:${p}` ? "active" : ""}`}
-                  onClick={() => handlePresetSelect(p)}
-                >
-                  <UserAvatar avatarUrl={`preset:${p}`} size={40} />
-                </Box>
-              ))}
-            </Box>
-          </Collapse>
-        </Box>
-
-        {/* Profile Section */}
-        <Typography className="section-label">Profil</Typography>
-        <Box className="settings-group">
-          {/* Username Row */}
-          <Box className="settings-row">
-            {isEditingUsername ? (
-              <Box className="inline-edit-box">
-                <Typography className="edit-context-label">
-                  Edycja nazwy użytkownika
-                </Typography>
-                <Box
-                  sx={{
-                    display: "flex",
-                    gap: 1.5,
-                    alignItems: "flex-start",
-                    width: "100%",
-                  }}
-                >
-                  <TextField
-                    fullWidth
-                    size="small"
-                    className="modern-field"
-                    value={username}
-                    onChange={(e) => {
-                      setUsername(e.target.value);
-                      resetFeedback();
-                    }}
-                    placeholder="Nazwa użytkownika"
-                    autoFocus
-                    error={
-                      feedback?.severity === "error" &&
-                      (feedback.message.includes("użytkownik") ||
-                        feedback.message.includes("username"))
-                    }
-                    helperText={
-                      feedback?.severity === "error" &&
-                      (feedback.message.includes("użytkownik") ||
-                        feedback.message.includes("username"))
-                        ? feedback.message
-                        : ""
-                    }
-                  />
-                  <Box className="edit-actions" sx={{ mt: 0.5 }}>
-                    <IconButton
-                      onClick={handleSaveProfile}
-                      disabled={profileLoading}
-                      className="action-icon-btn success"
-                      size="small"
-                    >
-                      <CheckIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                      onClick={() => {
-                        setIsEditingUsername(false);
-                        setUsername(user?.username || "");
-                        resetFeedback();
-                      }}
-                      className="action-icon-btn cancel"
-                      size="small"
-                    >
-                      <CloseIcon fontSize="small" />
-                    </IconButton>
-                  </Box>
-                </Box>
-              </Box>
-            ) : (
-              <>
-                <Box className="row-content">
-                  <Typography className="row-label">
-                    Nazwa użytkownika
-                  </Typography>
-                  <Typography className="row-value">
-                    {user?.username}
-                  </Typography>
-                </Box>
-                <Button
-                  className="change-btn"
-                  onClick={() => {
-                    setIsEditingUsername(true);
-                    resetFeedback();
-                  }}
-                >
-                  Zmień
-                </Button>
-              </>
-            )}
-          </Box>
-
-          {/* Email Row */}
-          <Box className="settings-row">
-            {isEditingEmail ? (
-              <Box className="inline-edit-box" style={{ width: "100%" }}>
-                <Typography className="edit-context-label">
-                  Edycja adresu e-mail
-                </Typography>
-                <Box
-                  sx={{
-                    display: "flex",
-                    gap: 2,
-                    alignItems: "center",
-                    width: "100%",
-                  }}
-                >
-                  <Stack spacing={1.25} flex={1}>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      className="modern-field"
-                      value={email}
-                      onChange={(e) => {
-                        setEmail(e.target.value);
-                        resetFeedback();
-                      }}
-                      placeholder="Nowy email"
-                      autoFocus
-                    />
-                    <TextField
-                      fullWidth
-                      size="small"
-                      className="modern-field"
-                      value={confirmEmail}
-                      onChange={(e) => {
-                        setConfirmEmail(e.target.value);
-                        resetFeedback();
-                      }}
-                      placeholder="Powtórz nowy email"
-                      error={
-                        !!emailMatchError ||
-                        (feedback?.severity === "error" &&
-                          feedback.message.includes("email"))
-                      }
-                      helperText={
-                        emailMatchError ||
-                        (feedback?.severity === "error" &&
-                        feedback.message.includes("email")
-                          ? feedback.message
-                          : "")
-                      }
-                    />
-                  </Stack>
-                  <Stack spacing={1} sx={{ justifyContent: "center" }}>
-                    <IconButton
-                      onClick={() => {
-                        setIsEditingEmail(false);
-                        setEmail(user?.email || "");
-                        setConfirmEmail("");
-                        resetFeedback();
-                      }}
-                      className="action-icon-btn cancel"
-                      size="small"
-                    >
-                      <CloseIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                      onClick={handleSaveProfile}
-                      disabled={profileLoading || !!emailMatchError}
-                      className="action-icon-btn success"
-                      size="small"
-                    >
-                      <CheckIcon fontSize="small" />
-                    </IconButton>
-                  </Stack>
-                </Box>
-              </Box>
-            ) : (
-              <>
-                <Box className="row-content">
-                  <Typography className="row-label">Email</Typography>
-                  <Typography className="row-value">{user?.email}</Typography>
-                </Box>
-                <Button
-                  className="change-btn"
-                  onClick={() => {
-                    setIsEditingEmail(true);
-                    setEmail("");
-                    setConfirmEmail("");
-                    resetFeedback();
-                  }}
-                >
-                  Zmień
-                </Button>
-              </>
-            )}
-          </Box>
-        </Box>
-
-        {/* Security Section */}
-        <Typography className="section-label">Bezpieczeństwo</Typography>
-        <Box className="settings-group">
-          <Box className="settings-row">
-            <Box className="row-content">
-              <Typography className="row-label">Hasło</Typography>
-              <Typography className="row-value">••••••••••••</Typography>
-            </Box>
-            <Button
-              className="change-btn"
-              onClick={() => {
-                setPasswordExpanded(!passwordExpanded);
-                resetFeedback();
-              }}
+            <Box
+              className="avatar-container"
+              onClick={() => fileInputRef.current?.click()}
             >
-              {passwordExpanded ? "Anuluj" : "Zmień hasło"}
-            </Button>
-          </Box>
+              <UserAvatar
+                avatarUrl={user?.avatarUrl}
+                username={user?.username}
+                size={102}
+              />
+              {avatarLoading ? (
+                <Box className="avatar-overlay" style={{ opacity: 1 }}>
+                  <CircularProgress size={24} color="inherit" />
+                </Box>
+              ) : (
+                <Box className="avatar-overlay">
+                  <UploadIcon />
+                  <span>Zmień zdjęcie</span>
+                </Box>
+              )}
+            </Box>
 
-          <Collapse in={passwordExpanded}>
-            <Box className="password-panel">
-              <Stack className="password-form">
-                <Typography className="edit-context-label" sx={{ mb: 1 }}>
-                  Zmiana hasła
-                </Typography>
-                {/* Specific error for password section */}
-                {feedback &&
-                  feedback.severity === "error" &&
-                  passwordExpanded &&
-                  !feedback.message.includes("hasło") &&
-                  !feedback.message.includes("password") && (
-                    <AppDialogStatus severity="error">
-                      {feedback.message}
-                    </AppDialogStatus>
-                  )}
-
-                <TextField
-                  label="Obecne hasło"
-                  type={showPasswords ? "text" : "password"}
-                  fullWidth
-                  size="small"
-                  className="modern-field"
-                  value={oldPassword}
-                  onChange={(e) => {
-                    setOldPassword(e.target.value);
-                    resetFeedback();
-                  }}
-                  error={
-                    feedback?.severity === "error" &&
-                    (feedback.message.includes("hasło") ||
-                      feedback.message.includes("password"))
-                  }
-                  helperText={
-                    feedback?.severity === "error" &&
-                    (feedback.message.includes("hasło") ||
-                      feedback.message.includes("password"))
-                      ? feedback.message
-                      : ""
-                  }
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton
-                          onClick={() => setShowPasswords(!showPasswords)}
-                          edge="end"
-                          size="small"
-                        >
-                          {showPasswords ? (
-                            <VisibilityOffIcon />
-                          ) : (
-                            <VisibilityIcon />
-                          )}
-                        </IconButton>
-                      </InputAdornment>
-                    ),
+            <Button
+              className="presets-toggle"
+              endIcon={
+                <ExpandMoreIcon
+                  style={{
+                    transform: presetsExpanded ? "rotate(180deg)" : "none",
+                    transition: "0.2s",
                   }}
                 />
-                <Box className="password-field-wrapper">
+              }
+              onClick={() => setPresetsExpanded(!presetsExpanded)}
+            >
+              Wybierz z presetów
+            </Button>
+
+            <Collapse in={presetsExpanded}>
+              <Box className="presets-grid">
+                {presets.map((p) => (
+                  <Box
+                    key={p}
+                    className={`preset-item ${user?.avatarUrl === `preset:${p}` ? "active" : ""}`}
+                    onClick={() => handlePresetSelect(p)}
+                  >
+                    <UserAvatar avatarUrl={`preset:${p}`} size={40} />
+                  </Box>
+                ))}
+              </Box>
+            </Collapse>
+          </Box>
+
+          {/* Profile Section */}
+          <Typography className="section-label">Profil</Typography>
+          <Box className="settings-group">
+            {/* Username Row */}
+            <Box className="settings-row">
+              {isEditingUsername ? (
+                <Box className="inline-edit-box">
+                  <Typography className="edit-context-label">
+                    Edycja nazwy użytkownika
+                  </Typography>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      gap: 1.5,
+                      alignItems: "flex-start",
+                      width: "100%",
+                    }}
+                  >
+                    <TextField
+                      fullWidth
+                      size="small"
+                      className="modern-field"
+                      value={username}
+                      onChange={(e) => {
+                        setUsername(e.target.value);
+                        resetFeedback();
+                      }}
+                      placeholder="Nazwa użytkownika"
+                      autoFocus
+                      error={
+                        feedback?.severity === "error" &&
+                        (feedback.message.includes("użytkownik") ||
+                          feedback.message.includes("username"))
+                      }
+                      helperText={
+                        feedback?.severity === "error" &&
+                        (feedback.message.includes("użytkownik") ||
+                          feedback.message.includes("username"))
+                          ? feedback.message
+                          : ""
+                      }
+                    />
+                    <Box className="edit-actions" sx={{ mt: 0.5 }}>
+                      <IconButton
+                        onClick={handleSaveProfile}
+                        disabled={profileLoading}
+                        className="action-icon-btn success"
+                        size="small"
+                      >
+                        <CheckIcon fontSize="small" />
+                      </IconButton>
+                      <IconButton
+                        onClick={() => {
+                          setIsEditingUsername(false);
+                          setUsername(user?.username || "");
+                          resetFeedback();
+                        }}
+                        className="action-icon-btn cancel"
+                        size="small"
+                      >
+                        <CloseIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
+                  </Box>
+                </Box>
+              ) : (
+                <>
+                  <Box className="row-content">
+                    <Typography className="row-label">
+                      Nazwa użytkownika
+                    </Typography>
+                    <Typography className="row-value">
+                      {user?.username}
+                    </Typography>
+                  </Box>
+                  <Button
+                    className="change-btn"
+                    onClick={() => {
+                      setIsEditingUsername(true);
+                      resetFeedback();
+                    }}
+                  >
+                    Zmień
+                  </Button>
+                </>
+              )}
+            </Box>
+
+            {/* Email Row */}
+            <Box className="settings-row">
+              {isEditingEmail ? (
+                <Box className="inline-edit-box" style={{ width: "100%" }}>
+                  <Typography className="edit-context-label">
+                    Edycja adresu e-mail
+                  </Typography>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      gap: 2,
+                      alignItems: "center",
+                      width: "100%",
+                    }}
+                  >
+                    <Stack spacing={1.25} flex={1}>
+                      <TextField
+                        fullWidth
+                        size="small"
+                        className="modern-field"
+                        value={email}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          resetFeedback();
+                        }}
+                        placeholder="Nowy email"
+                        autoFocus
+                      />
+                      <TextField
+                        fullWidth
+                        size="small"
+                        className="modern-field"
+                        value={confirmEmail}
+                        onChange={(e) => {
+                          setConfirmEmail(e.target.value);
+                          resetFeedback();
+                        }}
+                        placeholder="Powtórz nowy email"
+                        error={
+                          !!emailMatchError ||
+                          (feedback?.severity === "error" &&
+                            feedback.message.includes("email"))
+                        }
+                        helperText={
+                          emailMatchError ||
+                          (feedback?.severity === "error" &&
+                          feedback.message.includes("email")
+                            ? feedback.message
+                            : "")
+                        }
+                      />
+                    </Stack>
+                    <Stack spacing={1} sx={{ justifyContent: "center" }}>
+                      <IconButton
+                        onClick={() => {
+                          setIsEditingEmail(false);
+                          setEmail(user?.email || "");
+                          setConfirmEmail("");
+                          resetFeedback();
+                        }}
+                        className="action-icon-btn cancel"
+                        size="small"
+                      >
+                        <CloseIcon fontSize="small" />
+                      </IconButton>
+                      <IconButton
+                        onClick={handleSaveProfile}
+                        disabled={profileLoading || !!emailMatchError}
+                        className="action-icon-btn success"
+                        size="small"
+                      >
+                        <CheckIcon fontSize="small" />
+                      </IconButton>
+                    </Stack>
+                  </Box>
+                </Box>
+              ) : (
+                <>
+                  <Box className="row-content">
+                    <Typography className="row-label">Email</Typography>
+                    <Typography className="row-value">{user?.email}</Typography>
+                  </Box>
+                  <Button
+                    className="change-btn"
+                    onClick={() => {
+                      setIsEditingEmail(true);
+                      setEmail("");
+                      setConfirmEmail("");
+                      resetFeedback();
+                    }}
+                  >
+                    Zmień
+                  </Button>
+                </>
+              )}
+            </Box>
+          </Box>
+
+          {/* Security Section */}
+          <Typography className="section-label">Bezpieczeństwo</Typography>
+          <Box className="settings-group">
+            <Box className="settings-row">
+              <Box className="row-content">
+                <Typography className="row-label">Hasło</Typography>
+                <Typography className="row-value">••••••••••••</Typography>
+              </Box>
+              <Button
+                className="change-btn"
+                onClick={() => {
+                  setPasswordExpanded(!passwordExpanded);
+                  resetFeedback();
+                }}
+              >
+                {passwordExpanded ? "Anuluj" : "Zmień hasło"}
+              </Button>
+            </Box>
+
+            <Collapse in={passwordExpanded}>
+              <Box className="password-panel">
+                <Stack className="password-form">
+                  <Typography className="edit-context-label" sx={{ mb: 1 }}>
+                    Zmiana hasła
+                  </Typography>
+                  {feedback &&
+                    feedback.severity === "error" &&
+                    passwordExpanded &&
+                    !feedback.message.includes("hasło") &&
+                    !feedback.message.includes("password") && (
+                      <AppDialogStatus severity="error">
+                        {feedback.message}
+                      </AppDialogStatus>
+                    )}
+
                   <TextField
-                    label="Nowe hasło"
+                    label="Obecne hasło"
                     type={showPasswords ? "text" : "password"}
                     fullWidth
                     size="small"
                     className="modern-field"
-                    value={newPassword}
+                    value={oldPassword}
                     onChange={(e) => {
-                      setNewPassword(e.target.value);
+                      setOldPassword(e.target.value);
                       resetFeedback();
                     }}
+                    error={
+                      feedback?.severity === "error" &&
+                      (feedback.message.includes("hasło") ||
+                        feedback.message.includes("password"))
+                    }
+                    helperText={
+                      feedback?.severity === "error" &&
+                      (feedback.message.includes("hasło") ||
+                        feedback.message.includes("password"))
+                        ? feedback.message
+                        : ""
+                    }
                     InputProps={{
                       endAdornment: (
                         <InputAdornment position="end">
@@ -677,67 +642,114 @@ export function AccountSettingsDialog({
                       ),
                     }}
                   />
-                  {newPassword && (
-                    <Box className="strength-container">
-                      <Box className="strength-bar">
-                        <Box
-                          className="strength-progress"
-                          style={{
-                            width: `${passwordStrength}%`,
-                            backgroundColor: strengthColor(),
-                          }}
-                        />
+                  <Box className="password-field-wrapper">
+                    <TextField
+                      label="Nowe hasło"
+                      type={showPasswords ? "text" : "password"}
+                      fullWidth
+                      size="small"
+                      className="modern-field"
+                      value={newPassword}
+                      onChange={(e) => {
+                        setNewPassword(e.target.value);
+                        resetFeedback();
+                      }}
+                      InputProps={{
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton
+                              onClick={() => setShowPasswords(!showPasswords)}
+                              edge="end"
+                              size="small"
+                            >
+                              {showPasswords ? (
+                                <VisibilityOffIcon />
+                              ) : (
+                                <VisibilityIcon />
+                              )}
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                    {newPassword && (
+                      <Box className="strength-container">
+                        <Box className="strength-bar">
+                          <Box
+                            className="strength-progress"
+                            style={{
+                              width: `${passwordStrength}%`,
+                              backgroundColor: strengthColor(),
+                            }}
+                          />
+                        </Box>
+                        <Typography className="strength-text">
+                          Siła hasła: {strengthLabel()}
+                        </Typography>
                       </Box>
-                      <Typography className="strength-text">
-                        Siła hasła: {strengthLabel()}
-                      </Typography>
-                    </Box>
-                  )}
-                </Box>
-                <TextField
-                  label="Powtórz nowe hasło"
-                  type="password"
-                  fullWidth
-                  size="small"
-                  className="modern-field"
-                  value={confirmPassword}
-                  onChange={(e) => {
-                    setConfirmPassword(e.target.value);
-                    resetFeedback();
-                  }}
-                  error={!!passwordMatchError}
-                  helperText={passwordMatchError}
-                />
-                <Button
-                  className="btn-primary"
-                  style={{ alignSelf: "flex-end", marginTop: "8px" }}
-                  onClick={handleSavePassword}
-                  disabled={passwordLoading || !!passwordMatchError}
-                >
-                  {passwordLoading ? (
-                    <CircularProgress size={20} color="inherit" />
-                  ) : (
-                    "Zapisz nowe hasło"
-                  )}
-                </Button>
-              </Stack>
-            </Box>
-          </Collapse>
+                    )}
+                  </Box>
+                  <TextField
+                    label="Powtórz nowe hasło"
+                    type="password"
+                    fullWidth
+                    size="small"
+                    className="modern-field"
+                    value={confirmPassword}
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value);
+                      resetFeedback();
+                    }}
+                    error={!!passwordMatchError}
+                    helperText={passwordMatchError}
+                  />
+                  <Button
+                    className="btn-primary"
+                    style={{ alignSelf: "flex-end", marginTop: "8px" }}
+                    onClick={handleSavePassword}
+                    disabled={passwordLoading || !!passwordMatchError}
+                  >
+                    {passwordLoading ? (
+                      <CircularProgress size={20} color="inherit" />
+                    ) : (
+                      "Zapisz nowe hasło"
+                    )}
+                  </Button>
+                </Stack>
+              </Box>
+            </Collapse>
+          </Box>
         </Box>
-      </Box>
 
-      <Box className="footer">
-        <Stack
-          direction="row"
-          justifyContent="flex-end"
-          spacing={2}
-          width="100%"
+        <Box className="footer">
+          <Stack
+            direction="row"
+            justifyContent="flex-end"
+            spacing={2}
+            width="100%"
+          >
+            <Button className="cancel-btn" onClick={closeDialog}>
+              Zamknij
+            </Button>
+          </Stack>
+        </Box>
+      </AppDialog>
+
+      <Snackbar
+        open={avatarSnackbar}
+        autoHideDuration={3500}
+        onClose={() => setAvatarSnackbar(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          severity="success"
+          variant="filled"
+          onClose={() => setAvatarSnackbar(false)}
+          sx={{ borderRadius: 2 }}
         >
-          <Button className="cancel-btn" onClick={closeDialog}>
-            Zamknij
-          </Button>
-        </Stack>
-      </Box>
-    </AppDialog>
+          Awatar został zaktualizowany.
+        </Alert>
+      </Snackbar>
+    </>
   );
 }

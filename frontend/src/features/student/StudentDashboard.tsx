@@ -4,6 +4,7 @@ import {
   Box,
   Button,
   Chip,
+  CircularProgress,
   Container,
   Dialog,
   DialogActions,
@@ -18,13 +19,16 @@ import {
   Stack,
   ToggleButton,
   ToggleButtonGroup,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
 import {
+  AttachFileOutlined as AttachFileIcon,
   AutoStoriesOutlined as LessonIcon,
   CheckCircleOutlined as CompletedIcon,
   CloseOutlined as CloseIcon,
+  DownloadOutlined as DownloadIcon,
   InsightsOutlined as InsightsIcon,
   LockOutlined as LockIcon,
   SortOutlined as SortIcon,
@@ -34,9 +38,11 @@ import { useNavigate } from "react-router-dom";
 import {
   studentService,
   type StudentLesson,
+  type StudentLessonAttachment,
   type StudentProgress,
   type StudentStats,
 } from "@/api/studentService";
+import { lessonService } from "@/api/lessonService";
 import { userService, type UserProfile } from "@/api/userService";
 import { DashboardHeader } from "@/components/ui/panel/DashboardHeader";
 import { DashboardTopBar } from "@/components/ui/panel/DashboardTopBar";
@@ -308,6 +314,145 @@ function ProgressDialog({ progress, stats, onClose }: ProgressDialogProps) {
   );
 }
 
+// ── Attachment Dialog ─────────────────────────────────────────────────────────
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+interface AttachmentDialogProps {
+  lesson: StudentLesson | null;
+  downloadingAttachmentId: number | null;
+  downloadError: string | null;
+  onClose: () => void;
+  onDownload: (lessonId: number, attachment: StudentLessonAttachment) => void;
+}
+
+function AttachmentDialog({
+  lesson,
+  downloadingAttachmentId,
+  downloadError,
+  onClose,
+  onDownload,
+}: AttachmentDialogProps) {
+  if (!lesson || lesson.attachments.length === 0) return null;
+
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      maxWidth="xs"
+      fullWidth
+      PaperProps={{ sx: { borderRadius: 3 } }}
+    >
+      <DialogTitle
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          pb: 1,
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <AttachFileIcon sx={{ color: "info.main" }} />
+          <Typography variant="h6" fontWeight={700}>
+            Materiały do lekcji
+          </Typography>
+        </Box>
+        <IconButton size="small" onClick={onClose}>
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </DialogTitle>
+
+      <DialogContent sx={{ pt: 0.5 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          {lesson.title}
+        </Typography>
+
+        <Stack spacing={1}>
+          {lesson.attachments.map((att) => {
+            const isDownloading = downloadingAttachmentId === att.id;
+            return (
+              <Box
+                key={att.id}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1.5,
+                  p: 1.5,
+                  borderRadius: 2,
+                  bgcolor: (t) => alpha(t.palette.info.main, 0.07),
+                  border: "1px solid",
+                  borderColor: (t) => alpha(t.palette.info.main, 0.18),
+                }}
+              >
+                <AttachFileIcon
+                  sx={{ fontSize: 18, color: "info.main", flexShrink: 0 }}
+                />
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography
+                    variant="body2"
+                    fontWeight={600}
+                    sx={{
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {att.originalFileName}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {formatBytes(att.fileSize)} · {att.contentType}
+                  </Typography>
+                </Box>
+                <Tooltip title="Pobierz">
+                  <span>
+                    <IconButton
+                      size="small"
+                      disabled={isDownloading}
+                      onClick={() => onDownload(lesson.id, att)}
+                      sx={{
+                        flexShrink: 0,
+                        color: "info.main",
+                        "&:hover": {
+                          bgcolor: (t) => alpha(t.palette.info.main, 0.12),
+                        },
+                      }}
+                    >
+                      {isDownloading ? (
+                        <CircularProgress size={16} />
+                      ) : (
+                        <DownloadIcon fontSize="small" />
+                      )}
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              </Box>
+            );
+          })}
+        </Stack>
+
+        {downloadError && (
+          <Alert severity="error" sx={{ mt: 1.5, borderRadius: 2 }}>
+            {downloadError}
+          </Alert>
+        )}
+      </DialogContent>
+
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Button
+          onClick={onClose}
+          sx={{ textTransform: "none", fontWeight: 600 }}
+        >
+          Zamknij
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
 // ── Main Dashboard ────────────────────────────────────────────────────────────
 
 const STATUS_ORDER: Record<StudentLesson["status"], number> = {
@@ -333,12 +478,42 @@ export function StudentDashboard() {
   const [progressOpen, setProgressOpen] = useState(false);
   const [confirmStartLesson, setConfirmStartLesson] =
     useState<StudentLesson | null>(null);
+  const [attachmentLesson, setAttachmentLesson] =
+    useState<StudentLesson | null>(null);
 
   // Filtering & sorting
   type LessonFilter = "ALL" | "COMPLETED" | "IN_PROGRESS" | "NOT_STARTED";
   type LessonSort = "title_asc" | "title_desc" | "status";
   const [lessonFilter, setLessonFilter] = useState<LessonFilter>("ALL");
   const [lessonSort, setLessonSort] = useState<LessonSort>("status");
+  const [downloadingAttachmentId, setDownloadingAttachmentId] = useState<
+    number | null
+  >(null);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+
+  const handleDownloadAttachment = async (
+    lessonId: number,
+    attachment: StudentLessonAttachment,
+  ) => {
+    setDownloadingAttachmentId(attachment.id);
+    setDownloadError(null);
+    try {
+      const blob = await lessonService.downloadAttachment(
+        lessonId,
+        attachment.id,
+      );
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = attachment.originalFileName;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setDownloadError("Nie udało się pobrać załącznika.");
+    } finally {
+      setDownloadingAttachmentId(null);
+    }
+  };
 
   useEffect(() => {
     Promise.all([
@@ -773,6 +948,32 @@ export function StudentDashboard() {
                             spacing={1}
                             sx={{ width: "100%" }}
                           >
+                            {lesson.attachments.length > 0 && (
+                              <Tooltip
+                                title={`${lesson.attachments.length} ${lesson.attachments.length === 1 ? "plik" : "pliki"}`}
+                              >
+                                <Button
+                                  variant="outlined"
+                                  startIcon={<AttachFileIcon />}
+                                  onClick={() => setAttachmentLesson(lesson)}
+                                  sx={{
+                                    ...panelFooterButtonSx,
+                                    px: 2,
+                                    flexShrink: 0,
+                                    color: "info.main",
+                                    borderColor: (t) =>
+                                      alpha(t.palette.info.main, 0.5),
+                                    "&:hover": {
+                                      borderColor: "info.main",
+                                      bgcolor: (t) =>
+                                        alpha(t.palette.info.main, 0.06),
+                                    },
+                                  }}
+                                >
+                                  Materiały
+                                </Button>
+                              </Tooltip>
+                            )}
                             <Button
                               fullWidth
                               variant="outlined"
@@ -809,6 +1010,47 @@ export function StudentDashboard() {
                           >
                             Lekcja nieaktywna
                           </Button>
+                        ) : lesson.attachments.length > 0 ? (
+                          <Stack
+                            direction="row"
+                            spacing={1}
+                            sx={{ width: "100%" }}
+                          >
+                            <Tooltip
+                              title={`${lesson.attachments.length} ${lesson.attachments.length === 1 ? "plik" : "pliki"}`}
+                            >
+                              <Button
+                                variant="outlined"
+                                startIcon={<AttachFileIcon />}
+                                onClick={() => setAttachmentLesson(lesson)}
+                                sx={{
+                                  ...panelFooterButtonSx,
+                                  px: 2,
+                                  flexShrink: 0,
+                                  color: "info.main",
+                                  borderColor: (t) =>
+                                    alpha(t.palette.info.main, 0.5),
+                                  "&:hover": {
+                                    borderColor: "info.main",
+                                    bgcolor: (t) =>
+                                      alpha(t.palette.info.main, 0.06),
+                                  },
+                                }}
+                              >
+                                Materiały
+                              </Button>
+                            </Tooltip>
+                            <Button
+                              fullWidth
+                              variant="contained"
+                              sx={{ ...panelFooterButtonSx }}
+                              onClick={() => setConfirmStartLesson(lesson)}
+                            >
+                              {isInProgress
+                                ? "Kontynuuj lekcję"
+                                : "Rozpocznij lekcję"}
+                            </Button>
+                          </Stack>
                         ) : (
                           <Button
                             fullWidth
@@ -837,6 +1079,20 @@ export function StudentDashboard() {
           lesson={resultLesson}
           onClose={() => setResultLesson(null)}
           onOpenDetails={(id) => navigate(`/student/lessons/${id}/result`)}
+        />
+      )}
+      {attachmentLesson && attachmentLesson.attachments.length > 0 && (
+        <AttachmentDialog
+          lesson={attachmentLesson}
+          downloadingAttachmentId={downloadingAttachmentId}
+          downloadError={downloadError}
+          onClose={() => {
+            setAttachmentLesson(null);
+            setDownloadError(null);
+          }}
+          onDownload={(lessonId, att) =>
+            void handleDownloadAttachment(lessonId, att)
+          }
         />
       )}
       {progressOpen && (
@@ -878,7 +1134,9 @@ export function StudentDashboard() {
             variant="contained"
             onClick={() => {
               if (confirmStartLesson) {
-                navigate(`/student/lessons/${confirmStartLesson.id}`);
+                navigate(`/student/lessons/${confirmStartLesson.id}`, {
+                  state: { attachments: confirmStartLesson.attachments },
+                });
               }
             }}
             sx={{

@@ -1,6 +1,10 @@
 package pl.freeedu.backend.lesson.repository;
 
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.jpa.repository.EntityGraph;
 import pl.freeedu.backend.lesson.model.Lesson;
@@ -21,4 +25,8 @@ public interface LessonRepository extends JpaRepository<Lesson, Integer> {
 	@Override
 	@EntityGraph(attributePaths = {"teacher"})
 	Optional<Lesson> findById(Integer id);
+
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query("SELECT l FROM Lesson l WHERE l.id = :id")
+	Optional<Lesson> findByIdForUpdate(@Param("id") Integer id);
 }

@@ -173,9 +173,25 @@ export function LessonCard({
         </Typography>
 
         <Box
-          sx={{ display: "flex", gap: 0.5, flexShrink: 0 }}
+          sx={{
+            display: "flex",
+            gap: 0.5,
+            flexShrink: 0,
+            alignItems: "center",
+          }}
           onClick={(e) => e.stopPropagation()}
         >
+          <Tooltip
+            title={lesson.isActive ? "Dezaktywuj lekcję" : "Aktywuj lekcję"}
+            placement="top"
+          >
+            <Switch
+              size="small"
+              checked={lesson.isActive}
+              onChange={() => onToggleStatus?.(lesson)}
+              color="success"
+            />
+          </Tooltip>
           <Button
             size="small"
             startIcon={<EditIcon fontSize="small" />}

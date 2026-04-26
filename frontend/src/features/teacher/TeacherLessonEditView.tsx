@@ -98,10 +98,13 @@ export function TeacherLessonEditView() {
   const [savedDraftSignature, setSavedDraftSignature] = useState<string | null>(
     null,
   );
-  const [attachment, setAttachment] = useState<LessonAttachment | null>(null);
+  const navigateAfterSaveRef = useRef(false);
+  const [attachments, setAttachments] = useState<LessonAttachment[]>([]);
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
   const [attachmentUploading, setAttachmentUploading] = useState(false);
-  const [attachmentDeleting, setAttachmentDeleting] = useState(false);
+  const [deletingAttachmentId, setDeletingAttachmentId] = useState<
+    number | null
+  >(null);
   const [attachmentFeedback, setAttachmentFeedback] = useState<string | null>(
     null,
   );
@@ -168,7 +171,7 @@ export function TeacherLessonEditView() {
 
         setLesson(matchedLesson);
         setAvailableGroups(groups);
-        setAttachment(matchedLesson.attachment ?? null);
+        setAttachments(matchedLesson.attachments ?? []);
         setDraft(buildDraftFromLesson(matchedLesson, []));
         setOriginalTasks([]);
         setLoading(false);
@@ -352,7 +355,7 @@ export function TeacherLessonEditView() {
       };
 
       setLesson(refreshedLesson);
-      setAttachment(refreshedLesson.attachment ?? null);
+      setAttachments(refreshedLesson.attachments ?? []);
 
       if (refreshedTasksResponse) {
         const refreshedTasks = tasksResponseToDrafts(refreshedTasksResponse);
@@ -366,6 +369,11 @@ export function TeacherLessonEditView() {
         setSavedDraftSignature(JSON.stringify(nextDraft));
       }
 
+      if (navigateAfterSaveRef.current) {
+        navigateAfterSaveRef.current = false;
+        navigate("/teacher");
+        return;
+      }
       setFeedback(nextFeedback);
     } catch (saveError) {
       setFeedback({
@@ -382,6 +390,10 @@ export function TeacherLessonEditView() {
 
   const handleUploadAttachment = async () => {
     if (!lesson || !attachmentFile || attachmentUploading) return;
+    if (attachments.length >= 5) {
+      setAttachmentFeedback("Osiągnięto limit 5 załączników.");
+      return;
+    }
     setAttachmentUploading(true);
     setAttachmentFeedback(null);
     try {
@@ -389,7 +401,7 @@ export function TeacherLessonEditView() {
         lesson.id,
         attachmentFile,
       );
-      setAttachment(result);
+      setAttachments((prev) => [...prev, result]);
       setAttachmentFile(null);
       if (attachmentInputRef.current) {
         attachmentInputRef.current.value = "";
@@ -404,32 +416,29 @@ export function TeacherLessonEditView() {
     }
   };
 
-  const handleDeleteAttachment = async () => {
-    if (!lesson || !attachment || attachmentDeleting) return;
-    setAttachmentDeleting(true);
+  const handleDeleteAttachment = async (att: LessonAttachment) => {
+    if (!lesson || deletingAttachmentId !== null) return;
+    setDeletingAttachmentId(att.id);
     setAttachmentFeedback(null);
     try {
-      await lessonService.deleteAttachment(lesson.id, attachment.id);
-      setAttachment(null);
+      await lessonService.deleteAttachment(lesson.id, att.id);
+      setAttachments((prev) => prev.filter((a) => a.id !== att.id));
       setAttachmentFeedback("Załącznik został usunięty.");
     } catch {
       setAttachmentFeedback("Nie udało się usunąć załącznika.");
     } finally {
-      setAttachmentDeleting(false);
+      setDeletingAttachmentId(null);
     }
   };
 
-  const handleDownloadAttachment = async () => {
-    if (!lesson || !attachment) return;
+  const handleDownloadAttachment = async (att: LessonAttachment) => {
+    if (!lesson) return;
     try {
-      const blob = await lessonService.downloadAttachment(
-        lesson.id,
-        attachment.id,
-      );
+      const blob = await lessonService.downloadAttachment(lesson.id, att.id);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = attachment.originalFileName;
+      a.download = att.originalFileName;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -634,19 +643,17 @@ export function TeacherLessonEditView() {
               </FormSection>
 
               <FormSection
-                title="Załącznik"
-                description="Opcjonalny plik z notatkami nauczyciela (PDF, TXT, DOCX, DOC, ODT, max 10 MB). Dostępny dla uczniów mających dostęp do tej lekcji."
+                title="Załączniki"
+                description={`Opcjonalne pliki z notatkami (PDF, TXT, DOCX, DOC, ODT, max 10 MB). Dostępne dla uczniów mających dostęp do tej lekcji. Limit: 5 plików.`}
               >
                 <Stack spacing={1.5}>
                   {attachmentFeedback && (
                     <Alert
                       severity={
-                        attachmentFeedback.includes("udało") &&
-                        !attachmentFeedback.startsWith("Nie")
-                          ? "success"
-                          : attachmentFeedback.startsWith("Nie")
-                            ? "error"
-                            : "success"
+                        attachmentFeedback.startsWith("Nie") ||
+                        attachmentFeedback.startsWith("Osiągnięto")
+                          ? "error"
+                          : "success"
                       }
                       onClose={() => setAttachmentFeedback(null)}
                     >
@@ -654,116 +661,138 @@ export function TeacherLessonEditView() {
                     </Alert>
                   )}
 
-                  {attachment ? (
+                  {attachments.length === 0 ? (
+                    <Typography variant="body2" color="text.secondary">
+                      Brak załączników.
+                    </Typography>
+                  ) : (
+                    <Stack spacing={0.75}>
+                      {attachments.map((att) => {
+                        const isDeleting = deletingAttachmentId === att.id;
+                        return (
+                          <Box
+                            key={att.id}
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                              p: 1.5,
+                              border: "1px solid",
+                              borderColor: "divider",
+                              borderRadius: 1,
+                            }}
+                          >
+                            <AttachIcon fontSize="small" color="action" />
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                flex: 1,
+                                minWidth: 0,
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {att.originalFileName}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{ flexShrink: 0 }}
+                            >
+                              {(att.fileSize / 1024 / 1024).toFixed(2)} MB
+                            </Typography>
+                            <Tooltip title="Pobierz">
+                              <IconButton
+                                size="small"
+                                onClick={() =>
+                                  void handleDownloadAttachment(att)
+                                }
+                              >
+                                <DownloadIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Usuń">
+                              <IconButton
+                                size="small"
+                                onClick={() => void handleDeleteAttachment(att)}
+                                disabled={isDeleting}
+                                color="error"
+                              >
+                                {isDeleting ? (
+                                  <CircularProgress size={16} />
+                                ) : (
+                                  <DeleteIcon fontSize="small" />
+                                )}
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
+                        );
+                      })}
+                    </Stack>
+                  )}
+
+                  {attachments.length < 5 ? (
                     <Box
                       sx={{
                         display: "flex",
                         alignItems: "center",
                         gap: 1,
-                        p: 1.5,
-                        border: "1px solid",
-                        borderColor: "divider",
-                        borderRadius: 1,
+                        flexWrap: "wrap",
                       }}
                     >
-                      <AttachIcon fontSize="small" color="action" />
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          flex: 1,
-                          minWidth: 0,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
+                      <input
+                        ref={attachmentInputRef}
+                        type="file"
+                        accept="application/pdf,text/plain,.txt,.docx,.doc,.odt,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword,application/vnd.oasis.opendocument.text"
+                        style={{ display: "none" }}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] ?? null;
+                          setAttachmentFile(file);
+                          setAttachmentFeedback(null);
                         }}
+                      />
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<AttachIcon />}
+                        onClick={() => attachmentInputRef.current?.click()}
                       >
-                        {attachment.originalFileName}
-                      </Typography>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ flexShrink: 0 }}
-                      >
-                        {(attachment.fileSize / 1024 / 1024).toFixed(2)} MB
-                      </Typography>
-                      <Tooltip title="Pobierz">
-                        <IconButton
-                          size="small"
-                          onClick={handleDownloadAttachment}
-                        >
-                          <DownloadIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Usuń">
-                        <IconButton
-                          size="small"
-                          onClick={handleDeleteAttachment}
-                          disabled={attachmentDeleting}
-                          color="error"
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
+                        Wybierz plik ({attachments.length}/5)
+                      </Button>
+                      {attachmentFile && (
+                        <>
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{
+                              flex: 1,
+                              minWidth: 0,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {attachmentFile.name}
+                          </Typography>
+                          <Button
+                            size="small"
+                            variant="contained"
+                            onClick={handleUploadAttachment}
+                            disabled={attachmentUploading}
+                          >
+                            {attachmentUploading
+                              ? "Przesyłanie..."
+                              : "Prześlij"}
+                          </Button>
+                        </>
+                      )}
                     </Box>
                   ) : (
                     <Typography variant="body2" color="text.secondary">
-                      Brak załącznika.
+                      Osiągnięto limit 5 załączników.
                     </Typography>
                   )}
-
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 1,
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <input
-                      ref={attachmentInputRef}
-                      type="file"
-                      accept="application/pdf,text/plain,.txt,.docx,.doc,.odt,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword,application/vnd.oasis.opendocument.text"
-                      style={{ display: "none" }}
-                      onChange={(e) => {
-                        const file = e.target.files?.[0] ?? null;
-                        setAttachmentFile(file);
-                        setAttachmentFeedback(null);
-                      }}
-                    />
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      startIcon={<AttachIcon />}
-                      onClick={() => attachmentInputRef.current?.click()}
-                    >
-                      Wybierz plik
-                    </Button>
-                    {attachmentFile && (
-                      <>
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{
-                            flex: 1,
-                            minWidth: 0,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {attachmentFile.name}
-                        </Typography>
-                        <Button
-                          size="small"
-                          variant="contained"
-                          onClick={handleUploadAttachment}
-                          disabled={attachmentUploading}
-                        >
-                          {attachmentUploading ? "Przesyłanie..." : "Prześlij"}
-                        </Button>
-                      </>
-                    )}
-                  </Box>
                 </Stack>
               </FormSection>
 
@@ -963,20 +992,14 @@ export function TeacherLessonEditView() {
         >
           <AppDialogHeader
             icon={<BackIcon />}
-            title="Opuścić edycję lekcji?"
-            subtitle="Niezapisane zmiany zostaną usunięte."
+            title="Wyjść bez zapisywania?"
+            subtitle="Masz niezapisane zmiany w tej lekcji."
           />
           <AppDialogBody>
-            <Stack spacing={1.5}>
-              <Typography variant="body2" color="text.secondary">
-                Jeśli wrócisz teraz, ostatnie zmiany w tytule, grupach i
-                zadaniach nie zostaną zapisane.
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Możesz też zapisać lekcję teraz i wrócić do dalszych poprawek
-                później.
-              </Typography>
-            </Stack>
+            <Typography variant="body2" color="text.secondary">
+              Możesz zapisać zmiany i wyjść, albo wyjść bez zapisywania — wtedy
+              zmiany w tytule, grupach i zadaniach zostaną utracone.
+            </Typography>
           </AppDialogBody>
           <AppDialogFooter>
             <Button
@@ -987,13 +1010,31 @@ export function TeacherLessonEditView() {
               Zostań
             </Button>
             <Button
+              variant="outlined"
               color="warning"
-              variant="contained"
               onClick={() => navigate("/teacher")}
               disabled={saving}
               sx={panelFooterButtonSx}
             >
-              Opuść bez zapisu
+              Tak, wychodzę bez zapisu
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={
+                saving ? (
+                  <CircularProgress size={16} color="inherit" />
+                ) : (
+                  <SaveIcon />
+                )
+              }
+              onClick={() => {
+                navigateAfterSaveRef.current = true;
+                void handleSave();
+              }}
+              disabled={saving || tasksLoading}
+              sx={panelFooterButtonSx}
+            >
+              {saving ? "Zapisywanie..." : "Zapisz i wyjdź"}
             </Button>
           </AppDialogFooter>
         </AppDialog>

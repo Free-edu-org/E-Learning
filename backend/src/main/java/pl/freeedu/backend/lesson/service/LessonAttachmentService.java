@@ -14,6 +14,7 @@ import pl.freeedu.backend.lesson.exception.LessonException;
 import pl.freeedu.backend.lesson.model.LessonAttachment;
 import pl.freeedu.backend.lesson.repository.LessonAttachmentRepository;
 import pl.freeedu.backend.lesson.repository.LessonRepository;
+import org.springframework.transaction.support.TransactionTemplate;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -22,13 +23,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
 public class LessonAttachmentService {
+
+	private static final int MAX_ATTACHMENTS_PER_LESSON = 5;
 
 	private static final Map<String, String> ALLOWED_TYPES = Map.of("application/pdf", "pdf", "text/plain", "txt",
 			"application/vnd.openxmlformats-officedocument.wordprocessingml.document", "docx", "application/msword",
@@ -39,11 +42,13 @@ public class LessonAttachmentService {
 
 	private final LessonAttachmentRepository lessonAttachmentRepository;
 	private final LessonRepository lessonRepository;
+	private final TransactionTemplate transactionTemplate;
 
 	public LessonAttachmentService(LessonAttachmentRepository lessonAttachmentRepository,
-			LessonRepository lessonRepository) {
+			LessonRepository lessonRepository, TransactionTemplate transactionTemplate) {
 		this.lessonAttachmentRepository = lessonAttachmentRepository;
 		this.lessonRepository = lessonRepository;
+		this.transactionTemplate = transactionTemplate;
 	}
 
 	public Mono<LessonAttachmentResponse> uploadAttachment(Integer lessonId, FilePart filePart) {
@@ -83,19 +88,24 @@ public class LessonAttachmentService {
 								Files.deleteIfExists(path);
 								throw new LessonException(LessonErrorCode.ATTACHMENT_FILE_TOO_LARGE);
 							}
-							// New file is safely stored — now replace the old one
-							lessonAttachmentRepository.findByLessonId(lessonId).ifPresent(existing -> {
-								try {
-									Files.deleteIfExists(dir.resolve(existing.getStoredFileName()));
-								} catch (IOException e) {
-									// ignore, best-effort cleanup
+							// Pessimistic lock prevents concurrent uploads from both passing the
+							// count check and exceeding MAX_ATTACHMENTS_PER_LESSON.
+							LessonAttachment saved = transactionTemplate.execute(status -> {
+								lessonRepository.findByIdForUpdate(lessonId)
+										.orElseThrow(() -> new LessonException(LessonErrorCode.LESSON_NOT_FOUND));
+								long count = lessonAttachmentRepository.countByLessonId(lessonId);
+								if (count >= MAX_ATTACHMENTS_PER_LESSON) {
+									try {
+										Files.deleteIfExists(path);
+									} catch (IOException ignored) {
+									}
+									throw new LessonException(LessonErrorCode.ATTACHMENT_LIMIT_REACHED);
 								}
-								lessonAttachmentRepository.delete(existing);
+								LessonAttachment attachment = LessonAttachment.builder().lessonId(lessonId)
+										.originalFileName(originalName).storedFileName(storedName).contentType(baseType)
+										.fileSize(fileSize).build();
+								return lessonAttachmentRepository.save(attachment);
 							});
-							LessonAttachment attachment = LessonAttachment.builder().lessonId(lessonId)
-									.originalFileName(originalName).storedFileName(storedName).contentType(baseType)
-									.fileSize(fileSize).build();
-							LessonAttachment saved = lessonAttachmentRepository.save(attachment);
 							return toResponse(saved);
 						} catch (IOException e) {
 							throw new RuntimeException("Failed to process attachment file", e);
@@ -154,26 +164,28 @@ public class LessonAttachmentService {
 	}
 
 	public void deleteAttachmentsByLessonId(Integer lessonId) {
-		lessonAttachmentRepository.findByLessonId(lessonId).ifPresent(attachment -> {
+		List<LessonAttachment> all = lessonAttachmentRepository.findAllByLessonId(lessonId);
+		for (LessonAttachment attachment : all) {
 			try {
 				Files.deleteIfExists(Paths.get(ATTACHMENT_DIR).resolve(attachment.getStoredFileName()));
 			} catch (IOException e) {
 				// ignore, best-effort cleanup
 			}
-			lessonAttachmentRepository.delete(attachment);
-		});
+		}
+		lessonAttachmentRepository.deleteByLessonId(lessonId);
 	}
 
-	public Optional<LessonAttachmentResponse> findByLessonId(Integer lessonId) {
-		return lessonAttachmentRepository.findByLessonId(lessonId).map(this::toResponse);
+	public List<LessonAttachmentResponse> findByLessonId(Integer lessonId) {
+		return lessonAttachmentRepository.findAllByLessonId(lessonId).stream().map(this::toResponse)
+				.collect(Collectors.toList());
 	}
 
-	public Map<Integer, LessonAttachmentResponse> findByLessonIds(Collection<Integer> lessonIds) {
+	public Map<Integer, List<LessonAttachmentResponse>> findByLessonIds(Collection<Integer> lessonIds) {
 		if (lessonIds.isEmpty()) {
 			return Map.of();
 		}
-		return lessonAttachmentRepository.findByLessonIdIn(lessonIds).stream()
-				.collect(Collectors.toMap(LessonAttachment::getLessonId, this::toResponse));
+		return lessonAttachmentRepository.findByLessonIdIn(lessonIds).stream().collect(Collectors
+				.groupingBy(LessonAttachment::getLessonId, Collectors.mapping(this::toResponse, Collectors.toList())));
 	}
 
 	private LessonAttachmentResponse toResponse(LessonAttachment attachment) {

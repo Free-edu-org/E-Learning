@@ -103,7 +103,7 @@ public class StudentService {
 		Map<Integer, UserLesson> userLessonsByLessonId = userLessonRepository
 				.findByUserIdAndLessonIdIn(userId, lessonIds).stream()
 				.collect(Collectors.toMap(UserLesson::getLessonId, Function.identity()));
-		Map<Integer, pl.freeedu.backend.lesson.dto.LessonAttachmentResponse> attachments = lessonAttachmentService
+		Map<Integer, List<pl.freeedu.backend.lesson.dto.LessonAttachmentResponse>> attachmentsMap = lessonAttachmentService
 				.findByLessonIds(lessonIds);
 
 		List<StudentLessonResponse> studentLessons = new ArrayList<>();
@@ -123,7 +123,7 @@ public class StudentService {
 					.createdAt(lessonResponse.getCreatedAt()).groups(lessonResponse.getGroups())
 					.status(userLesson != null ? userLesson.getStatus().name() : "NOT_STARTED").score(score)
 					.maxScore(maxScore).resultPercent(toPercent(score, maxScore))
-					.attachment(attachments.get(lesson.getId())).build());
+					.attachments(attachmentsMap.getOrDefault(lesson.getId(), List.of())).build());
 		}
 
 		studentLessons.sort(Comparator.comparing(StudentLessonResponse::getCreatedAt,
