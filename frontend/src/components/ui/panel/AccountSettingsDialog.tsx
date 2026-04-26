@@ -214,7 +214,7 @@ export function AccountSettingsDialog({
         severity: "success",
         message: "Zdjęcie profilowe zostało zmienione.",
       });
-    } catch (error) {
+    } catch {
       setFeedback({
         severity: "error",
         message: "Nie udało się wgrać zdjęcia.",
@@ -236,7 +236,7 @@ export function AccountSettingsDialog({
       );
       onUserUpdated(updatedUser);
       setFeedback({ severity: "success", message: "Awatar został zmieniony." });
-    } catch (error) {
+    } catch {
       setFeedback({
         severity: "error",
         message: "Błąd podczas zmiany awatara.",
