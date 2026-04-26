@@ -238,12 +238,13 @@
 }
 
 .edit-context-label {
-  font-size: 0.6875rem;
-  font-weight: 700;
-  color: var(--primary-color);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 4px;
+  font-size: 0.6875rem !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  color: var(--primary-color) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  margin-bottom: 4px !important;
   display: block;
   opacity: 0.9;
 }
