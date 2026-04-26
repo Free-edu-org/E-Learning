@@ -173,7 +173,12 @@ export function LessonCard({
         </Typography>
 
         <Box
-          sx={{ display: "flex", gap: 0.5, flexShrink: 0, alignItems: "center" }}
+          sx={{
+            display: "flex",
+            gap: 0.5,
+            flexShrink: 0,
+            alignItems: "center",
+          }}
           onClick={(e) => e.stopPropagation()}
         >
           <Tooltip

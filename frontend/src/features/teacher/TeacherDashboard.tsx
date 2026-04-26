@@ -1123,7 +1123,11 @@ export function TeacherDashboard() {
                       }}
                     >
                       <AttachIcon
-                        sx={{ fontSize: 16, color: "text.secondary", flexShrink: 0 }}
+                        sx={{
+                          fontSize: 16,
+                          color: "text.secondary",
+                          flexShrink: 0,
+                        }}
                       />
                       <Typography
                         variant="caption"

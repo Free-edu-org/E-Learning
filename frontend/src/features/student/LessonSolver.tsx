@@ -158,7 +158,7 @@ export function LessonSolver() {
   // fetch them from the student lessons list.
   useEffect(() => {
     if (stateAttachments !== null || !lessonId) return;
-    let cancelled = false;
+    let cancelled = false;    
     void studentService.getLessons().then((lessons) => {
       if (cancelled) return;
       const lesson = lessons.find((l) => l.id === Number(lessonId));
