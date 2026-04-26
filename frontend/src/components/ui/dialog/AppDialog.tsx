@@ -8,6 +8,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
+import type { DialogProps } from "@mui/material";
 import { alpha, type SxProps, type Theme } from "@mui/material/styles";
 import type { ReactNode } from "react";
 import { uiTokens } from "@/theme/uiTokens";
@@ -19,6 +20,7 @@ type AppDialogProps = {
   children: ReactNode;
   maxWidth?: "xs" | "sm" | "md";
   paperSx?: SxProps<Theme>;
+  PaperProps?: DialogProps["PaperProps"]; // Corrected type instead of 'any'
 };
 
 const dialogPaperSx: SxProps<Theme> = {
@@ -85,6 +87,7 @@ export function AppDialog({
   children,
   maxWidth = "sm",
   paperSx,
+  PaperProps = {},
 }: AppDialogProps) {
   const resolvedPaperSx = (
     paperSx ? [dialogPaperSx, paperSx] : dialogPaperSx
@@ -96,7 +99,19 @@ export function AppDialog({
       onClose={onClose}
       fullWidth
       maxWidth={maxWidth}
-      PaperProps={{ sx: resolvedPaperSx }}
+      PaperProps={{
+        ...PaperProps,
+        sx: [
+          ...(Array.isArray(resolvedPaperSx)
+            ? resolvedPaperSx
+            : [resolvedPaperSx]),
+          ...(Array.isArray(PaperProps.sx)
+            ? PaperProps.sx
+            : PaperProps.sx
+              ? [PaperProps.sx]
+              : []),
+        ] as SxProps<Theme>,
+      }}
       TransitionProps={{ onExited }}
     >
       {children}
