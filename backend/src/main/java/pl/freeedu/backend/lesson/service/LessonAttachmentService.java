@@ -53,9 +53,6 @@ public class LessonAttachmentService {
 
 	public Mono<LessonAttachmentResponse> uploadAttachment(Integer lessonId, FilePart filePart) {
 		return Mono.fromCallable(() -> {
-			// Fast-fail: check lesson exists and content type before doing file I/O.
-			// This is an optimistic pre-check only; the definitive limit check is atomic
-			// below.
 			lessonRepository.findById(lessonId)
 					.orElseThrow(() -> new LessonException(LessonErrorCode.LESSON_NOT_FOUND));
 
@@ -91,8 +88,8 @@ public class LessonAttachmentService {
 								Files.deleteIfExists(path);
 								throw new LessonException(LessonErrorCode.ATTACHMENT_FILE_TOO_LARGE);
 							}
-							// Atomic count check + save under a pessimistic row-level lock so that
-							// concurrent uploads for the same lesson cannot both pass the limit check.
+							// Pessimistic lock prevents concurrent uploads from both passing the
+							// count check and exceeding MAX_ATTACHMENTS_PER_LESSON.
 							LessonAttachment saved = transactionTemplate.execute(status -> {
 								lessonRepository.findByIdForUpdate(lessonId)
 										.orElseThrow(() -> new LessonException(LessonErrorCode.LESSON_NOT_FOUND));

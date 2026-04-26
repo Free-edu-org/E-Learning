@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import {
   Alert,
   Autocomplete,
@@ -8,16 +8,20 @@ import {
   CircularProgress,
   Container,
   Grid,
+  IconButton,
   Skeleton,
   Snackbar,
   Stack,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import {
   AddCircleOutlined as AddIcon,
+  AttachFileOutlined as AttachIcon,
   AutoAwesomeOutlined as SparklesIcon,
+  CloseOutlined as RemoveFileIcon,
   DeleteOutline as DeleteIcon,
   EditOutlined as EditLessonIcon,
   GroupOutlined as GroupIcon,
@@ -363,6 +367,10 @@ export function TeacherDashboard() {
   const [createDialogLoading, setCreateDialogLoading] = useState(false);
   const [createDialogFeedback, setCreateDialogFeedback] =
     useState<DialogFeedbackState | null>(null);
+  const [pendingAttachmentFiles, setPendingAttachmentFiles] = useState<File[]>(
+    [],
+  );
+  const pendingAttachmentInputRef = useRef<HTMLInputElement>(null);
 
   // ── Edit dialog state ──
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -455,6 +463,9 @@ export function TeacherDashboard() {
   const resetCreateDialogState = () => {
     setLessonDraft(emptyLessonDraft);
     setCreateDialogFeedback(null);
+    setPendingAttachmentFiles([]);
+    if (pendingAttachmentInputRef.current)
+      pendingAttachmentInputRef.current.value = "";
   };
 
   const submitCreateLessonDialog = async () => {
@@ -482,6 +493,18 @@ export function TeacherDashboard() {
       });
 
       const taskDrafts = lessonDraft.tasks;
+      const attachmentResults =
+        pendingAttachmentFiles.length > 0
+          ? await Promise.allSettled(
+              pendingAttachmentFiles.map((file) =>
+                lessonService.uploadAttachment(createdLesson.id, file),
+              ),
+            )
+          : [];
+      const failedAttachmentCount = attachmentResults.filter(
+        (r) => r.status === "rejected",
+      ).length;
+
       if (taskDrafts.length > 0) {
         const taskResults = await Promise.allSettled(
           taskDrafts.map((task) => createLessonTask(createdLesson.id, task)),
@@ -499,15 +522,23 @@ export function TeacherDashboard() {
                 : `Lekcja została utworzona. Nie udało się dodać ${failedTaskCount} z ${taskDrafts.length} zadań.`,
           });
         } else {
+          const attachmentNote =
+            failedAttachmentCount > 0
+              ? ` Nie udało się przesłać ${failedAttachmentCount} z ${pendingAttachmentFiles.length} załączników.`
+              : "";
           setCreateDialogFeedback({
-            severity: "success",
-            message: `Lekcja i ${taskDrafts.length} zadań zostały utworzone.`,
+            severity: failedAttachmentCount > 0 ? "warning" : "success",
+            message: `Lekcja i ${taskDrafts.length} zadań zostały utworzone.${attachmentNote}`,
           });
         }
       } else {
+        const attachmentNote =
+          failedAttachmentCount > 0
+            ? ` Nie udało się przesłać ${failedAttachmentCount} z ${pendingAttachmentFiles.length} załączników.`
+            : "";
         setCreateDialogFeedback({
-          severity: "success",
-          message: "Lekcja została utworzona.",
+          severity: failedAttachmentCount > 0 ? "warning" : "success",
+          message: `Lekcja została utworzona.${attachmentNote}`,
         });
       }
 
@@ -1056,6 +1087,90 @@ export function TeacherDashboard() {
                     />
                   )}
                 />
+              </FormSection>
+              <FormSection
+                title="Załączniki (opcjonalnie)"
+                description={`Dodaj do 5 plików (PDF, DOCX, TXT, ODT). Zostaną przesłane po utworzeniu lekcji.`}
+              >
+                <input
+                  ref={pendingAttachmentInputRef}
+                  type="file"
+                  accept="application/pdf,text/plain,.txt,.docx,.doc,.odt,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword,application/vnd.oasis.opendocument.text"
+                  style={{ display: "none" }}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    if (pendingAttachmentFiles.length >= 5) return;
+                    setPendingAttachmentFiles((prev) => [...prev, file]);
+                    if (pendingAttachmentInputRef.current)
+                      pendingAttachmentInputRef.current.value = "";
+                  }}
+                />
+                <Stack spacing={1}>
+                  {pendingAttachmentFiles.map((file, idx) => (
+                    <Box
+                      key={idx}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        px: 1.5,
+                        py: 0.75,
+                        borderRadius: 1,
+                        border: "1px solid",
+                        borderColor: "divider",
+                        bgcolor: "action.hover",
+                      }}
+                    >
+                      <AttachIcon
+                        sx={{ fontSize: 16, color: "text.secondary", flexShrink: 0 }}
+                      />
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          flex: 1,
+                          minWidth: 0,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {file.name}
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ flexShrink: 0 }}
+                      >
+                        {(file.size / 1024 / 1024).toFixed(2)} MB
+                      </Typography>
+                      <Tooltip title="Usuń">
+                        <IconButton
+                          size="small"
+                          sx={{ p: 0.25 }}
+                          onClick={() =>
+                            setPendingAttachmentFiles((prev) =>
+                              prev.filter((_, i) => i !== idx),
+                            )
+                          }
+                        >
+                          <RemoveFileIcon sx={{ fontSize: 15 }} />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                  ))}
+                  {pendingAttachmentFiles.length < 5 && (
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<AttachIcon />}
+                      sx={{ alignSelf: "flex-start" }}
+                      onClick={() => pendingAttachmentInputRef.current?.click()}
+                    >
+                      Dodaj plik ({pendingAttachmentFiles.length}/5)
+                    </Button>
+                  )}
+                </Stack>
               </FormSection>
               <FormSection
                 title="Zadania (opcjonalnie)"
