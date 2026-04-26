@@ -20,6 +20,7 @@ Thumbs.db
 target/
 **/target/
 .mvn/wrapper/maven-wrapper.jar
+/backend/.m2/*
 
 ############################
 # NODE / VITE / REACT
