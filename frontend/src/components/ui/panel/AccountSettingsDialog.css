@@ -166,14 +166,22 @@
   border-color: var(--primary-color);
 }
 
+.section-label,
+.row-label,
+.edit-context-label {
+  font-size: 0.6875rem !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  color: var(--primary-color) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
 .section-label {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 12px;
+  font-size: 0.75rem !important;
+  margin-bottom: 12px !important;
   padding-left: 4px;
+  color: var(--text-muted) !important;
 }
 
 .settings-group {
@@ -204,10 +212,7 @@
 }
 
 .row-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  margin-bottom: 2px;
+  margin-bottom: 4px !important;
 }
 
 .row-value {
@@ -238,12 +243,6 @@
 }
 
 .edit-context-label {
-  font-size: 0.6875rem !important;
-  font-weight: 700 !important;
-  line-height: 1.2 !important;
-  color: var(--primary-color) !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.05em !important;
   margin-bottom: 4px !important;
   display: block;
   opacity: 0.9;
