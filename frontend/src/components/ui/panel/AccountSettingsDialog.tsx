@@ -97,12 +97,16 @@ export function AccountSettingsDialog({
     onClose();
   };
 
+  // Helper to clear errors when switching modes
+  const resetFeedback = () => setFeedback(null);
+
   const handleSaveProfile = async () => {
     if (!user || profileLoading) return;
 
     const trimmedUsername = username.trim();
     const trimmedEmail = email.trim();
 
+    // Field-level validation (handled by helperText, but check here too)
     if (isEditingUsername && !trimmedUsername) {
       setFeedback({
         severity: "error",
@@ -120,10 +124,7 @@ export function AccountSettingsDialog({
         return;
       }
       if (trimmedEmail !== confirmEmail.trim()) {
-        setFeedback({
-          severity: "error",
-          message: "Adresy email nie są identyczne.",
-        });
+        // This is already shown by emailMatchError helperText
         return;
       }
     }
@@ -165,7 +166,7 @@ export function AccountSettingsDialog({
     }
 
     if (newPassword !== confirmPassword) {
-      setFeedback({ severity: "error", message: "Hasła nie są identyczne." });
+      // Handled by live validation helperText
       return;
     }
 
@@ -271,6 +272,16 @@ export function AccountSettingsDialog({
     return "Bardzo mocne";
   };
 
+  const passwordMatchError = useMemo(() => {
+    if (!confirmPassword) return "";
+    return newPassword !== confirmPassword ? "Hasła nie są identyczne" : "";
+  }, [newPassword, confirmPassword]);
+
+  const emailMatchError = useMemo(() => {
+    if (!confirmEmail) return "";
+    return email !== confirmEmail ? "Adresy email nie są identyczne" : "";
+  }, [email, confirmEmail]);
+
   return (
     <AppDialog
       open={open}
@@ -281,7 +292,6 @@ export function AccountSettingsDialog({
         className: `modern-dialog-paper animate-in ${isDark ? "dark" : ""}`,
       }}
     >
-      {/* Header */}
       <Box className="settings-header">
         <Box className="settings-header-content">
           <Box className="settings-header-icon-box">
@@ -297,11 +307,22 @@ export function AccountSettingsDialog({
       </Box>
 
       <Box className="settings-body">
-        {feedback && (
-          <AppDialogStatus severity={feedback.severity}>
+        {feedback && feedback.severity === "success" && (
+          <AppDialogStatus severity="success">
             {feedback.message}
           </AppDialogStatus>
         )}
+
+        {/* Global Error Banner - Only for errors not related to specific fields being edited */}
+        {feedback &&
+          feedback.severity === "error" &&
+          !passwordExpanded &&
+          !isEditingEmail &&
+          !isEditingUsername && (
+            <AppDialogStatus severity="error">
+              {feedback.message}
+            </AppDialogStatus>
+          )}
 
         {/* Avatar Section */}
         <Box className="avatar-section">
@@ -370,34 +391,62 @@ export function AccountSettingsDialog({
           <Box className="settings-row">
             {isEditingUsername ? (
               <Box className="inline-edit-box">
-                <TextField
-                  fullWidth
-                  size="small"
-                  className="modern-field"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Nazwa użytkownika"
-                  autoFocus
-                />
-                <Box className="edit-actions">
-                  <IconButton
-                    onClick={handleSaveProfile}
-                    disabled={profileLoading}
-                    className="action-icon-btn success"
+                <Typography className="edit-context-label">
+                  Edycja nazwy użytkownika
+                </Typography>
+                <Box
+                  sx={{
+                    display: "flex",
+                    gap: 1.5,
+                    alignItems: "flex-start",
+                    width: "100%",
+                  }}
+                >
+                  <TextField
+                    fullWidth
                     size="small"
-                  >
-                    <CheckIcon fontSize="small" />
-                  </IconButton>
-                  <IconButton
-                    onClick={() => {
-                      setIsEditingUsername(false);
-                      setUsername(user?.username || "");
+                    className="modern-field"
+                    value={username}
+                    onChange={(e) => {
+                      setUsername(e.target.value);
+                      resetFeedback();
                     }}
-                    className="action-icon-btn cancel"
-                    size="small"
-                  >
-                    <CloseIcon fontSize="small" />
-                  </IconButton>
+                    placeholder="Nazwa użytkownika"
+                    autoFocus
+                    error={
+                      feedback?.severity === "error" &&
+                      (feedback.message.includes("użytkownik") ||
+                        feedback.message.includes("username"))
+                    }
+                    helperText={
+                      feedback?.severity === "error" &&
+                      (feedback.message.includes("użytkownik") ||
+                        feedback.message.includes("username"))
+                        ? feedback.message
+                        : ""
+                    }
+                  />
+                  <Box className="edit-actions" sx={{ mt: 0.5 }}>
+                    <IconButton
+                      onClick={handleSaveProfile}
+                      disabled={profileLoading}
+                      className="action-icon-btn success"
+                      size="small"
+                    >
+                      <CheckIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton
+                      onClick={() => {
+                        setIsEditingUsername(false);
+                        setUsername(user?.username || "");
+                        resetFeedback();
+                      }}
+                      className="action-icon-btn cancel"
+                      size="small"
+                    >
+                      <CloseIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
                 </Box>
               </Box>
             ) : (
@@ -412,7 +461,10 @@ export function AccountSettingsDialog({
                 </Box>
                 <Button
                   className="change-btn"
-                  onClick={() => setIsEditingUsername(true)}
+                  onClick={() => {
+                    setIsEditingUsername(true);
+                    resetFeedback();
+                  }}
                 >
                   Zmień
                 </Button>
@@ -421,52 +473,80 @@ export function AccountSettingsDialog({
           </Box>
 
           {/* Email Row */}
-          <Box
-            className="settings-row"
-            style={{ alignItems: isEditingEmail ? "center" : "center" }}
-          >
+          <Box className="settings-row">
             {isEditingEmail ? (
               <Box className="inline-edit-box" style={{ width: "100%" }}>
-                <Stack spacing={1.25} flex={1}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    className="modern-field"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Nowy email"
-                    autoFocus
-                  />
-                  <TextField
-                    fullWidth
-                    size="small"
-                    className="modern-field"
-                    value={confirmEmail}
-                    onChange={(e) => setConfirmEmail(e.target.value)}
-                    placeholder="Powtórz nowy email"
-                  />
-                </Stack>
-                <Stack spacing={1} sx={{ ml: 2, justifyContent: "center" }}>
-                  <IconButton
-                    onClick={() => {
-                      setIsEditingEmail(false);
-                      setEmail(user?.email || "");
-                      setConfirmEmail("");
-                    }}
-                    className="action-icon-btn cancel"
-                    size="small"
-                  >
-                    <CloseIcon fontSize="small" />
-                  </IconButton>
-                  <IconButton
-                    onClick={handleSaveProfile}
-                    disabled={profileLoading}
-                    className="action-icon-btn success"
-                    size="small"
-                  >
-                    <CheckIcon fontSize="small" />
-                  </IconButton>
-                </Stack>
+                <Typography className="edit-context-label">
+                  Edycja adresu e-mail
+                </Typography>
+                <Box
+                  sx={{
+                    display: "flex",
+                    gap: 2,
+                    alignItems: "center",
+                    width: "100%",
+                  }}
+                >
+                  <Stack spacing={1.25} flex={1}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      className="modern-field"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        resetFeedback();
+                      }}
+                      placeholder="Nowy email"
+                      autoFocus
+                    />
+                    <TextField
+                      fullWidth
+                      size="small"
+                      className="modern-field"
+                      value={confirmEmail}
+                      onChange={(e) => {
+                        setConfirmEmail(e.target.value);
+                        resetFeedback();
+                      }}
+                      placeholder="Powtórz nowy email"
+                      error={
+                        !!emailMatchError ||
+                        (feedback?.severity === "error" &&
+                          feedback.message.includes("email"))
+                      }
+                      helperText={
+                        emailMatchError ||
+                        (feedback?.severity === "error" &&
+                        feedback.message.includes("email")
+                          ? feedback.message
+                          : "")
+                      }
+                    />
+                  </Stack>
+                  <Stack spacing={1} sx={{ justifyContent: "center" }}>
+                    <IconButton
+                      onClick={() => {
+                        setIsEditingEmail(false);
+                        setEmail(user?.email || "");
+                        setConfirmEmail("");
+                        resetFeedback();
+                      }}
+                      className="action-icon-btn cancel"
+                      size="small"
+                    >
+                      <CloseIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton
+                      onClick={handleSaveProfile}
+                      disabled={profileLoading || !!emailMatchError}
+                      className="action-icon-btn success"
+                      size="small"
+                    >
+                      <CheckIcon fontSize="small" />
+                    </IconButton>
+                  </Stack>
+                </Box>
               </Box>
             ) : (
               <>
@@ -476,7 +556,12 @@ export function AccountSettingsDialog({
                 </Box>
                 <Button
                   className="change-btn"
-                  onClick={() => setIsEditingEmail(true)}
+                  onClick={() => {
+                    setIsEditingEmail(true);
+                    setEmail("");
+                    setConfirmEmail("");
+                    resetFeedback();
+                  }}
                 >
                   Zmień
                 </Button>
@@ -485,7 +570,7 @@ export function AccountSettingsDialog({
           </Box>
         </Box>
 
-        {/* Password Section */}
+        {/* Security Section */}
         <Typography className="section-label">Bezpieczeństwo</Typography>
         <Box className="settings-group">
           <Box className="settings-row">
@@ -495,7 +580,10 @@ export function AccountSettingsDialog({
             </Box>
             <Button
               className="change-btn"
-              onClick={() => setPasswordExpanded(!passwordExpanded)}
+              onClick={() => {
+                setPasswordExpanded(!passwordExpanded);
+                resetFeedback();
+              }}
             >
               {passwordExpanded ? "Anuluj" : "Zmień hasło"}
             </Button>
@@ -504,6 +592,20 @@ export function AccountSettingsDialog({
           <Collapse in={passwordExpanded}>
             <Box className="password-panel">
               <Stack className="password-form">
+                <Typography className="edit-context-label" sx={{ mb: 1 }}>
+                  Zmiana hasła
+                </Typography>
+                {/* Specific error for password section */}
+                {feedback &&
+                  feedback.severity === "error" &&
+                  passwordExpanded &&
+                  !feedback.message.includes("hasło") &&
+                  !feedback.message.includes("password") && (
+                    <AppDialogStatus severity="error">
+                      {feedback.message}
+                    </AppDialogStatus>
+                  )}
+
                 <TextField
                   label="Obecne hasło"
                   type={showPasswords ? "text" : "password"}
@@ -511,7 +613,22 @@ export function AccountSettingsDialog({
                   size="small"
                   className="modern-field"
                   value={oldPassword}
-                  onChange={(e) => setOldPassword(e.target.value)}
+                  onChange={(e) => {
+                    setOldPassword(e.target.value);
+                    resetFeedback();
+                  }}
+                  error={
+                    feedback?.severity === "error" &&
+                    (feedback.message.includes("hasło") ||
+                      feedback.message.includes("password"))
+                  }
+                  helperText={
+                    feedback?.severity === "error" &&
+                    (feedback.message.includes("hasło") ||
+                      feedback.message.includes("password"))
+                      ? feedback.message
+                      : ""
+                  }
                   InputProps={{
                     endAdornment: (
                       <InputAdornment position="end">
@@ -538,7 +655,10 @@ export function AccountSettingsDialog({
                     size="small"
                     className="modern-field"
                     value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
+                    onChange={(e) => {
+                      setNewPassword(e.target.value);
+                      resetFeedback();
+                    }}
                     InputProps={{
                       endAdornment: (
                         <InputAdornment position="end">
@@ -581,13 +701,18 @@ export function AccountSettingsDialog({
                   size="small"
                   className="modern-field"
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    resetFeedback();
+                  }}
+                  error={!!passwordMatchError}
+                  helperText={passwordMatchError}
                 />
                 <Button
                   className="btn-primary"
                   style={{ alignSelf: "flex-end", marginTop: "8px" }}
                   onClick={handleSavePassword}
-                  disabled={passwordLoading}
+                  disabled={passwordLoading || !!passwordMatchError}
                 >
                   {passwordLoading ? (
                     <CircularProgress size={20} color="inherit" />
@@ -601,7 +726,6 @@ export function AccountSettingsDialog({
         </Box>
       </Box>
 
-      {/* Footer */}
       <Box className="footer">
         <Stack
           direction="row"

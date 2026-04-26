@@ -231,9 +231,21 @@
 
 .inline-edit-box {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
   width: 100%;
+}
+
+.edit-context-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+  display: block;
+  opacity: 0.9;
 }
 
 .modern-field {
