@@ -539,6 +539,23 @@ export function AccountSettingsDialog({
                     className="modern-field"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            onClick={() => setShowPasswords(!showPasswords)}
+                            edge="end"
+                            size="small"
+                          >
+                            {showPasswords ? (
+                              <VisibilityOffIcon />
+                            ) : (
+                              <VisibilityIcon />
+                            )}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
                   />
                   {newPassword && (
                     <Box className="strength-container">
@@ -559,7 +576,7 @@ export function AccountSettingsDialog({
                 </Box>
                 <TextField
                   label="Powtórz nowe hasło"
-                  type={showPasswords ? "text" : "password"}
+                  type="password"
                   fullWidth
                   size="small"
                   className="modern-field"

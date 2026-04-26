@@ -102,9 +102,15 @@ export function AppDialog({
       PaperProps={{
         ...PaperProps,
         sx: [
-          resolvedPaperSx as any,
-          ...(Array.isArray(PaperProps.sx) ? PaperProps.sx : [PaperProps.sx]),
-        ],
+          ...(Array.isArray(resolvedPaperSx)
+            ? resolvedPaperSx
+            : [resolvedPaperSx]),
+          ...(Array.isArray(PaperProps.sx)
+            ? PaperProps.sx
+            : PaperProps.sx
+              ? [PaperProps.sx]
+              : []),
+        ] as SxProps<Theme>,
       }}
       TransitionProps={{ onExited }}
     >
