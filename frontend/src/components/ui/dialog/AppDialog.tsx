@@ -19,6 +19,7 @@ type AppDialogProps = {
   children: ReactNode;
   maxWidth?: "xs" | "sm" | "md";
   paperSx?: SxProps<Theme>;
+  PaperProps?: any; // Add this to support custom classes and other props
 };
 
 const dialogPaperSx: SxProps<Theme> = {
@@ -85,6 +86,7 @@ export function AppDialog({
   children,
   maxWidth = "sm",
   paperSx,
+  PaperProps = {},
 }: AppDialogProps) {
   const resolvedPaperSx = (
     paperSx ? [dialogPaperSx, paperSx] : dialogPaperSx
@@ -96,7 +98,10 @@ export function AppDialog({
       onClose={onClose}
       fullWidth
       maxWidth={maxWidth}
-      PaperProps={{ sx: resolvedPaperSx }}
+      PaperProps={{ 
+        ...PaperProps,
+        sx: { ...resolvedPaperSx, ...(PaperProps.sx || {}) } 
+      }}
       TransitionProps={{ onExited }}
     >
       {children}
