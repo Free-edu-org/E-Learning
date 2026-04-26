@@ -141,15 +141,28 @@ export function LessonSolver() {
   const theme = useTheme();
   const unloadSubmitSentRef = useRef(false);
 
-  const attachments =
+  const stateAttachments =
     (location.state as { attachments?: LessonAttachment[] } | null)
-      ?.attachments ?? [];
+      ?.attachments ?? null;
+  const [attachments, setAttachments] = useState<LessonAttachment[]>(
+    stateAttachments ?? [],
+  );
   const [downloadingAttachmentId, setDownloadingAttachmentId] = useState<
     number | null
   >(null);
   const [attachmentDownloadError, setAttachmentDownloadError] = useState<
     string | null
   >(null);
+
+  // Fallback: if navigation state had no attachments (refresh / direct URL),
+  // fetch them from the student lessons list.
+  useEffect(() => {
+    if (stateAttachments !== null || !lessonId) return;
+    void studentService.getLessons().then((lessons) => {
+      const lesson = lessons.find((l) => l.id === Number(lessonId));
+      if (lesson) setAttachments(lesson.attachments);
+    });
+  }, [lessonId, stateAttachments]);
 
   const handleDownloadAttachment = async (att: LessonAttachment) => {
     if (!lessonId) return;

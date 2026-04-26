@@ -116,9 +116,11 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonId}/attachments)', () => {
             expect(res.status).toBe(200);
             const lesson = res.data.find((l) => l.id === lessonId);
             expect(lesson).toBeDefined();
-            expect(lesson.attachment).toBeTruthy();
-            expect(lesson.attachment.id).toBe(attachmentId);
-            expect(lesson.attachment.originalFileName).toBe('notes.pdf');
+            expect(Array.isArray(lesson.attachments)).toBe(true);
+            expect(lesson.attachments.length).toBeGreaterThan(0);
+            const att = lesson.attachments.find((a) => a.id === attachmentId);
+            expect(att).toBeDefined();
+            expect(att.originalFileName).toBe('notes.pdf');
         });
 
         it('should reject unsupported file type (400 ATTACHMENT_INVALID_FILE_TYPE)', async () => {
@@ -158,7 +160,7 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonId}/attachments)', () => {
             expect(res.status).toBe(401);
         });
 
-        it('should replace existing attachment when uploading again (201)', async () => {
+        it('should add a second attachment (multi-attachment supported)', async () => {
             setAuthToken(teacherToken);
             const form = makePdfForm(VALID_PDF, 'notes_v2.pdf');
             const res = await apiClient.post(
@@ -168,7 +170,7 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonId}/attachments)', () => {
             );
             expect(res.status).toBe(201);
             expect(res.data.originalFileName).toBe('notes_v2.pdf');
-            // ID should be different (old attachment replaced)
+            // New attachment gets a new ID
             expect(res.data.id).not.toBe(attachmentId);
             attachmentId = res.data.id;
         });
@@ -255,12 +257,14 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonId}/attachments)', () => {
             expect(res.status).toBe(204);
         });
 
-        it('LessonResponse attachment should be null after delete', async () => {
+        it('LessonResponse attachments should be empty after delete', async () => {
             setAuthToken(teacherToken);
             const res = await apiClient.get('/teacher/lessons');
             const lesson = res.data.find((l) => l.id === lessonId);
             expect(lesson).toBeDefined();
-            expect(lesson.attachment).toBeNull();
+            expect(Array.isArray(lesson.attachments)).toBe(true);
+            const stillPresent = lesson.attachments.find((a) => a.id === attachmentId);
+            expect(stillPresent).toBeUndefined();
         });
 
         it('should return 404 after attachment is deleted', async () => {

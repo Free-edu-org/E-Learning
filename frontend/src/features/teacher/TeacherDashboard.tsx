@@ -681,8 +681,8 @@ export function TeacherDashboard() {
       await lessonService.updateLessonStatus(lesson.id, newStatus);
       setSnackbar({
         message: newStatus
-          ? `Lekcja „${lesson.title}" została aktywowana.`
-          : `Lekcja „${lesson.title}" została dezaktywowana.`,
+          ? `Lekcja "${lesson.title}" została aktywowana.`
+          : `Lekcja "${lesson.title}" została dezaktywowana.`,
         severity: "success",
       });
       // Refresh stats only (active count changed)

@@ -354,24 +354,25 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
         });
     });
 
-    describe('GET /student/lessons — attachment field', () => {
-        it('should include attachment field (null or object) in each lesson', async () => {
+    describe('GET /student/lessons — attachments field', () => {
+        it('should include attachments array in each lesson', async () => {
             setAuthToken(studentToken);
             const response = await apiClient.get('/student/lessons');
             expect(response.status).toBe(200);
             expect(Array.isArray(response.data)).toBe(true);
             response.data.forEach((lesson) => {
-                expect(lesson).toHaveProperty('attachment');
-                if (lesson.attachment !== null) {
-                    expect(lesson.attachment).toHaveProperty('id');
-                    expect(lesson.attachment).toHaveProperty('originalFileName');
-                    expect(lesson.attachment).toHaveProperty('contentType');
-                    expect(lesson.attachment).toHaveProperty('fileSize');
-                    expect(lesson.attachment).toHaveProperty('createdAt');
-                    expect(typeof lesson.attachment.id).toBe('number');
-                    expect(typeof lesson.attachment.originalFileName).toBe('string');
-                    expect(typeof lesson.attachment.fileSize).toBe('number');
-                }
+                expect(lesson).toHaveProperty('attachments');
+                expect(Array.isArray(lesson.attachments)).toBe(true);
+                lesson.attachments.forEach((att) => {
+                    expect(att).toHaveProperty('id');
+                    expect(att).toHaveProperty('originalFileName');
+                    expect(att).toHaveProperty('contentType');
+                    expect(att).toHaveProperty('fileSize');
+                    expect(att).toHaveProperty('createdAt');
+                    expect(typeof att.id).toBe('number');
+                    expect(typeof att.originalFileName).toBe('string');
+                    expect(typeof att.fileSize).toBe('number');
+                });
             });
         });
 
@@ -381,10 +382,11 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
             expect(response.status).toBe(200);
             const lesson = response.data.find((l) => l.id === attachmentLessonId);
             expect(lesson).toBeDefined();
-            expect(lesson.attachment).not.toBeNull();
-            expect(lesson.attachment.id).toBe(attachmentId);
-            expect(lesson.attachment.originalFileName).toBe('test.pdf');
-            expect(lesson.attachment.contentType).toBe('application/pdf');
+            expect(lesson.attachments.length).toBeGreaterThan(0);
+            const att = lesson.attachments.find((a) => a.id === attachmentId);
+            expect(att).toBeDefined();
+            expect(att.originalFileName).toBe('test.pdf');
+            expect(att.contentType).toBe('application/pdf');
         });
 
         it('student without access should not see lesson in their list', async () => {

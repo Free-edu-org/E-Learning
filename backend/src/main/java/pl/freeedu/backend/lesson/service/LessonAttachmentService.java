@@ -14,6 +14,7 @@ import pl.freeedu.backend.lesson.exception.LessonException;
 import pl.freeedu.backend.lesson.model.LessonAttachment;
 import pl.freeedu.backend.lesson.repository.LessonAttachmentRepository;
 import pl.freeedu.backend.lesson.repository.LessonRepository;
+import org.springframework.transaction.support.TransactionTemplate;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -41,22 +42,22 @@ public class LessonAttachmentService {
 
 	private final LessonAttachmentRepository lessonAttachmentRepository;
 	private final LessonRepository lessonRepository;
+	private final TransactionTemplate transactionTemplate;
 
 	public LessonAttachmentService(LessonAttachmentRepository lessonAttachmentRepository,
-			LessonRepository lessonRepository) {
+			LessonRepository lessonRepository, TransactionTemplate transactionTemplate) {
 		this.lessonAttachmentRepository = lessonAttachmentRepository;
 		this.lessonRepository = lessonRepository;
+		this.transactionTemplate = transactionTemplate;
 	}
 
 	public Mono<LessonAttachmentResponse> uploadAttachment(Integer lessonId, FilePart filePart) {
 		return Mono.fromCallable(() -> {
+			// Fast-fail: check lesson exists and content type before doing file I/O.
+			// This is an optimistic pre-check only; the definitive limit check is atomic
+			// below.
 			lessonRepository.findById(lessonId)
 					.orElseThrow(() -> new LessonException(LessonErrorCode.LESSON_NOT_FOUND));
-
-			long count = lessonAttachmentRepository.countByLessonId(lessonId);
-			if (count >= MAX_ATTACHMENTS_PER_LESSON) {
-				throw new LessonException(LessonErrorCode.ATTACHMENT_LIMIT_REACHED);
-			}
 
 			String contentType = filePart.headers().getContentType() != null
 					? filePart.headers().getContentType().toString()
@@ -90,10 +91,24 @@ public class LessonAttachmentService {
 								Files.deleteIfExists(path);
 								throw new LessonException(LessonErrorCode.ATTACHMENT_FILE_TOO_LARGE);
 							}
-							LessonAttachment attachment = LessonAttachment.builder().lessonId(lessonId)
-									.originalFileName(originalName).storedFileName(storedName).contentType(baseType)
-									.fileSize(fileSize).build();
-							LessonAttachment saved = lessonAttachmentRepository.save(attachment);
+							// Atomic count check + save under a pessimistic row-level lock so that
+							// concurrent uploads for the same lesson cannot both pass the limit check.
+							LessonAttachment saved = transactionTemplate.execute(status -> {
+								lessonRepository.findByIdForUpdate(lessonId)
+										.orElseThrow(() -> new LessonException(LessonErrorCode.LESSON_NOT_FOUND));
+								long count = lessonAttachmentRepository.countByLessonId(lessonId);
+								if (count >= MAX_ATTACHMENTS_PER_LESSON) {
+									try {
+										Files.deleteIfExists(path);
+									} catch (IOException ignored) {
+									}
+									throw new LessonException(LessonErrorCode.ATTACHMENT_LIMIT_REACHED);
+								}
+								LessonAttachment attachment = LessonAttachment.builder().lessonId(lessonId)
+										.originalFileName(originalName).storedFileName(storedName).contentType(baseType)
+										.fileSize(fileSize).build();
+								return lessonAttachmentRepository.save(attachment);
+							});
 							return toResponse(saved);
 						} catch (IOException e) {
 							throw new RuntimeException("Failed to process attachment file", e);
