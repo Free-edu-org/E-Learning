@@ -21,10 +21,7 @@ import {
 } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
 import { userService, type UserProfile } from "@/api/userService";
-import {
-  AppDialog,
-  AppDialogStatus,
-} from "@/components/ui/dialog/AppDialog";
+import { AppDialog, AppDialogStatus } from "@/components/ui/dialog/AppDialog";
 import { getErrorMessage } from "@/utils/dashboardUtils";
 import { UserAvatar } from "@/components/ui/avatar/UserAvatar";
 
@@ -57,23 +54,26 @@ export function AccountSettingsDialog({
   const [confirmEmail, setConfirmEmail] = useState("");
   const [isEditingUsername, setIsEditingUsername] = useState(false);
   const [isEditingEmail, setIsEditingEmail] = useState(false);
-  
+
   // Password state
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPasswords, setShowPasswords] = useState(false);
   const [passwordExpanded, setPasswordExpanded] = useState(false);
-  
+
   // UI state
   const [profileLoading, setProfileLoading] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [presetsExpanded, setPresetsExpanded] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const presets = useMemo(() => Array.from({ length: 12 }, (_, i) => `avatar_${i + 1}`), []);
+  const presets = useMemo(
+    () => Array.from({ length: 12 }, (_, i) => `avatar_${i + 1}`),
+    [],
+  );
 
   useEffect(() => {
     if (!open) {
@@ -102,19 +102,28 @@ export function AccountSettingsDialog({
 
     const trimmedUsername = username.trim();
     const trimmedEmail = email.trim();
-    
+
     if (isEditingUsername && !trimmedUsername) {
-      setFeedback({ severity: "error", message: "Nazwa użytkownika nie może być pusta." });
+      setFeedback({
+        severity: "error",
+        message: "Nazwa użytkownika nie może być pusta.",
+      });
       return;
     }
 
     if (isEditingEmail) {
       if (!trimmedEmail) {
-        setFeedback({ severity: "error", message: "Email nie może być pusty." });
+        setFeedback({
+          severity: "error",
+          message: "Email nie może być pusty.",
+        });
         return;
       }
       if (trimmedEmail !== confirmEmail.trim()) {
-        setFeedback({ severity: "error", message: "Adresy email nie są identyczne." });
+        setFeedback({
+          severity: "error",
+          message: "Adresy email nie są identyczne.",
+        });
         return;
       }
     }
@@ -130,7 +139,10 @@ export function AccountSettingsDialog({
       setIsEditingUsername(false);
       setIsEditingEmail(false);
       setConfirmEmail("");
-      setFeedback({ severity: "success", message: "Profil został zaktualizowany." });
+      setFeedback({
+        severity: "success",
+        message: "Profil został zaktualizowany.",
+      });
     } catch (error) {
       setFeedback({
         severity: "error",
@@ -145,7 +157,10 @@ export function AccountSettingsDialog({
     if (!user || passwordLoading) return;
 
     if (!oldPassword || !newPassword || !confirmPassword) {
-      setFeedback({ severity: "error", message: "Uzupełnij wszystkie pola hasła." });
+      setFeedback({
+        severity: "error",
+        message: "Uzupełnij wszystkie pola hasła.",
+      });
       return;
     }
 
@@ -162,7 +177,10 @@ export function AccountSettingsDialog({
       setNewPassword("");
       setConfirmPassword("");
       setPasswordExpanded(false);
-      setFeedback({ severity: "success", message: "Hasło zostało zmienione pomyślnie." });
+      setFeedback({
+        severity: "success",
+        message: "Hasło zostało zmienione pomyślnie.",
+      });
     } catch (error) {
       setFeedback({
         severity: "error",
@@ -173,12 +191,17 @@ export function AccountSettingsDialog({
     }
   };
 
-  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
     if (!file || !user) return;
 
     if (file.size > 2 * 1024 * 1024) {
-      setFeedback({ severity: "error", message: "Maksymalny rozmiar pliku to 2MB." });
+      setFeedback({
+        severity: "error",
+        message: "Maksymalny rozmiar pliku to 2MB.",
+      });
       return;
     }
 
@@ -187,9 +210,15 @@ export function AccountSettingsDialog({
     try {
       const updatedUser = await userService.uploadAvatar(user.id, file);
       onUserUpdated(updatedUser);
-      setFeedback({ severity: "success", message: "Zdjęcie profilowe zostało zmienione." });
+      setFeedback({
+        severity: "success",
+        message: "Zdjęcie profilowe zostało zmienione.",
+      });
     } catch (error) {
-      setFeedback({ severity: "error", message: "Nie udało się wgrać zdjęcia." });
+      setFeedback({
+        severity: "error",
+        message: "Nie udało się wgrać zdjęcia.",
+      });
     } finally {
       setAvatarLoading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -201,11 +230,17 @@ export function AccountSettingsDialog({
     setFeedback(null);
     setAvatarLoading(true);
     try {
-      const updatedUser = await userService.setPresetAvatar(user.id, presetName);
+      const updatedUser = await userService.setPresetAvatar(
+        user.id,
+        presetName,
+      );
       onUserUpdated(updatedUser);
       setFeedback({ severity: "success", message: "Awatar został zmieniony." });
     } catch (error) {
-      setFeedback({ severity: "error", message: "Błąd podczas zmiany awatara." });
+      setFeedback({
+        severity: "error",
+        message: "Błąd podczas zmiany awatara.",
+      });
     } finally {
       setAvatarLoading(false);
     }
@@ -217,7 +252,8 @@ export function AccountSettingsDialog({
     if (newPassword.length > 6) score += 25;
     if (newPassword.length > 10) score += 25;
     if (/[A-Z]/.test(newPassword)) score += 25;
-    if (/[0-9]/.test(newPassword) || /[^A-Za-z0-9]/.test(newPassword)) score += 25;
+    if (/[0-9]/.test(newPassword) || /[^A-Za-z0-9]/.test(newPassword))
+      score += 25;
     return score;
   }, [newPassword]);
 
@@ -236,12 +272,14 @@ export function AccountSettingsDialog({
   };
 
   return (
-    <AppDialog 
-      open={open} 
-      onClose={closeDialog} 
+    <AppDialog
+      open={open}
+      onClose={closeDialog}
       maxWidth="sm"
-      paperSx={{ borderRadius: '24px' }}
-      PaperProps={{ className: `modern-dialog-paper animate-in ${isDark ? 'dark' : ''}` }}
+      paperSx={{ borderRadius: "24px" }}
+      PaperProps={{
+        className: `modern-dialog-paper animate-in ${isDark ? "dark" : ""}`,
+      }}
     >
       {/* Header */}
       <Box className="settings-header">
@@ -249,8 +287,12 @@ export function AccountSettingsDialog({
           <Box className="settings-header-icon-box">
             <SettingsIcon />
           </Box>
-          <Typography className="settings-header-title">Ustawienia konta</Typography>
-          <Typography className="settings-header-subtitle">Zarządzaj swoim profilem i bezpieczeństwem</Typography>
+          <Typography className="settings-header-title">
+            Ustawienia konta
+          </Typography>
+          <Typography className="settings-header-subtitle">
+            Zarządzaj swoim profilem i bezpieczeństwem
+          </Typography>
         </Box>
       </Box>
 
@@ -270,7 +312,10 @@ export function AccountSettingsDialog({
             ref={fileInputRef}
             onChange={handleAvatarUpload}
           />
-          <Box className="avatar-container" onClick={() => fileInputRef.current?.click()}>
+          <Box
+            className="avatar-container"
+            onClick={() => fileInputRef.current?.click()}
+          >
             <UserAvatar
               avatarUrl={user?.avatarUrl}
               username={user?.username}
@@ -287,10 +332,17 @@ export function AccountSettingsDialog({
               </Box>
             )}
           </Box>
-          
-          <Button 
+
+          <Button
             className="presets-toggle"
-            endIcon={<ExpandMoreIcon style={{ transform: presetsExpanded ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />}
+            endIcon={
+              <ExpandMoreIcon
+                style={{
+                  transform: presetsExpanded ? "rotate(180deg)" : "none",
+                  transition: "0.2s",
+                }}
+              />
+            }
             onClick={() => setPresetsExpanded(!presetsExpanded)}
           >
             Wybierz z presetów
@@ -299,9 +351,9 @@ export function AccountSettingsDialog({
           <Collapse in={presetsExpanded}>
             <Box className="presets-grid">
               {presets.map((p) => (
-                <Box 
-                  key={p} 
-                  className={`preset-item ${user?.avatarUrl === `preset:${p}` ? 'active' : ''}`}
+                <Box
+                  key={p}
+                  className={`preset-item ${user?.avatarUrl === `preset:${p}` ? "active" : ""}`}
                   onClick={() => handlePresetSelect(p)}
                 >
                   <UserAvatar avatarUrl={`preset:${p}`} size={40} />
@@ -328,16 +380,19 @@ export function AccountSettingsDialog({
                   autoFocus
                 />
                 <Box className="edit-actions">
-                  <IconButton 
-                    onClick={handleSaveProfile} 
-                    disabled={profileLoading} 
+                  <IconButton
+                    onClick={handleSaveProfile}
+                    disabled={profileLoading}
                     className="action-icon-btn success"
                     size="small"
                   >
                     <CheckIcon fontSize="small" />
                   </IconButton>
-                  <IconButton 
-                    onClick={() => { setIsEditingUsername(false); setUsername(user?.username || ""); }} 
+                  <IconButton
+                    onClick={() => {
+                      setIsEditingUsername(false);
+                      setUsername(user?.username || "");
+                    }}
                     className="action-icon-btn cancel"
                     size="small"
                   >
@@ -348,18 +403,30 @@ export function AccountSettingsDialog({
             ) : (
               <>
                 <Box className="row-content">
-                  <Typography className="row-label">Nazwa użytkownika</Typography>
-                  <Typography className="row-value">{user?.username}</Typography>
+                  <Typography className="row-label">
+                    Nazwa użytkownika
+                  </Typography>
+                  <Typography className="row-value">
+                    {user?.username}
+                  </Typography>
                 </Box>
-                <Button className="change-btn" onClick={() => setIsEditingUsername(true)}>Zmień</Button>
+                <Button
+                  className="change-btn"
+                  onClick={() => setIsEditingUsername(true)}
+                >
+                  Zmień
+                </Button>
               </>
             )}
           </Box>
 
           {/* Email Row */}
-          <Box className="settings-row" style={{ alignItems: isEditingEmail ? 'center' : 'center' }}>
+          <Box
+            className="settings-row"
+            style={{ alignItems: isEditingEmail ? "center" : "center" }}
+          >
             {isEditingEmail ? (
-              <Box className="inline-edit-box" style={{ width: '100%' }}>
+              <Box className="inline-edit-box" style={{ width: "100%" }}>
                 <Stack spacing={1.25} flex={1}>
                   <TextField
                     fullWidth
@@ -379,17 +446,21 @@ export function AccountSettingsDialog({
                     placeholder="Powtórz nowy email"
                   />
                 </Stack>
-                <Stack spacing={1} sx={{ ml: 2, justifyContent: 'center' }}>
-                  <IconButton 
-                    onClick={() => { setIsEditingEmail(false); setEmail(user?.email || ""); setConfirmEmail(""); }} 
+                <Stack spacing={1} sx={{ ml: 2, justifyContent: "center" }}>
+                  <IconButton
+                    onClick={() => {
+                      setIsEditingEmail(false);
+                      setEmail(user?.email || "");
+                      setConfirmEmail("");
+                    }}
                     className="action-icon-btn cancel"
                     size="small"
                   >
                     <CloseIcon fontSize="small" />
                   </IconButton>
-                  <IconButton 
-                    onClick={handleSaveProfile} 
-                    disabled={profileLoading} 
+                  <IconButton
+                    onClick={handleSaveProfile}
+                    disabled={profileLoading}
                     className="action-icon-btn success"
                     size="small"
                   >
@@ -403,7 +474,12 @@ export function AccountSettingsDialog({
                   <Typography className="row-label">Email</Typography>
                   <Typography className="row-value">{user?.email}</Typography>
                 </Box>
-                <Button className="change-btn" onClick={() => setIsEditingEmail(true)}>Zmień</Button>
+                <Button
+                  className="change-btn"
+                  onClick={() => setIsEditingEmail(true)}
+                >
+                  Zmień
+                </Button>
               </>
             )}
           </Box>
@@ -417,14 +493,14 @@ export function AccountSettingsDialog({
               <Typography className="row-label">Hasło</Typography>
               <Typography className="row-value">••••••••••••</Typography>
             </Box>
-            <Button 
-              className="change-btn" 
+            <Button
+              className="change-btn"
               onClick={() => setPasswordExpanded(!passwordExpanded)}
             >
-              {passwordExpanded ? 'Anuluj' : 'Zmień hasło'}
+              {passwordExpanded ? "Anuluj" : "Zmień hasło"}
             </Button>
           </Box>
-          
+
           <Collapse in={passwordExpanded}>
             <Box className="password-panel">
               <Stack className="password-form">
@@ -439,8 +515,16 @@ export function AccountSettingsDialog({
                   InputProps={{
                     endAdornment: (
                       <InputAdornment position="end">
-                        <IconButton onClick={() => setShowPasswords(!showPasswords)} edge="end" size="small">
-                          {showPasswords ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                        <IconButton
+                          onClick={() => setShowPasswords(!showPasswords)}
+                          edge="end"
+                          size="small"
+                        >
+                          {showPasswords ? (
+                            <VisibilityOffIcon />
+                          ) : (
+                            <VisibilityIcon />
+                          )}
                         </IconButton>
                       </InputAdornment>
                     ),
@@ -459,12 +543,17 @@ export function AccountSettingsDialog({
                   {newPassword && (
                     <Box className="strength-container">
                       <Box className="strength-bar">
-                        <Box 
-                          className="strength-progress" 
-                          style={{ width: `${passwordStrength}%`, backgroundColor: strengthColor() }} 
+                        <Box
+                          className="strength-progress"
+                          style={{
+                            width: `${passwordStrength}%`,
+                            backgroundColor: strengthColor(),
+                          }}
                         />
                       </Box>
-                      <Typography className="strength-text">Siła hasła: {strengthLabel()}</Typography>
+                      <Typography className="strength-text">
+                        Siła hasła: {strengthLabel()}
+                      </Typography>
                     </Box>
                   )}
                 </Box>
@@ -477,13 +566,17 @@ export function AccountSettingsDialog({
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                 />
-                <Button 
-                  className="btn-primary" 
-                  style={{ alignSelf: 'flex-end', marginTop: '8px' }}
+                <Button
+                  className="btn-primary"
+                  style={{ alignSelf: "flex-end", marginTop: "8px" }}
                   onClick={handleSavePassword}
                   disabled={passwordLoading}
                 >
-                  {passwordLoading ? <CircularProgress size={20} color="inherit" /> : 'Zapisz nowe hasło'}
+                  {passwordLoading ? (
+                    <CircularProgress size={20} color="inherit" />
+                  ) : (
+                    "Zapisz nowe hasło"
+                  )}
                 </Button>
               </Stack>
             </Box>
@@ -493,8 +586,15 @@ export function AccountSettingsDialog({
 
       {/* Footer */}
       <Box className="footer">
-        <Stack direction="row" justifyContent="flex-end" spacing={2} width="100%">
-          <Button className="cancel-btn" onClick={closeDialog}>Zamknij</Button>
+        <Stack
+          direction="row"
+          justifyContent="flex-end"
+          spacing={2}
+          width="100%"
+        >
+          <Button className="cancel-btn" onClick={closeDialog}>
+            Zamknij
+          </Button>
         </Stack>
       </Box>
     </AppDialog>

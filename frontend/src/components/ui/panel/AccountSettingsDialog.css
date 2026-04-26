@@ -1,10 +1,10 @@
 :root {
-  --primary-color: #5B5CF0;
+  --primary-color: #5b5cf0;
   --primary-hover: #4a4bd6;
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --radius-xl: 24px;
   --radius-lg: 16px;
-  
+
   /* Light mode tokens */
   --bg-modal: #ffffff;
   --bg-body: #ffffff;
@@ -375,12 +375,20 @@
 .fade-enter-active {
   opacity: 1;
   transform: translateY(0);
-  transition: opacity 300ms, transform 300ms;
+  transition:
+    opacity 300ms,
+    transform 300ms;
 }
 
 @keyframes slideIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-in {

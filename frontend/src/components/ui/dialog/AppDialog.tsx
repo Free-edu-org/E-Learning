@@ -98,9 +98,9 @@ export function AppDialog({
       onClose={onClose}
       fullWidth
       maxWidth={maxWidth}
-      PaperProps={{ 
+      PaperProps={{
         ...PaperProps,
-        sx: { ...resolvedPaperSx, ...(PaperProps.sx || {}) } 
+        sx: { ...resolvedPaperSx, ...(PaperProps.sx || {}) },
       }}
       TransitionProps={{ onExited }}
     >
