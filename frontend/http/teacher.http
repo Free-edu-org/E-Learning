@@ -1,0 +1,45 @@
+### Teacher routes (used by /teacher and nested teacher views)
+
+### Teacher dashboard stats
+GET http://localhost:5173/teacher/stats
+Authorization: Bearer {{auth_token}}
+
+### Get teacher's lessons (list)
+GET http://localhost:5173/teacher/lessons
+Authorization: Bearer {{auth_token}}
+
+### Create a lesson (teacher)
+POST http://localhost:5173/lessons
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "title": "Przykładowa lekcja",
+  "theme": "Grammar",
+  "groupIds": [1]
+}
+
+### Edit lesson (teacher owner)
+PUT http://localhost:5173/lessons/1
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "title": "Zaktualizowana lekcja",
+  "theme": "Grammar",
+  "groupIds": [1]
+}
+
+### Get lesson stats (teacher view)
+GET http://localhost:5173/teacher/lessons/1/stats
+Authorization: Bearer {{auth_token}}
+
+### Get lesson result for a student (teacher view)
+GET http://localhost:5173/teacher/lessons/1/students/1/result
+Authorization: Bearer {{auth_token}}
+
+### Get teacher's students
+GET http://localhost:5173/teacher/students
+Authorization: Bearer {{auth_token}}
+
+

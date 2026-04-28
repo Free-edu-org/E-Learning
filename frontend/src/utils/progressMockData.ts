@@ -3,6 +3,7 @@
  * TODO: Replace with real API calls when backends endpoints are available:
  * - GET /api/v1/student/skills (break down by category)
  * - GET /api/v1/student/achievements
+ * - GET /api/v1/student/progress (for progress chart)
  */
 
 export interface ProgressChartPoint {
@@ -12,7 +13,10 @@ export interface ProgressChartPoint {
 
 export interface SkillData {
   category: string;
-  score: number;
+  // absolute count of correctly answered items in this category
+  correct: number;
+  // absolute count of incorrectly answered items in this category
+  wrong: number;
 }
 
 export interface Achievement {
@@ -58,11 +62,13 @@ export function generateProgressChartData(): ProgressChartPoint[] {
  * TODO: Integrate with backend when skill-per-category endpoint is ready
  */
 export function generateSkillsData(): SkillData[] {
+  // Return correct/wrong breakdown per category (sums don't have to be exactly 100,
+  // but using percentages here for mock clarity)
   return [
-    { category: "Gramatyka", score: 85 },
-    { category: "Słownictwo", score: 80 },
-    { category: "Czasy", score: 90 },
-    { category: "Składnia", score: 75 },
+    { category: "Wybór", correct: 6, wrong: 2 },
+    { category: "Pisanie", correct: 1, wrong: 1 },
+    { category: "Rozsypanka", correct: 1, wrong: 3 },
+    { category: "Mówienie", correct: 2, wrong: 0},
   ];
 }
 

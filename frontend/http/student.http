@@ -1,0 +1,32 @@
+### Student routes (used by /student and nested student views)
+
+### Student dashboard stats
+GET http://localhost:5173/student/stats
+Authorization: Bearer {{auth_token}}
+
+### Student lessons (list)
+GET http://localhost:5173/student/lessons
+Authorization: Bearer {{auth_token}}
+
+### Student progress summary (used by /student/progress)
+GET http://localhost:5173/student/progress
+Authorization: Bearer {{auth_token}}
+
+### Get lesson (solver) tasks for student
+GET http://localhost:5173/lessons/1/tasks
+Authorization: Bearer {{auth_token}}
+
+### Submit lesson answers (student)
+POST http://localhost:5173/lessons/1/submit
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "answers": [ { "taskId": 1, "taskType": "choose", "answer": "1" } ]
+}
+
+### Get lesson result (student view)
+GET http://localhost:5173/student/lessons/1/result
+Authorization: Bearer {{auth_token}}
+
+

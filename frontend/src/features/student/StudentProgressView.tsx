@@ -16,6 +16,7 @@ import {
   TrendingUpOutlined as TrendIcon,
   EmojiEventsOutlined as AchievementIcon,
   ArrowBackOutlined as BackIcon,
+  StarsOutlined as PointsIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import {
@@ -26,16 +27,13 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Radar,
+  BarChart,
+  Bar,
+  Legend,
 } from "recharts";
 import {
   studentService,
   type StudentStats,
-  type StudentProgress,
 } from "@/api/studentService";
 import { userService, type UserProfile } from "@/api/userService";
 import {
@@ -59,7 +57,6 @@ export function StudentProgressView() {
   const theme = useTheme();
 
   const [stats, setStats] = useState<StudentStats | null>(null);
-  const [progress, setProgress] = useState<StudentProgress | null>(null);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -68,6 +65,21 @@ export function StudentProgressView() {
   const progressChartData = useMemo(() => generateProgressChartData(), []);
   const skillsData = useMemo(() => generateSkillsData(), []);
   const achievements = useMemo(() => generateAchievements(), []);
+
+  // Normalize skills data so each category sums to 100% (shows relative correct/wrong)
+  const normalizedSkillsData = useMemo(() => {
+    return skillsData.map((s) => {
+      const total = (s.correct ?? 0) + (s.wrong ?? 0);
+      if (total <= 0) {
+        return { ...s, correctPct: 0, wrongPct: 0 };
+      }
+      const correctRaw = (s.correct / total) * 100;
+      const correctPct = Math.round(correctRaw);
+      // ensure sums to 100 to avoid tiny rounding gaps
+      const wrongPct = 100 - correctPct;
+      return { ...s, correctPct, wrongPct };
+    });
+  }, [skillsData]);
 
   const handleLogout = () => {
     logout();
@@ -80,10 +92,9 @@ export function StudentProgressView() {
       studentService.getStats(),
       studentService.getProgress(),
     ])
-      .then(([currentUser, nextStats, nextProgress]) => {
+      .then(([currentUser, nextStats]) => {
         setUser(currentUser);
         setStats(nextStats);
-        setProgress(nextProgress);
       })
       .catch((err: unknown) => {
         setError(
@@ -97,16 +108,6 @@ export function StudentProgressView() {
     theme.palette.mode === "light"
       ? "#e8eef7"
       : theme.palette.background.default;
-
-  const heroGradient =
-    theme.palette.mode === "light"
-      ? "linear-gradient(135deg, rgba(79,70,229,0.96) 0%, rgba(168,85,247,0.94) 100%)"
-      : "linear-gradient(135deg, rgba(67,56,202,0.88) 0%, rgba(147,51,234,0.84) 100%)";
-
-  const progressPercent =
-    stats && stats.totalLessons > 0
-      ? Math.round((stats.completedLessons / stats.totalLessons) * 100)
-      : 0;
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: pageBg, pb: 6 }}>
@@ -143,64 +144,11 @@ export function StudentProgressView() {
           </Button>
         </Box>
 
-
         {error && (
           <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
             {error}
           </Alert>
         )}
-
-        {/* ── Hero banner ── */}
-        <Paper
-          elevation={0}
-          sx={{
-            mb: 4,
-            p: { xs: 2.5, md: 3 },
-            color: "#fff",
-            borderRadius: 4,
-            background: heroGradient,
-            boxShadow: "0 20px 40px rgba(79, 70, 229, 0.28)",
-          }}
-        >
-          <Stack
-            direction={{ xs: "column", md: "row" }}
-            spacing={2}
-            alignItems={{ xs: "flex-start", md: "center" }}
-            justifyContent="space-between"
-          >
-            <Box>
-              <Typography variant="body2" sx={{ opacity: 0.82, mb: 0.5 }}>
-                Przegląd wyników i statystyk
-              </Typography>
-              <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
-                Twoje postępy w nauce
-              </Typography>
-              {progress && (
-                <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                  {progress.summary}
-                </Typography>
-              )}
-            </Box>
-            <Box
-              sx={{
-                bgcolor: alpha("#fff", 0.12),
-                borderRadius: 3,
-                px: 3,
-                py: 2,
-                textAlign: "center",
-                flexShrink: 0,
-                minWidth: 110,
-              }}
-            >
-              <Typography variant="h4" fontWeight={800}>
-                {progressPercent}%
-              </Typography>
-              <Typography variant="caption" sx={{ opacity: 0.85 }}>
-                ukończono
-              </Typography>
-            </Box>
-          </Stack>
-        </Paper>
 
         {/* ── Stats cards row ── */}
         {loading ? (
@@ -233,7 +181,7 @@ export function StudentProgressView() {
             </Grid>
             <Grid size={{ xs: 12, sm: 6, md: 4 }}>
               <StatCard
-                icon={TrendIcon}
+                icon={PointsIcon}
                 title="Punkty"
                 value={0} // TODO: System punktów i ich pobieranie z backendu
                 subtitle="pkt"
@@ -309,7 +257,7 @@ export function StudentProgressView() {
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
                   <TrendIcon sx={{ color: "primary.main" }} />
                   <Typography variant="h6" fontWeight={700}>
-                    Umiejętności
+                    Silne i słabe strony
                   </Typography>
                 </Box>
 
@@ -317,28 +265,37 @@ export function StudentProgressView() {
                   <Skeleton variant="rounded" height={280} />
                 ) : (
                   <ResponsiveContainer width="100%" height={280}>
-                    <RadarChart data={skillsData} margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
-                      <PolarGrid
-                        stroke={alpha(theme.palette.divider, 0.5)}
-                      />
-                      <PolarAngleAxis
+                    <BarChart data={normalizedSkillsData} margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.divider, 0.5)} />
+                      <XAxis
                         dataKey="category"
                         stroke={theme.palette.text.secondary}
-                        style={{ fontSize: 11 }}
+                        style={{ fontSize: 12 }}
                       />
-                      <PolarRadiusAxis
+                      <YAxis
                         stroke={theme.palette.text.secondary}
-                        style={{ fontSize: 11 }}
+                        style={{ fontSize: 12 }}
                         domain={[0, 100]}
                       />
-                      <Radar
-                        name="Wynik"
-                        dataKey="score"
-                        stroke={theme.palette.primary.main}
-                        fill={alpha(theme.palette.primary.main, 0.25)}
-                        isAnimationActive={false}
+                      <Tooltip
+                        contentStyle={{
+                          borderRadius: 8,
+                          border: "1px solid",
+                          borderColor: theme.palette.divider,
+                          backgroundColor: theme.palette.background.paper,
+                        }}
+                        labelStyle={{
+                          color: theme.palette.text.primary,
+                        }}
+                        formatter={(value: unknown) => {
+                          const v = value as number | undefined;
+                          return v == null ? "" : `${v}%`;
+                        }}
                       />
-                    </RadarChart>
+                      <Legend />
+                      <Bar dataKey="correctPct" stackId="a" name="Dobrze" fill={theme.palette.success.main} isAnimationActive={false} />
+                      <Bar dataKey="wrongPct" stackId="a" name="Źle" fill={theme.palette.error.main} isAnimationActive={false} />
+                    </BarChart>
                   </ResponsiveContainer>
                 )}
               </Box>
