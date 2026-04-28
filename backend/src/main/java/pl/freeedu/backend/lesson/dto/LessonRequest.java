@@ -20,6 +20,7 @@ public class LessonRequest {
 	private String title;
 
 	@NotBlank(message = "Theme is required")
+	@Size(max = 120, message = "Theme must be at most 120 characters long")
 	private String theme;
 
 	// optional list of group ids to assign this lesson to

@@ -229,7 +229,7 @@ function ProgressDialog({ progress, stats, onClose }: ProgressDialogProps) {
   const theme = useTheme();
   const progressPercent =
     stats && stats.totalLessons > 0
-      ? Math.round((stats.completedLessons / stats.totalLessons) * 100)
+      ? (stats.completedLessons / stats.totalLessons) * 100
       : 0;
 
   return (
@@ -559,7 +559,7 @@ export function StudentDashboard() {
 
   const progressPercent =
     stats && stats.totalLessons > 0
-      ? Math.round((stats.completedLessons / stats.totalLessons) * 100)
+      ? (stats.completedLessons / stats.totalLessons) * 100
       : 0;
 
   const displayedLessons = useMemo(() => {
@@ -631,7 +631,7 @@ export function StudentDashboard() {
                   ? "Zacznij od pierwszej lekcji — każdy krok się liczy!"
                   : progressPercent === 100
                     ? "Świetnie! Ukończyłeś wszystkie przypisane lekcje 🎉"
-                    : `Ukończyłeś ${progressPercent}% przypisanych lekcji — tak trzymaj!`}
+                    : `Ukończyłeś ${formatPercent(progressPercent)} przypisanych lekcji — tak trzymaj!`}
               </Typography>
               {progress && (
                 <Typography variant="body2" sx={{ opacity: 0.9 }}>

@@ -99,6 +99,7 @@ import { useAuth } from "@/context/AuthContext";
 import { uiTokens } from "@/theme/uiTokens";
 import { UserAvatar } from "@/components/ui/avatar/UserAvatar";
 import { getApiErrorMessage } from "@/utils/dashboardUtils";
+import { INPUT_LIMITS } from "@/utils/inputLimits";
 
 type UserRole = "TEACHER" | "STUDENT";
 type UserFilter = "ALL" | UserRole;
@@ -2049,9 +2050,14 @@ export function AdminDashboard() {
                       onChange={(event) =>
                         setUserDraft((current) => ({
                           ...current,
-                          username: event.target.value,
+                          username: event.target.value.slice(
+                            0,
+                            INPUT_LIMITS.username,
+                          ),
                         }))
                       }
+                      inputProps={{ maxLength: INPUT_LIMITS.username }}
+                      helperText={`${userDraft.username.length}/${INPUT_LIMITS.username}`}
                       fullWidth
                     />
                   </FormField>
@@ -2187,9 +2193,14 @@ export function AdminDashboard() {
                     onChange={(event) =>
                       setGroupDraft((current) => ({
                         ...current,
-                        name: event.target.value,
+                        name: event.target.value.slice(
+                          0,
+                          INPUT_LIMITS.groupName,
+                        ),
                       }))
                     }
+                    inputProps={{ maxLength: INPUT_LIMITS.groupName }}
+                    helperText={`${groupDraft.name.length}/${INPUT_LIMITS.groupName}`}
                     fullWidth
                   />
                 </FormField>
@@ -2200,9 +2211,14 @@ export function AdminDashboard() {
                     onChange={(event) =>
                       setGroupDraft((current) => ({
                         ...current,
-                        description: event.target.value,
+                        description: event.target.value.slice(
+                          0,
+                          INPUT_LIMITS.groupDescription,
+                        ),
                       }))
                     }
+                    inputProps={{ maxLength: INPUT_LIMITS.groupDescription }}
+                    helperText={`${groupDraft.description.length}/${INPUT_LIMITS.groupDescription}`}
                     multiline
                     minRows={4}
                     fullWidth

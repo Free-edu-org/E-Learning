@@ -47,10 +47,10 @@ import {
   emptyLessonDraft,
   getLessonEditorErrorMessage,
   getTaskValidationError,
-  LESSON_TITLE_MAX_LENGTH,
   type DialogFeedbackState,
   type LessonDraft,
 } from "./lessonEditor";
+import { INPUT_LIMITS } from "@/utils/inputLimits";
 
 export function TeacherLessonCreateView() {
   const navigate = useNavigate();
@@ -330,12 +330,12 @@ export function TeacherLessonCreateView() {
                           ...current,
                           title: event.target.value.slice(
                             0,
-                            LESSON_TITLE_MAX_LENGTH,
+                            INPUT_LIMITS.lessonTitle,
                           ),
                         }))
                       }
-                      inputProps={{ maxLength: LESSON_TITLE_MAX_LENGTH }}
-                      helperText={`${draft.title.length}/${LESSON_TITLE_MAX_LENGTH}`}
+                      inputProps={{ maxLength: INPUT_LIMITS.lessonTitle }}
+                      helperText={`${draft.title.length}/${INPUT_LIMITS.lessonTitle}`}
                       fullWidth
                     />
                   </FormField>
@@ -346,9 +346,14 @@ export function TeacherLessonCreateView() {
                       onChange={(event) =>
                         setDraft((current) => ({
                           ...current,
-                          theme: event.target.value,
+                          theme: event.target.value.slice(
+                            0,
+                            INPUT_LIMITS.lessonTheme,
+                          ),
                         }))
                       }
+                      inputProps={{ maxLength: INPUT_LIMITS.lessonTheme }}
+                      helperText={`${draft.theme.length}/${INPUT_LIMITS.lessonTheme}`}
                       multiline
                       minRows={4}
                       fullWidth

@@ -71,6 +71,7 @@ import {
 import { UserAvatar } from "@/components/ui/avatar/UserAvatar";
 import { uiTokens } from "@/theme/uiTokens";
 import { getApiErrorMessage } from "@/utils/dashboardUtils";
+import { INPUT_LIMITS } from "@/utils/inputLimits";
 
 type DialogFeedbackState = {
   severity: "success" | "error" | "warning" | "info";
@@ -724,9 +725,7 @@ export function TeacherStudentsView() {
                           variant="body1"
                           fontWeight={800}
                           sx={{
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
+                            overflowWrap: "anywhere",
                           }}
                         >
                           {group.name}
@@ -735,9 +734,7 @@ export function TeacherStudentsView() {
                           variant="body2"
                           color="text.secondary"
                           sx={{
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
+                            overflowWrap: "anywhere",
                           }}
                         >
                           {group.description || "Brak opisu grupy."}
@@ -920,9 +917,14 @@ export function TeacherStudentsView() {
                     onChange={(event) =>
                       setCreateStudentDraft((draft) => ({
                         ...draft,
-                        username: event.target.value,
+                        username: event.target.value.slice(
+                          0,
+                          INPUT_LIMITS.username,
+                        ),
                       }))
                     }
+                    inputProps={{ maxLength: INPUT_LIMITS.username }}
+                    helperText={`${createStudentDraft.username.length}/${INPUT_LIMITS.username}`}
                     fullWidth
                     size="small"
                     disabled={createStudentLoading}
@@ -1046,9 +1048,14 @@ export function TeacherStudentsView() {
                     onChange={(event) =>
                       setEditStudentDraft((draft) => ({
                         ...draft,
-                        username: event.target.value,
+                        username: event.target.value.slice(
+                          0,
+                          INPUT_LIMITS.username,
+                        ),
                       }))
                     }
+                    inputProps={{ maxLength: INPUT_LIMITS.username }}
+                    helperText={`${editStudentDraft.username.length}/${INPUT_LIMITS.username}`}
                     fullWidth
                     size="small"
                     disabled={editStudentLoading}
@@ -1152,9 +1159,14 @@ export function TeacherStudentsView() {
                     onChange={(event) =>
                       setCreateGroupDraft((draft) => ({
                         ...draft,
-                        name: event.target.value,
+                        name: event.target.value.slice(
+                          0,
+                          INPUT_LIMITS.groupName,
+                        ),
                       }))
                     }
+                    inputProps={{ maxLength: INPUT_LIMITS.groupName }}
+                    helperText={`${createGroupDraft.name.length}/${INPUT_LIMITS.groupName}`}
                     fullWidth
                     size="small"
                     disabled={createGroupLoading}
@@ -1167,9 +1179,14 @@ export function TeacherStudentsView() {
                     onChange={(event) =>
                       setCreateGroupDraft((draft) => ({
                         ...draft,
-                        description: event.target.value,
+                        description: event.target.value.slice(
+                          0,
+                          INPUT_LIMITS.groupDescription,
+                        ),
                       }))
                     }
+                    inputProps={{ maxLength: INPUT_LIMITS.groupDescription }}
+                    helperText={`${createGroupDraft.description.length}/${INPUT_LIMITS.groupDescription}`}
                     fullWidth
                     size="small"
                     minRows={3}

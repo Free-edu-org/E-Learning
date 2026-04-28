@@ -24,6 +24,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { useState, type ReactNode } from "react";
 import type { TaskType } from "@/api/taskService";
 import { uiTokens } from "@/theme/uiTokens";
+import { INPUT_LIMITS } from "@/utils/inputLimits";
 import { ChooseAnswerBuilder } from "./ChooseAnswerBuilder";
 import { ScatterWordBuilder } from "./ScatterWordBuilder";
 
@@ -63,8 +64,6 @@ const taskTypeMeta: Record<
     color: "#ec4899",
   },
 };
-
-/* ── Compact header used both in-place and inside DragOverlay ── */
 
 function TaskCardHeader({
   task,
@@ -153,9 +152,8 @@ function TaskCardHeader({
         fontWeight={600}
         sx={{
           flex: 1,
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
+          minWidth: 0,
+          overflowWrap: "anywhere",
         }}
       >
         {task.task || `Zadanie ${index + 1}`}
@@ -191,8 +189,6 @@ function TaskCardHeader({
   );
 }
 
-/* ── Portal overlay shown while dragging ── */
-
 export function TaskCardOverlay({
   task,
   index,
@@ -223,8 +219,6 @@ export function TaskCardOverlay({
     </Box>
   );
 }
-
-/* ── Full sortable task card ── */
 
 interface TaskCardProps {
   task: LessonTaskDraft;
@@ -266,7 +260,6 @@ export function TaskCard({
     onChange({ ...task, [field]: value });
   };
 
-  /* While dragging, show a slim placeholder so the list doesn't jump */
   if (isDragging) {
     return (
       <Box
@@ -328,21 +321,26 @@ export function TaskCard({
         }}
       />
 
-      {/* Body */}
       <Collapse in={expanded} timeout={250}>
         <Box sx={{ p: 2 }}>
           <Stack spacing={2}>
             <TextField
               label="Treść zadania"
               value={task.task}
-              onChange={(e) => updateField("task", e.target.value)}
+              onChange={(e) =>
+                updateField(
+                  "task",
+                  e.target.value.slice(0, INPUT_LIMITS.taskText),
+                )
+              }
+              inputProps={{ maxLength: INPUT_LIMITS.taskText }}
+              helperText={`${task.task.length}/${INPUT_LIMITS.taskText}`}
               multiline
               minRows={2}
               fullWidth
               placeholder="Wpisz treść pytania lub polecenia..."
             />
 
-            {/* Type-specific fields */}
             {task.type === "choose" && (
               <ChooseAnswerBuilder
                 possibleAnswers={task.possibleAnswers}
@@ -362,7 +360,14 @@ export function TaskCard({
                 <TextField
                   label="Poprawna kolejność (pełne zdanie)"
                   value={task.correctAnswer}
-                  onChange={(e) => updateField("correctAnswer", e.target.value)}
+                  onChange={(e) =>
+                    updateField(
+                      "correctAnswer",
+                      e.target.value.slice(0, INPUT_LIMITS.taskAnswerText),
+                    )
+                  }
+                  inputProps={{ maxLength: INPUT_LIMITS.taskAnswerText }}
+                  helperText={`${task.correctAnswer.length}/${INPUT_LIMITS.taskAnswerText}`}
                   fullWidth
                   placeholder="np. The cat is big"
                 />
@@ -373,7 +378,14 @@ export function TaskCard({
               <TextField
                 label="Poprawna odpowiedź"
                 value={task.correctAnswer}
-                onChange={(e) => updateField("correctAnswer", e.target.value)}
+                onChange={(e) =>
+                  updateField(
+                    "correctAnswer",
+                    e.target.value.slice(0, INPUT_LIMITS.taskAnswerText),
+                  )
+                }
+                inputProps={{ maxLength: INPUT_LIMITS.taskAnswerText }}
+                helperText={`${task.correctAnswer.length}/${INPUT_LIMITS.taskAnswerText}`}
                 fullWidth
                 placeholder="Wpisz oczekiwaną odpowiedź..."
               />
@@ -383,14 +395,19 @@ export function TaskCard({
               <TextField
                 label="Tekst do rozpoznania"
                 value={task.correctAnswer}
-                onChange={(e) => updateField("correctAnswer", e.target.value)}
+                onChange={(e) =>
+                  updateField(
+                    "correctAnswer",
+                    e.target.value.slice(0, INPUT_LIMITS.taskAnswerText),
+                  )
+                }
+                inputProps={{ maxLength: INPUT_LIMITS.taskAnswerText }}
                 fullWidth
                 placeholder="np. The cat is black and the dog is brown"
-                helperText="Uczen nagra ten tekst, a STT porowna transkrypcje z ta wartoscia."
+                helperText={`${task.correctAnswer.length}/${INPUT_LIMITS.taskAnswerText} • Uczeń nagra ten tekst, a STT porówna transkrypcję z tą wartością.`}
               />
             )}
 
-            {/* Common optional fields */}
             <Box
               sx={{
                 display: "grid",
@@ -401,7 +418,14 @@ export function TaskCard({
               <TextField
                 label="Podpowiedź (opcjonalnie)"
                 value={task.hint}
-                onChange={(e) => updateField("hint", e.target.value)}
+                onChange={(e) =>
+                  updateField(
+                    "hint",
+                    e.target.value.slice(0, INPUT_LIMITS.taskHint),
+                  )
+                }
+                inputProps={{ maxLength: INPUT_LIMITS.taskHint }}
+                helperText={`${task.hint.length}/${INPUT_LIMITS.taskHint}`}
                 fullWidth
                 size="small"
                 placeholder="Wskazówka dla ucznia..."
@@ -409,7 +433,14 @@ export function TaskCard({
               <TextField
                 label="Sekcja (opcjonalnie)"
                 value={task.section}
-                onChange={(e) => updateField("section", e.target.value)}
+                onChange={(e) =>
+                  updateField(
+                    "section",
+                    e.target.value.slice(0, INPUT_LIMITS.taskSection),
+                  )
+                }
+                inputProps={{ maxLength: INPUT_LIMITS.taskSection }}
+                helperText={`${task.section.length}/${INPUT_LIMITS.taskSection}`}
                 fullWidth
                 size="small"
                 placeholder="Nazwa sekcji grupującej..."

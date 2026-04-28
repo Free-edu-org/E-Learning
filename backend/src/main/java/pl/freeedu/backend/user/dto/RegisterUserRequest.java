@@ -2,6 +2,7 @@ package pl.freeedu.backend.user.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,6 +15,7 @@ import lombok.NoArgsConstructor;
 public class RegisterUserRequest {
 
 	@NotBlank(message = "Username is required")
+	@Size(max = 50, message = "Username must be at most 50 characters long")
 	private String username;
 
 	@NotBlank(message = "Email is required")

@@ -1,9 +1,5 @@
 import { ApiError } from "@/api/apiClient";
 
-/**
- * Extracts a user-friendly error message from an unknown thrown value.
- * Used across dashboard views (Student, Teacher, Admin).
- */
 const ERROR_TRANSLATIONS: Record<string, string> = {
   "Email is already taken": "Ten adres email jest już zajęty.",
   "email is already taken": "Ten adres email jest już zajęty.",
@@ -61,6 +57,28 @@ const ERROR_TRANSLATIONS: Record<string, string> = {
   "Theme is required": "Temat jest wymagany.",
   "Title must be at most 30 characters long":
     "Tytuł może mieć maksymalnie 30 znaków.",
+  "Theme must be at most 120 characters long":
+    "Temat może mieć maksymalnie 120 znaków.",
+  "Username must be at most 50 characters long":
+    "Nazwa użytkownika może mieć maksymalnie 50 znaków.",
+  "Name must be at most 60 characters long":
+    "Nazwa może mieć maksymalnie 60 znaków.",
+  "Description must be at most 300 characters long":
+    "Opis może mieć maksymalnie 300 znaków.",
+  "Task must be at most 300 characters long":
+    "Treść zadania może mieć maksymalnie 300 znaków.",
+  "Possible answers must be at most 1000 characters long":
+    "Lista odpowiedzi może mieć maksymalnie 1000 znaków.",
+  "Words must be at most 600 characters long":
+    "Lista słów może mieć maksymalnie 600 znaków.",
+  "Correct answer must be at most 300 characters long":
+    "Poprawna odpowiedź może mieć maksymalnie 300 znaków.",
+  "Expected text must be at most 300 characters long":
+    "Tekst do rozpoznania może mieć maksymalnie 300 znaków.",
+  "Hint must be at most 200 characters long":
+    "Podpowiedź może mieć maksymalnie 200 znaków.",
+  "Section must be at most 80 characters long":
+    "Sekcja może mieć maksymalnie 80 znaków.",
 };
 
 const ERROR_CODE_TRANSLATIONS: Record<string, string> = {
@@ -188,10 +206,6 @@ export function formatRatioPercent(
   return formatPercent((score / maxScore) * 100);
 }
 
-/**
- * Formats an ISO date string to a Polish locale medium date display.
- * Returns "Brak danych" when the value is empty/undefined.
- */
 export function formatDate(value?: string): string {
   if (!value) {
     return "Brak danych";

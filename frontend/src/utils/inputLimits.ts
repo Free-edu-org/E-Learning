@@ -1,0 +1,15 @@
+export const INPUT_LIMITS = {
+  lessonTitle: 30,
+  lessonTheme: 120,
+  username: 50,
+  groupName: 60,
+  groupDescription: 300,
+  taskText: 300,
+  taskHint: 200,
+  taskSection: 80,
+  taskAnswerText: 300,
+  taskChoiceAnswer: 120,
+  taskChoiceMaxAnswers: 8,
+  taskScatterWord: 40,
+  taskScatterMaxWords: 12,
+} as const;

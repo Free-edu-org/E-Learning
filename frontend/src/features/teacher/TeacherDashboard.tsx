@@ -65,6 +65,7 @@ import { useAuth } from "@/context/AuthContext";
 import { uiTokens } from "@/theme/uiTokens";
 import { LESSON_TITLE_MAX_LENGTH } from "./lessonEditor";
 import { getApiErrorMessage } from "@/utils/dashboardUtils";
+import { INPUT_LIMITS } from "@/utils/inputLimits";
 
 interface DialogFeedbackState {
   severity: "success" | "error" | "warning";
@@ -1005,9 +1006,14 @@ export function TeacherDashboard() {
                       onChange={(event) =>
                         setLessonDraft((current) => ({
                           ...current,
-                          theme: event.target.value,
+                          theme: event.target.value.slice(
+                            0,
+                            INPUT_LIMITS.lessonTheme,
+                          ),
                         }))
                       }
+                      inputProps={{ maxLength: INPUT_LIMITS.lessonTheme }}
+                      helperText={`${lessonDraft.theme.length}/${INPUT_LIMITS.lessonTheme}`}
                       multiline
                       minRows={3}
                       fullWidth
@@ -1246,9 +1252,14 @@ export function TeacherDashboard() {
                       onChange={(event) =>
                         setEditDraft((current) => ({
                           ...current,
-                          theme: event.target.value,
+                          theme: event.target.value.slice(
+                            0,
+                            INPUT_LIMITS.lessonTheme,
+                          ),
                         }))
                       }
+                      inputProps={{ maxLength: INPUT_LIMITS.lessonTheme }}
+                      helperText={`${editDraft.theme.length}/${INPUT_LIMITS.lessonTheme}`}
                       multiline
                       minRows={3}
                       fullWidth
