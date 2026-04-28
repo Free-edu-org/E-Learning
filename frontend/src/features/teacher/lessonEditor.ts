@@ -29,8 +29,8 @@ export const LESSON_TITLE_MAX_LENGTH = INPUT_LIMITS.lessonTitle;
 export function getLessonEditorErrorMessage(error: unknown, fallback: string) {
   if (error instanceof ApiError) {
     return getApiErrorMessage(error, fallback, {
-      title: "Tytuł",
-      theme: "Temat",
+      title: "Tytuł lekcji",
+      theme: "Temat lekcji",
     });
   }
 

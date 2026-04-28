@@ -334,6 +334,10 @@ export function TeacherDashboard() {
   const [createDialogLoading, setCreateDialogLoading] = useState(false);
   const [createDialogFeedback, setCreateDialogFeedback] =
     useState<DialogFeedbackState | null>(null);
+  const [createFieldErrors, setCreateFieldErrors] = useState<{
+    title?: string;
+    theme?: string;
+  }>({});
   const [pendingAttachmentFiles, setPendingAttachmentFiles] = useState<File[]>(
     [],
   );
@@ -349,6 +353,10 @@ export function TeacherDashboard() {
   const [editDialogLoading, setEditDialogLoading] = useState(false);
   const [editDialogFeedback, setEditDialogFeedback] =
     useState<DialogFeedbackState | null>(null);
+  const [editFieldErrors, setEditFieldErrors] = useState<{
+    title?: string;
+    theme?: string;
+  }>({});
   const [editTasksLoading, setEditTasksLoading] = useState(false);
 
   // ── Delete confirmation state ──
@@ -430,6 +438,7 @@ export function TeacherDashboard() {
   const resetCreateDialogState = () => {
     setLessonDraft(emptyLessonDraft);
     setCreateDialogFeedback(null);
+    setCreateFieldErrors({});
     setPendingAttachmentFiles([]);
     if (pendingAttachmentInputRef.current)
       pendingAttachmentInputRef.current.value = "";
@@ -437,6 +446,18 @@ export function TeacherDashboard() {
 
   const submitCreateLessonDialog = async () => {
     if (createDialogLoading) return;
+
+    const nextFieldErrors: { title?: string; theme?: string } = {};
+    if (!lessonDraft.title.trim()) {
+      nextFieldErrors.title = 'Uzupełnij pole "Tytuł lekcji".';
+    }
+    if (!lessonDraft.theme.trim()) {
+      nextFieldErrors.theme = 'Uzupełnij pole "Temat lekcji".';
+    }
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setCreateFieldErrors(nextFieldErrors);
+      return;
+    }
 
     const taskValidationError = lessonDraft.tasks
       .map((task, index) => getTaskValidationError(task, index))
@@ -450,6 +471,7 @@ export function TeacherDashboard() {
     }
 
     setCreateDialogFeedback(null);
+    setCreateFieldErrors({});
     setCreateDialogLoading(true);
     try {
       const groupIds = lessonDraft.groupIds.map((g) => g.id);
@@ -563,10 +585,23 @@ export function TeacherDashboard() {
     setEditDraft(emptyLessonDraft);
     setEditOriginalTasks([]);
     setEditDialogFeedback(null);
+    setEditFieldErrors({});
   };
 
   const submitEditLessonDialog = async () => {
     if (editDialogLoading || !editingLesson) return;
+
+    const nextFieldErrors: { title?: string; theme?: string } = {};
+    if (!editDraft.title.trim()) {
+      nextFieldErrors.title = 'Uzupełnij pole "Tytuł lekcji".';
+    }
+    if (!editDraft.theme.trim()) {
+      nextFieldErrors.theme = 'Uzupełnij pole "Temat lekcji".';
+    }
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setEditFieldErrors(nextFieldErrors);
+      return;
+    }
 
     const taskValidationError = editDraft.tasks
       .map((task, index) => getTaskValidationError(task, index))
@@ -580,6 +615,7 @@ export function TeacherDashboard() {
     }
 
     setEditDialogFeedback(null);
+    setEditFieldErrors({});
     setEditDialogLoading(true);
 
     try {
@@ -986,16 +1022,29 @@ export function TeacherDashboard() {
                       label="Tytuł lekcji"
                       value={lessonDraft.title}
                       onChange={(event) =>
-                        setLessonDraft((current) => ({
-                          ...current,
-                          title: event.target.value.slice(
+                        {
+                          const value = event.target.value.slice(
                             0,
                             LESSON_TITLE_MAX_LENGTH,
-                          ),
-                        }))
+                          );
+                          setLessonDraft((current) => ({
+                            ...current,
+                            title: value,
+                          }));
+                          setCreateFieldErrors((current) => ({
+                            ...current,
+                            title: value.trim()
+                              ? undefined
+                              : 'Uzupełnij pole "Tytuł lekcji".',
+                          }));
+                        }
                       }
                       inputProps={{ maxLength: LESSON_TITLE_MAX_LENGTH }}
-                      helperText={`${lessonDraft.title.length}/${LESSON_TITLE_MAX_LENGTH}`}
+                      error={Boolean(createFieldErrors.title)}
+                      helperText={
+                        createFieldErrors.title ??
+                        `${lessonDraft.title.length}/${LESSON_TITLE_MAX_LENGTH}`
+                      }
                       fullWidth
                     />
                   </FormField>
@@ -1004,16 +1053,29 @@ export function TeacherDashboard() {
                       label="Temat lekcji"
                       value={lessonDraft.theme}
                       onChange={(event) =>
-                        setLessonDraft((current) => ({
-                          ...current,
-                          theme: event.target.value.slice(
+                        {
+                          const value = event.target.value.slice(
                             0,
                             INPUT_LIMITS.lessonTheme,
-                          ),
-                        }))
+                          );
+                          setLessonDraft((current) => ({
+                            ...current,
+                            theme: value,
+                          }));
+                          setCreateFieldErrors((current) => ({
+                            ...current,
+                            theme: value.trim()
+                              ? undefined
+                              : 'Uzupełnij pole "Temat lekcji".',
+                          }));
+                        }
                       }
                       inputProps={{ maxLength: INPUT_LIMITS.lessonTheme }}
-                      helperText={`${lessonDraft.theme.length}/${INPUT_LIMITS.lessonTheme}`}
+                      error={Boolean(createFieldErrors.theme)}
+                      helperText={
+                        createFieldErrors.theme ??
+                        `${lessonDraft.theme.length}/${INPUT_LIMITS.lessonTheme}`
+                      }
                       multiline
                       minRows={3}
                       fullWidth
@@ -1232,16 +1294,29 @@ export function TeacherDashboard() {
                       label="Tytuł lekcji"
                       value={editDraft.title}
                       onChange={(event) =>
-                        setEditDraft((current) => ({
-                          ...current,
-                          title: event.target.value.slice(
+                        {
+                          const value = event.target.value.slice(
                             0,
                             LESSON_TITLE_MAX_LENGTH,
-                          ),
-                        }))
+                          );
+                          setEditDraft((current) => ({
+                            ...current,
+                            title: value,
+                          }));
+                          setEditFieldErrors((current) => ({
+                            ...current,
+                            title: value.trim()
+                              ? undefined
+                              : 'Uzupełnij pole "Tytuł lekcji".',
+                          }));
+                        }
                       }
                       inputProps={{ maxLength: LESSON_TITLE_MAX_LENGTH }}
-                      helperText={`${editDraft.title.length}/${LESSON_TITLE_MAX_LENGTH}`}
+                      error={Boolean(editFieldErrors.title)}
+                      helperText={
+                        editFieldErrors.title ??
+                        `${editDraft.title.length}/${LESSON_TITLE_MAX_LENGTH}`
+                      }
                       fullWidth
                     />
                   </FormField>
@@ -1250,16 +1325,29 @@ export function TeacherDashboard() {
                       label="Temat lekcji"
                       value={editDraft.theme}
                       onChange={(event) =>
-                        setEditDraft((current) => ({
-                          ...current,
-                          theme: event.target.value.slice(
+                        {
+                          const value = event.target.value.slice(
                             0,
                             INPUT_LIMITS.lessonTheme,
-                          ),
-                        }))
+                          );
+                          setEditDraft((current) => ({
+                            ...current,
+                            theme: value,
+                          }));
+                          setEditFieldErrors((current) => ({
+                            ...current,
+                            theme: value.trim()
+                              ? undefined
+                              : 'Uzupełnij pole "Temat lekcji".',
+                          }));
+                        }
                       }
                       inputProps={{ maxLength: INPUT_LIMITS.lessonTheme }}
-                      helperText={`${editDraft.theme.length}/${INPUT_LIMITS.lessonTheme}`}
+                      error={Boolean(editFieldErrors.theme)}
+                      helperText={
+                        editFieldErrors.theme ??
+                        `${editDraft.theme.length}/${INPUT_LIMITS.lessonTheme}`
+                      }
                       multiline
                       minRows={3}
                       fullWidth

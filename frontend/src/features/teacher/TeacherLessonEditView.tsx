@@ -95,6 +95,10 @@ export function TeacherLessonEditView() {
   const [tasksAvailable, setTasksAvailable] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{
+    title?: string;
+    theme?: string;
+  }>({});
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
   const [savedDraftSignature, setSavedDraftSignature] = useState<string | null>(
     null,
@@ -251,6 +255,18 @@ export function TeacherLessonEditView() {
       return;
     }
 
+    const nextFieldErrors: { title?: string; theme?: string } = {};
+    if (!draft.title.trim()) {
+      nextFieldErrors.title = 'Uzupełnij pole "Tytuł lekcji".';
+    }
+    if (!draft.theme.trim()) {
+      nextFieldErrors.theme = 'Uzupełnij pole "Temat lekcji".';
+    }
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      return;
+    }
+
     const taskValidationError = tasksAvailable
       ? draft.tasks
           .map((task, index) => getTaskValidationError(task, index))
@@ -267,6 +283,7 @@ export function TeacherLessonEditView() {
 
     setSaving(true);
     setFeedback(null);
+    setFieldErrors({});
 
     try {
       const groupIds = draft.groupIds.map((group) => group.id);
@@ -569,16 +586,29 @@ export function TeacherLessonEditView() {
                       label="Tytuł lekcji"
                       value={draft.title}
                       onChange={(event) =>
-                        setDraft((current) => ({
-                          ...current,
-                          title: event.target.value.slice(
+                        {
+                          const value = event.target.value.slice(
                             0,
                             INPUT_LIMITS.lessonTitle,
-                          ),
-                        }))
+                          );
+                          setDraft((current) => ({
+                            ...current,
+                            title: value,
+                          }));
+                          setFieldErrors((current) => ({
+                            ...current,
+                            title: value.trim()
+                              ? undefined
+                              : 'Uzupełnij pole "Tytuł lekcji".',
+                          }));
+                        }
                       }
                       inputProps={{ maxLength: INPUT_LIMITS.lessonTitle }}
-                      helperText={`${draft.title.length}/${INPUT_LIMITS.lessonTitle}`}
+                      error={Boolean(fieldErrors.title)}
+                      helperText={
+                        fieldErrors.title ??
+                        `${draft.title.length}/${INPUT_LIMITS.lessonTitle}`
+                      }
                       fullWidth
                     />
                   </FormField>
@@ -587,16 +617,29 @@ export function TeacherLessonEditView() {
                       label="Temat lekcji"
                       value={draft.theme}
                       onChange={(event) =>
-                        setDraft((current) => ({
-                          ...current,
-                          theme: event.target.value.slice(
+                        {
+                          const value = event.target.value.slice(
                             0,
                             INPUT_LIMITS.lessonTheme,
-                          ),
-                        }))
+                          );
+                          setDraft((current) => ({
+                            ...current,
+                            theme: value,
+                          }));
+                          setFieldErrors((current) => ({
+                            ...current,
+                            theme: value.trim()
+                              ? undefined
+                              : 'Uzupełnij pole "Temat lekcji".',
+                          }));
+                        }
                       }
                       inputProps={{ maxLength: INPUT_LIMITS.lessonTheme }}
-                      helperText={`${draft.theme.length}/${INPUT_LIMITS.lessonTheme}`}
+                      error={Boolean(fieldErrors.theme)}
+                      helperText={
+                        fieldErrors.theme ??
+                        `${draft.theme.length}/${INPUT_LIMITS.lessonTheme}`
+                      }
                       multiline
                       minRows={4}
                       fullWidth

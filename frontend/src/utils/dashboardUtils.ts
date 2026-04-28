@@ -144,10 +144,24 @@ function translateValidationMessage(
       const detail = part.slice(separatorIndex + 1).trim();
       const label = fieldLabels[field] ?? field;
       const translatedDetail = ERROR_TRANSLATIONS[detail] ?? detail;
+
+      if (
+        translatedDetail === "Pole jest wymagane." ||
+        translatedDetail === `${label} jest wymagany.` ||
+        translatedDetail === `${label} jest wymagana.` ||
+        translatedDetail === `${label} jest wymagane.`
+      ) {
+        return `Uzupełnij pole "${label}".`;
+      }
+
       return `${label}: ${translatedDetail}`;
     });
 
-  return `Błąd walidacji: ${parts.join(", ")}`.replaceAll(" .", ".").trim();
+  if (parts.length === 1) {
+    return parts[0];
+  }
+
+  return parts.join(" ");
 }
 
 export function getApiErrorMessage(
