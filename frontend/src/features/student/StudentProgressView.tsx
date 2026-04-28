@@ -37,6 +37,7 @@ import {
   type StudentStats,
   type StudentProgress,
 } from "@/api/studentService";
+import { userService, type UserProfile } from "@/api/userService";
 import {
   panelGridCardSx,
   panelGridCardContentSx,
@@ -59,6 +60,7 @@ export function StudentProgressView() {
 
   const [stats, setStats] = useState<StudentStats | null>(null);
   const [progress, setProgress] = useState<StudentProgress | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -74,10 +76,12 @@ export function StudentProgressView() {
 
   useEffect(() => {
     Promise.all([
+      userService.getCurrentUser(),
       studentService.getStats(),
       studentService.getProgress(),
     ])
-      .then(([nextStats, nextProgress]) => {
+      .then(([currentUser, nextStats, nextProgress]) => {
+        setUser(currentUser);
         setStats(nextStats);
         setProgress(nextProgress);
       })
@@ -110,32 +114,35 @@ export function StudentProgressView() {
         {/* ── Top bar ── */}
         <DashboardTopBar onLogout={handleLogout} />
 
-        {/* ── Back button & header ── */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 3 }}>
+        {/* ── Header (profile) ── */}
+        <DashboardHeader
+          loading={loading}
+          username={user?.username}
+          subtitle="Twoje postępy"
+          fallbackName="Uczniu"
+          user={user}
+          onUserUpdated={setUser}
+        />
+
+        {/* ── Back button (placed under profile/header) ── */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mt: 1, mb: 3 }}>
           <Button
-            variant="text"
             startIcon={<BackIcon />}
             onClick={() => navigate("/student")}
             sx={{
               textTransform: "none",
               fontWeight: 600,
+              mb: 2,
+              mt: -1,
               color: "primary.main",
-              px: 0,
-              "&:hover": {
-                bgcolor: "transparent",
-                textDecoration: "underline",
-              },
+              px: 3,
+              "&:hover": { bgcolor: "transparent", color: "text.secondary" },
             }}
           >
             Wróć do pulpitu
           </Button>
         </Box>
 
-        <DashboardHeader
-          loading={loading}
-          subtitle="Twoje postępy"
-          fallbackName="Uczniu"
-        />
 
         {error && (
           <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
@@ -227,9 +234,9 @@ export function StudentProgressView() {
             <Grid size={{ xs: 12, sm: 6, md: 4 }}>
               <StatCard
                 icon={TrendIcon}
-                title="W trakcie"
-                value={stats?.inProgressLessons ?? 0}
-                subtitle="lekcji w trakcie"
+                title="Punkty"
+                value={0} // TODO: System punktów i ich pobieranie z backendu
+                subtitle="pkt"
                 color="info"
               />
             </Grid>
