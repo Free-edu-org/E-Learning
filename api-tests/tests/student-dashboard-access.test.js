@@ -3,9 +3,9 @@ const { apiClient, setAuthToken } = require('../utils/apiClient');
 
 describe('Student Dashboard API (/api/v1/student/*)', () => {
     const uniqueId = Date.now();
-    const studentCreds = { identifier: 'jan_kowalski', password: 'student1' };
-    const teacherCreds = { identifier: 'pan_tomasz', password: 'admin1' };
-    const adminCreds = { identifier: 'admin_marek', password: 'admin1' };
+    const studentCreds = {identifier: 'jan_kowalski', password: 'student1'};
+    const teacherCreds = {identifier: 'pan_tomasz', password: 'admin1'};
+    const adminCreds = {identifier: 'admin_marek', password: 'admin1'};
 
     let studentToken;
     let teacherToken;
@@ -36,7 +36,7 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
 
     const makePdfForm = () => {
         const form = new FormData();
-        form.append('file', VALID_PDF, { filename: 'test.pdf', contentType: 'application/pdf' });
+        form.append('file', VALID_PDF, {filename: 'test.pdf', contentType: 'application/pdf'});
         return form;
     };
 
@@ -69,7 +69,7 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
 
         // Activate the lesson
         setAuthToken(adminToken);
-        res = await apiClient.patch(`/lessons/${attachmentLessonId}/status`, { isActive: true });
+        res = await apiClient.patch(`/lessons/${attachmentLessonId}/status`, {isActive: true});
         expect(res.status).toBe(204);
 
         // Upload attachment as teacher
@@ -78,7 +78,7 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
         res = await apiClient.post(
             `/lessons/${attachmentLessonId}/attachments`,
             form,
-            { headers: form.getHeaders() }
+            {headers: form.getHeaders()}
         );
         expect(res.status).toBe(201);
         attachmentId = res.data.id;
@@ -403,7 +403,7 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
             setAuthToken(attachmentStudentToken);
             const response = await apiClient.get(
                 `/lessons/${attachmentLessonId}/attachments/${attachmentId}`,
-                { responseType: 'arraybuffer' }
+                {responseType: 'arraybuffer'}
             );
             expect(response.status).toBe(200);
             expect(response.headers['content-type']).toContain('application/pdf');
@@ -426,3 +426,4 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
             expect(response.status).toBe(401);
         });
     });
+});

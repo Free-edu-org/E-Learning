@@ -1,0 +1,5 @@
+### Admin routes
+
+### Admin dashboard
+GET http://localhost:5173/admin
+Authorization: Bearer {{auth_token}}

@@ -24,6 +24,7 @@ import { TeacherLessonResultView } from "./features/teacher/TeacherLessonResultV
 import { TeacherStudentsView } from "./features/teacher/TeacherStudentsView";
 import { AdminDashboard } from "./features/admin/AdminDashboard";
 import { StudentDashboard } from "./features/student/StudentDashboard";
+import { StudentProgressView } from "./features/student/StudentProgressView";
 import { LessonSolver } from "./features/student/LessonSolver";
 import { StudentLessonResultView } from "./features/student/StudentLessonResultView";
 
@@ -122,6 +123,10 @@ function App() {
 
                 <Route element={<ProtectedRoute allowedRoles={["STUDENT"]} />}>
                   <Route path="/student" element={<StudentDashboard />} />
+                  <Route
+                    path="/student/progress"
+                    element={<StudentProgressView />}
+                  />
                   <Route
                     path="/student/lessons/:lessonId"
                     element={<LessonSolver />}
