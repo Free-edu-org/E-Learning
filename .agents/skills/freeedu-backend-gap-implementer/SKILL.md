@@ -13,6 +13,7 @@ Dowiezc brakujacy backend tak, aby:
 - pasowal do obecnej architektury projektu,
 - nie obchodzil istniejacych zasad security,
 - byl spojny z kontraktem API i globalna obsluga bledow,
+- zawieral techniczne logowanie operacji i bledow,
 - zawieral sensowna walidacje i testowalny flow end-to-end.
 
 ## Zasada glowna
@@ -66,6 +67,15 @@ Dowiezc brakujacy backend tak, aby:
 - korzystaj z istniejacych repozytoriow i encji; jesli potrzeba nowego zapytania, dopisz je w repo zgodnie z obecnym stylem
 - jesli potrzebna jest nowa tabela lub relacja, dodaj migracje zamiast obchodzenia modelu
 
+6. Wdroż logowanie techniczne
+- uzywaj `@Slf4j` z Lombok
+- loguj start i sukces waznych operacji biznesowych/CRUD (poziom `INFO` lub `DEBUG`)
+- loguj bledy walidacji, nieudane proby autoryzacji i odmowy dostepu (poziom `WARN`)
+- loguj bledy integracji i wyjatki nieoczekiwane (poziom `ERROR`)
+- upewnij sie, ze logi nie zawieraja hasel ani tokenow
+- korzystaj z technicznych identyfikatorow (ID, nazwy plikow, nazwy grup) dla ulatwienia diagnostyki
+- pamietaj o spojnosci z `TechnicalLoggingFilter` i MDC (correlationId)
+
 6. Zachowaj spojny model bledow
 - preferuj dedykowane exceptiony domenowe i enum error code, jak w `usergroup` lub `lesson`
 - wszystkie spodziewane bledy maja konczyc jako `ProblemDetail` z `code`
@@ -110,6 +120,11 @@ Dowiezc brakujacy backend tak, aby:
 
 - Kontrakt:
 - `api-contract.md` ma odzwierciedlac realny kod, nie odwrotnie
+
+- Logowanie:
+- kazdy serwis i security handler powinien miec `@Slf4j`
+- logi powinny umozliwiac odtworzenie flow bez body requestu
+- bledy krytyczne zawsze z pelnym stacktracem (log.error(..., ex))
 
 ## Backend Gap Decision Rules
 

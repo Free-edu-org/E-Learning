@@ -61,7 +61,10 @@ Uzyj tego skilla, gdy celem jest utrzymanie dokumentacji i testow API 1:1 z aktu
 - owner vs non-owner
 - admin-only i teacher-only endpoints
 
-6. Pokryj edge/corner cases:
+6. Pokryj aspekty operacyjne (logowanie):
+- sprawdz, czy kazdy response zawiera naglowek `X-Correlation-Id`
+- sprawdz, czy bledy techniczne (np. expired token) zwracaja konkretny `code` (np. `TOKEN_EXPIRED`) umozliwiajacy diagnostyke w logach
+- sprawdz, czy bledy walidacji i security nie ujawniaja nadmiarowych danych
 - validation boundaries (empty, whitespace, malformed, max length)
 - duplicate resources i konflikty (409)
 - non-existent resources (404)
