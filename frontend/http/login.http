@@ -1,13 +1,6 @@
-### Login (used by route /login)
-POST http://localhost:5173/auth/login
+### Login site
+GET http://localhost:5173/login
 Content-Type: application/json
 
-{
-  "identifier": "student@szkola.pl",
-  "password": "password"
-}
-
-### Example: store token for subsequent requests (IDE that supports it)
-> {% client.global.set("auth_token", response.body.token) %}
 
 

@@ -1,27 +1,5 @@
-### Admin routes (used by /admin)
+### Admin routes
 
-### Admin dashboard stats
-GET http://localhost:5173/admin/stats
+### Admin dashboard
+GET http://localhost:5173/admin
 Authorization: Bearer {{auth_token}}
-
-### List teachers
-GET http://localhost:5173/admin/teachers
-Authorization: Bearer {{auth_token}}
-
-### List students (admin)
-GET http://localhost:5173/admin/students
-Authorization: Bearer {{auth_token}}
-
-### Create admin student
-POST http://localhost:5173/admin/students
-Content-Type: application/json
-Authorization: Bearer {{auth_token}}
-
-{
-  "username": "student_admin_created",
-  "email": "student.admin@example.com",
-  "password": "password123",
-  "groupId": 1
-}
-
-
