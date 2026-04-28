@@ -214,106 +214,6 @@ function ResultDialog({ lesson, onClose, onOpenDetails }: ResultDialogProps) {
   );
 }
 
-// ── Progress Dialog ───────────────────────────────────────────────────────────
-
-interface ProgressDialogProps {
-  progress: StudentProgress | null;
-  stats: StudentStats | null;
-  onClose: () => void;
-}
-
-function ProgressDialog({ progress, stats, onClose }: ProgressDialogProps) {
-  const theme = useTheme();
-  const progressPercent =
-    stats && stats.totalLessons > 0
-      ? Math.round((stats.completedLessons / stats.totalLessons) * 100)
-      : 0;
-
-  return (
-    <Dialog
-      open
-      onClose={onClose}
-      maxWidth="xs"
-      fullWidth
-      PaperProps={{ sx: { borderRadius: 3 } }}
-    >
-      <DialogTitle
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          pb: 1,
-        }}
-      >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <InsightsIcon sx={{ color: "primary.main" }} />
-          <Typography variant="h6" fontWeight={700}>
-            Twoje postępy
-          </Typography>
-        </Box>
-        <IconButton size="small" onClick={onClose}>
-          <CloseIcon fontSize="small" />
-        </IconButton>
-      </DialogTitle>
-      <DialogContent>
-        <Stack spacing={2} sx={{ pt: 1 }}>
-          <Box
-            sx={{
-              ...panelSurfaceSx,
-              p: 2,
-              textAlign: "center",
-              bgcolor: alpha(theme.palette.primary.main, 0.06),
-            }}
-          >
-            <Typography variant="h3" fontWeight={800} color="primary.main">
-              {progressPercent}%
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              ogólny postęp
-            </Typography>
-          </Box>
-
-          <Stack direction="row" spacing={1}>
-            <Chip
-              icon={<CompletedIcon />}
-              label={`Ukończono: ${progress?.completedLessons ?? 0}`}
-              color="success"
-              variant="outlined"
-              sx={{ flex: 1, justifyContent: "center" }}
-            />
-          </Stack>
-
-          {stats && (
-            <Box sx={{ ...panelSurfaceSx, p: 1.5 }}>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                display="block"
-                sx={{ mb: 0.5 }}
-              >
-                Średni wynik
-              </Typography>
-              <Typography variant="body1" fontWeight={700}>
-                {stats.averageScore}%
-              </Typography>
-            </Box>
-          )}
-
-          {progress?.summary && (
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ lineHeight: 1.7 }}
-            >
-              {progress.summary}
-            </Typography>
-          )}
-        </Stack>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 // ── Attachment Dialog ─────────────────────────────────────────────────────────
 
 function formatBytes(bytes: number): string {
@@ -475,7 +375,6 @@ export function StudentDashboard() {
 
   // Dialogs
   const [resultLesson, setResultLesson] = useState<StudentLesson | null>(null);
-  const [progressOpen, setProgressOpen] = useState(false);
   const [confirmStartLesson, setConfirmStartLesson] =
     useState<StudentLesson | null>(null);
   const [attachmentLesson, setAttachmentLesson] =
@@ -704,7 +603,7 @@ export function StudentDashboard() {
                         variant="outlined"
                         size="small"
                         startIcon={<InsightsIcon />}
-                        onClick={() => setProgressOpen(true)}
+                        onClick={() => navigate("/student/progress")}
                         sx={{ ...panelFooterButtonSx }}
                       >
                         Szczegóły postępów
@@ -1093,13 +992,6 @@ export function StudentDashboard() {
           onDownload={(lessonId, att) =>
             void handleDownloadAttachment(lessonId, att)
           }
-        />
-      )}
-      {progressOpen && (
-        <ProgressDialog
-          progress={progress}
-          stats={stats}
-          onClose={() => setProgressOpen(false)}
         />
       )}
 
