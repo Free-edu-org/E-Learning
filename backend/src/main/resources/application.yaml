@@ -46,3 +46,16 @@ application:
 
 server:
   port: 8080
+
+logging:
+  level:
+    root: "${LOG_LEVEL_ROOT:INFO}"
+    pl.freeedu: "${LOG_LEVEL_FREEEDU:DEBUG}"
+  file:
+    path: "${LOG_PATH:logs}"
+    name: "${LOG_FILE:freeedu.log}"
+  logback:
+    rollingpolicy:
+      max-file-size: "${LOG_MAX_FILE_SIZE:10MB}"
+      max-history: "${LOG_MAX_HISTORY:30}"
+      total-size-cap: "${LOG_TOTAL_SIZE_CAP:1GB}"
