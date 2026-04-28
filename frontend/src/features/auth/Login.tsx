@@ -23,6 +23,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useAppTheme } from "../../context/ThemeContext";
 import { authService } from "@/api/authService.ts";
 import { ApiError } from "@/api/apiClient.ts";
+import { getApiErrorMessage } from "@/utils/dashboardUtils";
 
 export function Login() {
   const navigate = useNavigate();
@@ -78,11 +79,7 @@ export function Login() {
       navigate("/");
     } catch (err: unknown) {
       if (err instanceof ApiError) {
-        if (err.problem.code === "INVALID_CREDENTIALS") {
-          setErrorMsg("Nieprawidłowy login/email lub hasło.");
-        } else {
-          setErrorMsg(err.problem.detail || "Wystąpił błąd logowania.");
-        }
+        setErrorMsg(getApiErrorMessage(err, "Wystąpił błąd logowania."));
       } else if (err instanceof Error && err.message === "NETWORK_ERROR") {
         setErrorMsg("Brak połączenia z serwerem. Spróbuj ponownie później.");
       } else {

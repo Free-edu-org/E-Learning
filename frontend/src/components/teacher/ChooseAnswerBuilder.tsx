@@ -15,6 +15,7 @@ import {
   RadioButtonUnchecked as UncheckedIcon,
 } from "@mui/icons-material";
 import { uiTokens } from "@/theme/uiTokens";
+import { INPUT_LIMITS } from "@/utils/inputLimits";
 
 interface ChooseAnswerBuilderProps {
   possibleAnswers: string;
@@ -35,8 +36,8 @@ export function ChooseAnswerBuilder({
   const correctIndex = correctAnswer !== "" ? Number(correctAnswer) : -1;
 
   const addAnswer = () => {
-    const trimmed = inputValue.trim();
-    if (!trimmed) return;
+    const trimmed = inputValue.trim().slice(0, INPUT_LIMITS.taskChoiceAnswer);
+    if (!trimmed || answers.length >= INPUT_LIMITS.taskChoiceMaxAnswers) return;
     const updated = [...answers, trimmed];
     onChange(updated.join("|"), correctAnswer);
     setInputValue("");
@@ -129,7 +130,13 @@ export function ChooseAnswerBuilder({
           size="small"
           placeholder="Wpisz odpowiedź i dodaj..."
           value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
+          onChange={(e) =>
+            setInputValue(
+              e.target.value.slice(0, INPUT_LIMITS.taskChoiceAnswer),
+            )
+          }
+          inputProps={{ maxLength: INPUT_LIMITS.taskChoiceAnswer }}
+          helperText={`${inputValue.length}/${INPUT_LIMITS.taskChoiceAnswer} • ${answers.length}/${INPUT_LIMITS.taskChoiceMaxAnswers} odpowiedzi`}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
@@ -142,7 +149,10 @@ export function ChooseAnswerBuilder({
         <IconButton
           onClick={addAnswer}
           color="primary"
-          disabled={!inputValue.trim()}
+          disabled={
+            !inputValue.trim() ||
+            answers.length >= INPUT_LIMITS.taskChoiceMaxAnswers
+          }
           sx={{
             transition: "transform 0.15s ease",
             "&:hover": { transform: "scale(1.1)" },
@@ -155,6 +165,11 @@ export function ChooseAnswerBuilder({
       {answers.length > 0 && correctIndex < 0 && (
         <Typography variant="caption" color="warning.main">
           Kliknij na odpowiedź, aby oznaczyć ją jako poprawną.
+        </Typography>
+      )}
+      {answers.length >= INPUT_LIMITS.taskChoiceMaxAnswers && (
+        <Typography variant="caption" color="text.secondary">
+          Osiągnięto limit {INPUT_LIMITS.taskChoiceMaxAnswers} odpowiedzi.
         </Typography>
       )}
     </Stack>

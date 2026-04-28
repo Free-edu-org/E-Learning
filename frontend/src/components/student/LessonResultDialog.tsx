@@ -15,6 +15,7 @@ import {
   AppDialogFooter,
 } from "@/components/ui/dialog/AppDialog";
 import { panelSurfaceSx } from "@/components/ui/panel/panelStyles";
+import { formatRatioPercent } from "@/utils/dashboardUtils";
 
 interface LessonResultDialogProps {
   open: boolean;
@@ -34,11 +35,6 @@ export function LessonResultDialog({
   const theme = useTheme();
 
   if (!result) return null;
-
-  const percent =
-    result.maxScore > 0
-      ? Math.round((result.score / result.maxScore) * 100)
-      : 0;
 
   const correctCount = result.details.filter((d) => d.isCorrect).length;
   const incorrectCount = result.details.length - correctCount;
@@ -73,7 +69,7 @@ export function LessonResultDialog({
           }}
         >
           <Typography variant="h3" fontWeight={800} color="success.main">
-            {percent}%
+            {formatRatioPercent(result.score, result.maxScore)}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
             {result.score} / {result.maxScore} punktów

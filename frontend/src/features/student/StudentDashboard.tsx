@@ -56,7 +56,7 @@ import {
 } from "@/components/ui/panel/panelStyles";
 import { UserAvatar } from "@/components/ui/avatar/UserAvatar";
 import { useAuth } from "@/context/AuthContext";
-import { getErrorMessage } from "@/utils/dashboardUtils";
+import { formatPercent, getErrorMessage } from "@/utils/dashboardUtils";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -179,7 +179,7 @@ function ResultDialog({ lesson, onClose, onOpenDetails }: ResultDialogProps) {
           }}
         >
           <Typography variant="h3" fontWeight={800} color="success.main">
-            {lesson.resultPercent}%
+            {formatPercent(lesson.resultPercent)}
           </Typography>
           {lesson.score != null && lesson.maxScore != null && (
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
@@ -455,7 +455,7 @@ export function StudentDashboard() {
 
   const progressPercent =
     stats && stats.totalLessons > 0
-      ? Math.round((stats.completedLessons / stats.totalLessons) * 100)
+      ? (stats.completedLessons / stats.totalLessons) * 100
       : 0;
 
   const displayedLessons = useMemo(() => {
@@ -527,7 +527,7 @@ export function StudentDashboard() {
                   ? "Zacznij od pierwszej lekcji — każdy krok się liczy!"
                   : progressPercent === 100
                     ? "Świetnie! Ukończyłeś wszystkie przypisane lekcje 🎉"
-                    : `Ukończyłeś ${progressPercent}% przypisanych lekcji — tak trzymaj!`}
+                    : `Ukończyłeś ${formatPercent(progressPercent)} przypisanych lekcji — tak trzymaj!`}
               </Typography>
               {progress && (
                 <Typography variant="body2" sx={{ opacity: 0.9 }}>
@@ -547,7 +547,7 @@ export function StudentDashboard() {
               }}
             >
               <Typography variant="h4" fontWeight={800}>
-                {progressPercent}%
+                {formatPercent(progressPercent)}
               </Typography>
               <Typography variant="caption" sx={{ opacity: 0.85 }}>
                 ukończono
@@ -807,7 +807,7 @@ export function StudentDashboard() {
                             fontWeight={700}
                             color="success.main"
                           >
-                            {lesson.resultPercent}%
+                            {formatPercent(lesson.resultPercent)}
                           </Typography>
                         </Box>
                       )}

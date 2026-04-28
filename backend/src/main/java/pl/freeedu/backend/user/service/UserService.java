@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.stream.Stream;
 import java.util.Set;
 import java.util.function.BiFunction;
 import org.springframework.http.codec.multipart.FilePart;
@@ -152,16 +153,24 @@ public class UserService {
 				case "image/png" -> "png";
 				default -> "bin";
 			};
-			String fileName = id + "." + extension;
+			String fileName = id + "-" + System.currentTimeMillis() + "." + extension;
 			Path dir = Paths.get(AVATAR_DIR);
 			Path filePath = dir.resolve(fileName);
 
 			return Mono.fromCallable(() -> {
 				try {
 					Files.createDirectories(dir);
-					// Delete previous avatar files for this user (any extension)
-					for (String ext : new String[]{"jpg", "png"}) {
-						Files.deleteIfExists(dir.resolve(id + "." + ext));
+					try (Stream<Path> files = Files.list(dir)) {
+						files.filter(path -> {
+							String name = path.getFileName().toString();
+							return name.startsWith(id + ".") || name.startsWith(id + "-");
+						}).forEach(path -> {
+							try {
+								Files.deleteIfExists(path);
+							} catch (IOException e) {
+								throw new RuntimeException("Failed to delete previous avatar file", e);
+							}
+						});
 					}
 					return filePath;
 				} catch (IOException e) {

@@ -70,66 +70,23 @@ import {
 } from "@/components/ui/panel/panelStyles";
 import { UserAvatar } from "@/components/ui/avatar/UserAvatar";
 import { uiTokens } from "@/theme/uiTokens";
+import { getApiErrorMessage } from "@/utils/dashboardUtils";
+import { INPUT_LIMITS } from "@/utils/inputLimits";
 
 type DialogFeedbackState = {
   severity: "success" | "error" | "warning" | "info";
   message: string;
 };
 
-const validationMessageTranslations: Record<string, string> = {
-  "Username is required": "Nazwa użytkownika jest wymagana.",
-  "Email is required": "E-mail jest wymagany.",
-  "Invalid email format": "Podaj poprawny adres e-mail.",
-  "Group ID is required": "Grupa jest wymagana.",
-  "Password is required": "Hasło jest wymagane.",
-  "Name is required": "Nazwa grupy jest wymagana.",
-  "must not be blank": "Pole jest wymagane.",
-};
-
 const operationErrorMessages: Record<string, string> = {
   EMAIL_ALREADY_TAKEN: "Ten adres e-mail jest już zajęty.",
   USERNAME_ALREADY_TAKEN: "Ta nazwa użytkownika jest już zajęta.",
   USER_GROUP_NOT_FOUND: "Wybrana grupa nie istnieje.",
-  INVALID_ROLE_FOR_GROUP: "Wskazana grupa nie należy do Twojego konta.",
+  INVALID_ROLE_FOR_GROUP:
+    "Do grupy można przypisać tylko użytkownika z rolą ucznia.",
   GROUP_NAME_ALREADY_EXISTS: "Grupa o tej nazwie już istnieje.",
   STUDENT_ALREADY_IN_GROUP: "Uczeń jest już przypisany do grupy.",
 };
-
-function translateBackendMessage(message: string) {
-  let translated = message;
-  for (const [source, target] of Object.entries(
-    validationMessageTranslations,
-  )) {
-    translated = translated.replaceAll(source, target);
-  }
-
-  if (translated.startsWith("Validation failed:")) {
-    const rawDetails = translated.replace("Validation failed:", "").trim();
-    const fieldLabels: Record<string, string> = {
-      username: "Nazwa użytkownika",
-      email: "E-mail",
-      password: "Hasło",
-      groupId: "Grupa",
-      name: "Nazwa",
-      description: "Opis",
-    };
-    const parts = rawDetails
-      .split(",")
-      .map((part) => part.trim())
-      .filter(Boolean)
-      .map((part) => {
-        const separatorIndex = part.indexOf(":");
-        if (separatorIndex === -1) return part;
-        const field = part.slice(0, separatorIndex).trim();
-        const detail = part.slice(separatorIndex + 1).trim();
-        const label = fieldLabels[field] ?? field;
-        return `${label}: ${detail}`;
-      });
-    return `Błąd walidacji: ${parts.join(", ")}`.replaceAll(" .", ".").trim();
-  }
-
-  return translated;
-}
 
 const getOperationErrorMessage = (error: unknown, fallback: string) => {
   if (error instanceof ApiError) {
@@ -137,9 +94,14 @@ const getOperationErrorMessage = (error: unknown, fallback: string) => {
     if (code && operationErrorMessages[code]) {
       return operationErrorMessages[code];
     }
-    return error.problem.detail
-      ? translateBackendMessage(error.problem.detail)
-      : fallback;
+    return getApiErrorMessage(error, fallback, {
+      username: "Nazwa użytkownika",
+      email: "E-mail",
+      password: "Hasło",
+      groupId: "Grupa",
+      name: "Nazwa",
+      description: "Opis",
+    });
   }
   if (error instanceof Error && error.message === "NETWORK_ERROR") {
     return "Brak połączenia z serwerem.";
@@ -763,9 +725,7 @@ export function TeacherStudentsView() {
                           variant="body1"
                           fontWeight={800}
                           sx={{
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
+                            overflowWrap: "anywhere",
                           }}
                         >
                           {group.name}
@@ -774,9 +734,7 @@ export function TeacherStudentsView() {
                           variant="body2"
                           color="text.secondary"
                           sx={{
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
+                            overflowWrap: "anywhere",
                           }}
                         >
                           {group.description || "Brak opisu grupy."}
@@ -959,9 +917,14 @@ export function TeacherStudentsView() {
                     onChange={(event) =>
                       setCreateStudentDraft((draft) => ({
                         ...draft,
-                        username: event.target.value,
+                        username: event.target.value.slice(
+                          0,
+                          INPUT_LIMITS.username,
+                        ),
                       }))
                     }
+                    inputProps={{ maxLength: INPUT_LIMITS.username }}
+                    helperText={`${createStudentDraft.username.length}/${INPUT_LIMITS.username}`}
                     fullWidth
                     size="small"
                     disabled={createStudentLoading}
@@ -1085,9 +1048,14 @@ export function TeacherStudentsView() {
                     onChange={(event) =>
                       setEditStudentDraft((draft) => ({
                         ...draft,
-                        username: event.target.value,
+                        username: event.target.value.slice(
+                          0,
+                          INPUT_LIMITS.username,
+                        ),
                       }))
                     }
+                    inputProps={{ maxLength: INPUT_LIMITS.username }}
+                    helperText={`${editStudentDraft.username.length}/${INPUT_LIMITS.username}`}
                     fullWidth
                     size="small"
                     disabled={editStudentLoading}
@@ -1191,9 +1159,14 @@ export function TeacherStudentsView() {
                     onChange={(event) =>
                       setCreateGroupDraft((draft) => ({
                         ...draft,
-                        name: event.target.value,
+                        name: event.target.value.slice(
+                          0,
+                          INPUT_LIMITS.groupName,
+                        ),
                       }))
                     }
+                    inputProps={{ maxLength: INPUT_LIMITS.groupName }}
+                    helperText={`${createGroupDraft.name.length}/${INPUT_LIMITS.groupName}`}
                     fullWidth
                     size="small"
                     disabled={createGroupLoading}
@@ -1206,9 +1179,14 @@ export function TeacherStudentsView() {
                     onChange={(event) =>
                       setCreateGroupDraft((draft) => ({
                         ...draft,
-                        description: event.target.value,
+                        description: event.target.value.slice(
+                          0,
+                          INPUT_LIMITS.groupDescription,
+                        ),
                       }))
                     }
+                    inputProps={{ maxLength: INPUT_LIMITS.groupDescription }}
+                    helperText={`${createGroupDraft.description.length}/${INPUT_LIMITS.groupDescription}`}
                     fullWidth
                     size="small"
                     minRows={3}

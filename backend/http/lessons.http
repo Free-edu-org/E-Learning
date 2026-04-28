@@ -31,6 +31,13 @@ Authorization: Bearer {{auth_token}}
 
 { "isActive": false }
 
+### Activate lesson without tasks (expect 400 LESSON_CANNOT_BE_ACTIVATED_WITHOUT_TASKS)
+PATCH http://localhost:8080/api/v1/lessons/999/status
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{ "isActive": true }
+
 ### Delete lesson (requires ADMIN or lesson owner TEACHER)
 DELETE http://localhost:8080/api/v1/lessons/1
 Authorization: Bearer {{auth_token}}
@@ -75,6 +82,16 @@ Authorization: Bearer {{auth_token}}
 {
   "title": "",
   "theme": ""
+}
+
+### Create lesson with too long title (expect 400)
+POST http://localhost:8080/api/v1/lessons
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "title": "This lesson title is definitely longer than thirty characters",
+  "theme": "Grammar"
 }
 
 ### Create lesson without auth (expect 401)
