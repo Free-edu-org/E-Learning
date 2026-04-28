@@ -142,11 +142,15 @@ export function LessonCard({
               variant="body2"
               fontWeight={700}
               color="primary.main"
-              noWrap
+              sx={{ overflowWrap: "anywhere" }}
             >
               {lesson.title}
             </Typography>
-            <Typography variant="caption" color="text.secondary" noWrap>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ overflowWrap: "anywhere" }}
+            >
               {lesson.theme}
             </Typography>
           </Box>
@@ -249,13 +253,17 @@ export function LessonCard({
             variant="body1"
             fontWeight={700}
             color="primary.main"
-            sx={{ lineHeight: 1.4 }}
+            sx={{ lineHeight: 1.4, overflowWrap: "anywhere" }}
           >
             {lesson.title}
           </Typography>
         </Box>
 
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ mb: 1.5, overflowWrap: "anywhere" }}
+        >
           {lesson.theme}
         </Typography>
 

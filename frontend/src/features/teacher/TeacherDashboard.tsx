@@ -63,6 +63,9 @@ import { DashboardTopBar } from "@/components/ui/panel/DashboardTopBar";
 import { panelFooterButtonSx } from "@/components/ui/panel/panelStyles";
 import { useAuth } from "@/context/AuthContext";
 import { uiTokens } from "@/theme/uiTokens";
+import { LESSON_TITLE_MAX_LENGTH } from "./lessonEditor";
+import { getApiErrorMessage, formatPercent } from "@/utils/dashboardUtils";
+import { INPUT_LIMITS } from "@/utils/inputLimits";
 
 interface DialogFeedbackState {
   severity: "success" | "error" | "warning";
@@ -83,48 +86,12 @@ const emptyLessonDraft: LessonDraft = {
   tasks: [],
 };
 
-const validationMessageTranslations: Record<string, string> = {
-  "Title is required": "Tytuł jest wymagany.",
-  "Theme is required": "Temat jest wymagany.",
-  "must not be blank": "Pole jest wymagane.",
-};
-
-function translateBackendMessage(message: string) {
-  let translated = message;
-  for (const [source, target] of Object.entries(
-    validationMessageTranslations,
-  )) {
-    translated = translated.replaceAll(source, target);
-  }
-
-  if (translated.startsWith("Validation failed:")) {
-    const rawDetails = translated.replace("Validation failed:", "").trim();
-    const fieldLabels: Record<string, string> = {
-      title: "Tytuł",
-      theme: "Temat",
-    };
-    const parts = rawDetails
-      .split(",")
-      .map((part) => part.trim())
-      .filter(Boolean)
-      .map((part) => {
-        const separatorIndex = part.indexOf(":");
-        if (separatorIndex === -1) return part;
-        const field = part.slice(0, separatorIndex).trim();
-        const detail = part.slice(separatorIndex + 1).trim();
-        const label = fieldLabels[field] ?? field;
-        return `${label}: ${detail}`;
-      });
-    return `Błąd walidacji: ${parts.join(", ")}`.replaceAll(" .", ".").trim();
-  }
-
-  return translated;
-}
-
 function getErrorMessage(error: unknown, fallback: string) {
   if (error instanceof ApiError) {
-    const message = error.problem.detail || error.problem.title;
-    return message ? translateBackendMessage(message) : fallback;
+    return getApiErrorMessage(error, fallback, {
+      title: "Tytuł",
+      theme: "Temat",
+    });
   }
   if (error instanceof Error && error.message === "NETWORK_ERROR") {
     return "Brak połączenia z serwerem.";
@@ -367,6 +334,10 @@ export function TeacherDashboard() {
   const [createDialogLoading, setCreateDialogLoading] = useState(false);
   const [createDialogFeedback, setCreateDialogFeedback] =
     useState<DialogFeedbackState | null>(null);
+  const [createFieldErrors, setCreateFieldErrors] = useState<{
+    title?: string;
+    theme?: string;
+  }>({});
   const [pendingAttachmentFiles, setPendingAttachmentFiles] = useState<File[]>(
     [],
   );
@@ -382,6 +353,10 @@ export function TeacherDashboard() {
   const [editDialogLoading, setEditDialogLoading] = useState(false);
   const [editDialogFeedback, setEditDialogFeedback] =
     useState<DialogFeedbackState | null>(null);
+  const [editFieldErrors, setEditFieldErrors] = useState<{
+    title?: string;
+    theme?: string;
+  }>({});
   const [editTasksLoading, setEditTasksLoading] = useState(false);
 
   // ── Delete confirmation state ──
@@ -463,6 +438,7 @@ export function TeacherDashboard() {
   const resetCreateDialogState = () => {
     setLessonDraft(emptyLessonDraft);
     setCreateDialogFeedback(null);
+    setCreateFieldErrors({});
     setPendingAttachmentFiles([]);
     if (pendingAttachmentInputRef.current)
       pendingAttachmentInputRef.current.value = "";
@@ -470,6 +446,18 @@ export function TeacherDashboard() {
 
   const submitCreateLessonDialog = async () => {
     if (createDialogLoading) return;
+
+    const nextFieldErrors: { title?: string; theme?: string } = {};
+    if (!lessonDraft.title.trim()) {
+      nextFieldErrors.title = 'Uzupełnij pole "Tytuł lekcji".';
+    }
+    if (!lessonDraft.theme.trim()) {
+      nextFieldErrors.theme = 'Uzupełnij pole "Temat lekcji".';
+    }
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setCreateFieldErrors(nextFieldErrors);
+      return;
+    }
 
     const taskValidationError = lessonDraft.tasks
       .map((task, index) => getTaskValidationError(task, index))
@@ -483,6 +471,7 @@ export function TeacherDashboard() {
     }
 
     setCreateDialogFeedback(null);
+    setCreateFieldErrors({});
     setCreateDialogLoading(true);
     try {
       const groupIds = lessonDraft.groupIds.map((g) => g.id);
@@ -596,10 +585,23 @@ export function TeacherDashboard() {
     setEditDraft(emptyLessonDraft);
     setEditOriginalTasks([]);
     setEditDialogFeedback(null);
+    setEditFieldErrors({});
   };
 
   const submitEditLessonDialog = async () => {
     if (editDialogLoading || !editingLesson) return;
+
+    const nextFieldErrors: { title?: string; theme?: string } = {};
+    if (!editDraft.title.trim()) {
+      nextFieldErrors.title = 'Uzupełnij pole "Tytuł lekcji".';
+    }
+    if (!editDraft.theme.trim()) {
+      nextFieldErrors.theme = 'Uzupełnij pole "Temat lekcji".';
+    }
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setEditFieldErrors(nextFieldErrors);
+      return;
+    }
 
     const taskValidationError = editDraft.tasks
       .map((task, index) => getTaskValidationError(task, index))
@@ -613,6 +615,7 @@ export function TeacherDashboard() {
     }
 
     setEditDialogFeedback(null);
+    setEditFieldErrors({});
     setEditDialogLoading(true);
 
     try {
@@ -719,7 +722,7 @@ export function TeacherDashboard() {
       // Refresh stats only (active count changed)
       const s = await lessonService.getTeacherStats();
       setStats(s);
-    } catch {
+    } catch (error) {
       // Revert on failure
       setLessons((prev) =>
         prev.map((l) =>
@@ -727,7 +730,10 @@ export function TeacherDashboard() {
         ),
       );
       setSnackbar({
-        message: "Nie udało się zmienić statusu lekcji.",
+        message: getErrorMessage(
+          error,
+          "Nie udało się zmienić statusu lekcji.",
+        ),
         severity: "error",
       });
     }
@@ -877,7 +883,7 @@ export function TeacherDashboard() {
             />
             <StatsCard
               label="Średnia wyników"
-              value={`${stats?.avgScore ?? 0}%`}
+              value={formatPercent(stats?.avgScore)}
             />
           </Box>
         )}
@@ -1015,11 +1021,27 @@ export function TeacherDashboard() {
                     <TextField
                       label="Tytuł lekcji"
                       value={lessonDraft.title}
-                      onChange={(event) =>
+                      onChange={(event) => {
+                        const value = event.target.value.slice(
+                          0,
+                          LESSON_TITLE_MAX_LENGTH,
+                        );
                         setLessonDraft((current) => ({
                           ...current,
-                          title: event.target.value,
-                        }))
+                          title: value,
+                        }));
+                        setCreateFieldErrors((current) => ({
+                          ...current,
+                          title: value.trim()
+                            ? undefined
+                            : 'Uzupełnij pole "Tytuł lekcji".',
+                        }));
+                      }}
+                      inputProps={{ maxLength: LESSON_TITLE_MAX_LENGTH }}
+                      error={Boolean(createFieldErrors.title)}
+                      helperText={
+                        createFieldErrors.title ??
+                        `${lessonDraft.title.length}/${LESSON_TITLE_MAX_LENGTH}`
                       }
                       fullWidth
                     />
@@ -1028,11 +1050,27 @@ export function TeacherDashboard() {
                     <TextField
                       label="Temat lekcji"
                       value={lessonDraft.theme}
-                      onChange={(event) =>
+                      onChange={(event) => {
+                        const value = event.target.value.slice(
+                          0,
+                          INPUT_LIMITS.lessonTheme,
+                        );
                         setLessonDraft((current) => ({
                           ...current,
-                          theme: event.target.value,
-                        }))
+                          theme: value,
+                        }));
+                        setCreateFieldErrors((current) => ({
+                          ...current,
+                          theme: value.trim()
+                            ? undefined
+                            : 'Uzupełnij pole "Temat lekcji".',
+                        }));
+                      }}
+                      inputProps={{ maxLength: INPUT_LIMITS.lessonTheme }}
+                      error={Boolean(createFieldErrors.theme)}
+                      helperText={
+                        createFieldErrors.theme ??
+                        `${lessonDraft.theme.length}/${INPUT_LIMITS.lessonTheme}`
                       }
                       multiline
                       minRows={3}
@@ -1251,11 +1289,27 @@ export function TeacherDashboard() {
                     <TextField
                       label="Tytuł lekcji"
                       value={editDraft.title}
-                      onChange={(event) =>
+                      onChange={(event) => {
+                        const value = event.target.value.slice(
+                          0,
+                          LESSON_TITLE_MAX_LENGTH,
+                        );
                         setEditDraft((current) => ({
                           ...current,
-                          title: event.target.value,
-                        }))
+                          title: value,
+                        }));
+                        setEditFieldErrors((current) => ({
+                          ...current,
+                          title: value.trim()
+                            ? undefined
+                            : 'Uzupełnij pole "Tytuł lekcji".',
+                        }));
+                      }}
+                      inputProps={{ maxLength: LESSON_TITLE_MAX_LENGTH }}
+                      error={Boolean(editFieldErrors.title)}
+                      helperText={
+                        editFieldErrors.title ??
+                        `${editDraft.title.length}/${LESSON_TITLE_MAX_LENGTH}`
                       }
                       fullWidth
                     />
@@ -1264,11 +1318,27 @@ export function TeacherDashboard() {
                     <TextField
                       label="Temat lekcji"
                       value={editDraft.theme}
-                      onChange={(event) =>
+                      onChange={(event) => {
+                        const value = event.target.value.slice(
+                          0,
+                          INPUT_LIMITS.lessonTheme,
+                        );
                         setEditDraft((current) => ({
                           ...current,
-                          theme: event.target.value,
-                        }))
+                          theme: value,
+                        }));
+                        setEditFieldErrors((current) => ({
+                          ...current,
+                          theme: value.trim()
+                            ? undefined
+                            : 'Uzupełnij pole "Temat lekcji".',
+                        }));
+                      }}
+                      inputProps={{ maxLength: INPUT_LIMITS.lessonTheme }}
+                      error={Boolean(editFieldErrors.theme)}
+                      helperText={
+                        editFieldErrors.theme ??
+                        `${editDraft.theme.length}/${INPUT_LIMITS.lessonTheme}`
                       }
                       multiline
                       minRows={3}

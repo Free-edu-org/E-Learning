@@ -19,6 +19,7 @@ import {
   type SpeakTaskResponse,
   type SpeakTranscriptionResponse,
 } from "@/api/taskService";
+import { ApiError } from "@/api/apiClient";
 import type { SubmitAnswerDetail } from "@/api/studentService";
 import {
   taskCardSx,
@@ -27,6 +28,8 @@ import {
   taskFeedbackCorrectSx,
   taskTypeMeta,
 } from "./taskSolverStyles";
+import { formatPercent } from "@/utils/dashboardUtils";
+import { getApiErrorMessage } from "@/utils/dashboardUtils";
 
 interface SpeakTaskSolverProps {
   lessonId: number;
@@ -61,7 +64,7 @@ export function SpeakTaskSolver({
   const scorePercent =
     transcriptionResult == null
       ? null
-      : Math.round(Math.max(0, Math.min(1, transcriptionResult.score)) * 100);
+      : Math.max(0, Math.min(1, transcriptionResult.score)) * 100;
 
   const startRecording = async () => {
     setRecordingError(null);
@@ -118,10 +121,19 @@ export function SpeakTaskSolver({
       );
       onChange(response.text);
       onTranscriptionResult(response);
-    } catch {
-      setRecordingError(
-        "Nie udalo sie rozpoznac nagrania. Sprobuj ponownie za chwile.",
-      );
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setRecordingError(
+          getApiErrorMessage(
+            error,
+            "Nie udalo sie rozpoznac nagrania. Sprobuj ponownie za chwile.",
+          ),
+        );
+      } else {
+        setRecordingError(
+          "Nie udalo sie rozpoznac nagrania. Sprobuj ponownie za chwile.",
+        );
+      }
     } finally {
       setProcessing(false);
     }
@@ -224,7 +236,7 @@ export function SpeakTaskSolver({
                   : "Sprobuj poprawic zaznaczone slowa"}
               </Typography>
               <Chip
-                label={`${scorePercent}%`}
+                label={formatPercent(scorePercent)}
                 color={transcriptionResult.correct ? "success" : "warning"}
                 size="small"
                 sx={{ borderRadius: 2, fontWeight: 800, minWidth: 58 }}

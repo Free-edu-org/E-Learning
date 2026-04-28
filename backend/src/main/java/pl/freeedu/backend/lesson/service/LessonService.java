@@ -13,6 +13,10 @@ import pl.freeedu.backend.lesson.model.Lesson;
 import pl.freeedu.backend.lesson.repository.GroupHasLessonRepository;
 import pl.freeedu.backend.lesson.repository.LessonRepository;
 import pl.freeedu.backend.security.service.SecurityService;
+import pl.freeedu.backend.task.repository.ChooseTaskRepository;
+import pl.freeedu.backend.task.repository.ScatterTaskRepository;
+import pl.freeedu.backend.task.repository.SpeakTaskRepository;
+import pl.freeedu.backend.task.repository.WriteTaskRepository;
 import pl.freeedu.backend.user.model.User;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -33,15 +37,24 @@ public class LessonService {
 	private final LessonMapper lessonMapper;
 	private final SecurityService securityService;
 	private final LessonAttachmentService lessonAttachmentService;
+	private final ChooseTaskRepository chooseTaskRepository;
+	private final WriteTaskRepository writeTaskRepository;
+	private final ScatterTaskRepository scatterTaskRepository;
+	private final SpeakTaskRepository speakTaskRepository;
 
 	public LessonService(LessonRepository lessonRepository, GroupHasLessonRepository groupHasLessonRepository,
-			LessonMapper lessonMapper, SecurityService securityService,
-			LessonAttachmentService lessonAttachmentService) {
+			LessonMapper lessonMapper, SecurityService securityService, LessonAttachmentService lessonAttachmentService,
+			ChooseTaskRepository chooseTaskRepository, WriteTaskRepository writeTaskRepository,
+			ScatterTaskRepository scatterTaskRepository, SpeakTaskRepository speakTaskRepository) {
 		this.lessonRepository = lessonRepository;
 		this.groupHasLessonRepository = groupHasLessonRepository;
 		this.lessonMapper = lessonMapper;
 		this.securityService = securityService;
 		this.lessonAttachmentService = lessonAttachmentService;
+		this.chooseTaskRepository = chooseTaskRepository;
+		this.writeTaskRepository = writeTaskRepository;
+		this.scatterTaskRepository = scatterTaskRepository;
+		this.speakTaskRepository = speakTaskRepository;
 	}
 
 	public Flux<LessonResponse> getLessons(String search, Integer groupId, Boolean status, String sort) {
@@ -147,6 +160,9 @@ public class LessonService {
 				.fromCallable(() -> lessonRepository.findById(id)
 						.orElseThrow(() -> new LessonException(LessonErrorCode.LESSON_NOT_FOUND)))
 				.subscribeOn(Schedulers.boundedElastic()).flatMap(lesson -> Mono.fromCallable(() -> {
+					if (Boolean.TRUE.equals(statusReq.getIsActive()) && !hasAnyTask(id)) {
+						throw new LessonException(LessonErrorCode.LESSON_CANNOT_BE_ACTIVATED_WITHOUT_TASKS);
+					}
 					lesson.setIsActive(statusReq.getIsActive());
 					lessonRepository.save(lesson);
 					return (Void) null;
@@ -163,5 +179,12 @@ public class LessonService {
 					lessonRepository.delete(lesson);
 					return (Void) null;
 				}).subscribeOn(Schedulers.boundedElastic())).then();
+	}
+
+	private boolean hasAnyTask(Integer lessonId) {
+		return !chooseTaskRepository.findByLessonId(lessonId).isEmpty()
+				|| !writeTaskRepository.findByLessonId(lessonId).isEmpty()
+				|| !scatterTaskRepository.findByLessonId(lessonId).isEmpty()
+				|| !speakTaskRepository.findByLessonId(lessonId).isEmpty();
 	}
 }

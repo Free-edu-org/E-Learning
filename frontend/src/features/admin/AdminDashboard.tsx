@@ -98,6 +98,8 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { uiTokens } from "@/theme/uiTokens";
 import { UserAvatar } from "@/components/ui/avatar/UserAvatar";
+import { getApiErrorMessage } from "@/utils/dashboardUtils";
+import { INPUT_LIMITS } from "@/utils/inputLimits";
 
 type UserRole = "TEACHER" | "STUDENT";
 type UserFilter = "ALL" | UserRole;
@@ -157,56 +159,9 @@ const validationFieldLabels: Record<string, string> = {
   groupId: "Grupa",
 };
 
-const validationMessageTranslations: Record<string, string> = {
-  "Name is required": "Pole jest wymagane.",
-  "Description is required": "Pole jest wymagane.",
-  "Username is required": "Pole jest wymagane.",
-  "Email is required": "Pole jest wymagane.",
-  "Password is required": "Pole jest wymagane.",
-  "must not be blank": "Pole jest wymagane.",
-  "must not be null": "Pole jest wymagane.",
-  "must not be empty": "Pole jest wymagane.",
-  "must be a well-formed email address": "Podaj poprawny adres e-mail.",
-  "must be greater than or equal to 0": "Wartość jest nieprawidłowa.",
-};
-
-function translateBackendMessage(message: string) {
-  let translated = message;
-
-  for (const [source, target] of Object.entries(
-    validationMessageTranslations,
-  )) {
-    translated = translated.replaceAll(source, target);
-  }
-
-  if (translated.startsWith("Validation failed:")) {
-    const rawDetails = translated.replace("Validation failed:", "").trim();
-    const parts = rawDetails
-      .split(",")
-      .map((part) => part.trim())
-      .filter(Boolean)
-      .map((part) => {
-        const separatorIndex = part.indexOf(":");
-        if (separatorIndex === -1) {
-          return part;
-        }
-
-        const field = part.slice(0, separatorIndex).trim();
-        const detail = part.slice(separatorIndex + 1).trim();
-        const label = validationFieldLabels[field] ?? field;
-        return `${label}: ${detail}`;
-      });
-
-    return `Błąd walidacji: ${parts.join(", ")}`.replaceAll(" .", ".").trim();
-  }
-
-  return translated;
-}
-
 function getErrorMessage(error: unknown, fallback: string) {
   if (error instanceof ApiError) {
-    const message = error.problem.detail || error.problem.title;
-    return message ? translateBackendMessage(message) : fallback;
+    return getApiErrorMessage(error, fallback, validationFieldLabels);
   }
   if (error instanceof Error && error.message === "NETWORK_ERROR") {
     return "Brak połączenia z serwerem.";
@@ -2095,9 +2050,14 @@ export function AdminDashboard() {
                       onChange={(event) =>
                         setUserDraft((current) => ({
                           ...current,
-                          username: event.target.value,
+                          username: event.target.value.slice(
+                            0,
+                            INPUT_LIMITS.username,
+                          ),
                         }))
                       }
+                      inputProps={{ maxLength: INPUT_LIMITS.username }}
+                      helperText={`${userDraft.username.length}/${INPUT_LIMITS.username}`}
                       fullWidth
                     />
                   </FormField>
@@ -2233,9 +2193,14 @@ export function AdminDashboard() {
                     onChange={(event) =>
                       setGroupDraft((current) => ({
                         ...current,
-                        name: event.target.value,
+                        name: event.target.value.slice(
+                          0,
+                          INPUT_LIMITS.groupName,
+                        ),
                       }))
                     }
+                    inputProps={{ maxLength: INPUT_LIMITS.groupName }}
+                    helperText={`${groupDraft.name.length}/${INPUT_LIMITS.groupName}`}
                     fullWidth
                   />
                 </FormField>
@@ -2246,9 +2211,14 @@ export function AdminDashboard() {
                     onChange={(event) =>
                       setGroupDraft((current) => ({
                         ...current,
-                        description: event.target.value,
+                        description: event.target.value.slice(
+                          0,
+                          INPUT_LIMITS.groupDescription,
+                        ),
                       }))
                     }
+                    inputProps={{ maxLength: INPUT_LIMITS.groupDescription }}
+                    helperText={`${groupDraft.description.length}/${INPUT_LIMITS.groupDescription}`}
                     multiline
                     minRows={4}
                     fullWidth

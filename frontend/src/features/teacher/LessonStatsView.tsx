@@ -48,6 +48,7 @@ import {
   panelFooterButtonSx,
   panelSurfaceSx,
 } from "@/components/ui/panel/panelStyles";
+import { formatPercent } from "@/utils/dashboardUtils";
 
 function formatDate(value: string | null): string {
   if (!value) return "-";
@@ -216,7 +217,7 @@ export function LessonStatsView() {
   const studentChartData =
     stats?.studentResults.map((r) => ({
       name: r.username,
-      value: Math.round(r.resultPercent),
+      value: Number(r.resultPercent.toFixed(1)),
     })) ?? [];
 
   const distributionData = stats
@@ -321,7 +322,7 @@ export function LessonStatsView() {
             >
               <StatCard
                 label="Średni wynik"
-                value={`${Math.round(stats.avgScore)}%`}
+                value={formatPercent(stats.avgScore)}
                 icon={
                   <TrendingUpIcon
                     sx={{ color: "success.main", fontSize: 16 }}
@@ -347,7 +348,7 @@ export function LessonStatsView() {
               />
               <StatCard
                 label="Najlepszy wynik"
-                value={`${Math.round(stats.bestScore)}%`}
+                value={formatPercent(stats.bestScore)}
                 icon={<TrophyIcon sx={{ color: "#ca8a04", fontSize: 16 }} />}
               />
             </Box>
@@ -391,7 +392,9 @@ export function LessonStatsView() {
                         interval={0}
                       />
                       <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
-                      <Tooltip formatter={(v) => [`${v}%`, "Wynik"]} />
+                      <Tooltip
+                        formatter={(v) => [formatPercent(Number(v)), "Wynik"]}
+                      />
                       <Bar
                         dataKey="value"
                         fill="#6366f1"
@@ -472,7 +475,11 @@ export function LessonStatsView() {
                         size={36}
                       />
                       <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography variant="body2" fontWeight={600} noWrap>
+                        <Typography
+                          variant="body2"
+                          fontWeight={600}
+                          sx={{ overflowWrap: "anywhere" }}
+                        >
                           {student.username}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
@@ -508,7 +515,7 @@ export function LessonStatsView() {
                           fontWeight={700}
                           sx={{ color: scoreColor(student.resultPercent) }}
                         >
-                          {Math.round(student.resultPercent)}%
+                          {formatPercent(student.resultPercent)}
                         </Typography>
                       </Box>
 

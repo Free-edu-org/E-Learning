@@ -529,7 +529,7 @@ Poniżej znajdziesz opis endpointów do zarządzania lekcjami. Ścieżka bazowa:
 ### 4.2. Create a new lesson
 - **URL**: `/api/v1/lessons`
 - **Method**: `POST`
-- **Description**: Tworzy nową lekcję. Można jednocześnie przypisać lekcję do grup.
+- **Description**: Tworzy nową lekcję. Można jednocześnie przypisać lekcję do grup. `title` jest wymagany i może mieć maksymalnie 30 znaków.
 - **Authorization**: `TEACHER` lub `ADMIN`
 
 **Request Body (JSON):**
@@ -545,7 +545,7 @@ Poniżej znajdziesz opis endpointów do zarządzania lekcjami. Ścieżka bazowa:
 Zwraca utworzoną reprezentację `LessonResponse` (jak w sekcji 4.1).
 
 **Known Errors:**
-- `VALIDATION_FAILED` (400 Bad Request): Brak wymaganych pól (`title`, `theme`) lub złe typy.
+- `VALIDATION_FAILED` (400 Bad Request): Brak wymaganych pól (`title`, `theme`), tytuł dłuższy niż 30 znaków lub złe typy.
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
 - `FORBIDDEN` (403 Forbidden): Token role does not permit creation.
 
@@ -554,8 +554,8 @@ Zwraca utworzoną reprezentację `LessonResponse` (jak w sekcji 4.1).
 ### 4.3. Update lesson data
 - **URL**: `/api/v1/lessons/{id}`
 - **Method**: `PUT`
-- **Description**: Aktualizuje pola lekcji (title, theme, description, group assignment). Wymaga uprawnień nauczyciela.
-- **Authorization**: `ADMIN` lub w�a�ciciel lekcji (`TEACHER`)
+- **Description**: Aktualizuje pola lekcji (title, theme, description, group assignment). Wymaga uprawnień nauczyciela. `title` może mieć maksymalnie 30 znaków.
+- **Authorization**: `ADMIN` lub właściciel lekcji (`TEACHER`)
 
 **Request Body (JSON):**
 Używa tego samego kształtu co `LessonRequest` (patrz 4.2).
@@ -564,7 +564,7 @@ Używa tego samego kształtu co `LessonRequest` (patrz 4.2).
 Zwraca zaktualizowaną reprezentację `LessonResponse`.
 
 **Known Errors:**
-- `VALIDATION_FAILED` (400 Bad Request): Złe dane wejściowe.
+- `VALIDATION_FAILED` (400 Bad Request): Złe dane wejściowe, w tym tytuł dłuższy niż 30 znaków.
 - `LESSON_NOT_FOUND` (404 Not Found): Nie znaleziono lekcji.
 - `UNAUTHORIZED` (401 Unauthorized)
 - `FORBIDDEN` (403 Forbidden)
@@ -575,7 +575,7 @@ Zwraca zaktualizowaną reprezentację `LessonResponse`.
 - **URL**: `/api/v1/lessons/{id}/status`
 - **Method**: `PATCH`
 - **Description**: Szybka zmiana flagi `isActive` (włącz/wyłącz lekcję).
-- **Authorization**: `ADMIN` lub w�a�ciciel lekcji (`TEACHER`)
+- **Authorization**: `ADMIN` lub właściciel lekcji (`TEACHER`)
 
 **Request Body (JSON):**
 ```json
@@ -586,6 +586,7 @@ Zwraca zaktualizowaną reprezentację `LessonResponse`.
 
 **Known Errors:**
 - `VALIDATION_FAILED` (400 Bad Request)
+- `LESSON_CANNOT_BE_ACTIVATED_WITHOUT_TASKS` (400 Bad Request): Nie można aktywować lekcji, która nie ma jeszcze żadnych zadań.
 - `LESSON_NOT_FOUND` (404 Not Found)
 - `UNAUTHORIZED` (401 Unauthorized)
 - `FORBIDDEN` (403 Forbidden)
@@ -595,8 +596,8 @@ Zwraca zaktualizowaną reprezentację `LessonResponse`.
 ### 4.5. Delete lesson
 - **URL**: `/api/v1/lessons/{id}`
 - **Method**: `DELETE`
-- **Description**: Usuwa lekcję. Dost�p dla `ADMIN` lub w�a�ciciela lekcji (`TEACHER`).
-- **Authorization**: `ADMIN` lub w�a�ciciel lekcji (`TEACHER`)
+- **Description**: Usuwa lekcję. Dostęp dla `ADMIN` lub właściciela lekcji (`TEACHER`).
+- **Authorization**: `ADMIN` lub właściciel lekcji (`TEACHER`)
 
 **Success (204 No Content):** *(Empty Response Body)*
 

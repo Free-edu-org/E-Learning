@@ -10,6 +10,7 @@ import {
 import { alpha } from "@mui/material/styles";
 import { AddCircleOutline as AddIcon } from "@mui/icons-material";
 import { uiTokens } from "@/theme/uiTokens";
+import { INPUT_LIMITS } from "@/utils/inputLimits";
 
 interface ScatterWordBuilderProps {
   words: string;
@@ -25,8 +26,8 @@ export function ScatterWordBuilder({
   const wordList = words ? words.split("|").filter(Boolean) : [];
 
   const addWord = () => {
-    const trimmed = inputValue.trim();
-    if (!trimmed) return;
+    const trimmed = inputValue.trim().slice(0, INPUT_LIMITS.taskScatterWord);
+    if (!trimmed || wordList.length >= INPUT_LIMITS.taskScatterMaxWords) return;
     const updated = [...wordList, trimmed];
     onChange(updated.join("|"));
     setInputValue("");
@@ -76,7 +77,11 @@ export function ScatterWordBuilder({
           size="small"
           placeholder="Wpisz słowo i dodaj..."
           value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
+          onChange={(e) =>
+            setInputValue(e.target.value.slice(0, INPUT_LIMITS.taskScatterWord))
+          }
+          inputProps={{ maxLength: INPUT_LIMITS.taskScatterWord }}
+          helperText={`${inputValue.length}/${INPUT_LIMITS.taskScatterWord} • ${wordList.length}/${INPUT_LIMITS.taskScatterMaxWords} słów`}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
@@ -89,7 +94,10 @@ export function ScatterWordBuilder({
         <IconButton
           onClick={addWord}
           color="primary"
-          disabled={!inputValue.trim()}
+          disabled={
+            !inputValue.trim() ||
+            wordList.length >= INPUT_LIMITS.taskScatterMaxWords
+          }
           sx={{
             transition: "transform 0.15s ease",
             "&:hover": { transform: "scale(1.1)" },
@@ -98,6 +106,11 @@ export function ScatterWordBuilder({
           <AddIcon />
         </IconButton>
       </Stack>
+      {wordList.length >= INPUT_LIMITS.taskScatterMaxWords && (
+        <Typography variant="caption" color="text.secondary">
+          Osiągnięto limit {INPUT_LIMITS.taskScatterMaxWords} słów.
+        </Typography>
+      )}
     </Stack>
   );
 }
