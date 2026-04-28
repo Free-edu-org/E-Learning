@@ -29,6 +29,28 @@ export function getErrorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
+export function formatOneDecimal(value?: number | null): string {
+  return new Intl.NumberFormat("pl-PL", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(value ?? 0);
+}
+
+export function formatPercent(value?: number | null): string {
+  return `${formatOneDecimal(value)}%`;
+}
+
+export function formatRatioPercent(
+  score?: number | null,
+  maxScore?: number | null,
+): string {
+  if (score == null || !maxScore || maxScore <= 0) {
+    return formatPercent(0);
+  }
+
+  return formatPercent((score / maxScore) * 100);
+}
+
 /**
  * Formats an ISO date string to a Polish locale medium date display.
  * Returns "Brak danych" when the value is empty/undefined.

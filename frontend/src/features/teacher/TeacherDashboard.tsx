@@ -63,6 +63,7 @@ import { DashboardTopBar } from "@/components/ui/panel/DashboardTopBar";
 import { panelFooterButtonSx } from "@/components/ui/panel/panelStyles";
 import { useAuth } from "@/context/AuthContext";
 import { uiTokens } from "@/theme/uiTokens";
+import { LESSON_TITLE_MAX_LENGTH } from "./lessonEditor";
 
 interface DialogFeedbackState {
   severity: "success" | "error" | "warning";
@@ -86,6 +87,10 @@ const emptyLessonDraft: LessonDraft = {
 const validationMessageTranslations: Record<string, string> = {
   "Title is required": "Tytuł jest wymagany.",
   "Theme is required": "Temat jest wymagany.",
+  "Title must be at most 30 characters long":
+    "Tytuł może mieć maksymalnie 30 znaków.",
+  "Lesson must contain at least one task before activation.":
+    "Nie można aktywować lekcji bez co najmniej jednego zadania.",
   "must not be blank": "Pole jest wymagane.",
 };
 
@@ -573,7 +578,7 @@ export function TeacherDashboard() {
       const drafts = tasksResponseToDrafts(tasksResponse);
       setEditDraft((prev) => ({ ...prev, tasks: drafts }));
       setEditOriginalTasks(drafts);
-    } catch {
+    } catch (error) {
       setEditDialogFeedback({
         severity: "warning",
         message: "Nie udało się załadować zadań. Możesz edytować dane lekcji.",
@@ -719,7 +724,7 @@ export function TeacherDashboard() {
       // Refresh stats only (active count changed)
       const s = await lessonService.getTeacherStats();
       setStats(s);
-    } catch {
+    } catch (error) {
       // Revert on failure
       setLessons((prev) =>
         prev.map((l) =>
@@ -727,7 +732,7 @@ export function TeacherDashboard() {
         ),
       );
       setSnackbar({
-        message: "Nie udało się zmienić statusu lekcji.",
+        message: getErrorMessage(error, "Nie udało się zmienić statusu lekcji."),
         severity: "error",
       });
     }
@@ -877,7 +882,10 @@ export function TeacherDashboard() {
             />
             <StatsCard
               label="Średnia wyników"
-              value={`${stats?.avgScore ?? 0}%`}
+              value={`${new Intl.NumberFormat("pl-PL", {
+                minimumFractionDigits: 1,
+                maximumFractionDigits: 1,
+              }).format(stats?.avgScore ?? 0)}%`}
             />
           </Box>
         )}
@@ -1018,9 +1026,14 @@ export function TeacherDashboard() {
                       onChange={(event) =>
                         setLessonDraft((current) => ({
                           ...current,
-                          title: event.target.value,
+                          title: event.target.value.slice(
+                            0,
+                            LESSON_TITLE_MAX_LENGTH,
+                          ),
                         }))
                       }
+                      inputProps={{ maxLength: LESSON_TITLE_MAX_LENGTH }}
+                      helperText={`${lessonDraft.title.length}/${LESSON_TITLE_MAX_LENGTH}`}
                       fullWidth
                     />
                   </FormField>
@@ -1254,9 +1267,14 @@ export function TeacherDashboard() {
                       onChange={(event) =>
                         setEditDraft((current) => ({
                           ...current,
-                          title: event.target.value,
+                          title: event.target.value.slice(
+                            0,
+                            LESSON_TITLE_MAX_LENGTH,
+                          ),
                         }))
                       }
+                      inputProps={{ maxLength: LESSON_TITLE_MAX_LENGTH }}
+                      helperText={`${editDraft.title.length}/${LESSON_TITLE_MAX_LENGTH}`}
                       fullWidth
                     />
                   </FormField>

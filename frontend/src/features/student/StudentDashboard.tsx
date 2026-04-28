@@ -56,7 +56,10 @@ import {
 } from "@/components/ui/panel/panelStyles";
 import { UserAvatar } from "@/components/ui/avatar/UserAvatar";
 import { useAuth } from "@/context/AuthContext";
-import { getErrorMessage } from "@/utils/dashboardUtils";
+import {
+  formatPercent,
+  getErrorMessage,
+} from "@/utils/dashboardUtils";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -179,7 +182,7 @@ function ResultDialog({ lesson, onClose, onOpenDetails }: ResultDialogProps) {
           }}
         >
           <Typography variant="h3" fontWeight={800} color="success.main">
-            {lesson.resultPercent}%
+            {formatPercent(lesson.resultPercent)}
           </Typography>
           {lesson.score != null && lesson.maxScore != null && (
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
@@ -266,7 +269,7 @@ function ProgressDialog({ progress, stats, onClose }: ProgressDialogProps) {
             }}
           >
             <Typography variant="h3" fontWeight={800} color="primary.main">
-              {progressPercent}%
+              {formatPercent(progressPercent)}
             </Typography>
             <Typography variant="caption" color="text.secondary">
               ogólny postęp
@@ -294,7 +297,7 @@ function ProgressDialog({ progress, stats, onClose }: ProgressDialogProps) {
                 Średni wynik
               </Typography>
               <Typography variant="body1" fontWeight={700}>
-                {stats.averageScore}%
+                {formatPercent(stats.averageScore)}
               </Typography>
             </Box>
           )}
@@ -648,7 +651,7 @@ export function StudentDashboard() {
               }}
             >
               <Typography variant="h4" fontWeight={800}>
-                {progressPercent}%
+              {formatPercent(progressPercent)}
               </Typography>
               <Typography variant="caption" sx={{ opacity: 0.85 }}>
                 ukończono
@@ -908,7 +911,7 @@ export function StudentDashboard() {
                             fontWeight={700}
                             color="success.main"
                           >
-                            {lesson.resultPercent}%
+                            {formatPercent(lesson.resultPercent)}
                           </Typography>
                         </Box>
                       )}

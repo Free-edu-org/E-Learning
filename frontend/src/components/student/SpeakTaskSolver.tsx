@@ -27,6 +27,7 @@ import {
   taskFeedbackCorrectSx,
   taskTypeMeta,
 } from "./taskSolverStyles";
+import { formatPercent } from "@/utils/dashboardUtils";
 
 interface SpeakTaskSolverProps {
   lessonId: number;
@@ -61,7 +62,7 @@ export function SpeakTaskSolver({
   const scorePercent =
     transcriptionResult == null
       ? null
-      : Math.round(Math.max(0, Math.min(1, transcriptionResult.score)) * 100);
+      : Math.max(0, Math.min(1, transcriptionResult.score)) * 100;
 
   const startRecording = async () => {
     setRecordingError(null);
@@ -224,7 +225,7 @@ export function SpeakTaskSolver({
                   : "Sprobuj poprawic zaznaczone slowa"}
               </Typography>
               <Chip
-                label={`${scorePercent}%`}
+                label={formatPercent(scorePercent)}
                 color={transcriptionResult.correct ? "success" : "warning"}
                 size="small"
                 sx={{ borderRadius: 2, fontWeight: 800, minWidth: 58 }}

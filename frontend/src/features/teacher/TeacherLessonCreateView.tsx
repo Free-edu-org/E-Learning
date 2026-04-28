@@ -47,6 +47,7 @@ import {
   emptyLessonDraft,
   getLessonEditorErrorMessage,
   getTaskValidationError,
+  LESSON_TITLE_MAX_LENGTH,
   type DialogFeedbackState,
   type LessonDraft,
 } from "./lessonEditor";
@@ -327,9 +328,14 @@ export function TeacherLessonCreateView() {
                       onChange={(event) =>
                         setDraft((current) => ({
                           ...current,
-                          title: event.target.value,
+                          title: event.target.value.slice(
+                            0,
+                            LESSON_TITLE_MAX_LENGTH,
+                          ),
                         }))
                       }
+                      inputProps={{ maxLength: LESSON_TITLE_MAX_LENGTH }}
+                      helperText={`${draft.title.length}/${LESSON_TITLE_MAX_LENGTH}`}
                       fullWidth
                     />
                   </FormField>
@@ -497,7 +503,10 @@ export function TeacherLessonCreateView() {
                         sx={{ display: "flex", alignItems: "center", gap: 1 }}
                       >
                         <ReadyIcon fontSize="small" color="primary" />
-                        <Typography variant="body2">
+                        <Typography
+                          variant="body2"
+                          sx={{ minWidth: 0, overflowWrap: "anywhere" }}
+                        >
                           {draft.title.trim() ? draft.title : "Bez tytułu"}
                         </Typography>
                       </Box>

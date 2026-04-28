@@ -22,9 +22,15 @@ export const emptyLessonDraft: LessonDraft = {
   tasks: [],
 };
 
+export const LESSON_TITLE_MAX_LENGTH = 30;
+
 const validationMessageTranslations: Record<string, string> = {
   "Title is required": "Tytuł jest wymagany.",
   "Theme is required": "Temat jest wymagany.",
+  "Title must be at most 30 characters long":
+    "Tytuł może mieć maksymalnie 30 znaków.",
+  "Lesson must contain at least one task before activation.":
+    "Nie można aktywować lekcji bez co najmniej jednego zadania.",
   "must not be blank": "Pole jest wymagane.",
 };
 

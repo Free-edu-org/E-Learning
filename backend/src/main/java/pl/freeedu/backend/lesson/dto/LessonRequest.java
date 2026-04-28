@@ -1,6 +1,7 @@
 package pl.freeedu.backend.lesson.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,6 +16,7 @@ import java.util.List;
 public class LessonRequest {
 
 	@NotBlank(message = "Title is required")
+	@Size(max = 30, message = "Title must be at most 30 characters long")
 	private String title;
 
 	@NotBlank(message = "Theme is required")

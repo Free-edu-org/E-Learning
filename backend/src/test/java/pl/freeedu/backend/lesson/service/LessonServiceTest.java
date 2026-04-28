@@ -14,6 +14,10 @@ import pl.freeedu.backend.lesson.model.Lesson;
 import pl.freeedu.backend.lesson.repository.GroupHasLessonRepository;
 import pl.freeedu.backend.lesson.repository.LessonRepository;
 import pl.freeedu.backend.security.service.SecurityService;
+import pl.freeedu.backend.task.repository.ChooseTaskRepository;
+import pl.freeedu.backend.task.repository.ScatterTaskRepository;
+import pl.freeedu.backend.task.repository.SpeakTaskRepository;
+import pl.freeedu.backend.task.repository.WriteTaskRepository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -43,6 +47,18 @@ class LessonServiceTest {
 
 	@Mock
 	private LessonAttachmentService lessonAttachmentService;
+
+	@Mock
+	private ChooseTaskRepository chooseTaskRepository;
+
+	@Mock
+	private WriteTaskRepository writeTaskRepository;
+
+	@Mock
+	private ScatterTaskRepository scatterTaskRepository;
+
+	@Mock
+	private SpeakTaskRepository speakTaskRepository;
 
 	@InjectMocks
 	private LessonService lessonService;
@@ -175,6 +191,8 @@ class LessonServiceTest {
 
 		when(lessonRepository.findById(10)).thenReturn(Optional.of(lesson));
 		when(lessonRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+		when(chooseTaskRepository.findByLessonId(10))
+				.thenReturn(List.of(mock(pl.freeedu.backend.task.model.ChooseTask.class)));
 
 		// when
 		Mono<Void> result = lessonService.updateLessonStatus(10, Mono.just(req));
@@ -183,6 +201,27 @@ class LessonServiceTest {
 		StepVerifier.create(result).verifyComplete();
 		assertTrue(lesson.getIsActive());
 		verify(lessonRepository, times(1)).save(lesson);
+	}
+
+	@Test
+	void shouldReturnErrorWhenActivatingLessonWithoutTasks() {
+		// given
+		LessonStatusRequest req = new LessonStatusRequest();
+		req.setIsActive(true);
+		Lesson lesson = Lesson.builder().id(10).isActive(false).build();
+
+		when(lessonRepository.findById(10)).thenReturn(Optional.of(lesson));
+		when(chooseTaskRepository.findByLessonId(10)).thenReturn(List.of());
+		when(writeTaskRepository.findByLessonId(10)).thenReturn(List.of());
+		when(scatterTaskRepository.findByLessonId(10)).thenReturn(List.of());
+		when(speakTaskRepository.findByLessonId(10)).thenReturn(List.of());
+
+		// when
+		Mono<Void> result = lessonService.updateLessonStatus(10, Mono.just(req));
+
+		// then
+		StepVerifier.create(result).expectError(LessonException.class).verify();
+		verify(lessonRepository, never()).save(any());
 	}
 
 	@Test

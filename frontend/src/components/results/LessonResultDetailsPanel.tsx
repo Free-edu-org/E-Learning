@@ -16,6 +16,7 @@ import {
 } from "@mui/icons-material";
 import type { LessonResultDetailsResponse } from "@/api/studentService";
 import { panelSurfaceSx } from "@/components/ui/panel/panelStyles";
+import { formatPercent } from "@/utils/dashboardUtils";
 
 interface LessonResultDetailsPanelProps {
   result: LessonResultDetailsResponse;
@@ -92,7 +93,7 @@ export function LessonResultDetailsPanel({
             Wynik
           </Typography>
           <Typography variant="h5" fontWeight={700}>
-            {result.resultPercent}%
+            {formatPercent(result.resultPercent)}
           </Typography>
           <Typography variant="body2" color="text.secondary">
             {result.score} / {result.maxScore} punktów
