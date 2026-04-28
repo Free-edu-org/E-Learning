@@ -68,7 +68,7 @@ export function generateSkillsData(): SkillData[] {
     { category: "Wybór", correct: 6, wrong: 2 },
     { category: "Pisanie", correct: 1, wrong: 1 },
     { category: "Rozsypanka", correct: 1, wrong: 3 },
-    { category: "Mówienie", correct: 2, wrong: 0},
+    { category: "Mówienie", correct: 2, wrong: 0 },
   ];
 }
 
@@ -115,4 +115,3 @@ export function generateAchievements(): Achievement[] {
     },
   ];
 }
-

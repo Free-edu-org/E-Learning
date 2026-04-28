@@ -22,7 +22,6 @@ export function StatCard({
   subtitle,
   color = "primary",
 }: StatCardProps) {
-
   return (
     <Paper elevation={0} sx={panelGridCardSx}>
       <Box sx={panelGridCardContentSx}>
@@ -53,7 +52,11 @@ export function StatCard({
             {value}
           </Typography>
           {subtitle && (
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ mt: 0.5 }}
+            >
               {subtitle}
             </Typography>
           )}
@@ -62,6 +65,3 @@ export function StatCard({
     </Paper>
   );
 }
-
-
-

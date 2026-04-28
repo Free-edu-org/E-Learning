@@ -31,10 +31,7 @@ import {
   Bar,
   Legend,
 } from "recharts";
-import {
-  studentService,
-  type StudentStats,
-} from "@/api/studentService";
+import { studentService, type StudentStats } from "@/api/studentService";
 import { userService, type UserProfile } from "@/api/userService";
 import {
   panelGridCardSx,
@@ -97,9 +94,7 @@ export function StudentProgressView() {
         setStats(nextStats);
       })
       .catch((err: unknown) => {
-        setError(
-          getErrorMessage(err, "Nie udało się pobrać danych postępu."),
-        );
+        setError(getErrorMessage(err, "Nie udało się pobrać danych postępu."));
       })
       .finally(() => setLoading(false));
   }, []);
@@ -126,7 +121,9 @@ export function StudentProgressView() {
         />
 
         {/* ── Back button (placed under profile/header) ── */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mt: 1, mb: 3 }}>
+        <Box
+          sx={{ display: "flex", alignItems: "center", gap: 1.5, mt: 1, mb: 3 }}
+        >
           <Button
             startIcon={<BackIcon />}
             onClick={() => navigate("/student")}
@@ -197,7 +194,9 @@ export function StudentProgressView() {
           <Grid size={{ xs: 12, md: 6 }}>
             <Paper elevation={0} sx={{ ...panelGridCardSx, minHeight: 350 }}>
               <Box sx={panelGridCardContentSx}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+                <Box
+                  sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}
+                >
                   <TrendIcon sx={{ color: "primary.main" }} />
                   <Typography variant="h6" fontWeight={700}>
                     Twój postęp w czasie
@@ -254,7 +253,9 @@ export function StudentProgressView() {
           <Grid size={{ xs: 12, md: 6 }}>
             <Paper elevation={0} sx={{ ...panelGridCardSx, minHeight: 350 }}>
               <Box sx={panelGridCardContentSx}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+                <Box
+                  sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}
+                >
                   <TrendIcon sx={{ color: "primary.main" }} />
                   <Typography variant="h6" fontWeight={700}>
                     Silne i słabe strony
@@ -265,8 +266,14 @@ export function StudentProgressView() {
                   <Skeleton variant="rounded" height={280} />
                 ) : (
                   <ResponsiveContainer width="100%" height={280}>
-                    <BarChart data={normalizedSkillsData} margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.divider, 0.5)} />
+                    <BarChart
+                      data={normalizedSkillsData}
+                      margin={{ top: 20, right: 30, bottom: 20, left: 30 }}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke={alpha(theme.palette.divider, 0.5)}
+                      />
                       <XAxis
                         dataKey="category"
                         stroke={theme.palette.text.secondary}
@@ -293,8 +300,20 @@ export function StudentProgressView() {
                         }}
                       />
                       <Legend />
-                      <Bar dataKey="correctPct" stackId="a" name="Dobrze" fill={theme.palette.success.main} isAnimationActive={false} />
-                      <Bar dataKey="wrongPct" stackId="a" name="Źle" fill={theme.palette.error.main} isAnimationActive={false} />
+                      <Bar
+                        dataKey="correctPct"
+                        stackId="a"
+                        name="Dobrze"
+                        fill={theme.palette.success.main}
+                        isAnimationActive={false}
+                      />
+                      <Bar
+                        dataKey="wrongPct"
+                        stackId="a"
+                        name="Źle"
+                        fill={theme.palette.error.main}
+                        isAnimationActive={false}
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 )}
@@ -307,7 +326,9 @@ export function StudentProgressView() {
         <Box sx={{ mb: 4 }}>
           <Paper elevation={0} sx={{ ...panelGridCardSx }}>
             <Box sx={panelGridCardContentSx}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 3 }}>
+              <Box
+                sx={{ display: "flex", alignItems: "center", gap: 1, mb: 3 }}
+              >
                 <AchievementIcon sx={{ color: "warning.main" }} />
                 <Typography variant="h6" fontWeight={700}>
                   Twoje osiągnięcia
@@ -332,31 +353,24 @@ export function StudentProgressView() {
                           borderRadius: 2,
                           bgcolor: achievement.unlocked
                             ? (t) =>
-                                alpha(
-                                  t.palette[achievement.color].main,
-                                  0.08,
-                                )
-                            : (t) =>
-                                alpha(t.palette.text.disabled, 0.05),
+                                alpha(t.palette[achievement.color].main, 0.08)
+                            : (t) => alpha(t.palette.text.disabled, 0.05),
                           border: "1px solid",
                           borderColor: achievement.unlocked
                             ? (t) =>
-                                alpha(
-                                  t.palette[achievement.color].main,
-                                  0.2,
-                                )
-                            : (t) =>
-                                alpha(t.palette.divider, 0.3),
+                                alpha(t.palette[achievement.color].main, 0.2)
+                            : (t) => alpha(t.palette.divider, 0.3),
                           opacity: achievement.unlocked ? 1 : 0.6,
                         }}
                       >
-                        <Typography
-                          variant="h4"
-                          sx={{ mb: 1, fontSize: 32 }}
-                        >
+                        <Typography variant="h4" sx={{ mb: 1, fontSize: 32 }}>
                           {achievement.icon}
                         </Typography>
-                        <Typography variant="body2" fontWeight={700} sx={{ mb: 0.5 }}>
+                        <Typography
+                          variant="body2"
+                          fontWeight={700}
+                          sx={{ mb: 0.5 }}
+                        >
                           {achievement.label}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
@@ -368,8 +382,7 @@ export function StudentProgressView() {
                             display="block"
                             sx={{
                               mt: 1,
-                              color: (t) =>
-                                t.palette[achievement.color].main,
+                              color: (t) => t.palette[achievement.color].main,
                               fontWeight: 600,
                             }}
                           >
@@ -388,6 +401,3 @@ export function StudentProgressView() {
     </Box>
   );
 }
-
-
-
