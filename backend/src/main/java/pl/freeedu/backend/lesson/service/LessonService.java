@@ -113,7 +113,7 @@ public class LessonService {
 	public Mono<LessonResponse> createLesson(Mono<LessonRequest> requestMono) {
 		return requestMono
 				.flatMap(request -> securityService.getCurrentUserId().flatMap(teacherId -> Mono.fromCallable(() -> {
-					log.info("Creating new lesson: '{}'. Created by teacher ID: {}", request.getTitle(), teacherId);
+					log.info("Creating new lesson. Teacher ID: {}", teacherId);
 					User teacherRef = User.builder().id(teacherId).build();
 					Lesson lesson = Lesson.builder().title(request.getTitle()).theme(request.getTheme())
 							.teacher(teacherRef).isActive(Boolean.FALSE).build();

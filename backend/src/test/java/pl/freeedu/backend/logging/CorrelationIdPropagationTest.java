@@ -28,6 +28,7 @@ class CorrelationIdPropagationTest {
 		Hooks.resetOnLastOperator();
 		ContextRegistry.getInstance().removeThreadLocalAccessor(TechnicalLoggingFilter.CORRELATION_ID_MDC_KEY);
 		MDC.clear();
+		new TechnicalLoggingFilter().resetForTests();
 	}
 
 	@Test

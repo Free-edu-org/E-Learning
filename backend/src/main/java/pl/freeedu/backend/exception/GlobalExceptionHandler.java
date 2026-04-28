@@ -69,9 +69,8 @@ public class GlobalExceptionHandler {
 		String errors = ex.getBindingResult().getFieldErrors().stream()
 				.map(error -> error.getField() + ": " + error.getDefaultMessage()).collect(Collectors.joining(", "));
 		log.warn("ValidationException [{} {}] for fields: {}", exchange.getRequest().getMethod(),
-				exchange.getRequest().getPath(),
-				ex.getBindingResult().getFieldErrors().stream().map(FieldError::getField)
-						.collect(Collectors.joining(", ")));
+				exchange.getRequest().getPath(), ex.getBindingResult().getFieldErrors().stream()
+						.map(FieldError::getField).collect(Collectors.joining(", ")));
 		return buildProblemDetail(GlobalErrorCode.VALIDATION_FAILED.getStatus(), "Validation failed: " + errors,
 				GlobalErrorCode.VALIDATION_FAILED.name(), exchange);
 	}

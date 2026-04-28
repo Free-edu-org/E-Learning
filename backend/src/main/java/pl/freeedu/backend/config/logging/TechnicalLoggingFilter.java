@@ -59,6 +59,11 @@ public class TechnicalLoggingFilter implements WebFilter {
 		});
 	}
 
+	// Visible for testing
+	public void resetForTests() {
+		INITIALIZED.set(false);
+	}
+
 	@Override
 	public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
 		ServerHttpRequest request = exchange.getRequest();
