@@ -98,6 +98,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { uiTokens } from "@/theme/uiTokens";
 import { UserAvatar } from "@/components/ui/avatar/UserAvatar";
+import { getApiErrorMessage } from "@/utils/dashboardUtils";
 
 type UserRole = "TEACHER" | "STUDENT";
 type UserFilter = "ALL" | UserRole;
@@ -157,56 +158,9 @@ const validationFieldLabels: Record<string, string> = {
   groupId: "Grupa",
 };
 
-const validationMessageTranslations: Record<string, string> = {
-  "Name is required": "Pole jest wymagane.",
-  "Description is required": "Pole jest wymagane.",
-  "Username is required": "Pole jest wymagane.",
-  "Email is required": "Pole jest wymagane.",
-  "Password is required": "Pole jest wymagane.",
-  "must not be blank": "Pole jest wymagane.",
-  "must not be null": "Pole jest wymagane.",
-  "must not be empty": "Pole jest wymagane.",
-  "must be a well-formed email address": "Podaj poprawny adres e-mail.",
-  "must be greater than or equal to 0": "Wartość jest nieprawidłowa.",
-};
-
-function translateBackendMessage(message: string) {
-  let translated = message;
-
-  for (const [source, target] of Object.entries(
-    validationMessageTranslations,
-  )) {
-    translated = translated.replaceAll(source, target);
-  }
-
-  if (translated.startsWith("Validation failed:")) {
-    const rawDetails = translated.replace("Validation failed:", "").trim();
-    const parts = rawDetails
-      .split(",")
-      .map((part) => part.trim())
-      .filter(Boolean)
-      .map((part) => {
-        const separatorIndex = part.indexOf(":");
-        if (separatorIndex === -1) {
-          return part;
-        }
-
-        const field = part.slice(0, separatorIndex).trim();
-        const detail = part.slice(separatorIndex + 1).trim();
-        const label = validationFieldLabels[field] ?? field;
-        return `${label}: ${detail}`;
-      });
-
-    return `Błąd walidacji: ${parts.join(", ")}`.replaceAll(" .", ".").trim();
-  }
-
-  return translated;
-}
-
 function getErrorMessage(error: unknown, fallback: string) {
   if (error instanceof ApiError) {
-    const message = error.problem.detail || error.problem.title;
-    return message ? translateBackendMessage(message) : fallback;
+    return getApiErrorMessage(error, fallback, validationFieldLabels);
   }
   if (error instanceof Error && error.message === "NETWORK_ERROR") {
     return "Brak połączenia z serwerem.";

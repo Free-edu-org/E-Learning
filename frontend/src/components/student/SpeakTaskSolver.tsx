@@ -19,6 +19,7 @@ import {
   type SpeakTaskResponse,
   type SpeakTranscriptionResponse,
 } from "@/api/taskService";
+import { ApiError } from "@/api/apiClient";
 import type { SubmitAnswerDetail } from "@/api/studentService";
 import {
   taskCardSx,
@@ -28,6 +29,7 @@ import {
   taskTypeMeta,
 } from "./taskSolverStyles";
 import { formatPercent } from "@/utils/dashboardUtils";
+import { getApiErrorMessage } from "@/utils/dashboardUtils";
 
 interface SpeakTaskSolverProps {
   lessonId: number;
@@ -119,10 +121,19 @@ export function SpeakTaskSolver({
       );
       onChange(response.text);
       onTranscriptionResult(response);
-    } catch {
-      setRecordingError(
-        "Nie udalo sie rozpoznac nagrania. Sprobuj ponownie za chwile.",
-      );
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setRecordingError(
+          getApiErrorMessage(
+            error,
+            "Nie udalo sie rozpoznac nagrania. Sprobuj ponownie za chwile.",
+          ),
+        );
+      } else {
+        setRecordingError(
+          "Nie udalo sie rozpoznac nagrania. Sprobuj ponownie za chwile.",
+        );
+      }
     } finally {
       setProcessing(false);
     }

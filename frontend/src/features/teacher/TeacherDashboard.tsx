@@ -64,6 +64,7 @@ import { panelFooterButtonSx } from "@/components/ui/panel/panelStyles";
 import { useAuth } from "@/context/AuthContext";
 import { uiTokens } from "@/theme/uiTokens";
 import { LESSON_TITLE_MAX_LENGTH } from "./lessonEditor";
+import { getApiErrorMessage } from "@/utils/dashboardUtils";
 
 interface DialogFeedbackState {
   severity: "success" | "error" | "warning";
@@ -84,52 +85,12 @@ const emptyLessonDraft: LessonDraft = {
   tasks: [],
 };
 
-const validationMessageTranslations: Record<string, string> = {
-  "Title is required": "Tytuł jest wymagany.",
-  "Theme is required": "Temat jest wymagany.",
-  "Title must be at most 30 characters long":
-    "Tytuł może mieć maksymalnie 30 znaków.",
-  "Lesson must contain at least one task before activation.":
-    "Nie można aktywować lekcji bez co najmniej jednego zadania.",
-  "must not be blank": "Pole jest wymagane.",
-};
-
-function translateBackendMessage(message: string) {
-  let translated = message;
-  for (const [source, target] of Object.entries(
-    validationMessageTranslations,
-  )) {
-    translated = translated.replaceAll(source, target);
-  }
-
-  if (translated.startsWith("Validation failed:")) {
-    const rawDetails = translated.replace("Validation failed:", "").trim();
-    const fieldLabels: Record<string, string> = {
-      title: "Tytuł",
-      theme: "Temat",
-    };
-    const parts = rawDetails
-      .split(",")
-      .map((part) => part.trim())
-      .filter(Boolean)
-      .map((part) => {
-        const separatorIndex = part.indexOf(":");
-        if (separatorIndex === -1) return part;
-        const field = part.slice(0, separatorIndex).trim();
-        const detail = part.slice(separatorIndex + 1).trim();
-        const label = fieldLabels[field] ?? field;
-        return `${label}: ${detail}`;
-      });
-    return `Błąd walidacji: ${parts.join(", ")}`.replaceAll(" .", ".").trim();
-  }
-
-  return translated;
-}
-
 function getErrorMessage(error: unknown, fallback: string) {
   if (error instanceof ApiError) {
-    const message = error.problem.detail || error.problem.title;
-    return message ? translateBackendMessage(message) : fallback;
+    return getApiErrorMessage(error, fallback, {
+      title: "Tytuł",
+      theme: "Temat",
+    });
   }
   if (error instanceof Error && error.message === "NETWORK_ERROR") {
     return "Brak połączenia z serwerem.";
