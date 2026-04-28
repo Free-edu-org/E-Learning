@@ -145,8 +145,7 @@ public class LessonAttachmentService {
 			});
 
 			if (!lessonId.equals(attachment.getLessonId())) {
-				log.warn("Download failed: Attachment ID: {} does not belong to lesson ID: {}", attachmentId,
-						lessonId);
+				log.warn("Download failed: Attachment ID: {} does not belong to lesson ID: {}", attachmentId, lessonId);
 				throw new LessonException(LessonErrorCode.ATTACHMENT_NOT_FOUND);
 			}
 

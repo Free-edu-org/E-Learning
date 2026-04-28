@@ -59,11 +59,10 @@ public class TaskService {
 	public Mono<LessonTasksResponse> getLessonTasks(Integer lessonId) {
 		return securityService.getCurrentUser().flatMap(user -> Mono.fromCallable(() -> {
 			log.info("Fetching tasks for lesson ID: {}. Requested by user ID: {}", lessonId, user.getId());
-			Lesson lesson = lessonRepository.findById(lessonId)
-					.orElseThrow(() -> {
-						log.warn("Fetch tasks failed: Lesson with ID: {} not found", lessonId);
-						return new TaskException(TaskErrorCode.LESSON_NOT_FOUND);
-					});
+			Lesson lesson = lessonRepository.findById(lessonId).orElseThrow(() -> {
+				log.warn("Fetch tasks failed: Lesson with ID: {} not found", lessonId);
+				return new TaskException(TaskErrorCode.LESSON_NOT_FOUND);
+			});
 
 			boolean isStudent = user.getRole() == Role.STUDENT;
 			String status = null;
@@ -278,13 +277,12 @@ public class TaskService {
 				throw new TaskException(TaskErrorCode.LESSON_NOT_ACTIVE);
 			}
 			return getSpeakTaskForLesson(lessonId, taskId);
-		}).subscribeOn(Schedulers.boundedElastic()))
-				.flatMap(speakTask -> audio.switchIfEmpty(Mono.defer(() -> {
-					log.warn("Transcription failed: Audio file is missing for task ID: {}", taskId);
-					return Mono.error(new TaskException(TaskErrorCode.STT_AUDIO_REQUIRED));
-				})).flatMap(filePart -> sttClient.transcribe(filePart)
-						.map(sttResponse -> buildSpeakTranscriptionResponse(speakTask,
-								sttResponse.getText() == null ? "" : sttResponse.getText()))));
+		}).subscribeOn(Schedulers.boundedElastic())).flatMap(speakTask -> audio.switchIfEmpty(Mono.defer(() -> {
+			log.warn("Transcription failed: Audio file is missing for task ID: {}", taskId);
+			return Mono.error(new TaskException(TaskErrorCode.STT_AUDIO_REQUIRED));
+		})).flatMap(
+				filePart -> sttClient.transcribe(filePart).map(sttResponse -> buildSpeakTranscriptionResponse(speakTask,
+						sttResponse.getText() == null ? "" : sttResponse.getText()))));
 	}
 
 	// --- Submit ---

@@ -35,8 +35,8 @@ public class AuthService {
 		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
 			log.debug("Login attempt started");
 			String identifier = request.getIdentifier();
-			User user = userRepository.findByEmail(identifier).orElseGet(() -> userRepository.findByUsername(identifier)
-					.orElseThrow(() -> {
+			User user = userRepository.findByEmail(identifier)
+					.orElseGet(() -> userRepository.findByUsername(identifier).orElseThrow(() -> {
 						log.warn("Login failed: User not found for provided identifier");
 						return new AuthException(AuthErrorCode.INVALID_CREDENTIALS);
 					}));
