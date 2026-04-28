@@ -7,8 +7,13 @@ import pl.freeedu.backend.exception.ErrorCode;
 public class UserGroupException extends RuntimeException {
 	private final ErrorCode errorCode;
 
-	public UserGroupException(ErrorCode errorCode) {
+	public UserGroupException(UserGroupErrorCode errorCode) {
 		super(errorCode.getDefaultMessage());
+		this.errorCode = errorCode;
+	}
+
+	public UserGroupException(UserGroupErrorCode errorCode, Throwable cause) {
+		super(errorCode.getDefaultMessage(), cause);
 		this.errorCode = errorCode;
 	}
 }

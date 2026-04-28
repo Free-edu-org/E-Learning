@@ -1,14 +1,18 @@
 package pl.freeedu.backend.auth.exception;
 
 import lombok.Getter;
-import pl.freeedu.backend.exception.ErrorCode;
 
 @Getter
 public class AuthException extends RuntimeException {
-	private final ErrorCode errorCode;
+	private final AuthErrorCode errorCode;
 
-	public AuthException(ErrorCode errorCode) {
+	public AuthException(AuthErrorCode errorCode) {
 		super(errorCode.getDefaultMessage());
+		this.errorCode = errorCode;
+	}
+
+	public AuthException(AuthErrorCode errorCode, Throwable cause) {
+		super(errorCode.getDefaultMessage(), cause);
 		this.errorCode = errorCode;
 	}
 }

@@ -11,4 +11,9 @@ public class LessonException extends RuntimeException {
 		super(errorCode.getDefaultMessage());
 		this.errorCode = errorCode;
 	}
+
+	public LessonException(ErrorCode errorCode, Throwable cause) {
+		super(errorCode.getDefaultMessage(), cause);
+		this.errorCode = errorCode;
+	}
 }

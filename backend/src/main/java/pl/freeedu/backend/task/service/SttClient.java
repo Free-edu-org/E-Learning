@@ -43,16 +43,19 @@ public class SttClient {
 			return webClient.post().uri("/stt/transcribe").contentType(MediaType.MULTIPART_FORM_DATA)
 					.body(BodyInserters.fromMultipartData(bodyBuilder.build())).retrieve()
 					.bodyToMono(SttTranscriptionResponse.class).doOnSuccess(resp -> {
-						log.info("Transcription successful for file: {}", audio.filename());
-						log.debug("Transcription result: {}", resp.getText());
+						if (resp != null) {
+							log.info("Transcription successful");
+							log.debug("Transcription result length: {}",
+									resp.getText() != null ? resp.getText().length() : 0);
+						} else {
+							log.warn("Transcription returned empty response");
+						}
 					});
-		}).onErrorMap(WebClientResponseException.class, ex -> {
-			log.error("STT service error: {} - {}", ex.getStatusCode(), ex.getResponseBodyAsString());
-			return new TaskException(TaskErrorCode.STT_SERVICE_UNAVAILABLE);
-		}).onErrorMap(ex -> !(ex instanceof TaskException), ex -> {
-			log.error("Unexpected error during transcription: {}", ex.getMessage());
-			return new TaskException(TaskErrorCode.STT_SERVICE_UNAVAILABLE);
-		});
+		}).doOnError(ex -> log.error("Transcription failed", ex))
+				.onErrorMap(WebClientResponseException.class,
+						ex -> new TaskException(TaskErrorCode.STT_SERVICE_UNAVAILABLE, ex))
+				.onErrorMap(ex -> !(ex instanceof TaskException),
+						ex -> new TaskException(TaskErrorCode.STT_SERVICE_UNAVAILABLE, ex));
 	}
 
 	private MediaType resolveContentType(FilePart audio) {

@@ -1,9 +1,12 @@
 package pl.freeedu.backend.logging;
 
+import io.micrometer.context.ContextRegistry;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 import pl.freeedu.backend.config.logging.TechnicalLoggingFilter;
+import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -16,6 +19,15 @@ class CorrelationIdPropagationTest {
 	@BeforeAll
 	static void setup() {
 		new TechnicalLoggingFilter().init();
+	}
+
+	@AfterAll
+	static void cleanup() {
+		// Reset global state to avoid affecting other tests
+		Hooks.resetOnEachOperator();
+		Hooks.resetOnLastOperator();
+		ContextRegistry.getInstance().removeThreadLocalAccessor(TechnicalLoggingFilter.CORRELATION_ID_MDC_KEY);
+		MDC.clear();
 	}
 
 	@Test

@@ -16,6 +16,7 @@ import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @Component
@@ -24,9 +25,13 @@ public class TechnicalLoggingFilter implements WebFilter {
 
 	public static final String CORRELATION_ID_HEADER = "X-Correlation-Id";
 	public static final String CORRELATION_ID_MDC_KEY = "correlationId";
+	private static final AtomicBoolean INITIALIZED = new AtomicBoolean(false);
 
 	@PostConstruct
 	public void init() {
+		if (INITIALIZED.getAndSet(true)) {
+			return;
+		}
 		// Enable automatic context propagation to MDC for Reactor (Spring Boot 3.2+)
 		Hooks.enableAutomaticContextPropagation();
 
@@ -59,16 +64,22 @@ public class TechnicalLoggingFilter implements WebFilter {
 		ServerHttpRequest request = exchange.getRequest();
 
 		String correlationId = request.getHeaders().getFirst(CORRELATION_ID_HEADER);
-		if (correlationId == null || correlationId.isBlank()) {
+		if (correlationId == null || correlationId.isBlank() || !isValidCorrelationId(correlationId)) {
 			correlationId = UUID.randomUUID().toString();
 		}
 
 		String finalCorrelationId = correlationId;
-		exchange.getResponse().getHeaders().add(CORRELATION_ID_HEADER, finalCorrelationId);
+		exchange.getResponse().getHeaders().set(CORRELATION_ID_HEADER, finalCorrelationId);
 
 		return chain.filter(exchange)
 				// Put correlationId into the reactive context so it propagates to MDC via Hooks
 				.contextWrite(ctx -> ctx.put(CORRELATION_ID_MDC_KEY, finalCorrelationId));
+	}
+
+	private boolean isValidCorrelationId(String id) {
+		// Allow alphanumeric, hyphens and underscores, length 1-64
+		// This prevents CRLF injection and excessive log size
+		return id.length() <= 64 && id.matches("^[a-zA-Z0-9\\-_]+$");
 	}
 
 }
