@@ -1,0 +1,29 @@
+### Teacher routes
+
+### Teacher dashboard
+GET http://localhost:5173/teacher
+Authorization: Bearer {{auth_token}}
+
+### Teacher Students View
+GET http://localhost:5173/teacher/students
+Authorization: Bearer {{auth_token}}
+
+### Teacher Lesson Create View
+GET http://localhost:5173/teacher/lessons/new
+Authorization: Bearer {{auth_token}}
+
+### Teacher Lesson Edit View
+GET http://localhost:5173/teacher/lessons/:lessonId/edit
+Authorization: Bearer {{auth_token}}
+
+### Lesson Stats View
+GET http://localhost:5173/teacher/lessons/:lessonId/stats
+Authorization: Bearer {{auth_token}}
+
+### Teacher Lesson Result View
+GET http://localhost:5173/teacher/lessons/:lessonId/students/:userId/result
+Authorization: Bearer {{auth_token}}
+
+
+
+
