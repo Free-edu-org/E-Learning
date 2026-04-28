@@ -51,8 +51,15 @@ const ERROR_TRANSLATIONS: Record<string, string> = {
   "must not be null": "Pole jest wymagane.",
   "must not be empty": "Pole jest wymagane.",
   "must be a well-formed email address": "Podaj poprawny adres e-mail.",
-  "Title is required": "Tytuł jest wymagany.",
-  "Theme is required": "Temat jest wymagany.",
+  "Invalid email format": "Podaj poprawny adres e-mail.",
+  "Username is required": "Pole jest wymagane.",
+  "Email is required": "Pole jest wymagane.",
+  "Password is required": "Pole jest wymagane.",
+  "Group ID is required": "Pole jest wymagane.",
+  "Username cannot be blank": "Pole jest wymagane.",
+  "Email cannot be blank": "Pole jest wymagane.",
+  "Title is required": "Pole jest wymagane.",
+  "Theme is required": "Pole jest wymagane.",
   "Title must be at most 30 characters long":
     "Tytuł może mieć maksymalnie 30 znaków.",
   "Theme must be at most 120 characters long":
@@ -140,12 +147,13 @@ function translateValidationMessage(
       const label = fieldLabels[field] ?? field;
       const translatedDetail = ERROR_TRANSLATIONS[detail] ?? detail;
 
-      if (
+      const isRequired =
         translatedDetail === "Pole jest wymagane." ||
-        translatedDetail === `${label} jest wymagany.` ||
-        translatedDetail === `${label} jest wymagana.` ||
-        translatedDetail === `${label} jest wymagane.`
-      ) {
+        translatedDetail.endsWith("jest wymagany.") ||
+        translatedDetail.endsWith("jest wymagana.") ||
+        translatedDetail.endsWith("jest wymagane.");
+
+      if (isRequired) {
         return `Uzupełnij pole "${label}".`;
       }
 

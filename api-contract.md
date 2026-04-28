@@ -555,7 +555,7 @@ Zwraca utworzoną reprezentację `LessonResponse` (jak w sekcji 4.1).
 - **URL**: `/api/v1/lessons/{id}`
 - **Method**: `PUT`
 - **Description**: Aktualizuje pola lekcji (title, theme, description, group assignment). Wymaga uprawnień nauczyciela. `title` może mieć maksymalnie 30 znaków.
-- **Authorization**: `ADMIN` lub w�a�ciciel lekcji (`TEACHER`)
+- **Authorization**: `ADMIN` lub właściciel lekcji (`TEACHER`)
 
 **Request Body (JSON):**
 Używa tego samego kształtu co `LessonRequest` (patrz 4.2).
@@ -575,7 +575,7 @@ Zwraca zaktualizowaną reprezentację `LessonResponse`.
 - **URL**: `/api/v1/lessons/{id}/status`
 - **Method**: `PATCH`
 - **Description**: Szybka zmiana flagi `isActive` (włącz/wyłącz lekcję).
-- **Authorization**: `ADMIN` lub w�a�ciciel lekcji (`TEACHER`)
+- **Authorization**: `ADMIN` lub właściciel lekcji (`TEACHER`)
 
 **Request Body (JSON):**
 ```json
@@ -596,8 +596,8 @@ Zwraca zaktualizowaną reprezentację `LessonResponse`.
 ### 4.5. Delete lesson
 - **URL**: `/api/v1/lessons/{id}`
 - **Method**: `DELETE`
-- **Description**: Usuwa lekcję. Dost�p dla `ADMIN` lub w�a�ciciela lekcji (`TEACHER`).
-- **Authorization**: `ADMIN` lub w�a�ciciel lekcji (`TEACHER`)
+- **Description**: Usuwa lekcję. Dostęp dla `ADMIN` lub właściciela lekcji (`TEACHER`).
+- **Authorization**: `ADMIN` lub właściciel lekcji (`TEACHER`)
 
 **Success (204 No Content):** *(Empty Response Body)*
 

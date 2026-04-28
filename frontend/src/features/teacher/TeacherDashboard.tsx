@@ -64,7 +64,7 @@ import { panelFooterButtonSx } from "@/components/ui/panel/panelStyles";
 import { useAuth } from "@/context/AuthContext";
 import { uiTokens } from "@/theme/uiTokens";
 import { LESSON_TITLE_MAX_LENGTH } from "./lessonEditor";
-import { getApiErrorMessage } from "@/utils/dashboardUtils";
+import { getApiErrorMessage, formatPercent } from "@/utils/dashboardUtils";
 import { INPUT_LIMITS } from "@/utils/inputLimits";
 
 interface DialogFeedbackState {
@@ -883,10 +883,7 @@ export function TeacherDashboard() {
             />
             <StatsCard
               label="Średnia wyników"
-              value={`${new Intl.NumberFormat("pl-PL", {
-                minimumFractionDigits: 1,
-                maximumFractionDigits: 1,
-              }).format(stats?.avgScore ?? 0)}%`}
+              value={formatPercent(stats?.avgScore)}
             />
           </Box>
         )}
