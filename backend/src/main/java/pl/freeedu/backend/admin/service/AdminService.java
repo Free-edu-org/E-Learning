@@ -28,7 +28,9 @@ import reactor.core.scheduler.Schedulers;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 public class AdminService {
 
@@ -77,17 +79,22 @@ public class AdminService {
 
 	public Mono<UserResponse> createStudent(AdminCreateStudentRequest request) {
 		return Mono.fromCallable(() -> transactionTemplate.execute(status -> {
+			log.info("Admin creating new student account: '{}'", request.getUsername());
 			if (userRepository.existsByEmail(request.getEmail())) {
+				log.warn("Student creation failed: Email already taken");
 				throw new UserException(UserErrorCode.EMAIL_ALREADY_TAKEN);
 			}
 			if (userRepository.existsByUsername(request.getUsername())) {
+				log.warn("Student creation failed: Username already taken");
 				throw new UserException(UserErrorCode.USERNAME_ALREADY_TAKEN);
 			}
 
 			UserGroup group = null;
 			if (request.getGroupId() != null) {
-				group = userGroupRepository.findById(request.getGroupId())
-						.orElseThrow(() -> new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND));
+				group = userGroupRepository.findById(request.getGroupId()).orElseThrow(() -> {
+					log.warn("Student creation failed: Group ID: {} not found", request.getGroupId());
+					return new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND);
+				});
 			}
 
 			User student = User.builder().email(request.getEmail()).username(request.getUsername())
@@ -96,11 +103,14 @@ public class AdminService {
 			try {
 				User savedStudent = userRepository.save(student);
 				if (group != null) {
+					log.debug("Linking new student ID: {} to group ID: {}", savedStudent.getId(), group.getId());
 					userInGroupRepository
 							.save(UserInGroup.builder().userId(savedStudent.getId()).groupId(group.getId()).build());
 				}
+				log.info("Student account created successfully by admin. Student ID: {}", savedStudent.getId());
 				return userMapper.toUserResponse(savedStudent);
 			} catch (DataIntegrityViolationException ex) {
+				log.warn("Student creation failed: Data integrity violation");
 				if (userRepository.existsByEmail(request.getEmail())) {
 					throw new UserException(UserErrorCode.EMAIL_ALREADY_TAKEN);
 				}
@@ -114,24 +124,32 @@ public class AdminService {
 
 	public Mono<AdminStudentResponse> updateStudent(Integer id, AdminUpdateStudentRequest request) {
 		return Mono.fromCallable(() -> transactionTemplate.execute(status -> {
-			User student = userRepository.findById(id)
-					.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
+			log.info("Admin updating student ID: {}", id);
+			User student = userRepository.findById(id).orElseThrow(() -> {
+				log.warn("Student update failed: User with ID: {} not found", id);
+				return new UserException(UserErrorCode.USER_NOT_FOUND);
+			});
 			if (student.getRole() != Role.STUDENT) {
+				log.warn("Student update failed: User ID: {} is not a student (Role: {})", id, student.getRole());
 				throw new UserException(UserErrorCode.INVALID_STUDENT_ASSIGNMENT);
 			}
 
 			if (!student.getEmail().equals(request.getEmail()) && userRepository.existsByEmail(request.getEmail())) {
+				log.warn("Student update failed: New email already taken");
 				throw new UserException(UserErrorCode.EMAIL_ALREADY_TAKEN);
 			}
 			if (!student.getUsername().equals(request.getUsername())
 					&& userRepository.existsByUsername(request.getUsername())) {
+				log.warn("Student update failed: New username already taken");
 				throw new UserException(UserErrorCode.USERNAME_ALREADY_TAKEN);
 			}
 
 			UserGroup group = null;
 			if (request.getGroupId() != null) {
-				group = userGroupRepository.findById(request.getGroupId())
-						.orElseThrow(() -> new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND));
+				group = userGroupRepository.findById(request.getGroupId()).orElseThrow(() -> {
+					log.warn("Student update failed: Group ID: {} not found", request.getGroupId());
+					return new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND);
+				});
 			}
 
 			student.setUsername(request.getUsername());
@@ -145,13 +163,17 @@ public class AdminService {
 
 			if (group == null) {
 				if (existingMembership != null) {
+					log.debug("Removing student ID: {} from group ID: {}", id, existingMembership.getGroupId());
 					userInGroupRepository.delete(existingMembership);
 				}
 			} else {
 				if (existingMembership == null) {
+					log.debug("Adding student ID: {} to group ID: {}", id, group.getId());
 					userInGroupRepository
 							.save(UserInGroup.builder().userId(savedStudent.getId()).groupId(group.getId()).build());
 				} else if (!group.getId().equals(existingMembership.getGroupId())) {
+					log.debug("Changing student ID: {} group from {} to {}", id, existingMembership.getGroupId(),
+							group.getId());
 					existingMembership.setGroupId(group.getId());
 					userInGroupRepository.save(existingMembership);
 				}
@@ -159,6 +181,7 @@ public class AdminService {
 				finalGroupName = group.getName();
 			}
 
+			log.info("Student ID: {} updated successfully by admin", id);
 			return AdminStudentResponse.builder().id(savedStudent.getId()).email(savedStudent.getEmail())
 					.username(savedStudent.getUsername()).role(savedStudent.getRole()).groupId(finalGroupId)
 					.groupName(finalGroupName).createdAt(savedStudent.getCreatedAt())

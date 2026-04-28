@@ -149,6 +149,17 @@
             <version>0.2.0</version>
             <scope>provided</scope>
         </dependency>
+
+        <!-- Context Propagation for Reactive MDC -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>context-propagation</artifactId>
+            <version>1.1.2</version>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-tracing-bridge-brave</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

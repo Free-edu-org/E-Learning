@@ -1,5 +1,6 @@
 package pl.freeedu.backend.task.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.codec.multipart.FilePart;
@@ -20,6 +21,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class TaskService {
 
@@ -56,30 +58,40 @@ public class TaskService {
 
 	public Mono<LessonTasksResponse> getLessonTasks(Integer lessonId) {
 		return securityService.getCurrentUser().flatMap(user -> Mono.fromCallable(() -> {
+			log.info("Fetching tasks for lesson ID: {}. Requested by user ID: {}", lessonId, user.getId());
 			Lesson lesson = lessonRepository.findById(lessonId)
-					.orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_FOUND));
+					.orElseThrow(() -> {
+						log.warn("Fetch tasks failed: Lesson with ID: {} not found", lessonId);
+						return new TaskException(TaskErrorCode.LESSON_NOT_FOUND);
+					});
 
 			boolean isStudent = user.getRole() == Role.STUDENT;
 			String status = null;
 
 			if (isStudent) {
 				if (!userInGroupRepository.hasAccessToLesson(user.getId(), lessonId)) {
+					log.warn("Access denied: Student ID: {} has no access to lesson ID: {}", user.getId(), lessonId);
 					throw new TaskException(TaskErrorCode.STUDENT_NO_ACCESS);
 				}
 
 				Optional<UserLesson> existing = userLessonRepository.findByUserIdAndLessonId(user.getId(), lessonId);
 				if (existing.isPresent()) {
 					if (existing.get().getStatus() == UserLessonStatus.COMPLETED) {
+						log.warn("Fetch tasks failed: Lesson ID: {} already completed by student ID: {}", lessonId,
+								user.getId());
 						throw new TaskException(TaskErrorCode.LESSON_ALREADY_COMPLETED);
 					}
 					if (!Boolean.TRUE.equals(lesson.getIsActive())) {
+						log.warn("Fetch tasks failed: Lesson ID: {} is not active", lessonId);
 						throw new TaskException(TaskErrorCode.LESSON_NOT_ACTIVE);
 					}
 					status = existing.get().getStatus().name();
 				} else {
 					if (!Boolean.TRUE.equals(lesson.getIsActive())) {
+						log.warn("Fetch tasks failed: Lesson ID: {} is not active", lessonId);
 						throw new TaskException(TaskErrorCode.LESSON_NOT_ACTIVE);
 					}
+					log.info("Starting lesson ID: {} for student ID: {}", lessonId, user.getId());
 					UserLesson userLesson = UserLesson.builder().userId(user.getId()).lessonId(lessonId)
 							.status(UserLessonStatus.IN_PROGRESS).score(0).maxScore(0).build();
 					userLessonRepository.save(userLesson);
@@ -92,6 +104,9 @@ public class TaskService {
 			List<ScatterTask> scatterTasks = scatterTaskRepository.findByLessonId(lessonId);
 			List<SpeakTask> speakTasks = speakTaskRepository.findByLessonId(lessonId);
 
+			log.debug("Tasks fetched for lesson ID: {}. Choose: {}, Write: {}, Scatter: {}, Speak: {}", lessonId,
+					chooseTasks.size(), writeTasks.size(), scatterTasks.size(), speakTasks.size());
+
 			return buildLessonTasksResponse(lessonId, status, chooseTasks, writeTasks, scatterTasks, speakTasks,
 					isStudent);
 		}).subscribeOn(Schedulers.boundedElastic()));
@@ -101,11 +116,16 @@ public class TaskService {
 
 	public Mono<ChooseTaskResponse> createChooseTask(Integer lessonId, Mono<ChooseTaskRequest> requestMono) {
 		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
-			lessonRepository.findById(lessonId).orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_FOUND));
+			log.info("Creating new ChooseTask for lesson ID: {}", lessonId);
+			lessonRepository.findById(lessonId).orElseThrow(() -> {
+				log.warn("Create ChooseTask failed: Lesson with ID: {} not found", lessonId);
+				return new TaskException(TaskErrorCode.LESSON_NOT_FOUND);
+			});
 			ChooseTask task = ChooseTask.builder().lessonId(lessonId).task(request.getTask())
 					.possibleAnswers(request.getPossibleAnswers()).correctAnswer(request.getCorrectAnswer())
 					.hint(request.getHint()).section(request.getSection()).build();
 			ChooseTask saved = chooseTaskRepository.save(task);
+			log.info("ChooseTask ID: {} created for lesson ID: {}", saved.getId(), lessonId);
 			return toChooseTaskResponse(saved, false);
 		}).subscribeOn(Schedulers.boundedElastic()));
 	}
@@ -113,6 +133,7 @@ public class TaskService {
 	public Mono<ChooseTaskResponse> updateChooseTask(Integer lessonId, Integer taskId,
 			Mono<ChooseTaskRequest> requestMono) {
 		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
+			log.info("Updating ChooseTask ID: {} for lesson ID: {}", taskId, lessonId);
 			ChooseTask task = getChooseTaskForLesson(lessonId, taskId);
 			task.setTask(request.getTask());
 			task.setPossibleAnswers(request.getPossibleAnswers());
@@ -120,14 +141,17 @@ public class TaskService {
 			task.setHint(request.getHint());
 			task.setSection(request.getSection());
 			ChooseTask saved = chooseTaskRepository.save(task);
+			log.info("ChooseTask ID: {} updated successfully", taskId);
 			return toChooseTaskResponse(saved, false);
 		}).subscribeOn(Schedulers.boundedElastic()));
 	}
 
 	public Mono<Void> deleteChooseTask(Integer lessonId, Integer taskId) {
 		return Mono.fromCallable(() -> {
+			log.info("Deleting ChooseTask ID: {} from lesson ID: {}", taskId, lessonId);
 			getChooseTaskForLesson(lessonId, taskId);
 			chooseTaskRepository.deleteById(taskId);
+			log.info("ChooseTask ID: {} deleted successfully", taskId);
 			return (Void) null;
 		}).subscribeOn(Schedulers.boundedElastic()).then();
 	}
@@ -238,21 +262,29 @@ public class TaskService {
 	public Mono<SpeakTranscriptionResponse> transcribeSpeakTask(Integer lessonId, Integer taskId,
 			Mono<FilePart> audio) {
 		return securityService.getCurrentUserId().flatMap(userId -> Mono.fromCallable(() -> {
-			Lesson lesson = lessonRepository.findById(lessonId)
-					.orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_FOUND));
+			log.info("Speak task transcription started. Lesson ID: {}, Task ID: {}, Student ID: {}", lessonId, taskId,
+					userId);
+			Lesson lesson = lessonRepository.findById(lessonId).orElseThrow(() -> {
+				log.warn("Transcription failed: Lesson with ID: {} not found", lessonId);
+				return new TaskException(TaskErrorCode.LESSON_NOT_FOUND);
+			});
 			if (!userInGroupRepository.hasAccessToLesson(userId, lessonId)) {
+				log.warn("Access denied for transcription: Student ID: {} has no access to lesson ID: {}", userId,
+						lessonId);
 				throw new TaskException(TaskErrorCode.STUDENT_NO_ACCESS);
 			}
 			if (!Boolean.TRUE.equals(lesson.getIsActive())) {
+				log.warn("Transcription failed: Lesson ID: {} is not active", lessonId);
 				throw new TaskException(TaskErrorCode.LESSON_NOT_ACTIVE);
 			}
 			return getSpeakTaskForLesson(lessonId, taskId);
 		}).subscribeOn(Schedulers.boundedElastic()))
-				.flatMap(speakTask -> audio
-						.switchIfEmpty(Mono.error(new TaskException(TaskErrorCode.STT_AUDIO_REQUIRED)))
-						.flatMap(filePart -> sttClient.transcribe(filePart)
-								.map(sttResponse -> buildSpeakTranscriptionResponse(speakTask,
-										sttResponse.getText() == null ? "" : sttResponse.getText()))));
+				.flatMap(speakTask -> audio.switchIfEmpty(Mono.defer(() -> {
+					log.warn("Transcription failed: Audio file is missing for task ID: {}", taskId);
+					return Mono.error(new TaskException(TaskErrorCode.STT_AUDIO_REQUIRED));
+				})).flatMap(filePart -> sttClient.transcribe(filePart)
+						.map(sttResponse -> buildSpeakTranscriptionResponse(speakTask,
+								sttResponse.getText() == null ? "" : sttResponse.getText()))));
 	}
 
 	// --- Submit ---
@@ -260,9 +292,14 @@ public class TaskService {
 	public Mono<SubmitResponse> submitLesson(Integer lessonId, Mono<SubmitRequest> requestMono) {
 		return requestMono
 				.flatMap(request -> securityService.getCurrentUserId().flatMap(userId -> Mono.fromCallable(() -> {
-					Lesson lesson = lessonRepository.findById(lessonId)
-							.orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_FOUND));
+					log.info("Lesson submission started for lesson ID: {} by student ID: {}", lessonId, userId);
+					Lesson lesson = lessonRepository.findById(lessonId).orElseThrow(() -> {
+						log.warn("Submission failed: Lesson with ID: {} not found", lessonId);
+						return new TaskException(TaskErrorCode.LESSON_NOT_FOUND);
+					});
 					if (!userInGroupRepository.hasAccessToLesson(userId, lessonId)) {
+						log.warn("Access denied for submission: Student ID: {} has no access to lesson ID: {}", userId,
+								lessonId);
 						throw new TaskException(TaskErrorCode.STUDENT_NO_ACCESS);
 					}
 
@@ -270,18 +307,25 @@ public class TaskService {
 							lessonId);
 					if (maybeUserLesson.isPresent()
 							&& maybeUserLesson.get().getStatus() == UserLessonStatus.COMPLETED) {
+						log.warn("Submission failed: Lesson ID: {} already completed by student ID: {}", lessonId,
+								userId);
 						throw new TaskException(TaskErrorCode.LESSON_ALREADY_COMPLETED);
 					}
 					if (!Boolean.TRUE.equals(lesson.getIsActive())) {
+						log.warn("Submission failed: Lesson ID: {} is not active", lessonId);
 						throw new TaskException(TaskErrorCode.LESSON_NOT_ACTIVE);
 					}
-					UserLesson userLesson = maybeUserLesson
-							.orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_STARTED));
+					UserLesson userLesson = maybeUserLesson.orElseThrow(() -> {
+						log.warn("Submission failed: Lesson ID: {} not started by student ID: {}", lessonId, userId);
+						return new TaskException(TaskErrorCode.LESSON_NOT_STARTED);
+					});
 
 					int score = 0;
 					int maxScore = 0;
 					List<AnswerResultDto> details = new ArrayList<>();
 
+					log.debug("Processing {} answers for submission (Lesson ID: {})", request.getAnswers().size(),
+							lessonId);
 					for (AnswerItemRequest item : request.getAnswers()) {
 						String dbTaskType = resolveDbTaskType(item.getTaskType());
 						boolean correct = false;
@@ -312,7 +356,10 @@ public class TaskService {
 								correct = isSpeakAnswerCorrect(item.getAnswer(), correctAnswer);
 								maxScore++;
 							}
-							default -> throw new TaskException(TaskErrorCode.INVALID_TASK_TYPE);
+							default -> {
+								log.error("Invalid task type encountered during submission: {}", item.getTaskType());
+								throw new TaskException(TaskErrorCode.INVALID_TASK_TYPE);
+							}
 						}
 
 						if (correct) {
@@ -333,6 +380,8 @@ public class TaskService {
 					userLesson.setFinishedAt(LocalDateTime.now());
 					userLessonRepository.save(userLesson);
 
+					log.info("Lesson ID: {} submitted successfully by student ID: {}. Score: {}/{}", lessonId, userId,
+							score, maxScore);
 					return SubmitResponse.builder().score(score).maxScore(maxScore).details(details).build();
 				}).subscribeOn(Schedulers.boundedElastic())));
 	}

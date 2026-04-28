@@ -26,7 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 public class LessonResultDetailsService {
 
@@ -56,13 +58,21 @@ public class LessonResultDetailsService {
 
 	public Mono<LessonResultDetailsResponse> getCompletedLessonResult(Integer lessonId, Integer userId) {
 		return Mono.fromCallable(() -> {
-			Lesson lesson = lessonRepository.findById(lessonId)
-					.orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_FOUND));
-			User user = userRepository.findById(userId)
-					.orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_RESULT_NOT_FOUND));
+			log.info("Fetching completed lesson result. Lesson ID: {}, User ID: {}", lessonId, userId);
+			Lesson lesson = lessonRepository.findById(lessonId).orElseThrow(() -> {
+				log.warn("Result fetch failed: Lesson with ID: {} not found", lessonId);
+				return new TaskException(TaskErrorCode.LESSON_NOT_FOUND);
+			});
+			User user = userRepository.findById(userId).orElseThrow(() -> {
+				log.warn("Result fetch failed: User with ID: {} not found", userId);
+				return new TaskException(TaskErrorCode.LESSON_RESULT_NOT_FOUND);
+			});
 			UserLesson userLesson = userLessonRepository.findByUserIdAndLessonId(userId, lessonId)
-					.filter(savedLesson -> savedLesson.getStatus() == UserLessonStatus.COMPLETED)
-					.orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_RESULT_NOT_FOUND));
+					.filter(savedLesson -> savedLesson.getStatus() == UserLessonStatus.COMPLETED).orElseThrow(() -> {
+						log.warn("Result fetch failed: No completed lesson result for user ID: {} and lesson ID: {}",
+								userId, lessonId);
+						return new TaskException(TaskErrorCode.LESSON_RESULT_NOT_FOUND);
+					});
 
 			Map<String, UserAnswer> answersByKey = userAnswerRepository.findByUserIdAndLessonId(userId, lessonId)
 					.stream().collect(Collectors.toMap(answer -> answerKey(answer.getTaskType(), answer.getTaskId()),
@@ -71,6 +81,7 @@ public class LessonResultDetailsService {
 			List<LessonResultTaskDetailDto> taskDetails = buildTaskDefinitions(lessonId).stream()
 					.map(task -> task.toDto(answersByKey.get(answerKey(task.dbTaskType(), task.taskId())))).toList();
 
+			log.info("Result details fetched successfully for user ID: {} and lesson ID: {}", userId, lessonId);
 			return LessonResultDetailsResponse.builder().lessonId(lesson.getId()).lessonTitle(lesson.getTitle())
 					.userId(user.getId()).username(user.getUsername()).score(userLesson.getScore())
 					.maxScore(userLesson.getMaxScore())

@@ -1,5 +1,6 @@
 package pl.freeedu.backend.lesson.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import pl.freeedu.backend.lesson.dto.LessonAttachmentResponse;
 import pl.freeedu.backend.lesson.dto.LessonRequest;
@@ -29,6 +30,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@Slf4j
 @Service
 public class LessonService {
 
@@ -111,12 +113,14 @@ public class LessonService {
 	public Mono<LessonResponse> createLesson(Mono<LessonRequest> requestMono) {
 		return requestMono
 				.flatMap(request -> securityService.getCurrentUserId().flatMap(teacherId -> Mono.fromCallable(() -> {
+					log.info("Creating new lesson: '{}'. Created by teacher ID: {}", request.getTitle(), teacherId);
 					User teacherRef = User.builder().id(teacherId).build();
 					Lesson lesson = Lesson.builder().title(request.getTitle()).theme(request.getTheme())
 							.teacher(teacherRef).isActive(Boolean.FALSE).build();
 					Lesson saved = lessonRepository.save(lesson);
 
 					if (request.getGroupIds() != null && !request.getGroupIds().isEmpty()) {
+						log.debug("Linking lesson ID: {} to groups: {}", saved.getId(), request.getGroupIds());
 						List<GroupHasLesson> relations = request.getGroupIds().stream()
 								.map(gid -> GroupHasLesson.builder().groupId(gid).lessonId(saved.getId()).build())
 								.collect(Collectors.toList());
@@ -126,59 +130,75 @@ public class LessonService {
 					LessonResponse resp = lessonMapper.toResponse(saved);
 					resp.setGroups(groupHasLessonRepository.findGroupsForLesson(saved.getId()));
 					resp.setAttachments(lessonAttachmentService.findByLessonId(saved.getId()));
+					log.info("Lesson created successfully. Lesson ID: {}", saved.getId());
 					return resp;
 				}).subscribeOn(Schedulers.boundedElastic())));
 	}
 
 	public Mono<LessonResponse> updateLesson(Integer id, Mono<LessonRequest> requestMono) {
-		return requestMono.flatMap(request -> Mono
-				.fromCallable(() -> lessonRepository.findById(id)
-						.orElseThrow(() -> new LessonException(LessonErrorCode.LESSON_NOT_FOUND)))
-				.subscribeOn(Schedulers.boundedElastic()).flatMap(lesson -> Mono.fromCallable(() -> {
-					lesson.setTitle(request.getTitle());
-					lesson.setTheme(request.getTheme());
-					Lesson saved = lessonRepository.save(lesson);
+		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
+			log.info("Updating lesson ID: {}", id);
+			return lessonRepository.findById(id).orElseThrow(() -> {
+				log.warn("Update failed: Lesson with ID: {} not found", id);
+				return new LessonException(LessonErrorCode.LESSON_NOT_FOUND);
+			});
+		}).subscribeOn(Schedulers.boundedElastic()).flatMap(lesson -> Mono.fromCallable(() -> {
+			lesson.setTitle(request.getTitle());
+			lesson.setTheme(request.getTheme());
+			Lesson saved = lessonRepository.save(lesson);
 
-					if (request.getGroupIds() != null) {
-						groupHasLessonRepository.deleteByLessonId(saved.getId());
-						List<GroupHasLesson> relations = request.getGroupIds().stream()
-								.map(gid -> GroupHasLesson.builder().groupId(gid).lessonId(saved.getId()).build())
-								.collect(Collectors.toList());
-						groupHasLessonRepository.saveAll(relations);
-					}
+			if (request.getGroupIds() != null) {
+				log.debug("Updating group links for lesson ID: {}. New groups: {}", saved.getId(),
+						request.getGroupIds());
+				groupHasLessonRepository.deleteByLessonId(saved.getId());
+				List<GroupHasLesson> relations = request.getGroupIds().stream()
+						.map(gid -> GroupHasLesson.builder().groupId(gid).lessonId(saved.getId()).build())
+						.collect(Collectors.toList());
+				groupHasLessonRepository.saveAll(relations);
+			}
 
-					Lesson reloaded = lessonRepository.findById(saved.getId()).orElse(saved);
-					LessonResponse resp = lessonMapper.toResponse(reloaded);
-					resp.setGroups(groupHasLessonRepository.findGroupsForLesson(saved.getId()));
-					resp.setAttachments(lessonAttachmentService.findByLessonId(saved.getId()));
-					return resp;
-				}).subscribeOn(Schedulers.boundedElastic())));
+			Lesson reloaded = lessonRepository.findById(saved.getId()).orElse(saved);
+			LessonResponse resp = lessonMapper.toResponse(reloaded);
+			resp.setGroups(groupHasLessonRepository.findGroupsForLesson(saved.getId()));
+			resp.setAttachments(lessonAttachmentService.findByLessonId(saved.getId()));
+			log.info("Lesson ID: {} updated successfully", id);
+			return resp;
+		}).subscribeOn(Schedulers.boundedElastic())));
 	}
 
 	public Mono<Void> updateLessonStatus(Integer id, Mono<LessonStatusRequest> statusMono) {
-		return statusMono.flatMap(statusReq -> Mono
-				.fromCallable(() -> lessonRepository.findById(id)
-						.orElseThrow(() -> new LessonException(LessonErrorCode.LESSON_NOT_FOUND)))
-				.subscribeOn(Schedulers.boundedElastic()).flatMap(lesson -> Mono.fromCallable(() -> {
-					if (Boolean.TRUE.equals(statusReq.getIsActive()) && !hasAnyTask(id)) {
-						throw new LessonException(LessonErrorCode.LESSON_CANNOT_BE_ACTIVATED_WITHOUT_TASKS);
-					}
-					lesson.setIsActive(statusReq.getIsActive());
-					lessonRepository.save(lesson);
-					return (Void) null;
-				}).subscribeOn(Schedulers.boundedElastic())));
+		return statusMono.flatMap(statusReq -> Mono.fromCallable(() -> {
+			log.info("Updating status for lesson ID: {}. Target status: isActive={}", id, statusReq.getIsActive());
+			return lessonRepository.findById(id).orElseThrow(() -> {
+				log.warn("Status update failed: Lesson with ID: {} not found", id);
+				return new LessonException(LessonErrorCode.LESSON_NOT_FOUND);
+			});
+		}).subscribeOn(Schedulers.boundedElastic()).flatMap(lesson -> Mono.fromCallable(() -> {
+			if (Boolean.TRUE.equals(statusReq.getIsActive()) && !hasAnyTask(id)) {
+				log.warn("Status update failed: Cannot activate lesson ID: {} without any tasks", id);
+				throw new LessonException(LessonErrorCode.LESSON_CANNOT_BE_ACTIVATED_WITHOUT_TASKS);
+			}
+			lesson.setIsActive(statusReq.getIsActive());
+			lessonRepository.save(lesson);
+			log.info("Status for lesson ID: {} updated successfully to isActive={}", id, statusReq.getIsActive());
+			return (Void) null;
+		}).subscribeOn(Schedulers.boundedElastic())));
 	}
 
 	public Mono<Void> deleteLesson(Integer id) {
-		return Mono
-				.fromCallable(() -> lessonRepository.findById(id)
-						.orElseThrow(() -> new LessonException(LessonErrorCode.LESSON_NOT_FOUND)))
-				.subscribeOn(Schedulers.boundedElastic()).flatMap(lesson -> Mono.fromCallable(() -> {
-					lessonAttachmentService.deleteAttachmentsByLessonId(id);
-					groupHasLessonRepository.deleteByLessonId(id);
-					lessonRepository.delete(lesson);
-					return (Void) null;
-				}).subscribeOn(Schedulers.boundedElastic())).then();
+		return Mono.fromCallable(() -> {
+			log.info("Deleting lesson ID: {}", id);
+			return lessonRepository.findById(id).orElseThrow(() -> {
+				log.warn("Delete failed: Lesson with ID: {} not found", id);
+				return new LessonException(LessonErrorCode.LESSON_NOT_FOUND);
+			});
+		}).subscribeOn(Schedulers.boundedElastic()).flatMap(lesson -> Mono.fromCallable(() -> {
+			lessonAttachmentService.deleteAttachmentsByLessonId(id);
+			groupHasLessonRepository.deleteByLessonId(id);
+			lessonRepository.delete(lesson);
+			log.info("Lesson ID: {} deleted successfully", id);
+			return (Void) null;
+		}).subscribeOn(Schedulers.boundedElastic())).then();
 	}
 
 	private boolean hasAnyTask(Integer lessonId) {

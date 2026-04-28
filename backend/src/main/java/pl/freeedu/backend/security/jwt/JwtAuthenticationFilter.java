@@ -14,7 +14,9 @@ import pl.freeedu.backend.security.principal.CustomUserDetails;
 import pl.freeedu.backend.user.repository.UserRepository;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class JwtAuthenticationFilter implements WebFilter {
 
 	private final JwtService jwtService;
@@ -52,6 +54,7 @@ public class JwtAuthenticationFilter implements WebFilter {
 						.switchIfEmpty(Mono.defer(() -> chain.filter(exchange).then(Mono.just(true)))).then();
 			}
 		} catch (io.jsonwebtoken.ExpiredJwtException e) {
+			log.info("JWT authentication failed: Token expired for request: {}", exchange.getRequest().getPath());
 			exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
 			exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
 			String body = "{\"type\":\"about:blank\",\"title\":\"Unauthorized\",\"status\":401,\"detail\":\"Token expired\",\"instance\":\""
@@ -59,7 +62,8 @@ public class JwtAuthenticationFilter implements WebFilter {
 			DataBuffer buffer = exchange.getResponse().bufferFactory().wrap(body.getBytes(StandardCharsets.UTF_8));
 			return exchange.getResponse().writeWith(Mono.just(buffer));
 		} catch (Exception e) {
-			// Token invalid or other error
+			log.debug("JWT authentication failed (redacted: {}) for request: {}", e.getClass().getSimpleName(),
+					exchange.getRequest().getPath());
 			return chain.filter(exchange);
 		}
 

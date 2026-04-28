@@ -24,7 +24,9 @@ import reactor.core.scheduler.Schedulers;
 
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 public class UserGroupService {
 
@@ -46,15 +48,21 @@ public class UserGroupService {
 	public Mono<UserGroupResponse> create(Mono<UserGroupRequest> requestMono) {
 		return requestMono
 				.flatMap(request -> securityService.getCurrentUser().flatMap(currentUser -> Mono.fromCallable(() -> {
+					log.info("Creating new user group: '{}'. Requested by user ID: {}", request.getName(),
+							currentUser.getId());
 					if (userGroupRepository.existsByName(request.getName())) {
+						log.warn("Group creation failed: Name '{}' already exists", request.getName());
 						throw new UserGroupException(UserGroupErrorCode.GROUP_NAME_ALREADY_EXISTS);
 					}
 					UserGroup userGroup = userGroupMapper.toUserGroup(request);
 					userGroup.setTeacherId(resolveTeacherId(currentUser, request.getTeacherId()));
 					try {
 						UserGroup saved = userGroupRepository.save(userGroup);
+						log.info("Group created successfully. Group ID: {}, Teacher ID: {}", saved.getId(),
+								saved.getTeacherId());
 						return toResponseWithCount(saved);
 					} catch (DataIntegrityViolationException e) {
+						log.warn("Group creation failed: Integrity violation for name '{}'", request.getName());
 						throw new UserGroupException(UserGroupErrorCode.GROUP_NAME_ALREADY_EXISTS);
 					}
 				}).subscribeOn(Schedulers.boundedElastic())));
@@ -102,10 +110,14 @@ public class UserGroupService {
 	public Mono<UserGroupResponse> update(Integer id, Mono<UserGroupRequest> requestMono) {
 		return requestMono
 				.flatMap(request -> securityService.getCurrentUser().flatMap(currentUser -> Mono.fromCallable(() -> {
-					UserGroup group = userGroupRepository.findById(id)
-							.orElseThrow(() -> new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND));
+					log.info("Updating group ID: {}", id);
+					UserGroup group = userGroupRepository.findById(id).orElseThrow(() -> {
+						log.warn("Update failed: Group with ID: {} not found", id);
+						return new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND);
+					});
 					if (!group.getName().equals(request.getName())
 							&& userGroupRepository.existsByName(request.getName())) {
+						log.warn("Update failed: Group name '{}' already exists", request.getName());
 						throw new UserGroupException(UserGroupErrorCode.GROUP_NAME_ALREADY_EXISTS);
 					}
 					group.setName(request.getName());
@@ -113,8 +125,10 @@ public class UserGroupService {
 					group.setTeacherId(resolveTeacherId(currentUser, request.getTeacherId(), group.getTeacherId()));
 					try {
 						UserGroup saved = userGroupRepository.save(group);
+						log.info("Group ID: {} updated successfully", id);
 						return toResponseWithCount(saved);
 					} catch (DataIntegrityViolationException e) {
+						log.warn("Update failed: Integrity violation for name '{}'", request.getName());
 						throw new UserGroupException(UserGroupErrorCode.GROUP_NAME_ALREADY_EXISTS);
 					}
 				}).subscribeOn(Schedulers.boundedElastic())));
@@ -122,28 +136,41 @@ public class UserGroupService {
 
 	public Mono<Void> delete(Integer id) {
 		return Mono.fromCallable(() -> {
-			UserGroup groupToDel = userGroupRepository.findById(id)
-					.orElseThrow(() -> new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND));
+			log.info("Deleting group ID: {}", id);
+			UserGroup groupToDel = userGroupRepository.findById(id).orElseThrow(() -> {
+				log.warn("Delete failed: Group with ID: {} not found", id);
+				return new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND);
+			});
 			userGroupRepository.delete(groupToDel);
+			log.info("Group ID: {} deleted successfully", id);
 			return (Void) null;
 		}).subscribeOn(Schedulers.boundedElastic()).then();
 	}
+
 	public Mono<Void> addMember(Integer groupId, Integer userId) {
 		return Mono.fromCallable(() -> {
+			log.info("Adding member ID: {} to group ID: {}", userId, groupId);
 			if (!userGroupRepository.existsById(groupId)) {
+				log.warn("Add member failed: Group ID: {} not found", groupId);
 				throw new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND);
 			}
-			User user = userRepository.findById(userId)
-					.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
+			User user = userRepository.findById(userId).orElseThrow(() -> {
+				log.warn("Add member failed: User ID: {} not found", userId);
+				return new UserException(UserErrorCode.USER_NOT_FOUND);
+			});
 			if (user.getRole() != Role.STUDENT) {
+				log.warn("Add member failed: User ID: {} has invalid role: {}", userId, user.getRole());
 				throw new UserGroupException(UserGroupErrorCode.INVALID_ROLE_FOR_GROUP);
 			}
 			if (userInGroupRepository.existsByUserId(userId)) {
+				log.warn("Add member failed: Student ID: {} already in a group", userId);
 				throw new UserGroupException(UserGroupErrorCode.STUDENT_ALREADY_IN_GROUP);
 			}
 			try {
 				userInGroupRepository.save(UserInGroup.builder().userId(userId).groupId(groupId).build());
+				log.info("Member ID: {} added successfully to group ID: {}", userId, groupId);
 			} catch (DataIntegrityViolationException e) {
+				log.warn("Add member failed: Duplicate membership for student ID: {}", userId);
 				throw new UserGroupException(UserGroupErrorCode.STUDENT_ALREADY_IN_GROUP);
 			}
 			return (Void) null;
@@ -152,12 +179,17 @@ public class UserGroupService {
 
 	public Mono<Void> removeMember(Integer groupId, Integer userId) {
 		return Mono.fromCallable(() -> {
+			log.info("Removing member ID: {} from group ID: {}", userId, groupId);
 			if (!userGroupRepository.existsById(groupId)) {
+				log.warn("Remove member failed: Group ID: {} not found", groupId);
 				throw new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND);
 			}
-			UserInGroup membership = userInGroupRepository.findByUserIdAndGroupId(userId, groupId)
-					.orElseThrow(() -> new UserGroupException(UserGroupErrorCode.MEMBER_NOT_IN_GROUP));
+			UserInGroup membership = userInGroupRepository.findByUserIdAndGroupId(userId, groupId).orElseThrow(() -> {
+				log.warn("Remove member failed: User ID: {} is not a member of group ID: {}", userId, groupId);
+				return new UserGroupException(UserGroupErrorCode.MEMBER_NOT_IN_GROUP);
+			});
 			userInGroupRepository.delete(membership);
+			log.info("Member ID: {} removed successfully from group ID: {}", userId, groupId);
 			return (Void) null;
 		}).subscribeOn(Schedulers.boundedElastic()).then();
 	}

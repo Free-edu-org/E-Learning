@@ -5,11 +5,12 @@
     <!-- Map Spring properties to Logback properties -->
     <springProperty scope="context" name="LOG_PATH" source="logging.file.path" defaultValue="logs"/>
     <springProperty scope="context" name="LOG_FILE" source="logging.file.name" defaultValue="freeedu.log"/>
-    <springProperty scope="context" name="MAX_FILE_SIZE" source="logging.logback.rollingpolicy.max-file-size" defaultValue="10MB"/>
-    <springProperty scope="context" name="MAX_HISTORY" source="logging.logback.rollingpolicy.max-history" defaultValue="30"/>
-    <springProperty scope="context" name="TOTAL_SIZE_CAP" source="logging.logback.rollingpolicy.total-size-cap" defaultValue="1GB"/>
+    <springProperty scope="context" name="MAX_FILE_SIZE" source="logging.logback.rollingpolicy.max-file-size" defaultValue="50MB"/>
+    <springProperty scope="context" name="MAX_HISTORY" source="logging.logback.rollingpolicy.max-history" defaultValue="14"/>
+    <springProperty scope="context" name="TOTAL_SIZE_CAP" source="logging.logback.rollingpolicy.total-size-cap" defaultValue="5GB"/>
+    <springProperty scope="context" name="ROOT_LEVEL" source="logging.level.root" defaultValue="WARN"/>
 
-    <!-- Custom log pattern: timestamp, level, correlationId (MDC), thread, logger, message, stack trace -->
+    <!-- Custom log format: timestamp, level, correlationId (MDC), thread, logger, message, stack trace -->
     <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%X{correlationId}] [%thread] %logger{36} : %msg%n%throwable"/>
 
     <!-- Console Appender -->
@@ -35,8 +36,6 @@
             <totalSizeCap>${TOTAL_SIZE_CAP}</totalSizeCap>
         </rollingPolicy>
     </appender>
-
-    <springProperty scope="context" name="ROOT_LEVEL" source="logging.level.root" defaultValue="INFO"/>
 
     <!-- Appenders are active by default, levels are managed by Spring via application.yaml -->
     <root level="${ROOT_LEVEL}">

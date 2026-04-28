@@ -12,7 +12,9 @@ import pl.freeedu.backend.usergroup.repository.UserGroupRepository;
 import pl.freeedu.backend.usergroup.repository.UserInGroupRepository;
 import reactor.core.publisher.Mono;
 import org.springframework.context.annotation.Lazy;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service("securityService")
 public class SecurityService {
 
@@ -41,7 +43,12 @@ public class SecurityService {
 		if (!(principal instanceof CustomUserDetails userDetails)) {
 			return false;
 		}
-		return userDetails.getId().equals(targetUserId);
+		boolean result = userDetails.getId().equals(targetUserId);
+		if (!result) {
+			log.debug("Ownership check failed: Principal ID: {} is not the owner of target user ID: {}",
+					userDetails.getId(), targetUserId);
+		}
+		return result;
 	}
 
 	public boolean isGroupOwner(Authentication authentication, Integer groupId) {
@@ -52,8 +59,13 @@ public class SecurityService {
 		if (!(principal instanceof CustomUserDetails userDetails)) {
 			return false;
 		}
-		return userGroupRepository.findById(groupId).map(group -> userDetails.getId().equals(group.getTeacherId()))
-				.orElse(false);
+		boolean result = userGroupRepository.findById(groupId)
+				.map(group -> userDetails.getId().equals(group.getTeacherId())).orElse(false);
+		if (!result) {
+			log.debug("Group ownership check failed: Principal ID: {} is not the owner of group ID: {}",
+					userDetails.getId(), groupId);
+		}
+		return result;
 	}
 
 	public boolean isLessonOwner(Authentication authentication, Integer lessonId) {
@@ -64,9 +76,14 @@ public class SecurityService {
 		if (!(principal instanceof CustomUserDetails userDetails)) {
 			return false;
 		}
-		return lessonRepository.findById(lessonId)
+		boolean result = lessonRepository.findById(lessonId)
 				.map(lesson -> lesson.getTeacher() != null && userDetails.getId().equals(lesson.getTeacher().getId()))
 				.orElse(false);
+		if (!result) {
+			log.debug("Lesson ownership check failed: Principal ID: {} is not the owner of lesson ID: {}",
+					userDetails.getId(), lessonId);
+		}
+		return result;
 	}
 
 	public boolean isAdmin(Authentication authentication) {
@@ -99,7 +116,12 @@ public class SecurityService {
 		if (!(principal instanceof CustomUserDetails userDetails)) {
 			return false;
 		}
-		return userInGroupRepository.hasAccessToLesson(userDetails.getId(), lessonId);
+		boolean result = userInGroupRepository.hasAccessToLesson(userDetails.getId(), lessonId);
+		if (!result) {
+			log.debug("Student access check failed: Student ID: {} has no access to lesson ID: {}", userDetails.getId(),
+					lessonId);
+		}
+		return result;
 	}
 
 	public Mono<CustomUserDetails> getCurrentUser() {
