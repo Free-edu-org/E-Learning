@@ -342,24 +342,22 @@ export function TeacherLessonCreateView() {
                     <TextField
                       label="Tytuł lekcji"
                       value={draft.title}
-                      onChange={(event) =>
-                        {
-                          const value = event.target.value.slice(
-                            0,
-                            INPUT_LIMITS.lessonTitle,
-                          );
-                          setDraft((current) => ({
-                            ...current,
-                            title: value,
-                          }));
-                          setFieldErrors((current) => ({
-                            ...current,
-                            title: value.trim()
-                              ? undefined
-                              : 'Uzupełnij pole "Tytuł lekcji".',
-                          }));
-                        }
-                      }
+                      onChange={(event) => {
+                        const value = event.target.value.slice(
+                          0,
+                          INPUT_LIMITS.lessonTitle,
+                        );
+                        setDraft((current) => ({
+                          ...current,
+                          title: value,
+                        }));
+                        setFieldErrors((current) => ({
+                          ...current,
+                          title: value.trim()
+                            ? undefined
+                            : 'Uzupełnij pole "Tytuł lekcji".',
+                        }));
+                      }}
                       inputProps={{ maxLength: INPUT_LIMITS.lessonTitle }}
                       error={Boolean(fieldErrors.title)}
                       helperText={
@@ -373,24 +371,22 @@ export function TeacherLessonCreateView() {
                     <TextField
                       label="Temat lekcji"
                       value={draft.theme}
-                      onChange={(event) =>
-                        {
-                          const value = event.target.value.slice(
-                            0,
-                            INPUT_LIMITS.lessonTheme,
-                          );
-                          setDraft((current) => ({
-                            ...current,
-                            theme: value,
-                          }));
-                          setFieldErrors((current) => ({
-                            ...current,
-                            theme: value.trim()
-                              ? undefined
-                              : 'Uzupełnij pole "Temat lekcji".',
-                          }));
-                        }
-                      }
+                      onChange={(event) => {
+                        const value = event.target.value.slice(
+                          0,
+                          INPUT_LIMITS.lessonTheme,
+                        );
+                        setDraft((current) => ({
+                          ...current,
+                          theme: value,
+                        }));
+                        setFieldErrors((current) => ({
+                          ...current,
+                          theme: value.trim()
+                            ? undefined
+                            : 'Uzupełnij pole "Temat lekcji".',
+                        }));
+                      }}
                       inputProps={{ maxLength: INPUT_LIMITS.lessonTheme }}
                       error={Boolean(fieldErrors.theme)}
                       helperText={

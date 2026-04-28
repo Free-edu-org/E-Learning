@@ -562,7 +562,7 @@ export function TeacherDashboard() {
       const drafts = tasksResponseToDrafts(tasksResponse);
       setEditDraft((prev) => ({ ...prev, tasks: drafts }));
       setEditOriginalTasks(drafts);
-    } catch (error) {
+    } catch {
       setEditDialogFeedback({
         severity: "warning",
         message: "Nie udało się załadować zadań. Możesz edytować dane lekcji.",
@@ -730,7 +730,10 @@ export function TeacherDashboard() {
         ),
       );
       setSnackbar({
-        message: getErrorMessage(error, "Nie udało się zmienić statusu lekcji."),
+        message: getErrorMessage(
+          error,
+          "Nie udało się zmienić statusu lekcji.",
+        ),
         severity: "error",
       });
     }
@@ -1021,24 +1024,22 @@ export function TeacherDashboard() {
                     <TextField
                       label="Tytuł lekcji"
                       value={lessonDraft.title}
-                      onChange={(event) =>
-                        {
-                          const value = event.target.value.slice(
-                            0,
-                            LESSON_TITLE_MAX_LENGTH,
-                          );
-                          setLessonDraft((current) => ({
-                            ...current,
-                            title: value,
-                          }));
-                          setCreateFieldErrors((current) => ({
-                            ...current,
-                            title: value.trim()
-                              ? undefined
-                              : 'Uzupełnij pole "Tytuł lekcji".',
-                          }));
-                        }
-                      }
+                      onChange={(event) => {
+                        const value = event.target.value.slice(
+                          0,
+                          LESSON_TITLE_MAX_LENGTH,
+                        );
+                        setLessonDraft((current) => ({
+                          ...current,
+                          title: value,
+                        }));
+                        setCreateFieldErrors((current) => ({
+                          ...current,
+                          title: value.trim()
+                            ? undefined
+                            : 'Uzupełnij pole "Tytuł lekcji".',
+                        }));
+                      }}
                       inputProps={{ maxLength: LESSON_TITLE_MAX_LENGTH }}
                       error={Boolean(createFieldErrors.title)}
                       helperText={
@@ -1052,24 +1053,22 @@ export function TeacherDashboard() {
                     <TextField
                       label="Temat lekcji"
                       value={lessonDraft.theme}
-                      onChange={(event) =>
-                        {
-                          const value = event.target.value.slice(
-                            0,
-                            INPUT_LIMITS.lessonTheme,
-                          );
-                          setLessonDraft((current) => ({
-                            ...current,
-                            theme: value,
-                          }));
-                          setCreateFieldErrors((current) => ({
-                            ...current,
-                            theme: value.trim()
-                              ? undefined
-                              : 'Uzupełnij pole "Temat lekcji".',
-                          }));
-                        }
-                      }
+                      onChange={(event) => {
+                        const value = event.target.value.slice(
+                          0,
+                          INPUT_LIMITS.lessonTheme,
+                        );
+                        setLessonDraft((current) => ({
+                          ...current,
+                          theme: value,
+                        }));
+                        setCreateFieldErrors((current) => ({
+                          ...current,
+                          theme: value.trim()
+                            ? undefined
+                            : 'Uzupełnij pole "Temat lekcji".',
+                        }));
+                      }}
                       inputProps={{ maxLength: INPUT_LIMITS.lessonTheme }}
                       error={Boolean(createFieldErrors.theme)}
                       helperText={
@@ -1293,24 +1292,22 @@ export function TeacherDashboard() {
                     <TextField
                       label="Tytuł lekcji"
                       value={editDraft.title}
-                      onChange={(event) =>
-                        {
-                          const value = event.target.value.slice(
-                            0,
-                            LESSON_TITLE_MAX_LENGTH,
-                          );
-                          setEditDraft((current) => ({
-                            ...current,
-                            title: value,
-                          }));
-                          setEditFieldErrors((current) => ({
-                            ...current,
-                            title: value.trim()
-                              ? undefined
-                              : 'Uzupełnij pole "Tytuł lekcji".',
-                          }));
-                        }
-                      }
+                      onChange={(event) => {
+                        const value = event.target.value.slice(
+                          0,
+                          LESSON_TITLE_MAX_LENGTH,
+                        );
+                        setEditDraft((current) => ({
+                          ...current,
+                          title: value,
+                        }));
+                        setEditFieldErrors((current) => ({
+                          ...current,
+                          title: value.trim()
+                            ? undefined
+                            : 'Uzupełnij pole "Tytuł lekcji".',
+                        }));
+                      }}
                       inputProps={{ maxLength: LESSON_TITLE_MAX_LENGTH }}
                       error={Boolean(editFieldErrors.title)}
                       helperText={
@@ -1324,24 +1321,22 @@ export function TeacherDashboard() {
                     <TextField
                       label="Temat lekcji"
                       value={editDraft.theme}
-                      onChange={(event) =>
-                        {
-                          const value = event.target.value.slice(
-                            0,
-                            INPUT_LIMITS.lessonTheme,
-                          );
-                          setEditDraft((current) => ({
-                            ...current,
-                            theme: value,
-                          }));
-                          setEditFieldErrors((current) => ({
-                            ...current,
-                            theme: value.trim()
-                              ? undefined
-                              : 'Uzupełnij pole "Temat lekcji".',
-                          }));
-                        }
-                      }
+                      onChange={(event) => {
+                        const value = event.target.value.slice(
+                          0,
+                          INPUT_LIMITS.lessonTheme,
+                        );
+                        setEditDraft((current) => ({
+                          ...current,
+                          theme: value,
+                        }));
+                        setEditFieldErrors((current) => ({
+                          ...current,
+                          theme: value.trim()
+                            ? undefined
+                            : 'Uzupełnij pole "Temat lekcji".',
+                        }));
+                      }}
                       inputProps={{ maxLength: INPUT_LIMITS.lessonTheme }}
                       error={Boolean(editFieldErrors.theme)}
                       helperText={

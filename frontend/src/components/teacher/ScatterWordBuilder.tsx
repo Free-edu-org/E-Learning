@@ -27,8 +27,7 @@ export function ScatterWordBuilder({
 
   const addWord = () => {
     const trimmed = inputValue.trim().slice(0, INPUT_LIMITS.taskScatterWord);
-    if (!trimmed || wordList.length >= INPUT_LIMITS.taskScatterMaxWords)
-      return;
+    if (!trimmed || wordList.length >= INPUT_LIMITS.taskScatterMaxWords) return;
     const updated = [...wordList, trimmed];
     onChange(updated.join("|"));
     setInputValue("");
@@ -79,9 +78,7 @@ export function ScatterWordBuilder({
           placeholder="Wpisz słowo i dodaj..."
           value={inputValue}
           onChange={(e) =>
-            setInputValue(
-              e.target.value.slice(0, INPUT_LIMITS.taskScatterWord),
-            )
+            setInputValue(e.target.value.slice(0, INPUT_LIMITS.taskScatterWord))
           }
           inputProps={{ maxLength: INPUT_LIMITS.taskScatterWord }}
           helperText={`${inputValue.length}/${INPUT_LIMITS.taskScatterWord} • ${wordList.length}/${INPUT_LIMITS.taskScatterMaxWords} słów`}

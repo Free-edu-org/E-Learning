@@ -56,10 +56,7 @@ import {
 } from "@/components/ui/panel/panelStyles";
 import { UserAvatar } from "@/components/ui/avatar/UserAvatar";
 import { useAuth } from "@/context/AuthContext";
-import {
-  formatPercent,
-  getErrorMessage,
-} from "@/utils/dashboardUtils";
+import { formatPercent, getErrorMessage } from "@/utils/dashboardUtils";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -651,7 +648,7 @@ export function StudentDashboard() {
               }}
             >
               <Typography variant="h4" fontWeight={800}>
-              {formatPercent(progressPercent)}
+                {formatPercent(progressPercent)}
               </Typography>
               <Typography variant="caption" sx={{ opacity: 0.85 }}>
                 ukończono

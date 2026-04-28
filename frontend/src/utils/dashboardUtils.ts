@@ -8,8 +8,7 @@ const ERROR_TRANSLATIONS: Record<string, string> = {
   "Invalid password": "Hasło jest nieprawidłowe.",
   "Invalid old password": "Obecne hasło jest nieprawidłowe.",
   "Bad credentials": "Nieprawidłowe dane logowania.",
-  "Invalid username/email or password":
-    "Nieprawidłowy login/email lub hasło.",
+  "Invalid username/email or password": "Nieprawidłowy login/email lub hasło.",
   "Task not found": "Nie znaleziono zadania.",
   "Lesson has already been completed": "Ta lekcja została już ukończona.",
   "Lesson has not been started yet":
@@ -31,8 +30,7 @@ const ERROR_TRANSLATIONS: Record<string, string> = {
     "Do grupy można przypisać tylko użytkownika z rolą ucznia.",
   "Selected group does not belong to the selected teacher":
     "Wybrana grupa nie należy do wskazanego nauczyciela.",
-  "User is not a member of this group":
-    "Użytkownik nie należy do tej grupy.",
+  "User is not a member of this group": "Użytkownik nie należy do tej grupy.",
   "User not found": "Nie znaleziono użytkownika.",
   "Selected teacher must have role TEACHER":
     "Wybrany użytkownik musi mieć rolę nauczyciela.",
@@ -100,17 +98,14 @@ const ERROR_CODE_TRANSLATIONS: Record<string, string> = {
   STUDENT_ALREADY_IN_GROUP: "Uczeń jest już przypisany do grupy.",
   INVALID_ROLE_FOR_GROUP:
     "Do grupy można przypisać tylko użytkownika z rolą ucznia.",
-  GROUP_TEACHER_MISMATCH:
-    "Wybrana grupa nie należy do wskazanego nauczyciela.",
+  GROUP_TEACHER_MISMATCH: "Wybrana grupa nie należy do wskazanego nauczyciela.",
   MEMBER_NOT_IN_GROUP: "Użytkownik nie należy do tej grupy.",
   USER_NOT_FOUND: "Nie znaleziono użytkownika.",
   EMAIL_ALREADY_TAKEN: "Ten adres email jest już zajęty.",
   USERNAME_ALREADY_TAKEN: "Ta nazwa użytkownika jest już zajęta.",
-  INVALID_TEACHER_ASSIGNMENT:
-    "Wybrany użytkownik musi mieć rolę nauczyciela.",
+  INVALID_TEACHER_ASSIGNMENT: "Wybrany użytkownik musi mieć rolę nauczyciela.",
   INVALID_STUDENT_ASSIGNMENT: "Wybrany użytkownik musi mieć rolę ucznia.",
-  NOT_LESSON_OWNER:
-    "Tylko właściciel lekcji może ją edytować lub usuwać.",
+  NOT_LESSON_OWNER: "Tylko właściciel lekcji może ją edytować lub usuwać.",
   ATTACHMENT_NOT_FOUND: "Nie znaleziono załącznika.",
   ATTACHMENT_INVALID_FILE_TYPE:
     "Dozwolone są tylko pliki PDF, TXT, DOCX, DOC i ODT.",

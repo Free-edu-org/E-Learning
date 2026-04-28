@@ -392,7 +392,9 @@ export function LessonStatsView() {
                         interval={0}
                       />
                       <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
-                      <Tooltip formatter={(v) => [formatPercent(Number(v)), "Wynik"]} />
+                      <Tooltip
+                        formatter={(v) => [formatPercent(Number(v)), "Wynik"]}
+                      />
                       <Bar
                         dataKey="value"
                         fill="#6366f1"

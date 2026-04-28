@@ -70,9 +70,7 @@ export function getTaskValidationError(
     }
 
     if (
-      answers.some(
-        (answer) => answer.length > INPUT_LIMITS.taskChoiceAnswer,
-      )
+      answers.some((answer) => answer.length > INPUT_LIMITS.taskChoiceAnswer)
     ) {
       return `${position}: pojedyncza odpowiedź może mieć maksymalnie ${INPUT_LIMITS.taskChoiceAnswer} znaków.`;
     }
