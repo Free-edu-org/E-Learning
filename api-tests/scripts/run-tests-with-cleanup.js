@@ -3,9 +3,7 @@ const path = require('path');
 
 const rootDir = path.resolve(__dirname, '..');
 const cleanupScript = path.resolve(__dirname, 'cleanup-test-data.js');
-const jestBin = process.platform === 'win32'
-    ? path.resolve(rootDir, 'node_modules/.bin/jest.cmd')
-    : path.resolve(rootDir, 'node_modules/.bin/jest');
+const jestBin = path.resolve(rootDir, 'node_modules/jest/bin/jest.js');
 
 function runNodeScript(scriptPath, args = []) {
     return spawnSync(process.execPath, [scriptPath, ...args], {
@@ -15,14 +13,7 @@ function runNodeScript(scriptPath, args = []) {
 }
 
 function runJest(args = []) {
-    if (process.platform === 'win32') {
-        return spawnSync('cmd.exe', ['/c', jestBin, ...args], {
-            cwd: rootDir,
-            stdio: 'inherit'
-        });
-    }
-
-    return spawnSync(jestBin, args, {
+    return spawnSync(process.execPath, [jestBin, ...args], {
         cwd: rootDir,
         stdio: 'inherit'
     });

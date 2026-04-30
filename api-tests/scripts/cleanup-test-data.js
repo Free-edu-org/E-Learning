@@ -85,35 +85,40 @@ async function main() {
 
         const storedFileNames = attachmentRows.map((row) => row.stored_file_name);
 
-        const summary = {};
-
-        summary.password_reset_tokens = await deleteByIds(pool, 'password_reset_tokens', 'user_id', userIds);
-        summary.user_answers_by_user = await deleteByIds(pool, 'user_answers', 'user_id', userIds);
-        summary.user_answers_by_lesson = await deleteByIds(pool, 'user_answers', 'lesson_id', lessonIds);
-        summary.user_lessons_by_user = await deleteByIds(pool, 'user_lessons', 'user_id', userIds);
-        summary.user_lessons_by_lesson = await deleteByIds(pool, 'user_lessons', 'lesson_id', lessonIds);
-        summary.user_get_achievement = await deleteByIds(pool, 'user_get_achievement', 'user_id', userIds);
-        summary.user_in_group_by_user = await deleteByIds(pool, 'user_in_group', 'user_id', userIds);
-        summary.user_in_group_by_group = await deleteByIds(pool, 'user_in_group', 'group_id', groupIds);
-        summary.choose_tasks = await deleteByIds(pool, 'choose_tasks', 'lesson_id', lessonIds);
-        summary.write_tasks = await deleteByIds(pool, 'write_tasks', 'lesson_id', lessonIds);
-        summary.scatter_tasks = await deleteByIds(pool, 'scatter_tasks', 'lesson_id', lessonIds);
-        summary.speak_tasks = await deleteByIds(pool, 'speak_tasks', 'lesson_id', lessonIds);
-        summary.lesson_attachments = await deleteByIds(pool, 'lesson_attachments', 'lesson_id', lessonIds);
-        summary.group_has_lesson_by_lesson = await deleteByIds(pool, 'group_has_lesson', 'lesson_id', lessonIds);
-        summary.group_has_lesson_by_group = await deleteByIds(pool, 'group_has_lesson', 'group_id', groupIds);
-        summary.lessons = await deleteByIds(pool, 'lessons', 'id', lessonIds);
-        summary.user_groups = await deleteByIds(pool, 'user_groups', 'id', groupIds);
-        summary.users = await deleteByIds(pool, 'users', 'id', userIds);
+        const deletedResetArtifactsCount = await deleteByIds(pool, 'password_reset_tokens', 'user_id', userIds);
+        const deletedUserAnswersCount = await deleteByIds(pool, 'user_answers', 'user_id', userIds)
+            + await deleteByIds(pool, 'user_answers', 'lesson_id', lessonIds);
+        const deletedUserLessonsCount = await deleteByIds(pool, 'user_lessons', 'user_id', userIds)
+            + await deleteByIds(pool, 'user_lessons', 'lesson_id', lessonIds);
+        const deletedAchievementLinksCount = await deleteByIds(pool, 'user_get_achievement', 'user_id', userIds);
+        const deletedMembershipsCount = await deleteByIds(pool, 'user_in_group', 'user_id', userIds)
+            + await deleteByIds(pool, 'user_in_group', 'group_id', groupIds);
+        const deletedTasksCount = await deleteByIds(pool, 'choose_tasks', 'lesson_id', lessonIds)
+            + await deleteByIds(pool, 'write_tasks', 'lesson_id', lessonIds)
+            + await deleteByIds(pool, 'scatter_tasks', 'lesson_id', lessonIds)
+            + await deleteByIds(pool, 'speak_tasks', 'lesson_id', lessonIds);
+        const deletedAttachmentsCount = await deleteByIds(pool, 'lesson_attachments', 'lesson_id', lessonIds);
+        const deletedLessonAssignmentsCount = await deleteByIds(pool, 'group_has_lesson', 'lesson_id', lessonIds)
+            + await deleteByIds(pool, 'group_has_lesson', 'group_id', groupIds);
+        const deletedLessonsCount = await deleteByIds(pool, 'lessons', 'id', lessonIds);
+        const deletedGroupsCount = await deleteByIds(pool, 'user_groups', 'id', groupIds);
+        const deletedUsersCount = await deleteByIds(pool, 'users', 'id', userIds);
 
         await deleteAttachmentFiles(storedFileNames);
 
         console.log(JSON.stringify({
-            lessonIds,
-            groupIds,
-            userIds,
-            deletedFiles: storedFileNames,
-            summary
+            deletedLessonsCount,
+            deletedGroupsCount,
+            deletedUsersCount,
+            deletedTasksCount,
+            deletedAttachmentsCount,
+            deletedLessonAssignmentsCount,
+            deletedMembershipsCount,
+            deletedUserLessonsCount,
+            deletedUserAnswersCount,
+            deletedAchievementLinksCount,
+            deletedResetArtifactsCount,
+            deletedFilesCount: storedFileNames.length
         }, null, 2));
     } finally {
         await pool.end();
