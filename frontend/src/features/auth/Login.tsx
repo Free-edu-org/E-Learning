@@ -15,10 +15,11 @@ import {
 import { alpha, useTheme } from "@mui/material/styles";
 import {
   DarkMode as DarkModeIcon,
+  KeyOff as KeyOffIcon,
   LightMode as LightModeIcon,
   MenuBook as BookIcon,
 } from "@mui/icons-material";
-import { useNavigate } from "react-router-dom";
+import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useAppTheme } from "../../context/ThemeContext";
 import { authService } from "@/api/authService.ts";
@@ -246,6 +247,16 @@ export function Login() {
               ) : (
                 "Zaloguj się"
               )}
+            </Button>
+            <Button
+              component={RouterLink}
+              to="/forgot-password"
+              startIcon={<KeyOffIcon />}
+              fullWidth
+              sx={{ mt: 1 }}
+              disabled={isLoading}
+            >
+              Nie pamiętasz hasła?
             </Button>
           </form>
         </Paper>

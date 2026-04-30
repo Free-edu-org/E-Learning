@@ -139,6 +139,7 @@ public class UserService {
 			}
 
 			user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+			user.setTokenVersion(user.getTokenVersion() == null ? 1 : user.getTokenVersion() + 1);
 			userRepository.save(user);
 			log.info("Password changed successfully for user ID: {}", id);
 			return (Void) null;

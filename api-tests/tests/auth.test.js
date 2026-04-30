@@ -60,4 +60,31 @@ describe('Authentication API (/api/v1/auth)', () => {
             expect(response.data.code).toBe('VALIDATION_FAILED');
         });
     });
+
+    describe('Password reset flow', () => {
+        it('should return the same accepted response for existing and non-existing email', async () => {
+            const existingResponse = await apiClient.post('/auth/forgot-password', {
+                email: validStudent.email
+            });
+            const missingResponse = await apiClient.post('/auth/forgot-password', {
+                email: `missing.${Date.now()}@example.com`
+            });
+
+            expect(existingResponse.status).toBe(202);
+            expect(missingResponse.status).toBe(202);
+            expect(existingResponse.data.message).toBe('If the account exists, a reset link has been sent.');
+            expect(missingResponse.data.message).toBe(existingResponse.data.message);
+        });
+
+        it('should fail for an invalid token', async () => {
+            const response = await apiClient.post('/auth/reset-password', {
+                token: 'invalid-token',
+                newPassword: 'AnotherPassword123!',
+                confirmPassword: 'AnotherPassword123!'
+            });
+
+            expect(response.status).toBe(400);
+            expect(response.data.code).toBe('PASSWORD_RESET_TOKEN_INVALID');
+        });
+    });
 });

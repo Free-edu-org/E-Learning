@@ -15,7 +15,9 @@ import { useRef, useEffect } from "react";
 import { AppErrorBoundary } from "./components/error/AppErrorBoundary";
 import { ErrorPage } from "./components/error/ErrorPage";
 import { useApiErrorHandler } from "./utils/apiErrorEvents";
+import { ForgotPassword } from "./features/auth/ForgotPassword";
 import { Login } from "./features/auth/Login";
+import { ResetPassword } from "./features/auth/ResetPassword";
 import { TeacherDashboard } from "./features/teacher/TeacherDashboard";
 import { TeacherLessonCreateView } from "./features/teacher/TeacherLessonCreateView";
 import { TeacherLessonEditView } from "./features/teacher/TeacherLessonEditView";
@@ -87,6 +89,8 @@ function App() {
               {/* ErrorGuard wraps all routes – shows full-screen error on API failures */}
               <Route element={<ErrorGuard />}>
                 <Route path="/login" element={<Login />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
 
                 <Route element={<ProtectedRoute />}>
                   <Route path="/" element={<RoleBasedRedirect />} />

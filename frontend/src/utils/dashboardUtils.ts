@@ -89,6 +89,11 @@ const ERROR_TRANSLATIONS: Record<string, string> = {
 const ERROR_CODE_TRANSLATIONS: Record<string, string> = {
   INVALID_CREDENTIALS: "Nieprawidłowy login/email lub hasło.",
   INVALID_OLD_PASSWORD: "Obecne hasło jest nieprawidłowe.",
+  PASSWORD_CONFIRMATION_MISMATCH:
+    "Nowe hasło i potwierdzenie hasła muszą być identyczne.",
+  PASSWORD_RESET_TOKEN_INVALID: "Link do resetu hasła jest nieprawidłowy.",
+  PASSWORD_RESET_TOKEN_EXPIRED: "Link do resetu hasła wygasł.",
+  PASSWORD_RESET_TOKEN_USED: "Ten link do resetu hasła został już użyty.",
   TASK_NOT_FOUND: "Nie znaleziono zadania.",
   LESSON_ALREADY_COMPLETED: "Ta lekcja została już ukończona.",
   LESSON_NOT_STARTED: "Ta lekcja nie została jeszcze rozpoczęta.",

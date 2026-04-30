@@ -26,6 +26,10 @@ public class User {
 	@Column(nullable = false)
 	private String password;
 
+	@Column(name = "token_version", nullable = false)
+	@Builder.Default
+	private Integer tokenVersion = 0;
+
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
 	private Role role;

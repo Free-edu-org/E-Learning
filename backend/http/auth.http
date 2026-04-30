@@ -37,3 +37,21 @@ Content-Type: application/json
 > {%
     client.global.set("student_token", response.body.token);
 %}
+
+### Forgot password
+POST http://localhost:8080/api/v1/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "student1@edu.pl"
+}
+
+### Reset password
+POST http://localhost:8080/api/v1/auth/reset-password
+Content-Type: application/json
+
+{
+  "token": "paste-token-here",
+  "newPassword": "newPassword123!",
+  "confirmPassword": "newPassword123!"
+}

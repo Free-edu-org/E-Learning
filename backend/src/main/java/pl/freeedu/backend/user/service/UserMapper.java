@@ -29,6 +29,7 @@ public interface UserMapper {
 
 	@Mapping(target = "id", ignore = true)
 	@Mapping(target = "password", ignore = true)
+	@Mapping(target = "tokenVersion", ignore = true)
 	@Mapping(target = "role", ignore = true)
 	@Mapping(target = "createdAt", ignore = true)
 	@Mapping(target = "avatarUrl", ignore = true)

@@ -24,6 +24,7 @@ import {
 import { useTheme } from "@mui/material/styles";
 import { userService, type UserProfile } from "@/api/userService";
 import { AppDialog, AppDialogStatus } from "@/components/ui/dialog/AppDialog";
+import { useAuth } from "@/context/AuthContext";
 import { getErrorMessage } from "@/utils/dashboardUtils";
 import { UserAvatar } from "@/components/ui/avatar/UserAvatar";
 
@@ -49,6 +50,7 @@ export function AccountSettingsDialog({
 }: AccountSettingsDialogProps) {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
+  const { logout } = useAuth();
 
   // Profile state
   const [username, setUsername] = useState("");
@@ -181,6 +183,7 @@ export function AccountSettingsDialog({
         severity: "success",
         message: "Hasło zostało zmienione pomyślnie.",
       });
+      setTimeout(() => logout(), 800);
     } catch (error) {
       setFeedback({
         severity: "error",
