@@ -46,6 +46,22 @@ Content-Type: application/json
   "email": "student1@edu.pl"
 }
 
+### Forgot password - missing email (400 VALIDATION_FAILED)
+POST http://localhost:8080/api/v1/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": ""
+}
+
+### Forgot password - non-existing email (202 ACCEPTED, same generic response)
+POST http://localhost:8080/api/v1/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "missing@example.com"
+}
+
 ### Reset password
 POST http://localhost:8080/api/v1/auth/reset-password
 Content-Type: application/json
@@ -54,4 +70,34 @@ Content-Type: application/json
   "token": "paste-token-here",
   "newPassword": "newPassword123!",
   "confirmPassword": "newPassword123!"
+}
+
+### Reset password - invalid token (400 PASSWORD_RESET_TOKEN_INVALID)
+POST http://localhost:8080/api/v1/auth/reset-password
+Content-Type: application/json
+
+{
+  "token": "invalid-token",
+  "newPassword": "newPassword123!",
+  "confirmPassword": "newPassword123!"
+}
+
+### Reset password - password mismatch (400 PASSWORD_CONFIRMATION_MISMATCH)
+POST http://localhost:8080/api/v1/auth/reset-password
+Content-Type: application/json
+
+{
+  "token": "paste-token-here",
+  "newPassword": "newPassword123!",
+  "confirmPassword": "differentPassword123!"
+}
+
+### Reset password - missing fields (400 VALIDATION_FAILED)
+POST http://localhost:8080/api/v1/auth/reset-password
+Content-Type: application/json
+
+{
+  "token": "",
+  "newPassword": "",
+  "confirmPassword": ""
 }

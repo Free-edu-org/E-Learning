@@ -35,6 +35,56 @@ Default local development base URL is `http://localhost:8080`
 
 ---
 
+### 1.2. Request Password Reset Link
+- **URL**: `/api/v1/auth/forgot-password`
+- **Method**: `POST`
+- **Description**: Requests a password reset link for the user account identified by email. For security reasons, the endpoint always returns the same accepted response, regardless of whether the account exists.
+
+**Request Body (JSON):**
+```json
+{
+  "email": "user@example.com"
+}
+```
+
+**Success (202 Accepted):**
+```json
+{
+  "message": "If the account exists, a reset link has been sent."
+}
+```
+
+**Known Errors:**
+- `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
+
+---
+
+### 1.3. Reset Password
+- **URL**: `/api/v1/auth/reset-password`
+- **Method**: `POST`
+- **Description**: Resets the account password using a valid password reset token.
+
+**Request Body (JSON):**
+```json
+{
+  "token": "password-reset-token",
+  "newPassword": "newStrongPassword123!",
+  "confirmPassword": "newStrongPassword123!"
+}
+```
+
+**Success (204 No Content):**
+*(Empty Response Body)*
+
+**Known Errors:**
+- `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
+- `PASSWORD_CONFIRMATION_MISMATCH` (400 Bad Request): `newPassword` and `confirmPassword` do not match.
+- `PASSWORD_RESET_TOKEN_INVALID` (400 Bad Request): Reset token does not exist or is invalid.
+- `PASSWORD_RESET_TOKEN_EXPIRED` (400 Bad Request): Reset token has expired.
+- `PASSWORD_RESET_TOKEN_USED` (400 Bad Request): Reset token has already been used.
+
+---
+
 ## 2. User Management (`/api/v1/users`)
 
 ### 2.1. Register Student

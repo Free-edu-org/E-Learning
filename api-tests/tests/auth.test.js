@@ -76,6 +76,15 @@ describe('Authentication API (/api/v1/auth)', () => {
             expect(missingResponse.data.message).toBe(existingResponse.data.message);
         });
 
+        it('should fail forgot password with invalid payload (400 VALIDATION_FAILED)', async () => {
+            const response = await apiClient.post('/auth/forgot-password', {
+                email: ''
+            });
+
+            expect(response.status).toBe(400);
+            expect(response.data.code).toBe('VALIDATION_FAILED');
+        });
+
         it('should fail for an invalid token', async () => {
             const response = await apiClient.post('/auth/reset-password', {
                 token: 'invalid-token',
@@ -85,6 +94,28 @@ describe('Authentication API (/api/v1/auth)', () => {
 
             expect(response.status).toBe(400);
             expect(response.data.code).toBe('PASSWORD_RESET_TOKEN_INVALID');
+        });
+
+        it('should fail reset password when confirmation does not match (400 PASSWORD_CONFIRMATION_MISMATCH)', async () => {
+            const response = await apiClient.post('/auth/reset-password', {
+                token: 'invalid-token',
+                newPassword: 'AnotherPassword123!',
+                confirmPassword: 'DifferentPassword123!'
+            });
+
+            expect(response.status).toBe(400);
+            expect(response.data.code).toBe('PASSWORD_CONFIRMATION_MISMATCH');
+        });
+
+        it('should fail reset password with missing fields (400 VALIDATION_FAILED)', async () => {
+            const response = await apiClient.post('/auth/reset-password', {
+                token: '',
+                newPassword: '',
+                confirmPassword: ''
+            });
+
+            expect(response.status).toBe(400);
+            expect(response.data.code).toBe('VALIDATION_FAILED');
         });
     });
 });
