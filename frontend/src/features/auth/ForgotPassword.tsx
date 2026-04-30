@@ -13,7 +13,10 @@ import { alpha, useTheme } from "@mui/material/styles";
 import { Link as RouterLink } from "react-router-dom";
 import { authService } from "@/api/authService";
 import { ApiError } from "@/api/apiClient";
-import { getApiErrorMessage, translateApiMessage } from "@/utils/dashboardUtils";
+import {
+  getApiErrorMessage,
+  translateApiMessage,
+} from "@/utils/dashboardUtils";
 import { useAppTheme } from "@/context/ThemeContext";
 
 export function ForgotPassword() {
@@ -91,8 +94,8 @@ export function ForgotPassword() {
           Reset hasła
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          Podaj adres e-mail przypisany do konta. Jeśli konto istnieje,
-          wyślemy link do ustawienia nowego hasła.
+          Podaj adres e-mail przypisany do konta. Jeśli konto istnieje, wyślemy
+          link do ustawienia nowego hasła.
         </Typography>
 
         {errorMsg && (
