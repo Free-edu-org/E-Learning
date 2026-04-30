@@ -1,4 +1,12 @@
 const { apiClient } = require('../utils/apiClient');
+const {
+    createPool,
+    insertPasswordResetToken,
+    deletePasswordResetToken,
+    updateUserPasswordByEmail
+} = require('../utils/db');
+
+const SEEDED_STUDENT_PASSWORD_HASH = '$2a$10$EfQqseEyw46zbJW75uREjeFG.SG5XK/OtIKrmxHMr0xyCmgS3N5f.';
 
 describe('Authentication API (/api/v1/auth)', () => {
     const validStudent = {
@@ -6,6 +14,24 @@ describe('Authentication API (/api/v1/auth)', () => {
         username: 'jan_kowalski',
         password: 'student1'
     };
+    const dbPool = createPool();
+
+    beforeAll(async () => {
+        await updateUserPasswordByEmail(
+            dbPool,
+            validStudent.email,
+            SEEDED_STUDENT_PASSWORD_HASH
+        );
+    });
+
+    afterAll(async () => {
+        await updateUserPasswordByEmail(
+            dbPool,
+            validStudent.email,
+            SEEDED_STUDENT_PASSWORD_HASH
+        );
+        await dbPool.end();
+    });
 
     describe('POST /api/v1/auth/login', () => {
         it('should authenticate user and return JWT with username (200 OK)', async () => {
@@ -116,6 +142,52 @@ describe('Authentication API (/api/v1/auth)', () => {
 
             expect(response.status).toBe(400);
             expect(response.data.code).toBe('VALIDATION_FAILED');
+        });
+
+        it('should fail reset password for an expired token (400 PASSWORD_RESET_TOKEN_EXPIRED)', async () => {
+            const plainToken = `expired-token-${Date.now()}`;
+            const { tokenHash } = await insertPasswordResetToken(dbPool, {
+                userEmail: validStudent.email,
+                plainToken,
+                // Keep a wide time gap to avoid timezone/serialization ambiguity between Node and MySQL.
+                expiresAt: new Date(Date.now() - 24 * 60 * 60_000)
+            });
+
+            try {
+                const response = await apiClient.post('/auth/reset-password', {
+                    token: plainToken,
+                    newPassword: 'AnotherPassword123!',
+                    confirmPassword: 'AnotherPassword123!'
+                });
+
+                expect(response.status).toBe(400);
+                expect(response.data.code).toBe('PASSWORD_RESET_TOKEN_EXPIRED');
+            } finally {
+                await deletePasswordResetToken(dbPool, tokenHash);
+            }
+        });
+
+        it('should fail reset password for an already used token (400 PASSWORD_RESET_TOKEN_USED)', async () => {
+            const plainToken = `used-token-${Date.now()}`;
+            const { tokenHash } = await insertPasswordResetToken(dbPool, {
+                userEmail: validStudent.email,
+                plainToken,
+                expiresAt: new Date(Date.now() + 10 * 60_000),
+                usedAt: new Date(Date.now() - 60_000)
+            });
+
+            try {
+                const response = await apiClient.post('/auth/reset-password', {
+                    token: plainToken,
+                    newPassword: 'AnotherPassword123!',
+                    confirmPassword: 'AnotherPassword123!'
+                });
+
+                expect(response.status).toBe(400);
+                expect(response.data.code).toBe('PASSWORD_RESET_TOKEN_USED');
+            } finally {
+                await deletePasswordResetToken(dbPool, tokenHash);
+            }
         });
     });
 });

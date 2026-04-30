@@ -9,6 +9,7 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
     let teacherToken;
     let createdLessonId;
     const createdLessonIds = [];
+    const lessonTaskIds = new Map();
 
     beforeAll(async () => {
         let res = await apiClient.post('/auth/login', adminCreds);
@@ -46,6 +47,13 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
         };
 
         for (const lessonId of createdLessonIds.reverse()) {
+            const chooseTaskId = lessonTaskIds.get(lessonId);
+            if (chooseTaskId) {
+                setAuthToken(teacherToken);
+                const taskDeleteResponse = await apiClient.delete(`/lessons/${lessonId}/tasks/choose/${chooseTaskId}`);
+                expect([204, 404]).toContain(taskDeleteResponse.status);
+            }
+
             let status = await tryDeleteLesson(lessonId, adminToken);
             if ([204, 404].includes(status)) {
                 continue;
@@ -215,6 +223,14 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
     describe('PATCH /lessons/{id}/status', () => {
         it('should activate a lesson (204)', async () => {
             setAuthToken(teacherToken);
+            const taskResponse = await apiClient.post(`/lessons/${createdLessonId}/tasks/choose`, {
+                task: `Activate ${uniqueId}?`,
+                possibleAnswers: 'no|yes',
+                correctAnswer: 1
+            });
+            expect(taskResponse.status).toBe(201);
+            lessonTaskIds.set(createdLessonId, taskResponse.data.id);
+
             const response = await apiClient.patch(`/lessons/${createdLessonId}/status`, {
                 isActive: true
             });

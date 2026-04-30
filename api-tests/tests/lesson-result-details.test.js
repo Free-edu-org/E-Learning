@@ -41,9 +41,6 @@ describe('Lesson Result Details API', () => {
         expect(response.status).toBe(201);
         lessonId = response.data.id;
 
-        response = await apiClient.patch(`/lessons/${lessonId}/status`, { isActive: true });
-        expect(response.status).toBe(204);
-
         response = await apiClient.post(`/lessons/${lessonId}/tasks/choose`, {
             task: 'Choose the right option',
             possibleAnswers: 'red|green|blue',
@@ -63,8 +60,11 @@ describe('Lesson Result Details API', () => {
         expect(response.status).toBe(201);
         writeTaskId = response.data.id;
 
+        response = await apiClient.patch(`/lessons/${lessonId}/status`, { isActive: true });
+        expect(response.status).toBe(204);
+
         response = await apiClient.post('/lessons', {
-            title: `Empty Result Lesson ${uniqueId}`,
+            title: `Empty Result ${uniqueId}`,
             theme: 'No submission yet',
             groupIds: [groupId]
         });
