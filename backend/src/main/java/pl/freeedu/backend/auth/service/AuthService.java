@@ -83,7 +83,9 @@ public class AuthService {
 	public Mono<MessageResponse> forgotPassword(Mono<ForgotPasswordRequest> requestMono) {
 		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
 			log.info("Password reset requested.");
-			userRepository.findByEmail(request.getEmail()).ifPresent(this::createAndSendResetTokenSafely);
+			userRepository.findByEmail(request.getEmail()).ifPresentOrElse(this::createAndSendResetTokenSafely,
+					() -> log.info("Password reset email not sent because no user exists for email: {}",
+							request.getEmail()));
 			return MessageResponse.builder().message(FORGOT_PASSWORD_MESSAGE).build();
 		}).subscribeOn(Schedulers.boundedElastic()));
 	}

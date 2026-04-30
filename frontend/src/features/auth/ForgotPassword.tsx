@@ -13,7 +13,7 @@ import { alpha, useTheme } from "@mui/material/styles";
 import { Link as RouterLink } from "react-router-dom";
 import { authService } from "@/api/authService";
 import { ApiError } from "@/api/apiClient";
-import { getApiErrorMessage } from "@/utils/dashboardUtils";
+import { getApiErrorMessage, translateApiMessage } from "@/utils/dashboardUtils";
 import { useAppTheme } from "@/context/ThemeContext";
 
 export function ForgotPassword() {
@@ -29,19 +29,32 @@ export function ForgotPassword() {
       ? alpha(theme.palette.common.white, 0.15)
       : alpha(theme.palette.primary.main, 0.35);
 
+  const fieldLabels = {
+    email: "adres e-mail",
+  } as const;
+
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
+
+    if (successMsg) {
+      return;
+    }
+
     setErrorMsg(null);
     setSuccessMsg(null);
     setIsLoading(true);
 
     try {
       const response = await authService.forgotPassword({ email });
-      setSuccessMsg(response.message);
+      setSuccessMsg(translateApiMessage(response.message));
     } catch (error: unknown) {
       if (error instanceof ApiError) {
         setErrorMsg(
-          getApiErrorMessage(error, "Nie udało się wysłać linku resetującego."),
+          getApiErrorMessage(
+            error,
+            "Nie udało się wysłać linku resetującego.",
+            fieldLabels,
+          ),
         );
       } else if (error instanceof Error && error.message === "NETWORK_ERROR") {
         setErrorMsg("Brak połączenia z serwerem. Spróbuj ponownie później.");
@@ -103,7 +116,7 @@ export function ForgotPassword() {
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             required
-            disabled={isLoading}
+            disabled={isLoading || !!successMsg}
           />
 
           <Button
@@ -111,18 +124,17 @@ export function ForgotPassword() {
             variant="contained"
             fullWidth
             sx={{ mt: 3 }}
-            disabled={isLoading}
+            disabled={isLoading || !!successMsg}
           >
-            {isLoading ? <CircularProgress size={24} color="inherit" /> : "Wyślij link resetujący"}
+            {isLoading ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : (
+              "Wyślij link resetujący"
+            )}
           </Button>
         </form>
 
-        <Button
-          component={RouterLink}
-          to="/login"
-          fullWidth
-          sx={{ mt: 2 }}
-        >
+        <Button component={RouterLink} to="/login" fullWidth sx={{ mt: 2 }}>
           Wróć do logowania
         </Button>
       </Paper>

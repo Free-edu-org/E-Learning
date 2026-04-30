@@ -32,6 +32,12 @@ export function ResetPassword() {
       ? alpha(theme.palette.common.white, 0.15)
       : alpha(theme.palette.primary.main, 0.35);
 
+  const fieldLabels = {
+    token: "link resetu hasła",
+    newPassword: "nowe hasło",
+    confirmPassword: "potwierdzenie hasła",
+  } as const;
+
   const passwordMismatch = useMemo(() => {
     if (!confirmPassword) return "";
     return newPassword !== confirmPassword ? "Hasła muszą być identyczne." : "";
@@ -59,7 +65,11 @@ export function ResetPassword() {
     } catch (error: unknown) {
       if (error instanceof ApiError) {
         setErrorMsg(
-          getApiErrorMessage(error, "Nie udało się ustawić nowego hasła."),
+          getApiErrorMessage(
+            error,
+            "Nie udało się ustawić nowego hasła.",
+            fieldLabels,
+          ),
         );
       } else if (error instanceof Error && error.message === "NETWORK_ERROR") {
         setErrorMsg("Brak połączenia z serwerem. Spróbuj ponownie później.");
@@ -101,7 +111,12 @@ export function ResetPassword() {
             <Alert severity="success" sx={{ mb: 2 }}>
               Hasło zostało zmienione. Zaloguj się ponownie nowym hasłem.
             </Alert>
-            <Button component={RouterLink} to="/login" variant="contained" fullWidth>
+            <Button
+              component={RouterLink}
+              to="/login"
+              variant="contained"
+              fullWidth
+            >
               Przejdź do logowania
             </Button>
           </>
@@ -149,16 +164,15 @@ export function ResetPassword() {
                 sx={{ mt: 3 }}
                 disabled={isLoading || !!passwordMismatch}
               >
-                {isLoading ? <CircularProgress size={24} color="inherit" /> : "Zapisz nowe hasło"}
+                {isLoading ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : (
+                  "Zapisz nowe hasło"
+                )}
               </Button>
             </form>
 
-            <Button
-              component={RouterLink}
-              to="/login"
-              fullWidth
-              sx={{ mt: 2 }}
-            >
+            <Button component={RouterLink} to="/login" fullWidth sx={{ mt: 2 }}>
               Wróć do logowania
             </Button>
           </>
