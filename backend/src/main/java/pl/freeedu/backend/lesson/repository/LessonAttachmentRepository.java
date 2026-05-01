@@ -1,7 +1,9 @@
 package pl.freeedu.backend.lesson.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 import pl.freeedu.backend.lesson.model.LessonAttachment;
 
 import java.util.Collection;
@@ -14,6 +16,8 @@ public interface LessonAttachmentRepository extends JpaRepository<LessonAttachme
 
 	List<LessonAttachment> findByLessonIdIn(Collection<Integer> lessonIds);
 
+	@Modifying
+	@Transactional
 	void deleteByLessonId(Integer lessonId);
 
 	long countByLessonId(Integer lessonId);
