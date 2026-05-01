@@ -11,6 +11,7 @@ Uzyj tego workflowu, gdy trzeba przygotowac implementowalny task do Jiry dla Fre
 
 - Opieraj sie na aktualnym kodzie projektu, nie na historycznych zalozeniach.
 - Uwzgledniaj realny kontrakt API, security i model danych.
+- Zawsze dodawaj wymog logowania technicznego (`@Slf4j`) dla zmian w backendzie.
 - Rozdzielaj wymagania na backend, frontend, API, DB i testy, gdy to potrzebne.
 
 ## Kroki

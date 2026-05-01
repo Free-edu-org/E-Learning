@@ -5,6 +5,7 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.support.WebExchangeBindException;
+import org.springframework.validation.FieldError;
 import org.springframework.web.server.MethodNotAllowedException;
 import org.springframework.web.server.ServerWebExchange;
 import pl.freeedu.backend.auth.exception.AuthException;
@@ -67,8 +68,9 @@ public class GlobalExceptionHandler {
 	public Mono<ProblemDetail> handleValidationException(WebExchangeBindException ex, ServerWebExchange exchange) {
 		String errors = ex.getBindingResult().getFieldErrors().stream()
 				.map(error -> error.getField() + ": " + error.getDefaultMessage()).collect(Collectors.joining(", "));
-		log.warn("ValidationException [{} {}]: {}", exchange.getRequest().getMethod(), exchange.getRequest().getPath(),
-				errors);
+		log.warn("ValidationException [{} {}] for fields: {}", exchange.getRequest().getMethod(),
+				exchange.getRequest().getPath(), ex.getBindingResult().getFieldErrors().stream()
+						.map(FieldError::getField).collect(Collectors.joining(", ")));
 		return buildProblemDetail(GlobalErrorCode.VALIDATION_FAILED.getStatus(), "Validation failed: " + errors,
 				GlobalErrorCode.VALIDATION_FAILED.name(), exchange);
 	}
@@ -98,8 +100,8 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(DataIntegrityViolationException.class)
 	public Mono<ProblemDetail> handleDataIntegrityViolationException(DataIntegrityViolationException ex,
 			ServerWebExchange exchange) {
-		log.warn("DataIntegrityViolationException [{} {}]: {}", exchange.getRequest().getMethod(),
-				exchange.getRequest().getPath(), ex.getMessage());
+		log.warn("DataIntegrityViolationException [{} {}] (redacted message)", exchange.getRequest().getMethod(),
+				exchange.getRequest().getPath());
 		return buildProblemDetail(HttpStatus.CONFLICT, "Data integrity violation: possibly duplicate entry", "CONFLICT",
 				exchange);
 	}

@@ -11,6 +11,7 @@ Uzyj tego workflowu, gdy trzeba wykonac review lub audit zmian.
 
 - Najpierw ocen kod i jego skutki, dopiero potem testy.
 - Priorytet maja regresje, security, ownership i dryf miedzy kodem a kontraktem.
+- Weryfikuj obecnosc i jakosc logowania technicznego (`@Slf4j`, poziomy logowania, brak PII/haseł).
 - Jesli brak dowodu, oznacz to jako assumption.
 
 ## Format odpowiedzi

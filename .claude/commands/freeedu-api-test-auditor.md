@@ -12,6 +12,7 @@ Uzyj tego workflowu, gdy trzeba zsynchronizowac backend, `api-contract.md`, plik
 - Backend jest source of truth.
 - `api-contract.md` i `.http` sa pochodna kodu, a nie odwrotnie.
 - Uwzgledniaj aktualne relacje domenowe, np. teacher->student przez grupy.
+- Weryfikuj aspekty operacyjne: `X-Correlation-Id` w naglowkach oraz kody diagnostyczne bledow.
 - Dane tworzone przez testy musza miec cleanup, jesli baza jest wspoldzielona.
 
 ## Kroki

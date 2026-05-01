@@ -12,4 +12,9 @@ public class TaskException extends RuntimeException {
 		super(errorCode.getDefaultMessage());
 		this.errorCode = errorCode;
 	}
+
+	public TaskException(ErrorCode errorCode, Throwable cause) {
+		super(errorCode.getDefaultMessage(), cause);
+		this.errorCode = errorCode;
+	}
 }

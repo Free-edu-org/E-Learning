@@ -27,7 +27,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 public class LessonAttachmentService {
 
@@ -53,8 +55,11 @@ public class LessonAttachmentService {
 
 	public Mono<LessonAttachmentResponse> uploadAttachment(Integer lessonId, FilePart filePart) {
 		return Mono.fromCallable(() -> {
-			lessonRepository.findById(lessonId)
-					.orElseThrow(() -> new LessonException(LessonErrorCode.LESSON_NOT_FOUND));
+			log.info("Attachment upload started for lesson ID: {}", lessonId);
+			lessonRepository.findById(lessonId).orElseThrow(() -> {
+				log.warn("Attachment upload failed: Lesson with ID: {} not found", lessonId);
+				return new LessonException(LessonErrorCode.LESSON_NOT_FOUND);
+			});
 
 			String contentType = filePart.headers().getContentType() != null
 					? filePart.headers().getContentType().toString()
@@ -63,6 +68,7 @@ public class LessonAttachmentService {
 					? contentType.substring(0, contentType.indexOf(';')).trim()
 					: contentType.trim();
 			if (!ALLOWED_TYPES.containsKey(baseType)) {
+				log.warn("Attachment upload failed for lesson ID: {}: invalid content type: {}", lessonId, baseType);
 				throw new LessonException(LessonErrorCode.ATTACHMENT_INVALID_FILE_TYPE);
 			}
 			return baseType;
@@ -75,9 +81,11 @@ public class LessonAttachmentService {
 
 			return Mono.fromCallable(() -> {
 				try {
+					log.debug("Preparing attachment directory for lesson ID: {}", lessonId);
 					Files.createDirectories(dir);
 					return filePath;
 				} catch (IOException e) {
+					log.error("Failed to prepare attachment directory for lesson ID: {}", lessonId, e);
 					throw new RuntimeException("Failed to prepare attachment directory", e);
 				}
 			}).subscribeOn(Schedulers.boundedElastic()).flatMap(path -> filePart.transferTo(path).thenReturn(path))
@@ -85,16 +93,22 @@ public class LessonAttachmentService {
 						try {
 							long fileSize = Files.size(path);
 							if (fileSize > MAX_FILE_SIZE_BYTES) {
+								log.warn("Attachment upload failed for lesson ID: {}: file too large ({} bytes)",
+										lessonId, fileSize);
 								Files.deleteIfExists(path);
 								throw new LessonException(LessonErrorCode.ATTACHMENT_FILE_TOO_LARGE);
 							}
 							// Pessimistic lock prevents concurrent uploads from both passing the
 							// count check and exceeding MAX_ATTACHMENTS_PER_LESSON.
 							LessonAttachment saved = transactionTemplate.execute(status -> {
-								lessonRepository.findByIdForUpdate(lessonId)
-										.orElseThrow(() -> new LessonException(LessonErrorCode.LESSON_NOT_FOUND));
+								lessonRepository.findByIdForUpdate(lessonId).orElseThrow(() -> {
+									log.warn("Attachment processing failed: Lesson with ID: {} not found", lessonId);
+									return new LessonException(LessonErrorCode.LESSON_NOT_FOUND);
+								});
 								long count = lessonAttachmentRepository.countByLessonId(lessonId);
 								if (count >= MAX_ATTACHMENTS_PER_LESSON) {
+									log.warn("Attachment upload failed for lesson ID: {}: limit reached ({}/{})",
+											lessonId, count, MAX_ATTACHMENTS_PER_LESSON);
 									try {
 										Files.deleteIfExists(path);
 									} catch (IOException ignored) {
@@ -106,8 +120,11 @@ public class LessonAttachmentService {
 										.fileSize(fileSize).build();
 								return lessonAttachmentRepository.save(attachment);
 							});
+							log.info("Attachment uploaded successfully for lesson ID: {}. Attachment ID: {}", lessonId,
+									saved.getId());
 							return toResponse(saved);
 						} catch (IOException e) {
+							log.error("Failed to process attachment file for lesson ID: {}", lessonId, e);
 							throw new RuntimeException("Failed to process attachment file", e);
 						}
 					}).subscribeOn(Schedulers.boundedElastic()));
@@ -116,19 +133,26 @@ public class LessonAttachmentService {
 
 	public Mono<ResponseEntity<Resource>> downloadAttachment(Integer lessonId, Integer attachmentId) {
 		return Mono.fromCallable(() -> {
-			lessonRepository.findById(lessonId)
-					.orElseThrow(() -> new LessonException(LessonErrorCode.LESSON_NOT_FOUND));
+			log.info("Downloading attachment ID: {} for lesson ID: {}", attachmentId, lessonId);
+			lessonRepository.findById(lessonId).orElseThrow(() -> {
+				log.warn("Download failed: Lesson with ID: {} not found", lessonId);
+				return new LessonException(LessonErrorCode.LESSON_NOT_FOUND);
+			});
 
-			LessonAttachment attachment = lessonAttachmentRepository.findById(attachmentId)
-					.orElseThrow(() -> new LessonException(LessonErrorCode.ATTACHMENT_NOT_FOUND));
+			LessonAttachment attachment = lessonAttachmentRepository.findById(attachmentId).orElseThrow(() -> {
+				log.warn("Download failed: Attachment with ID: {} not found", attachmentId);
+				return new LessonException(LessonErrorCode.ATTACHMENT_NOT_FOUND);
+			});
 
 			if (!lessonId.equals(attachment.getLessonId())) {
+				log.warn("Download failed: Attachment ID: {} does not belong to lesson ID: {}", attachmentId, lessonId);
 				throw new LessonException(LessonErrorCode.ATTACHMENT_NOT_FOUND);
 			}
 
 			Path filePath = Paths.get(ATTACHMENT_DIR).resolve(attachment.getStoredFileName());
 			Resource resource = new FileSystemResource(filePath);
 			if (!resource.exists()) {
+				log.error("Download failed: Attachment file not found on disk: {}", filePath);
 				throw new LessonException(LessonErrorCode.ATTACHMENT_NOT_FOUND);
 			}
 
@@ -137,28 +161,39 @@ public class LessonAttachmentService {
 			headers.setContentDisposition(
 					ContentDisposition.attachment().filename(attachment.getOriginalFileName()).build());
 
+			log.debug("Attachment ID: {} download successful", attachmentId);
 			return ResponseEntity.<Resource>ok().headers(headers).body(resource);
 		}).subscribeOn(Schedulers.boundedElastic());
 	}
 
 	public Mono<Void> deleteAttachment(Integer lessonId, Integer attachmentId) {
 		return Mono.fromCallable(() -> {
-			lessonRepository.findById(lessonId)
-					.orElseThrow(() -> new LessonException(LessonErrorCode.LESSON_NOT_FOUND));
+			log.info("Deleting attachment ID: {} for lesson ID: {}", attachmentId, lessonId);
+			lessonRepository.findById(lessonId).orElseThrow(() -> {
+				log.warn("Delete failed: Lesson with ID: {} not found", lessonId);
+				return new LessonException(LessonErrorCode.LESSON_NOT_FOUND);
+			});
 
-			LessonAttachment attachment = lessonAttachmentRepository.findById(attachmentId)
-					.orElseThrow(() -> new LessonException(LessonErrorCode.ATTACHMENT_NOT_FOUND));
+			LessonAttachment attachment = lessonAttachmentRepository.findById(attachmentId).orElseThrow(() -> {
+				log.warn("Delete failed: Attachment with ID: {} not found", attachmentId);
+				return new LessonException(LessonErrorCode.ATTACHMENT_NOT_FOUND);
+			});
 
 			if (!lessonId.equals(attachment.getLessonId())) {
+				log.warn("Delete failed: Attachment ID: {} does not belong to lesson ID: {}", attachmentId, lessonId);
 				throw new LessonException(LessonErrorCode.ATTACHMENT_NOT_FOUND);
 			}
 
 			try {
-				Files.deleteIfExists(Paths.get(ATTACHMENT_DIR).resolve(attachment.getStoredFileName()));
+				Path path = Paths.get(ATTACHMENT_DIR).resolve(attachment.getStoredFileName());
+				log.debug("Deleting attachment file from disk: {}", path);
+				Files.deleteIfExists(path);
 			} catch (IOException e) {
-				// ignore, best-effort cleanup
+				log.warn("Failed to delete attachment file from disk for attachment ID: {}. Error: {}", attachmentId,
+						e.getMessage());
 			}
 			lessonAttachmentRepository.delete(attachment);
+			log.info("Attachment ID: {} deleted successfully", attachmentId);
 			return (Void) null;
 		}).subscribeOn(Schedulers.boundedElastic()).then();
 	}

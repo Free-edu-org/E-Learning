@@ -54,6 +54,8 @@ For each endpoint verify tests include:
 - Repeated delete/update behavior
 - Invalid/expired/malformed token
 - Unsupported HTTP methods
+- Presence of `X-Correlation-Id` in all response headers
+- Proper `code` for technical errors (e.g., `TOKEN_EXPIRED`)
 
 ## 6. Drift report
 

@@ -54,6 +54,7 @@ Dowiezc task do Jiry, ktory jest konkretny, implementowalny i osadzony w realnej
 #### 3. Backend
 - **Moduly / serwisy / repozytoria:** [...]
 - **Walidacja i logika biznesowa:** [...]
+- **Logowanie techniczne:** (wymagane @Slf4j, logowanie start/sukces/bledy, korelacja MDC)
 
 #### 4. Frontend
 - **Widoki / flow / integracja API:** [...]

@@ -36,8 +36,12 @@ Dzialaj jak wymagajacy senior reviewer:
 - Czy testy pokrywaja scenariusze krytyczne i nie maskuja problemow kodu.
 - Czy cleanup danych testowych jest domkniety.
 
-6. Operacyjnosc
-- Migracje, rollback safety, obserwowalnosc, logi bledow.
+6. Operacyjnosc i Logowanie
+- Czy kod zawiera logowanie techniczne (`@Slf4j`) dla waznych operacji.
+- Czy poziomy logowania sa dobrane poprawnie (`DEBUG`/`INFO`/`WARN`/`ERROR`).
+- Czy logi nie ujawniaja haseł ani tokenow.
+- Czy bledy sa logowane z odpowiednim kontekstem i stacktracem.
+- Migracje, rollback safety.
 
 ## Workflow
 

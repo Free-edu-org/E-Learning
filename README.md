@@ -108,3 +108,13 @@ Uruchomienie serwera deweloperskiego Vite:
 ```bash
 cd frontend && npm run dev
 ```
+
+---
+
+## 📊 Obserwowalność i Logowanie
+
+Projekt posiada zintegrowany system logowania technicznego:
+- **Correlation ID**: Każde żądanie posiada unikalny identyfikator `X-Correlation-Id`, który jest propagowany przez wszystkie warstwy aplikacji (MDC w backendzie) i zwracany w nagłówku odpowiedzi.
+- **Logi Aplikacyjne**: Logi są zapisywane w katalogu `backend/logs` oraz wypisywane na konsolę.
+- **Standardy**: Używamy SLF4J (`@Slf4j`) z odpowiednio dobranymi poziomami (`INFO` dla startu/sukcesu waznych operacji, `WARN` dla błędów walidacji/security, `ERROR` dla wyjątków).
+- **Prywatność**: Logi techniczne nie powinny zawierać haseł ani tokenów.

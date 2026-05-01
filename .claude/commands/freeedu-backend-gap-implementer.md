@@ -12,6 +12,7 @@ Uzyj tego workflowu, gdy trzeba dopisac lub poprawic backend, a nie tylko opisac
 - Najpierw analizuj istniejacy backend.
 - Security i ownership sa czescia funkcjonalnosci.
 - Kontrakt, `.http` i testy domykaj razem z kodem.
+- Kazdy serwis i security handler musi posiadac logowanie techniczne `@Slf4j`.
 - Relacje domenowe opieraj o aktualny model, np. teacher->student przez grupy.
 
 ## Kroki
@@ -20,5 +21,6 @@ Uzyj tego workflowu, gdy trzeba dopisac lub poprawic backend, a nie tylko opisac
 2. Znajdz najblizszy wzorzec w repo.
 3. Zaprojektuj security i ownership.
 4. Zaimplementuj backend zgodnie ze stylem projektu.
-5. Zsynchronizuj kontrakt, `.http` i testy.
-6. Zweryfikuj build/test scope dostepny lokalnie.
+5. Wdroż logowanie techniczne (start/sukces/bledy, korelacja MDC, bezpieczenstwo PII).
+6. Zsynchronizuj kontrakt, `.http` i testy.
+7. Zweryfikuj build/test scope dostepny lokalnie.

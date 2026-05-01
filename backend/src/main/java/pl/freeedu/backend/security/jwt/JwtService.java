@@ -11,7 +11,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 public class JwtService {
 
@@ -58,7 +60,12 @@ public class JwtService {
 	}
 
 	private Claims extractAllClaims(String token) {
-		return Jwts.parser().verifyWith(getSignInKey()).build().parseSignedClaims(token).getPayload();
+		try {
+			return Jwts.parser().verifyWith(getSignInKey()).build().parseSignedClaims(token).getPayload();
+		} catch (Exception e) {
+			log.debug("Failed to extract claims from JWT (redacted: {})", e.getClass().getSimpleName());
+			throw e;
+		}
 	}
 
 	private SecretKey getSignInKey() {

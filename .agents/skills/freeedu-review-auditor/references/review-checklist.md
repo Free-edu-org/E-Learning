@@ -1,4 +1,4 @@
-﻿# Review Checklist
+# Review Checklist
 
 ## A. Correctness
 - Requirement implemented exactly.
@@ -29,7 +29,12 @@
 - Naming and structure consistent.
 - No obvious technical debt spikes.
 
-## G. Release risk
+## G. Operacyjność i Logowanie
+- Obecność `@Slf4j` i logowania technicznego.
+- Poziomy logowania poprawne (brak szumu na INFO).
+- Brak haseł/tokenów/PII w logach.
+- Błędy z logowane z kontekstem/ex.
+
+## H. Release risk
 - Rollout/rollback risk known.
-- Monitoring/logging impact known.
 - Final decision: APPROVE / APPROVE WITH CONDITIONS / REJECT.

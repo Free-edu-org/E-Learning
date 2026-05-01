@@ -17,6 +17,8 @@
 - Logika biznesowa jest w serwisie.
 - DTO i odpowiedzi sa minimalne i celowe.
 - Error codes sa spojne z projektem.
+- Logowanie techniczne `@Slf4j` zostalo dodane (start/sukces/bledy).
+- Logi sa bezpieczne (brak PII/haseł/tokenow) i spojne z MDC.
 
 ## 5. Contract and tests
 - `api-contract.md` zostal zaktualizowany.
