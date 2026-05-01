@@ -9,6 +9,15 @@ const ERROR_TRANSLATIONS: Record<string, string> = {
   "Invalid old password": "Obecne hasło jest nieprawidłowe.",
   "Bad credentials": "Nieprawidłowe dane logowania.",
   "Invalid username/email or password": "Nieprawidłowy login/email lub hasło.",
+  "If the account exists, a reset link has been sent.":
+    "Jeśli konto istnieje, wysłaliśmy link do resetu hasła.",
+  "New password and confirmation password must match.":
+    "Nowe hasło i potwierdzenie hasła muszą być identyczne.",
+  "Password reset token is invalid.":
+    "Link do resetu hasła jest nieprawidłowy.",
+  "Password reset token has expired.": "Link do resetu hasła wygasł.",
+  "Password reset token has already been used.":
+    "Ten link do resetu hasła został już użyty.",
   "Task not found": "Nie znaleziono zadania.",
   "Lesson has already been completed": "Ta lekcja została już ukończona.",
   "Lesson has not been started yet":
@@ -55,6 +64,9 @@ const ERROR_TRANSLATIONS: Record<string, string> = {
   "Username is required": "Pole jest wymagane.",
   "Email is required": "Pole jest wymagane.",
   "Password is required": "Pole jest wymagane.",
+  "Token is required": "Pole jest wymagane.",
+  "New password is required": "Pole jest wymagane.",
+  "Confirm password is required": "Pole jest wymagane.",
   "Group ID is required": "Pole jest wymagane.",
   "Username cannot be blank": "Pole jest wymagane.",
   "Email cannot be blank": "Pole jest wymagane.",
@@ -89,6 +101,11 @@ const ERROR_TRANSLATIONS: Record<string, string> = {
 const ERROR_CODE_TRANSLATIONS: Record<string, string> = {
   INVALID_CREDENTIALS: "Nieprawidłowy login/email lub hasło.",
   INVALID_OLD_PASSWORD: "Obecne hasło jest nieprawidłowe.",
+  PASSWORD_CONFIRMATION_MISMATCH:
+    "Nowe hasło i potwierdzenie hasła muszą być identyczne.",
+  PASSWORD_RESET_TOKEN_INVALID: "Link do resetu hasła jest nieprawidłowy.",
+  PASSWORD_RESET_TOKEN_EXPIRED: "Link do resetu hasła wygasł.",
+  PASSWORD_RESET_TOKEN_USED: "Ten link do resetu hasła został już użyty.",
   TASK_NOT_FOUND: "Nie znaleziono zadania.",
   LESSON_ALREADY_COMPLETED: "Ta lekcja została już ukończona.",
   LESSON_NOT_STARTED: "Ta lekcja nie została jeszcze rozpoczęta.",
@@ -165,6 +182,10 @@ function translateValidationMessage(
   }
 
   return parts.join(" ");
+}
+
+export function translateApiMessage(message: string): string {
+  return ERROR_TRANSLATIONS[message] ?? message;
 }
 
 export function getApiErrorMessage(

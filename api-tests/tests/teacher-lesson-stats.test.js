@@ -33,15 +33,12 @@ describe('Teacher Lesson Stats API (GET /api/v1/teacher/lessons/{lessonId}/stats
         isolatedGroupId = res.data.id;
 
         res = await apiClient.post('/lessons', {
-            title: `Stats Lesson ${uniqueId}`,
+            title: `Stats ${uniqueId}`,
             theme: 'Lesson Stats Testing',
             groupIds: [isolatedGroupId]
         });
         expect(res.status).toBe(201);
         isolatedLessonId = res.data.id;
-
-        res = await apiClient.patch(`/lessons/${isolatedLessonId}/status`, { isActive: true });
-        expect(res.status).toBe(204);
 
         res = await apiClient.post(`/lessons/${isolatedLessonId}/tasks/choose`, {
             task: 'What is 1+1?',
@@ -52,6 +49,9 @@ describe('Teacher Lesson Stats API (GET /api/v1/teacher/lessons/{lessonId}/stats
         });
         expect(res.status).toBe(201);
         chooseTaskId = res.data.id;
+
+        res = await apiClient.patch(`/lessons/${isolatedLessonId}/status`, { isActive: true });
+        expect(res.status).toBe(204);
 
         // Admin creates isolated student
         setAuthToken(adminToken);
@@ -286,7 +286,7 @@ describe('Teacher Lesson Stats API (GET /api/v1/teacher/lessons/{lessonId}/stats
         beforeAll(async () => {
             setAuthToken(teacherToken);
             const res = await apiClient.post('/lessons', {
-                title: `Empty Stats Lesson ${uniqueId}`,
+                title: `Empty Stats ${uniqueId}`,
                 theme: 'No submissions',
                 groupIds: [isolatedGroupId]
             });

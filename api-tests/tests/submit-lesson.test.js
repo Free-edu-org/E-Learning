@@ -38,9 +38,6 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
         expect(res.status).toBe(201);
         lessonId = res.data.id;
 
-        res = await apiClient.patch(`/lessons/${lessonId}/status`, { isActive: true });
-        expect(res.status).toBe(204);
-
         // Teacher creates 4 task types
         res = await apiClient.post(`/lessons/${lessonId}/tasks/choose`, {
             task: 'What is 2+2?',
@@ -79,6 +76,9 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
         });
         expect(res.status).toBe(201);
         speakTaskId = res.data.id;
+
+        res = await apiClient.patch(`/lessons/${lessonId}/status`, { isActive: true });
+        expect(res.status).toBe(204);
 
         // Register student1 (will be added to group)
         setAuthToken(adminToken);

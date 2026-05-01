@@ -3,8 +3,10 @@ package pl.freeedu.backend.security.jwt;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import java.util.Optional;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import pl.freeedu.backend.user.model.User;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
@@ -17,6 +19,8 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 public class JwtService {
 
+	private static final String TOKEN_VERSION_CLAIM = "tokenVersion";
+
 	@Value("${application.security.jwt.secret-key}")
 	private String secretKey;
 
@@ -27,13 +31,24 @@ public class JwtService {
 		return Integer.parseInt(extractClaim(token, Claims::getSubject));
 	}
 
+	public Integer extractTokenVersion(String token) {
+		return Optional.ofNullable(extractClaim(token, claims -> claims.get(TOKEN_VERSION_CLAIM, Integer.class)))
+				.orElse(0);
+	}
+
 	public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
 		final Claims claims = extractAllClaims(token);
 		return claimsResolver.apply(claims);
 	}
 
+	public String generateToken(Integer userId, Integer tokenVersion) {
+		Map<String, Object> extraClaims = new HashMap<>();
+		extraClaims.put(TOKEN_VERSION_CLAIM, tokenVersion);
+		return generateToken(extraClaims, userId);
+	}
+
 	public String generateToken(Integer userId) {
-		return generateToken(new HashMap<>(), userId);
+		return generateToken(userId, 0);
 	}
 
 	public String generateToken(Map<String, Object> extraClaims, Integer userId) {
@@ -46,9 +61,16 @@ public class JwtService {
 				.compact();
 	}
 
+	public boolean isTokenValid(String token, User user) {
+		final Integer userId = extractUserId(token);
+		final Integer tokenVersion = extractTokenVersion(token);
+		return userId.equals(user.getId()) && tokenVersion.equals(Optional.ofNullable(user.getTokenVersion()).orElse(0))
+				&& !isTokenExpired(token);
+	}
+
 	public boolean isTokenValid(String token, Integer targetUserId) {
 		final Integer userId = extractUserId(token);
-		return (userId.equals(targetUserId)) && !isTokenExpired(token);
+		return userId.equals(targetUserId) && !isTokenExpired(token);
 	}
 
 	private boolean isTokenExpired(String token) {

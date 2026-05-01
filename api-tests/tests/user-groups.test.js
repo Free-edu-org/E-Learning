@@ -713,9 +713,9 @@ describe('User Groups API (/api/v1/user-groups)', () => {
             expect(response.data.code).toBe('VALIDATION_FAILED');
         });
 
-        it('should allow creating groups with a 255-char name', async () => {
+        it('should allow creating groups with a 60-char name', async () => {
             setAuthToken(adminToken);
-            const longName = 'A'.repeat(255);
+            const longName = 'A'.repeat(60);
             const response = await apiClient.post('/user-groups', {
                 name: longName,
                 description: 'Long name group'

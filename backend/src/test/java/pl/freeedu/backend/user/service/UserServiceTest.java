@@ -145,7 +145,7 @@ class UserServiceTest {
 	void shouldChangePasswordSucceed() {
 		// given
 		ChangePasswordRequest req = ChangePasswordRequest.builder().oldPassword("o").newPassword("n").build();
-		User user = User.builder().id(1).password("ho").build();
+		User user = User.builder().id(1).password("ho").tokenVersion(2).build();
 
 		when(userRepository.findById(1)).thenReturn(Optional.of(user));
 		when(passwordEncoder.matches("o", "ho")).thenReturn(true);
@@ -157,6 +157,7 @@ class UserServiceTest {
 		// then
 		StepVerifier.create(result).verifyComplete();
 		assertEquals("hn", user.getPassword());
+		assertEquals(3, user.getTokenVersion());
 		verify(userRepository).save(user);
 	}
 

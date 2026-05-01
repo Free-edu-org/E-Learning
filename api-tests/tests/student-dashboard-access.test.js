@@ -15,10 +15,12 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
     let isolatedGroupId;
     let otherGroupId;
     let sharedLessonId;
+    let sharedLessonTaskId;
 
     // Attachment test resources
     let attachmentLessonId;
     let attachmentGroupId;
+    let attachmentLessonTaskId;
     let attachmentStudentToken;
     let attachmentStudentId;
     let attachmentId;
@@ -60,12 +62,21 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
         attachmentGroupId = res.data.id;
 
         res = await apiClient.post('/lessons', {
-            title: `Student Attachment Lesson ${uniqueId}`,
+            title: `Attach Lesson ${uniqueId}`,
             theme: 'Attachment Tests',
             groupIds: [attachmentGroupId],
         });
         expect(res.status).toBe(201);
         attachmentLessonId = res.data.id;
+
+        setAuthToken(teacherToken);
+        res = await apiClient.post(`/lessons/${attachmentLessonId}/tasks/choose`, {
+            task: 'Attachment setup task',
+            possibleAnswers: 'skip|ok',
+            correctAnswer: 1
+        });
+        expect(res.status).toBe(201);
+        attachmentLessonTaskId = res.data.id;
 
         // Activate the lesson
         setAuthToken(adminToken);
@@ -129,6 +140,22 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
 
     afterAll(async () => {
         setAuthToken(teacherToken);
+        for (const [lessonId, taskId] of [
+            [sharedLessonId, sharedLessonTaskId],
+            [attachmentLessonId, attachmentLessonTaskId]
+        ]) {
+            if (lessonId && taskId) {
+                const response = await apiClient.delete(`/lessons/${lessonId}/tasks/choose/${taskId}`);
+                expect([204, 404]).toContain(response.status);
+            }
+        }
+
+        if (attachmentLessonId && attachmentId) {
+            const response = await apiClient.delete(`/lessons/${attachmentLessonId}/attachments/${attachmentId}`);
+            expect([204, 404]).toContain(response.status);
+        }
+
+        setAuthToken(teacherToken);
         if (sharedLessonId) {
             const response = await apiClient.delete(`/lessons/${sharedLessonId}`);
             expect([204, 404]).toContain(response.status);
@@ -174,12 +201,24 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
         otherGroupId = res.data.id;
 
         res = await apiClient.post('/lessons', {
-            title: `Shared Student Dashboard Lesson ${uniqueId}`,
+            title: `Shared Lesson ${uniqueId}`,
             theme: 'Student Dashboard Regression',
             groupIds: [isolatedGroupId, otherGroupId]
         });
         expect(res.status).toBe(201);
         sharedLessonId = res.data.id;
+
+        setAuthToken(teacherToken);
+        res = await apiClient.post(`/lessons/${sharedLessonId}/tasks/choose`, {
+            task: 'Shared lesson setup task',
+            possibleAnswers: 'a|b',
+            correctAnswer: 0
+        });
+        expect(res.status).toBe(201);
+        sharedLessonTaskId = res.data.id;
+
+        res = await apiClient.patch(`/lessons/${sharedLessonId}/status`, {isActive: true});
+        expect(res.status).toBe(204);
 
         setAuthToken(adminToken);
         const studentData = {
