@@ -792,7 +792,7 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
 | `totalLessons` | Long | Total number of lessons mapped to the requesting teacher. |
 | `activeLessons` | Long | Number of active lessons mapped to the requesting teacher. |
 | `activeStudents` | Long | Distinct students belonging to resolving groups. |
-| `avgScore` | Double | Average correctness score (0ÔÇô100). |
+| `avgScore` | Double | Average correctness score (0–100). |
 
 **Known Errors:**
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
@@ -803,7 +803,7 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
 ### 5.2. Get My Lessons
 - **URL**: `/api/v1/teacher/lessons`
 - **Method**: `GET`
-- **Description**: Pobiera listę lekcji wykreowanych i przypisanych WY┼ü─äCZNIE do odpytującego nauczyciela. Odciąża generyczny `LessonController` chroniąc przed dostępem do obcych materiałów.
+- **Description**: Pobiera listę lekcji wykreowanych i przypisanych WYŁĄCZNIE do odpytującego nauczyciela. Odciąża generyczny `LessonController` chroniąc przed dostępem do obcych materiałów.
 - **Authorization**: `TEACHER`
 
 **Success (200 OK):** Zwraca macierz obiektów `LessonResponse` (odpowiednik standardowego 4.1. Get list of lessons).
