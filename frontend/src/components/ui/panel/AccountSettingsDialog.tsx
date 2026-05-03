@@ -174,7 +174,10 @@ export function AccountSettingsDialog({
     setFeedback(null);
     setPasswordLoading(true);
     try {
-      await userService.changePassword(user.publicId, { oldPassword, newPassword });
+      await userService.changePassword(user.publicId, {
+        oldPassword,
+        newPassword,
+      });
       setOldPassword("");
       setNewPassword("");
       setConfirmPassword("");

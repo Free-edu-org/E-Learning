@@ -98,7 +98,10 @@ export const lessonService = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
-  updateTeacherStudent: (publicId: string, payload: UpdateTeacherStudentRequest) =>
+  updateTeacherStudent: (
+    publicId: string,
+    payload: UpdateTeacherStudentRequest,
+  ) =>
     fetchApi<TeacherStudentResponse>(`/api/v1/teacher/students/${publicId}`, {
       method: "PUT",
       body: JSON.stringify(payload),
@@ -131,9 +134,12 @@ export const lessonService = {
       `/api/v1/teacher/lessons/${lessonPublicId}/students/${studentPublicId}/result`,
     ),
   resetStudentLessonProgress: (lessonPublicId: string, userPublicId: string) =>
-    fetchApi<void>(`/api/v1/lessons/${lessonPublicId}/users/${userPublicId}/reset`, {
-      method: "POST",
-    }),
+    fetchApi<void>(
+      `/api/v1/lessons/${lessonPublicId}/users/${userPublicId}/reset`,
+      {
+        method: "POST",
+      },
+    ),
   uploadAttachment: (lessonPublicId: string, file: File) => {
     const formData = new FormData();
     formData.append("file", file);
@@ -153,7 +159,7 @@ export const lessonService = {
     fetchApi<void>(
       `/api/v1/lessons/${lessonPublicId}/attachments/${attachmentPublicId}`,
       {
-      method: "DELETE",
+        method: "DELETE",
       },
     ),
 };

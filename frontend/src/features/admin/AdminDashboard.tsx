@@ -256,9 +256,9 @@ export function AdminDashboard() {
 
   const [membershipDialog, setMembershipDialog] =
     useState<MembershipDialogState | null>(null);
-  const [membershipStudentPublicId, setMembershipStudentPublicId] = useState<string | "">(
-    "",
-  );
+  const [membershipStudentPublicId, setMembershipStudentPublicId] = useState<
+    string | ""
+  >("");
   const [membershipLoading, setMembershipLoading] = useState(false);
   const [membershipDialogFeedback, setMembershipDialogFeedback] =
     useState<DialogFeedbackState | null>(null);
@@ -274,7 +274,9 @@ export function AdminDashboard() {
 
   const filteredUsers = useMemo(() => {
     const normalizedQuery = userSearch.trim().toLowerCase();
-    const selectedTeacherPublicIds = new Set(selectedTeacherFilters.map((t) => t.publicId));
+    const selectedTeacherPublicIds = new Set(
+      selectedTeacherFilters.map((t) => t.publicId),
+    );
     const selectedGroupPublicIds = new Set(
       selectedGroupFilters.map((g) => g.publicId),
     );
@@ -306,7 +308,9 @@ export function AdminDashboard() {
               : null;
           const teacherGroupPublicIds = new Set(
             groups
-              .filter((g) => selectedTeacherPublicIds.has(g.teacherPublicId ?? ""))
+              .filter((g) =>
+                selectedTeacherPublicIds.has(g.teacherPublicId ?? ""),
+              )
               .map((g) => g.publicId),
           );
           if (
@@ -358,7 +362,9 @@ export function AdminDashboard() {
 
   const filteredGroups = useMemo(() => {
     const normalizedQuery = groupSearch.trim().toLowerCase();
-    const selectedTeacherPublicIds = new Set(selectedTeacherFilters.map((t) => t.publicId));
+    const selectedTeacherPublicIds = new Set(
+      selectedTeacherFilters.map((t) => t.publicId),
+    );
     return groups.filter((group) => {
       if (
         selectedTeacherPublicIds.size > 0 &&
@@ -406,12 +412,14 @@ export function AdminDashboard() {
   }, [membershipDialog, students]);
 
   const teacherNameById = useMemo(
-    () => new Map(teachers.map((teacher) => [teacher.publicId, teacher.username])),
+    () =>
+      new Map(teachers.map((teacher) => [teacher.publicId, teacher.username])),
     [teachers],
   );
 
   const teacherAvatarById = useMemo(
-    () => new Map(teachers.map((teacher) => [teacher.publicId, teacher.avatarUrl])),
+    () =>
+      new Map(teachers.map((teacher) => [teacher.publicId, teacher.avatarUrl])),
     [teachers],
   );
 
@@ -525,8 +533,7 @@ export function AdminDashboard() {
       username: user.username,
       email: user.email,
       password: "",
-      groupPublicId:
-        "groupPublicId" in user ? (user.groupPublicId ?? "") : "",
+      groupPublicId: "groupPublicId" in user ? (user.groupPublicId ?? "") : "",
     });
     setUserDialogFeedback(null);
     setUserDialogOpen(true);
@@ -592,13 +599,19 @@ export function AdminDashboard() {
             groupPublicId:
               userDraft.groupPublicId === "" ? null : userDraft.groupPublicId,
           };
-          updated = await adminService.updateStudent(selectedUser.publicId, payload);
+          updated = await adminService.updateStudent(
+            selectedUser.publicId,
+            payload,
+          );
         } else {
           const payload: UpdateUserRequest = {
             username: userDraft.username,
             email: userDraft.email,
           };
-          updated = await userService.updateUser(selectedUser.publicId, payload);
+          updated = await userService.updateUser(
+            selectedUser.publicId,
+            payload,
+          );
         }
 
         setSelectedUser(updated);
@@ -664,7 +677,8 @@ export function AdminDashboard() {
       const payload = {
         name: groupDraft.name,
         description: groupDraft.description,
-        teacherPublicId: groupDraft.teacherPublicId === "" ? null : groupDraft.teacherPublicId,
+        teacherPublicId:
+          groupDraft.teacherPublicId === "" ? null : groupDraft.teacherPublicId,
       };
 
       if (groupDialogMode === "create") {
@@ -2126,7 +2140,9 @@ export function AdminDashboard() {
                             onChange={(event) =>
                               setUserDraft((current) => ({
                                 ...current,
-                                groupPublicId: event.target.value as string | "",
+                                groupPublicId: event.target.value as
+                                  | string
+                                  | "",
                               }))
                             }
                             fullWidth
@@ -2496,7 +2512,9 @@ export function AdminDashboard() {
                             size="small"
                             color="error"
                             startIcon={<DeleteIcon fontSize="small" />}
-                            onClick={() => removeMembershipStudent(student.publicId)}
+                            onClick={() =>
+                              removeMembershipStudent(student.publicId)
+                            }
                             disabled={membershipLoading}
                             sx={panelDeleteButtonSx}
                           >
@@ -2521,7 +2539,8 @@ export function AdminDashboard() {
                   )}
                   value={
                     availableMembershipStudents.find(
-                      (student) => student.publicId === membershipStudentPublicId,
+                      (student) =>
+                        student.publicId === membershipStudentPublicId,
                     ) ?? null
                   }
                   onChange={(_, value) =>

@@ -32,11 +32,17 @@ export const userGroupService = {
       method: "DELETE",
     }),
   addStudentToGroup: (groupPublicId: string, userPublicId: string) =>
-    fetchApi<void>(`/api/v1/user-groups/${groupPublicId}/members/${userPublicId}`, {
-      method: "POST",
-    }),
+    fetchApi<void>(
+      `/api/v1/user-groups/${groupPublicId}/members/${userPublicId}`,
+      {
+        method: "POST",
+      },
+    ),
   removeStudentFromGroup: (groupPublicId: string, userPublicId: string) =>
-    fetchApi<void>(`/api/v1/user-groups/${groupPublicId}/members/${userPublicId}`, {
-      method: "DELETE",
-    }),
+    fetchApi<void>(
+      `/api/v1/user-groups/${groupPublicId}/members/${userPublicId}`,
+      {
+        method: "DELETE",
+      },
+    ),
 };

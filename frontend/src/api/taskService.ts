@@ -160,7 +160,7 @@ export const taskService = {
     fetchApi<void>(
       `/api/v1/lessons/${lessonPublicId}/tasks/${type}/${taskPublicId}`,
       {
-      method: "DELETE",
+        method: "DELETE",
       },
     ),
   transcribeSpeakTask: (

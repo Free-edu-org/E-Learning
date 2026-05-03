@@ -652,11 +652,11 @@ export function TeacherDashboard() {
         const parsed = parseBackendDraftId(task.id);
         if (parsed) {
           allTaskOps.push(
-              taskService.deleteTask(
-                lessonPublicId,
-                task.type,
-                parsed.taskPublicId,
-              ),
+            taskService.deleteTask(
+              lessonPublicId,
+              task.type,
+              parsed.taskPublicId,
+            ),
           );
         }
       }
@@ -736,9 +736,7 @@ export function TeacherDashboard() {
       // Revert on failure
       setLessons((prev) =>
         prev.map((l) =>
-          l.publicId === lesson.publicId
-            ? { ...l, isActive: !newStatus }
-            : l,
+          l.publicId === lesson.publicId ? { ...l, isActive: !newStatus } : l,
         ),
       );
       setSnackbar({
@@ -810,7 +808,9 @@ export function TeacherDashboard() {
     }
 
     if (selectedGroups.length > 0) {
-      const selectedIds = new Set(selectedGroups.map((group) => group.publicId));
+      const selectedIds = new Set(
+        selectedGroups.map((group) => group.publicId),
+      );
       result = result.filter((lesson) =>
         lesson.groups.some((group) => selectedIds.has(group.publicId)),
       );

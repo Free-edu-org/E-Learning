@@ -102,8 +102,11 @@ export const studentService = {
       `/api/v1/student/lessons/${lessonPublicId}/result`,
     ),
   submitAnswers: (lessonPublicId: string, payload: SubmitAnswersRequest) =>
-    fetchApi<SubmitAnswersResponse>(`/api/v1/lessons/${lessonPublicId}/submit`, {
-      method: "POST",
-      body: JSON.stringify(payload),
-    }),
+    fetchApi<SubmitAnswersResponse>(
+      `/api/v1/lessons/${lessonPublicId}/submit`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    ),
 };

@@ -164,14 +164,18 @@ export function TeacherStudentsView() {
   const [createGroupFeedback, setCreateGroupFeedback] =
     useState<DialogFeedbackState | null>(null);
 
-  const [draggingStudentPublicId, setDraggingStudentPublicId] = useState<string | null>(
-    null,
-  );
-  const [dragOverGroupPublicId, setDragOverGroupPublicId] = useState<string | null>(null);
-  const [movingStudentPublicId, setMovingStudentPublicId] = useState<string | null>(null);
-  const [expandedGroupPublicIds, setExpandedGroupPublicIds] = useState<Set<string>>(
-    () => new Set(),
-  );
+  const [draggingStudentPublicId, setDraggingStudentPublicId] = useState<
+    string | null
+  >(null);
+  const [dragOverGroupPublicId, setDragOverGroupPublicId] = useState<
+    string | null
+  >(null);
+  const [movingStudentPublicId, setMovingStudentPublicId] = useState<
+    string | null
+  >(null);
+  const [expandedGroupPublicIds, setExpandedGroupPublicIds] = useState<
+    Set<string>
+  >(() => new Set());
 
   const fetchData = useCallback(async () => {
     setLoadingData(true);
@@ -210,7 +214,9 @@ export function TeacherStudentsView() {
   }, [fetchData]);
 
   useEffect(() => {
-    setExpandedGroupPublicIds(new Set(availableGroups.map((group) => group.publicId)));
+    setExpandedGroupPublicIds(
+      new Set(availableGroups.map((group) => group.publicId)),
+    );
   }, [availableGroups]);
 
   const groupsWithStudents = useMemo(
@@ -236,8 +242,8 @@ export function TeacherStudentsView() {
           group.publicId,
         ].some((value) => value.toLowerCase().includes(query));
         const matchingStudents = group.students.filter((student) =>
-          [student.username, student.email, String(student.publicId)].some((value) =>
-            value.toLowerCase().includes(query),
+          [student.username, student.email, String(student.publicId)].some(
+            (value) => value.toLowerCase().includes(query),
           ),
         );
 
@@ -436,7 +442,7 @@ export function TeacherStudentsView() {
       message: "Przenoszenie ucznia do nowej grupy...",
     });
     setStudents((current) =>
-        current.map((item) =>
+      current.map((item) =>
         item.publicId === student.publicId
           ? { ...item, groupPublicId: targetGroupPublicId }
           : item,
@@ -482,7 +488,9 @@ export function TeacherStudentsView() {
   const handleDrop = (event: DragEvent, targetGroupPublicId: string) => {
     event.preventDefault();
     const rawStudentPublicId = event.dataTransfer.getData("text/plain");
-    const student = students.find((item) => item.publicId === rawStudentPublicId);
+    const student = students.find(
+      (item) => item.publicId === rawStudentPublicId,
+    );
     if (student) {
       moveStudentToGroup(student, targetGroupPublicId);
     }
@@ -784,7 +792,8 @@ export function TeacherStudentsView() {
                     ) : (
                       <Stack divider={<Divider flexItem />}>
                         {group.students.map((student) => {
-                          const isMoving = movingStudentPublicId === student.publicId;
+                          const isMoving =
+                            movingStudentPublicId === student.publicId;
                           return (
                             <Box
                               key={student.publicId}
@@ -810,11 +819,14 @@ export function TeacherStudentsView() {
                                 py: 1.5,
                                 minHeight: 72,
                                 opacity:
-                                  draggingStudentPublicId === student.publicId || isMoving
+                                  draggingStudentPublicId ===
+                                    student.publicId || isMoving
                                     ? 0.55
                                     : 1,
                                 cursor:
-                                  movingStudentPublicId === null ? "grab" : "default",
+                                  movingStudentPublicId === null
+                                    ? "grab"
+                                    : "default",
                                 "&:hover": { bgcolor: "action.hover" },
                               }}
                             >

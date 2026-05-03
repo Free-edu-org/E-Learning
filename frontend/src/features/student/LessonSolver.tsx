@@ -475,8 +475,7 @@ export function LessonSolver() {
     const taskResult =
       resultsMap?.get(
         answerKey(currentTask.taskType, currentTask.taskPublicId),
-      ) ??
-      null;
+      ) ?? null;
     const currentAnswer =
       answers[answerKey(currentTask.taskType, currentTask.taskPublicId)]
         ?.answer ?? "";

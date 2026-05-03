@@ -152,7 +152,9 @@ export function LessonStatsView() {
     severity: "success" | "error";
     message: string;
   } | null>(null);
-  const [resettingUserPublicIds, setresettingUserPublicIds] = useState<string[]>([]);
+  const [resettingUserPublicIds, setresettingUserPublicIds] = useState<
+    string[]
+  >([]);
   const [resetConfirmStudent, setresetConfirmStudent] =
     useState<LessonStatsStudentResult | null>(null);
 
@@ -193,8 +195,7 @@ export function LessonStatsView() {
         lessonPublicId,
         student.userPublicId,
       );
-      const refreshedStats =
-        await lessonService.getLessonStats(lessonPublicId);
+      const refreshedStats = await lessonService.getLessonStats(lessonPublicId);
       setStats(refreshedStats);
       setActionFeedback({
         severity: "success",
@@ -532,7 +533,9 @@ export function LessonStatsView() {
                             fontSize: "0.8rem",
                             borderRadius: 2,
                           }}
-                          disabled={resettingUserPublicIds.includes(student.userPublicId)}
+                          disabled={resettingUserPublicIds.includes(
+                            student.userPublicId,
+                          )}
                           onClick={() => setresetConfirmStudent(student)}
                         >
                           {resettingUserPublicIds.includes(student.userPublicId)
@@ -608,7 +611,9 @@ export function LessonStatsView() {
                 onClick={() => setresetConfirmStudent(null)}
                 disabled={
                   resetConfirmStudent
-                    ? resettingUserPublicIds.includes(resetConfirmStudent.userPublicId)
+                    ? resettingUserPublicIds.includes(
+                        resetConfirmStudent.userPublicId,
+                      )
                     : false
                 }
                 sx={{ ...panelFooterButtonSx, color: "text.secondary" }}
@@ -621,7 +626,9 @@ export function LessonStatsView() {
                 startIcon={<ReplayIcon />}
                 disabled={
                   !resetConfirmStudent ||
-                  resettingUserPublicIds.includes(resetConfirmStudent.userPublicId)
+                  resettingUserPublicIds.includes(
+                    resetConfirmStudent.userPublicId,
+                  )
                 }
                 onClick={() => {
                   if (!resetConfirmStudent) return;
@@ -630,7 +637,9 @@ export function LessonStatsView() {
                 sx={panelFooterButtonSx}
               >
                 {resetConfirmStudent &&
-                resettingUserPublicIds.includes(resetConfirmStudent.userPublicId)
+                resettingUserPublicIds.includes(
+                  resetConfirmStudent.userPublicId,
+                )
                   ? "Resetowanie..."
                   : "Potwierdź reset"}
               </Button>

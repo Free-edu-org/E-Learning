@@ -20,7 +20,7 @@ export function TeacherLessonResultView() {
   }>();
   const navigate = useNavigate();
   const { logout } = useAuth();
-  
+
   const routeError =
     !lessonPublicId || !studentPublicId
       ? "Nieprawidlowy identyfikator wyniku."
