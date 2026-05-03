@@ -18,6 +18,7 @@ import pl.freeedu.backend.task.dto.*;
 import pl.freeedu.backend.task.service.TaskService;
 import pl.freeedu.backend.user.service.UserPublicIdLookupService;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 @RestController
 @RequestMapping("/api/v1/lessons/{lessonPublicId}")
@@ -44,7 +45,8 @@ public class TaskController {
 	@GetMapping("/tasks")
 	@PreAuthorize("hasRole('STUDENT') or hasRole('TEACHER') or hasRole('ADMIN')")
 	public Mono<LessonTasksResponse> getLessonTasks(@PathVariable String lessonPublicId) {
-		return taskService.getLessonTasks(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId));
+		return Mono.fromCallable(() -> lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId))
+				.subscribeOn(Schedulers.boundedElastic()).flatMap(taskService::getLessonTasks);
 	}
 
 	// --- Choose Task CRUD ---
@@ -57,7 +59,9 @@ public class TaskController {
 	@ResponseStatus(HttpStatus.CREATED)
 	public Mono<ChooseTaskResponse> createChooseTask(@PathVariable String lessonPublicId,
 			@Valid @RequestBody Mono<ChooseTaskRequest> request) {
-		return taskService.createChooseTask(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), request);
+		return Mono.fromCallable(() -> lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId))
+				.subscribeOn(Schedulers.boundedElastic())
+				.flatMap(lessonId -> taskService.createChooseTask(lessonId, request));
 	}
 
 	@Operation(summary = "Update a choose task")
@@ -68,8 +72,9 @@ public class TaskController {
 	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
 	public Mono<ChooseTaskResponse> updateChooseTask(@PathVariable String lessonPublicId,
 			@PathVariable String taskPublicId, @Valid @RequestBody Mono<ChooseTaskRequest> request) {
-		return taskService.updateChooseTask(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId),
-				taskPublicId, request);
+		return Mono.fromCallable(() -> lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId))
+				.subscribeOn(Schedulers.boundedElastic())
+				.flatMap(lessonId -> taskService.updateChooseTask(lessonId, taskPublicId, request));
 	}
 
 	@Operation(summary = "Delete a choose task")
@@ -79,8 +84,9 @@ public class TaskController {
 	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public Mono<Void> deleteChooseTask(@PathVariable String lessonPublicId, @PathVariable String taskPublicId) {
-		return taskService.deleteChooseTask(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId),
-				taskPublicId);
+		return Mono.fromCallable(() -> lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId))
+				.subscribeOn(Schedulers.boundedElastic())
+				.flatMap(lessonId -> taskService.deleteChooseTask(lessonId, taskPublicId));
 	}
 
 	// --- Write Task CRUD ---
@@ -93,7 +99,9 @@ public class TaskController {
 	@ResponseStatus(HttpStatus.CREATED)
 	public Mono<WriteTaskResponse> createWriteTask(@PathVariable String lessonPublicId,
 			@Valid @RequestBody Mono<WriteTaskRequest> request) {
-		return taskService.createWriteTask(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), request);
+		return Mono.fromCallable(() -> lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId))
+				.subscribeOn(Schedulers.boundedElastic())
+				.flatMap(lessonId -> taskService.createWriteTask(lessonId, request));
 	}
 
 	@Operation(summary = "Update a write task")
@@ -104,8 +112,9 @@ public class TaskController {
 	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
 	public Mono<WriteTaskResponse> updateWriteTask(@PathVariable String lessonPublicId,
 			@PathVariable String taskPublicId, @Valid @RequestBody Mono<WriteTaskRequest> request) {
-		return taskService.updateWriteTask(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId),
-				taskPublicId, request);
+		return Mono.fromCallable(() -> lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId))
+				.subscribeOn(Schedulers.boundedElastic())
+				.flatMap(lessonId -> taskService.updateWriteTask(lessonId, taskPublicId, request));
 	}
 
 	@Operation(summary = "Delete a write task")
@@ -115,8 +124,9 @@ public class TaskController {
 	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public Mono<Void> deleteWriteTask(@PathVariable String lessonPublicId, @PathVariable String taskPublicId) {
-		return taskService.deleteWriteTask(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId),
-				taskPublicId);
+		return Mono.fromCallable(() -> lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId))
+				.subscribeOn(Schedulers.boundedElastic())
+				.flatMap(lessonId -> taskService.deleteWriteTask(lessonId, taskPublicId));
 	}
 
 	// --- Scatter Task CRUD ---
@@ -129,8 +139,9 @@ public class TaskController {
 	@ResponseStatus(HttpStatus.CREATED)
 	public Mono<ScatterTaskResponse> createScatterTask(@PathVariable String lessonPublicId,
 			@Valid @RequestBody Mono<ScatterTaskRequest> request) {
-		return taskService.createScatterTask(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId),
-				request);
+		return Mono.fromCallable(() -> lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId))
+				.subscribeOn(Schedulers.boundedElastic())
+				.flatMap(lessonId -> taskService.createScatterTask(lessonId, request));
 	}
 
 	@Operation(summary = "Update a scatter task")
@@ -141,8 +152,9 @@ public class TaskController {
 	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
 	public Mono<ScatterTaskResponse> updateScatterTask(@PathVariable String lessonPublicId,
 			@PathVariable String taskPublicId, @Valid @RequestBody Mono<ScatterTaskRequest> request) {
-		return taskService.updateScatterTask(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId),
-				taskPublicId, request);
+		return Mono.fromCallable(() -> lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId))
+				.subscribeOn(Schedulers.boundedElastic())
+				.flatMap(lessonId -> taskService.updateScatterTask(lessonId, taskPublicId, request));
 	}
 
 	@Operation(summary = "Delete a scatter task")
@@ -152,8 +164,9 @@ public class TaskController {
 	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public Mono<Void> deleteScatterTask(@PathVariable String lessonPublicId, @PathVariable String taskPublicId) {
-		return taskService.deleteScatterTask(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId),
-				taskPublicId);
+		return Mono.fromCallable(() -> lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId))
+				.subscribeOn(Schedulers.boundedElastic())
+				.flatMap(lessonId -> taskService.deleteScatterTask(lessonId, taskPublicId));
 	}
 
 	// --- Speak Task CRUD ---
@@ -166,7 +179,9 @@ public class TaskController {
 	@ResponseStatus(HttpStatus.CREATED)
 	public Mono<SpeakTaskResponse> createSpeakTask(@PathVariable String lessonPublicId,
 			@Valid @RequestBody Mono<SpeakTaskRequest> request) {
-		return taskService.createSpeakTask(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), request);
+		return Mono.fromCallable(() -> lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId))
+				.subscribeOn(Schedulers.boundedElastic())
+				.flatMap(lessonId -> taskService.createSpeakTask(lessonId, request));
 	}
 
 	@Operation(summary = "Update a speak task")
@@ -177,8 +192,9 @@ public class TaskController {
 	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
 	public Mono<SpeakTaskResponse> updateSpeakTask(@PathVariable String lessonPublicId,
 			@PathVariable String taskPublicId, @Valid @RequestBody Mono<SpeakTaskRequest> request) {
-		return taskService.updateSpeakTask(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId),
-				taskPublicId, request);
+		return Mono.fromCallable(() -> lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId))
+				.subscribeOn(Schedulers.boundedElastic())
+				.flatMap(lessonId -> taskService.updateSpeakTask(lessonId, taskPublicId, request));
 	}
 
 	@Operation(summary = "Delete a speak task")
@@ -188,8 +204,9 @@ public class TaskController {
 	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public Mono<Void> deleteSpeakTask(@PathVariable String lessonPublicId, @PathVariable String taskPublicId) {
-		return taskService.deleteSpeakTask(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId),
-				taskPublicId);
+		return Mono.fromCallable(() -> lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId))
+				.subscribeOn(Schedulers.boundedElastic())
+				.flatMap(lessonId -> taskService.deleteSpeakTask(lessonId, taskPublicId));
 	}
 
 	@Operation(summary = "Transcribe a speak task audio answer")
@@ -202,8 +219,9 @@ public class TaskController {
 	@PreAuthorize("hasRole('STUDENT')")
 	public Mono<SpeakTranscriptionResponse> transcribeSpeakTask(@PathVariable String lessonPublicId,
 			@PathVariable String taskPublicId, @RequestPart("file") Mono<FilePart> audio) {
-		return taskService.transcribeSpeakTask(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId),
-				taskPublicId, audio);
+		return Mono.fromCallable(() -> lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId))
+				.subscribeOn(Schedulers.boundedElastic())
+				.flatMap(lessonId -> taskService.transcribeSpeakTask(lessonId, taskPublicId, audio));
 	}
 
 	// --- Submit lesson answers ---
@@ -217,7 +235,9 @@ public class TaskController {
 	@PreAuthorize("hasRole('STUDENT')")
 	public Mono<SubmitResponse> submitLesson(@PathVariable String lessonPublicId,
 			@Valid @RequestBody Mono<SubmitRequest> request) {
-		return taskService.submitLesson(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), request);
+		return Mono.fromCallable(() -> lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId))
+				.subscribeOn(Schedulers.boundedElastic())
+				.flatMap(lessonId -> taskService.submitLesson(lessonId, request));
 	}
 
 	// --- Reset user progress ---
@@ -229,7 +249,10 @@ public class TaskController {
 	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public Mono<Void> resetProgress(@PathVariable String lessonPublicId, @PathVariable String userPublicId) {
-		return userPublicIdLookupService.getInternalId(userPublicId).flatMap(userId -> taskService
-				.resetUserProgress(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), userId));
+		return userPublicIdLookupService.getInternalId(userPublicId)
+				.flatMap(userId -> Mono
+						.fromCallable(() -> lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId))
+						.subscribeOn(Schedulers.boundedElastic())
+						.flatMap(lessonId -> taskService.resetUserProgress(lessonId, userId)));
 	}
 }

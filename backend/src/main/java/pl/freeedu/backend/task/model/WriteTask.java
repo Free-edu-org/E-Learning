@@ -39,4 +39,11 @@ public class WriteTask {
 
 	@Column(name = "created_at", insertable = false, updatable = false)
 	private LocalDateTime createdAt;
+
+	@PrePersist
+	private void ensurePublicId() {
+		if (publicId == null || publicId.isBlank()) {
+			publicId = UUID.randomUUID().toString();
+		}
+	}
 }
