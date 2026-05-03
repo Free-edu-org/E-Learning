@@ -274,7 +274,7 @@ Default local development base URL is `http://localhost:8080`
   "type": "about:blank",
   "title": "Unauthorized",
   "status": 401,
-  "detail": "Obecne has┼éo jest nieprawid┼éowe.",
+  "detail": "Obecne hasło jest nieprawidłowe.",
   "instance": "/api/v1/users/1/password",
   "code": "INVALID_OLD_PASSWORD"
 }
@@ -370,7 +370,7 @@ Default local development base URL is `http://localhost:8080`
 ```json
 {
   "name": "Angielski A1",
-  "description": "Grupa pocz─ůtkuj─ůca - semestr letni"
+  "description": "Grupa początkująca - semestr letni"
 }
 ```
 
@@ -379,7 +379,7 @@ Default local development base URL is `http://localhost:8080`
 {
   "publicId": "33333333-3333-3333-3333-333333333333",
   "name": "Angielski A1",
-  "description": "Grupa pocz─ůtkuj─ůca - semestr letni",
+  "description": "Grupa początkująca - semestr letni",
   "studentCount": 0,
   "teacherPublicId": "22222222-2222-2222-2222-222222222222",
   "createdAt": "2026-03-21T10:00:00"
@@ -405,7 +405,7 @@ Default local development base URL is `http://localhost:8080`
   {
     "publicId": "33333333-3333-3333-3333-333333333333",
     "name": "Angielski A1",
-    "description": "Grupa pocz─ůtkuj─ůca - semestr letni",
+    "description": "Grupa początkująca - semestr letni",
     "studentCount": 2,
     "teacherPublicId": "22222222-2222-2222-2222-222222222222",
     "createdAt": "2026-03-21T10:00:00"
@@ -429,7 +429,7 @@ Default local development base URL is `http://localhost:8080`
 {
   "publicId": "33333333-3333-3333-3333-333333333333",
   "name": "Angielski A1",
-  "description": "Grupa pocz─ůtkuj─ůca - semestr letni",
+  "description": "Grupa początkująca - semestr letni",
   "studentCount": 2,
   "teacherPublicId": "22222222-2222-2222-2222-222222222222",
   "createdAt": "2026-03-21T10:00:00"
@@ -452,7 +452,7 @@ Default local development base URL is `http://localhost:8080`
 ```json
 {
   "name": "Angielski B1",
-  "description": "Grupa ┼Ťredniozaawansowana"
+  "description": "Grupa średniozaawansowana"
 }
 ```
 
@@ -461,7 +461,7 @@ Default local development base URL is `http://localhost:8080`
 {
   "publicId": "33333333-3333-3333-3333-333333333333",
   "name": "Angielski B1",
-  "description": "Grupa ┼Ťredniozaawansowana",
+  "description": "Grupa średniozaawansowana",
   "studentCount": 2,
   "createdAt": "2026-03-21T10:00:00"
 }
@@ -527,17 +527,17 @@ Default local development base URL is `http://localhost:8080`
 
 # 4. Lessons (`/api/v1/lessons`)
 
-Poni┼╝ej znajdziesz opis endpoint├│w do zarz─ůdzania lekcjami. ┼Ücie┼╝ka bazowa: `/api/v1/lessons`.
+Poniżej znajdziesz opis endpointów do zarządzania lekcjami. Ścieżka bazowa: `/api/v1/lessons`.
 
 ### 4.1. Get list of lessons
 - **URL**: `/api/v1/lessons`
 - **Method**: `GET`
-- **Description**: Pobiera list─Ö lekcji. Obs┼éuguje filtry i sortowanie.
+- **Description**: Pobiera listę lekcji. Obsługuje filtry i sortowanie.
 - **Query params**:
-  - `search` (string, opcjonalne) ÔÇö wyszukiwanie po tytule / temacie
-  - `groupId` (integer, opcjonalne) ÔÇö filtr po przypisanej grupie
-  - `status` (boolean, opcjonalne) ÔÇö filtr po polu `isActive`
-  - `sort` (string, opcjonalne) ÔÇö np. `createdAt:desc` lub `title:asc`
+  - `search` (string, opcjonalne) — wyszukiwanie po tytule / temacie
+  - `groupId` (integer, opcjonalne) — filtr po przypisanej grupie
+  - `status` (boolean, opcjonalne) — filtr po polu `isActive`
+  - `sort` (string, opcjonalne) — np. `createdAt:desc` lub `title:asc`
 - **Authorization**: `TEACHER` lub `ADMIN`
 
 **Success (200 OK):**
@@ -560,15 +560,15 @@ Poni┼╝ej znajdziesz opis endpoint├│w do zarz─ůdzania lekcjami. ┼Üc
 | Field | Type                  | Description |
 |-------|-----------------------|-------------|
 | `publicId` | String               | Public ID lekcji |
-| `title` | String                | Tytu┼é lekcji |
+| `title` | String                | Tytuł lekcji |
 | `theme` | String                | Temat kategorii lekcji |
 | `isActive` | Boolean               | Czy lekcja jest aktywna |
-| `teacherPublicId` | String               | Public ID nauczyciela, kt├│ry utworzy┼é lekcj─Ö |
+| `teacherPublicId` | String               | Public ID nauczyciela, który utworzył lekcję |
 | `teacherName` | String                | Username nauczyciela |
 | `teacherAvatarUrl` | String                | URL do awatara nauczyciela (preset:name lub /uploads/...) |
 | `createdAt` | String (ISO datetime) | Data utworzenia |
 | `groups` | List<GroupDto>        | Lista grup przypisanych do lekcji (publicId, name) |
-| `attachments` | List<LessonAttachmentResponse> | Lista za┼é─ůcznik├│w lekcji (maks. 5). Pusta lista je┼Ťli brak za┼é─ůcznik├│w. |
+| `attachments` | List<LessonAttachmentResponse> | Lista załączników lekcji (maks. 5). Pusta lista jeśli brak załączników. |
 
 **Known Errors:**
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
@@ -579,7 +579,7 @@ Poni┼╝ej znajdziesz opis endpoint├│w do zarz─ůdzania lekcjami. ┼Üc
 ### 4.2. Create a new lesson
 - **URL**: `/api/v1/lessons`
 - **Method**: `POST`
-- **Description**: Tworzy now─ů lekcj─Ö. Mo┼╝na jednocze┼Ťnie przypisa─ç lekcj─Ö do grup. `title` jest wymagany i mo┼╝e mie─ç maksymalnie 30 znak├│w.
+- **Description**: Tworzy nową lekcję. Można jednocześnie przypisać lekcję do grup. `title` jest wymagany i może mieć maksymalnie 30 znaków.
 - **Authorization**: `TEACHER` lub `ADMIN`
 
 **Request Body (JSON):**
@@ -592,10 +592,10 @@ Poni┼╝ej znajdziesz opis endpoint├│w do zarz─ůdzania lekcjami. ┼Üc
 ```
 
 **Success (201 Created):**
-Zwraca utworzon─ů reprezentacj─Ö `LessonResponse` (jak w sekcji 4.1).
+Zwraca utworzoną reprezentację `LessonResponse` (jak w sekcji 4.1).
 
 **Known Errors:**
-- `VALIDATION_FAILED` (400 Bad Request): Brak wymaganych p├│l (`title`, `theme`), tytu┼é d┼éu┼╝szy ni┼╝ 30 znak├│w lub z┼ée typy.
+- `VALIDATION_FAILED` (400 Bad Request): Brak wymaganych pól (`title`, `theme`), tytuł dłuższy niż 30 znaków lub złe typy.
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
 - `FORBIDDEN` (403 Forbidden): Token role does not permit creation.
 
@@ -604,17 +604,17 @@ Zwraca utworzon─ů reprezentacj─Ö `LessonResponse` (jak w sekcji 4.1).
 ### 4.3. Update lesson data
 - **URL**: `/api/v1/lessons/{lessonPublicId}`
 - **Method**: `PUT`
-- **Description**: Aktualizuje pola lekcji (title, theme, description, group assignment). Wymaga uprawnie┼ä nauczyciela. `title` mo┼╝e mie─ç maksymalnie 30 znak├│w.
-- **Authorization**: `ADMIN` lub w┼éa┼Ťciciel lekcji (`TEACHER`)
+- **Description**: Aktualizuje pola lekcji (title, theme, description, group assignment). Wymaga uprawnień nauczyciela. `title` może mieć maksymalnie 30 znaków.
+- **Authorization**: `ADMIN` lub właściciel lekcji (`TEACHER`)
 
 **Request Body (JSON):**
-U┼╝ywa tego samego kszta┼étu co `LessonRequest` (patrz 4.2).
+Używa tego samego kształtu co `LessonRequest` (patrz 4.2).
 
 **Success (200 OK):**
-Zwraca zaktualizowan─ů reprezentacj─Ö `LessonResponse`.
+Zwraca zaktualizowaną reprezentację `LessonResponse`.
 
 **Known Errors:**
-- `VALIDATION_FAILED` (400 Bad Request): Z┼ée dane wej┼Ťciowe, w tym tytu┼é d┼éu┼╝szy ni┼╝ 30 znak├│w.
+- `VALIDATION_FAILED` (400 Bad Request): Złe dane wejściowe, w tym tytuł dłuższy niż 30 znaków.
 - `LESSON_NOT_FOUND` (404 Not Found): Nie znaleziono lekcji.
 - `UNAUTHORIZED` (401 Unauthorized)
 - `FORBIDDEN` (403 Forbidden)
@@ -624,8 +624,8 @@ Zwraca zaktualizowan─ů reprezentacj─Ö `LessonResponse`.
 ### 4.4. Quick status change (is_active)
 - **URL**: `/api/v1/lessons/{lessonPublicId}/status`
 - **Method**: `PATCH`
-- **Description**: Szybka zmiana flagi `isActive` (w┼é─ůcz/wy┼é─ůcz lekcj─Ö).
-- **Authorization**: `ADMIN` lub w┼éa┼Ťciciel lekcji (`TEACHER`)
+- **Description**: Szybka zmiana flagi `isActive` (włącz/wyłącz lekcję).
+- **Authorization**: `ADMIN` lub właściciel lekcji (`TEACHER`)
 
 **Request Body (JSON):**
 ```json
@@ -636,7 +636,7 @@ Zwraca zaktualizowan─ů reprezentacj─Ö `LessonResponse`.
 
 **Known Errors:**
 - `VALIDATION_FAILED` (400 Bad Request)
-- `LESSON_CANNOT_BE_ACTIVATED_WITHOUT_TASKS` (400 Bad Request): Nie mo┼╝na aktywowa─ç lekcji, kt├│ra nie ma jeszcze ┼╝adnych zada┼ä.
+- `LESSON_CANNOT_BE_ACTIVATED_WITHOUT_TASKS` (400 Bad Request): Nie można aktywować lekcji, która nie ma jeszcze żadnych zadań.
 - `LESSON_NOT_FOUND` (404 Not Found)
 - `UNAUTHORIZED` (401 Unauthorized)
 - `FORBIDDEN` (403 Forbidden)
@@ -646,8 +646,8 @@ Zwraca zaktualizowan─ů reprezentacj─Ö `LessonResponse`.
 ### 4.5. Delete lesson
 - **URL**: `/api/v1/lessons/{lessonPublicId}`
 - **Method**: `DELETE`
-- **Description**: Usuwa lekcj─Ö. Dost─Öp dla `ADMIN` lub w┼éa┼Ťciciela lekcji (`TEACHER`).
-- **Authorization**: `ADMIN` lub w┼éa┼Ťciciel lekcji (`TEACHER`)
+- **Description**: Usuwa lekcję. Dostęp dla `ADMIN` lub właściciela lekcji (`TEACHER`).
+- **Authorization**: `ADMIN` lub właściciel lekcji (`TEACHER`)
 
 **Success (204 No Content):** *(Empty Response Body)*
 
@@ -662,13 +662,13 @@ Zwraca zaktualizowan─ů reprezentacj─Ö `LessonResponse`.
 - **URL**: `/api/v1/lessons/{lessonPublicId}/attachments`
 - **Method**: `POST`
 - **Content-Type**: `multipart/form-data`
-- **Description**: Przesy┼éa plik jako za┼é─ůcznik do lekcji. Lekcja mo┼╝e mie─ç maksymalnie 5 za┼é─ůcznik├│w.
-- **Authorization**: `ADMIN` lub w┼éa┼Ťciciel lekcji (`TEACHER`)
+- **Description**: Przesyła plik jako załącznik do lekcji. Lekcja może mieć maksymalnie 5 załączników.
+- **Authorization**: `ADMIN` lub właściciel lekcji (`TEACHER`)
 
 **Form part:**
-- `file` (binary) ÔÇö plik, max 10 MB
+- `file` (binary) — plik, max 10 MB
 
-**Dozwolone typy plik├│w:**
+**Dozwolone typy plików:**
 
 | MIME type | Rozszerzenie |
 |-----------|--------------|
@@ -691,15 +691,15 @@ Zwraca zaktualizowan─ů reprezentacj─Ö `LessonResponse`.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `publicId` | String | ID za┼é─ůcznika |
+| `publicId` | String | ID załącznika |
 | `originalFileName` | String | Oryginalna nazwa pliku |
-| `contentType` | String | Typ MIME przes┼éanego pliku (np. `application/pdf`, `text/plain`) |
+| `contentType` | String | Typ MIME przesłanego pliku (np. `application/pdf`, `text/plain`) |
 | `fileSize` | Long | Rozmiar pliku w bajtach |
-| `createdAt` | String (ISO datetime) | Data przes┼éania |
+| `createdAt` | String (ISO datetime) | Data przesłania |
 
 **Known Errors:**
 - `LESSON_NOT_FOUND` (404 Not Found)
-- `ATTACHMENT_LIMIT_REACHED` (400 Bad Request): Lekcja posiada ju┼╝ 5 za┼é─ůcznik├│w.
+- `ATTACHMENT_LIMIT_REACHED` (400 Bad Request): Lekcja posiada już 5 załączników.
 - `ATTACHMENT_INVALID_FILE_TYPE` (400 Bad Request): Niedozwolony typ pliku. Dozwolone: PDF, TXT, DOCX, DOC, ODT.
 - `ATTACHMENT_FILE_TOO_LARGE` (400 Bad Request): Plik przekracza 10 MB.
 - `UNAUTHORIZED` (401 Unauthorized)
@@ -710,11 +710,11 @@ Zwraca zaktualizowan─ů reprezentacj─Ö `LessonResponse`.
 ### 4.7. Download attachment
 - **URL**: `/api/v1/lessons/{lessonPublicId}/attachments/{attachmentPublicId}`
 - **Method**: `GET`
-- **Description**: Pobiera plik za┼é─ůcznika. Wymaga autoryzacji ÔÇö nie jest dost─Öpny publicznie. Ucze┼ä mo┼╝e pobra─ç za┼é─ůcznik tylko je┼Ťli ma dost─Öp do tej lekcji.
-- **Authorization**: `ADMIN`, w┼éa┼Ťciciel lekcji (`TEACHER`) lub ucze┼ä maj─ůcy dost─Öp do lekcji (`STUDENT`)
+- **Description**: Pobiera plik załącznika. Wymaga autoryzacji — nie jest dostępny publicznie. Uczeń może pobrać załącznik tylko jeśli ma dostęp do tej lekcji.
+- **Authorization**: `ADMIN`, właściciel lekcji (`TEACHER`) lub uczeń mający dostęp do lekcji (`STUDENT`)
 
 **Success (200 OK):**
-- Response body: binary file (`Content-Type` zgodny z typem przes┼éanego pliku)
+- Response body: binary file (`Content-Type` zgodny z typem przesłanego pliku)
 - Header: `Content-Disposition: attachment; filename="<originalFileName>"`
 
 **Known Errors:**
@@ -728,8 +728,8 @@ Zwraca zaktualizowan─ů reprezentacj─Ö `LessonResponse`.
 ### 4.8. Delete lesson attachment
 - **URL**: `/api/v1/lessons/{lessonPublicId}/attachments/{attachmentPublicId}`
 - **Method**: `DELETE`
-- **Description**: Usuwa za┼é─ůcznik z lekcji. Plik jest fizycznie usuwany z dysku.
-- **Authorization**: `ADMIN` lub w┼éa┼Ťciciel lekcji (`TEACHER`)
+- **Description**: Usuwa załącznik z lekcji. Plik jest fizycznie usuwany z dysku.
+- **Authorization**: `ADMIN` lub właściciel lekcji (`TEACHER`)
 
 **Success (204 No Content):** *(Empty Response Body)*
 
@@ -741,7 +741,7 @@ Zwraca zaktualizowan─ů reprezentacj─Ö `LessonResponse`.
 
 ---
 
-**LessonResponse** (`attachments` field ÔÇö present in all lesson endpoints):
+**LessonResponse** (`attachments` field — present in all lesson endpoints):
 ```json
 {
   "publicId": "33333333-3333-3333-3333-333333333333",
@@ -764,13 +764,13 @@ Zwraca zaktualizowan─ů reprezentacj─Ö `LessonResponse`.
   ]
 }
 ```
-Pole `attachments` jest pust─ů list─ů `[]` je┼Ťli lekcja nie ma za┼é─ůcznik├│w. Maks. 5 element├│w.
+Pole `attachments` jest pustą listą `[]` jeśli lekcja nie ma załączników. Maks. 5 elementów.
 
 ---
 
 ## 5. Teacher Dashboard (`/api/v1/teacher`)
 
-Zbi├│r zapyta┼ä agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela (Architektura BFF). Odfiltrowuje dane tylko do zakresu `currentUserId` nauczyciela autoryzowanego przez JWT.
+Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela (Architektura BFF). Odfiltrowuje dane tylko do zakresu `currentUserId` nauczyciela autoryzowanego przez JWT.
 
 ### 5.1. Get Dashboard Statistics
 - **URL**: `/api/v1/teacher/stats`
@@ -803,17 +803,17 @@ Zbi├│r zapyta┼ä agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauc
 ### 5.2. Get My Lessons
 - **URL**: `/api/v1/teacher/lessons`
 - **Method**: `GET`
-- **Description**: Pobiera list─Ö lekcji wykreowanych i przypisanych WY┼ü─äCZNIE do odpytuj─ůcego nauczyciela. Odci─ů┼╝a generyczny `LessonController` chroni─ůc przed dost─Öpem do obcych materia┼é├│w.
+- **Description**: Pobiera listę lekcji wykreowanych i przypisanych WY┼ü─äCZNIE do odpytującego nauczyciela. Odciąża generyczny `LessonController` chroniąc przed dostępem do obcych materiałów.
 - **Authorization**: `TEACHER`
 
-**Success (200 OK):** Zwraca macierz obiekt├│w `LessonResponse` (odpowiednik standardowego 4.1. Get list of lessons).
+**Success (200 OK):** Zwraca macierz obiektów `LessonResponse` (odpowiednik standardowego 4.1. Get list of lessons).
 
 ---
 
 ### 5.3. Get Lesson Statistics
 - **URL**: `/api/v1/teacher/lessons/{lessonPublicId}/stats`
 - **Method**: `GET`
-- **Description**: Zwraca statystyki wynik├│w uczni├│w dla wskazanej lekcji. Scoped do nauczyciela autoryzowanego przez JWT.
+- **Description**: Zwraca statystyki wyników uczniów dla wskazanej lekcji. Scoped do nauczyciela autoryzowanego przez JWT.
 - **Authorization**: `TEACHER`
 
 **Success (200 OK):**
@@ -837,10 +837,10 @@ Zbi├│r zapyta┼ä agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauc
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `avgScore` | Double | ┼Üredni wynik procentowy wszystkich uczni├│w kt├│rzy odpowiedzieli na pytania lekcji. |
-| `studentsCompleted` | Integer | Liczba uczni├│w z zapisanymi odpowiedziami. |
-| `bestScore` | Double | Najwy┼╝szy indywidualny wynik procentowy. |
-| `studentResults` | List | Lista wynik├│w per ucze┼ä, posortowana malej─ůco po `resultPercent`. |
+| `avgScore` | Double | Średni wynik procentowy wszystkich uczniów którzy odpowiedzieli na pytania lekcji. |
+| `studentsCompleted` | Integer | Liczba uczniów z zapisanymi odpowiedziami. |
+| `bestScore` | Double | Najwyższy indywidualny wynik procentowy. |
+| `studentResults` | List | Lista wyników per uczeń, posortowana malejąco po `resultPercent`. |
 
 **Known Errors:**
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
@@ -916,20 +916,20 @@ Zbi├│r zapyta┼ä agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauc
 ### 5.4. Get My Groups
 - **URL**: `/api/v1/teacher/my-groups`
 - **Method**: `GET`
-- **Description**: Odtworzenie logiki UserGroup dedykowanej pulpitu Nauczyciela. Zwraca wszystkie grupy stworzone przez loguj─ůcego si─Ö Nauczyciela (`teacherId = currentUserId`).
+- **Description**: Odtworzenie logiki UserGroup dedykowanej pulpitu Nauczyciela. Zwraca wszystkie grupy stworzone przez logującego się Nauczyciela (`teacherId = currentUserId`).
 - **Authorization**: `TEACHER`
 
-**Success (200 OK):** Zwraca macierz element├│w `UserGroupResponse` z wyliczon─ů ilo┼Ťci─ů wpisanych do nich student├│w.
+**Success (200 OK):** Zwraca macierz elementów `UserGroupResponse` z wyliczoną ilością wpisanych do nich studentów.
 
 ---
 
 ### 5.5. Get My Students
 - **URL**: `/api/v1/teacher/students`
 - **Method**: `GET`
-- **Description**: Zwraca list─Ö uczni├│w przypisanych do grup aktualnie zalogowanego nauczyciela (relacja przez `UserInGroup` oraz `UserGroup.teacherId`).
+- **Description**: Zwraca listę uczniów przypisanych do grup aktualnie zalogowanego nauczyciela (relacja przez `UserInGroup` oraz `UserGroup.teacherId`).
 - **Authorization**: `TEACHER`
 
-**Success (200 OK):** Zwraca macierz element├│w `TeacherStudentResponse` (wy┼é─ůcznie u┼╝ytkownicy z rol─ů `STUDENT`) z `groupId` aktualnego przypisania do grupy nauczyciela.
+**Success (200 OK):** Zwraca macierz elementów `TeacherStudentResponse` (wyłącznie użytkownicy z rolą `STUDENT`) z `groupId` aktualnego przypisania do grupy nauczyciela.
 
 **Known Errors:**
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
@@ -940,7 +940,7 @@ Zbi├│r zapyta┼ä agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauc
 ### 5.6. Create Student (Teacher API)
 - **URL**: `/api/v1/teacher/students`
 - **Method**: `POST`
-- **Description**: Tworzy konto ucznia i od razu przypisuje go do wskazanej grupy nale┼╝─ůcej do aktualnie zalogowanego nauczyciela. Pole `groupId` jest **wymagane**.
+- **Description**: Tworzy konto ucznia i od razu przypisuje go do wskazanej grupy należącej do aktualnie zalogowanego nauczyciela. Pole `groupId` jest **wymagane**.
 - **Authorization**: `TEACHER`
 
 **Request Body (JSON):**
@@ -968,7 +968,7 @@ Zbi├│r zapyta┼ä agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauc
 
 **Known Errors:**
 - `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid (w tym brak `groupId`).
-- `INVALID_ROLE_FOR_GROUP` (400 Bad Request): Wskazana grupa nie nale┼╝y do aktualnego nauczyciela.
+- `INVALID_ROLE_FOR_GROUP` (400 Bad Request): Wskazana grupa nie należy do aktualnego nauczyciela.
 - `USER_GROUP_NOT_FOUND` (404 Not Found): Grupa o podanym ID nie istnieje.
 - `EMAIL_ALREADY_TAKEN` (409 Conflict): Email already exists.
 - `USERNAME_ALREADY_TAKEN` (409 Conflict): Username already exists.
@@ -980,7 +980,7 @@ Zbi├│r zapyta┼ä agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauc
 ### 5.7. Update Student (Teacher API)
 - **URL**: `/api/v1/teacher/students/{studentPublicId}`
 - **Method**: `PUT`
-- **Description**: Aktualizuje dane ucznia (username, email) oraz przypisan─ů grup─Ö. Ucze┼ä musi nale┼╝e─ç do jednej z grup nauczyciela. `groupPublicId` jest wymagany i docelowa grupa r├│wnie┼╝ musi nale┼╝e─ç do nauczyciela.
+- **Description**: Aktualizuje dane ucznia (username, email) oraz przypisaną grupę. Uczeń musi należeć do jednej z grup nauczyciela. `groupPublicId` jest wymagany i docelowa grupa również musi należeć do nauczyciela.
 - **Authorization**: `TEACHER`
 
 **Request Body (JSON):**
@@ -1007,19 +1007,19 @@ Zbi├│r zapyta┼ä agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauc
 
 **Known Errors:**
 - `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
-- `INVALID_ROLE_FOR_GROUP` (400 Bad Request): Wskazana grupa nie nale┼╝y do aktualnego nauczyciela lub zmieniany user nie jest uczniem.
+- `INVALID_ROLE_FOR_GROUP` (400 Bad Request): Wskazana grupa nie należy do aktualnego nauczyciela lub zmieniany user nie jest uczniem.
 - `USER_GROUP_NOT_FOUND` (404 Not Found): Grupa o podanym ID nie istnieje.
-- `USER_NOT_FOUND` (404 Not Found): Ucze┼ä nie istnieje.
+- `USER_NOT_FOUND` (404 Not Found): Uczeń nie istnieje.
 - `EMAIL_ALREADY_TAKEN` (409 Conflict): Email already exists.
 - `USERNAME_ALREADY_TAKEN` (409 Conflict): Username already exists.
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
-- `FORBIDDEN` (403 Forbidden): Ucze┼ä docelowy nie znajduje si─Ö w ┼╝adnej z grup przypisanych do tego nauczyciela.
+- `FORBIDDEN` (403 Forbidden): Uczeń docelowy nie znajduje się w żadnej z grup przypisanych do tego nauczyciela.
 
 ---
 
 ## 6. Admin Dashboard (`/api/v1/admin`)
 
-Warstwa BFF dla administratora. Dedykowana wyci─ůgom z zakresu ca┼éego systemu.
+Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
 
 ### 6.1. Get Global Stats
 - **URL**: `/api/v1/admin/stats`
@@ -1046,7 +1046,7 @@ Warstwa BFF dla administratora. Dedykowana wyci─ůgom z zakresu ca┼éego sys
 ### 6.2. Get All Teachers
 - **URL**: `/api/v1/admin/teachers`
 - **Method**: `GET`
-- **Description**: Zwraca list─Ö wszystkich kont nauczycieli widocznych dla administratora. Wymaga `ADMIN`.
+- **Description**: Zwraca listę wszystkich kont nauczycieli widocznych dla administratora. Wymaga `ADMIN`.
 
 **Success (200 OK):**
 ```json
@@ -1070,7 +1070,7 @@ Warstwa BFF dla administratora. Dedykowana wyci─ůgom z zakresu ca┼éego sys
 ### 6.3. Get All Students
 - **URL**: `/api/v1/admin/students`
 - **Method**: `GET`
-- **Description**: Zwraca list─Ö wszystkich kont uczni├│w widocznych dla administratora. Wymaga `ADMIN`.
+- **Description**: Zwraca listę wszystkich kont uczniów widocznych dla administratora. Wymaga `ADMIN`.
 
 **Success (200 OK):**
 ```json
@@ -1106,7 +1106,7 @@ Warstwa BFF dla administratora. Dedykowana wyci─ůgom z zakresu ca┼éego sys
   "groupPublicId": "11111111-1111-1111-1111-111111111111"
 }
 ```
-> `groupPublicId` jest opcjonalne. Je┼Ťli nie podano, ucze┼ä zostaje stworzony bez przypisania do grupy.
+> `groupPublicId` jest opcjonalne. Jeśli nie podano, uczeń zostaje stworzony bez przypisania do grupy.
 
 **Success (201 Created):**
 ```json
@@ -1141,7 +1141,7 @@ Warstwa BFF dla administratora. Dedykowana wyci─ůgom z zakresu ca┼éego sys
   "groupPublicId": "11111111-1111-1111-1111-111111111111"
 }
 ```
-> Je┼Ťli `groupId` jest `null` lub pomini─Öte, dotychczasowe powi─ůzanie z grup─ů zostaje usuni─Öte.
+> Jeśli `groupId` jest `null` lub pominięte, dotychczasowe powiązanie z grupą zostaje usunięte.
 
 **Success (200 OK):**
 ```json
@@ -1158,7 +1158,7 @@ Warstwa BFF dla administratora. Dedykowana wyci─ůgom z zakresu ca┼éego sys
 
 **Known Errors:**
 - `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
-- `INVALID_STUDENT_ASSIGNMENT` (400 Bad Request): Wskazany u┼╝ytkownik nie ma roli `STUDENT`.
+- `INVALID_STUDENT_ASSIGNMENT` (400 Bad Request): Wskazany użytkownik nie ma roli `STUDENT`.
 - `USER_NOT_FOUND` (404 Not Found): Student does not exist.
 - `USER_GROUP_NOT_FOUND` (404 Not Found): Group does not exist.
 - `EMAIL_ALREADY_TAKEN` (409 Conflict): Email already exists.
@@ -1250,7 +1250,7 @@ Warstwa BFF dla uczniow.
 | `score` | Integer or null | Zdobyta liczba punktow dla lekcji z zapisanym postepem. |
 | `maxScore` | Integer or null | Maksymalna liczba punktow dla biezacej proby. |
 | `resultPercent` | Double or null | Wynik procentowy, jesli lekcja ma zapisany rezultat. |
-| `attachments` | List<LessonAttachmentResponse> | Lista za┼é─ůcznik├│w lekcji (maks. 5). Pusta lista je┼Ťli brak. Pobieranie: `GET /api/v1/lessons/{lessonPublicId}/attachments/{attachmentPublicId}`. |
+| `attachments` | List<LessonAttachmentResponse> | Lista załączników lekcji (maks. 5). Pusta lista jeśli brak. Pobieranie: `GET /api/v1/lessons/{lessonPublicId}/attachments/{attachmentPublicId}`. |
 
 **Known Errors:**
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
@@ -1599,7 +1599,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 ### 8.15. Submit Lesson Answers
 - **URL**: `/api/v1/lessons/{lessonId}/submit`
 - **Method**: `POST`
-- **Description**: Submits all answers for an active lesson at once. Grades each answer and marks lesson as `COMPLETED`. One-shot ÔÇö cannot re-submit.
+- **Description**: Submits all answers for an active lesson at once. Grades each answer and marks lesson as `COMPLETED`. One-shot — cannot re-submit.
 - **Authorization**: `STUDENT` only
 
 **Request Body (JSON):**
