@@ -10,6 +10,3 @@ ALTER TABLE users
 
 ALTER TABLE users
     ADD CONSTRAINT uk_users_public_id UNIQUE (public_id);
-
-ALTER TABLE users
-    ALTER COLUMN public_id SET DEFAULT (UUID());

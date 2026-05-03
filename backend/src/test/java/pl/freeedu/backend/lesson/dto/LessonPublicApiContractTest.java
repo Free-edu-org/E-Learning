@@ -53,8 +53,9 @@ class LessonPublicApiContractTest {
 				WriteTaskResponse.class, ScatterTaskResponse.class, SpeakTaskResponse.class);
 
 		// when
-		boolean anyDtoExposesInternalLessonId = lessonFacingDtos.stream().map(this::fieldNames).anyMatch(
-				fields -> fields.contains("lessonId") || fields.contains("id") && fields.contains("publicId"));
+		boolean anyDtoExposesInternalLessonId = lessonFacingDtos.stream()
+				.map(this::fieldNames)
+				.anyMatch(fields -> fields.contains("lessonId") || fields.contains("id"));
 
 		// then
 		assertFalse(anyDtoExposesInternalLessonId);
