@@ -1,22 +1,22 @@
 # Frontend - Wyniki Lekcji
 
-Widok wynikow lekcji pozwala nauczycielowi przejrzec statystyki i indywidualne wyniki uczniow dla wybranej lekcji.
+Widok wyników lekcji pozwala nauczycielowi przejrzeć statystyki i indywidualne wyniki uczniów dla wybranej lekcji.
 
 Route: `/teacher/lessons/:lessonPublicId/stats`
 
 ## Sekcje widoku
 
-- **Naglowek** — przycisk Powrot, tytul "Wyniki lekcji", podtytul z nazwa lekcji
-- **Karty statystyk** — Sredni wynik (%), Uczniowie ktorzy ukonczyli (liczba), Najlepszy wynik (%)
-- **Wykres "Wyniki uczniow"** — slupki per uczen, posortowane malejaco (fioletowe, recharts)
-- **Wykres "Rozklad wynikow"** — liczba uczniow w przedzialach 0-20%, 20-40%, 40-60%, 60-80%, 80-100% (zielone)
-- **Tabela szczegolowych wynikow** — imie ucznia, data ukonczenia, Punkty (X/Y), Procent (kolor zalezny od wyniku), przycisk Zobacz profil
+- **Nagłówek** — przycisk Powrót, tytuł "Wyniki lekcji", podtytuł z nazwą lekcji
+- **Karty statystyk** — Średni wynik (%), Uczniowie którzy ukończyli (liczba), Najlepszy wynik (%)
+- **Wykres "Wyniki uczniów"** — słupki per uczeń, posortowane malejąco (fioletowe, recharts)
+- **Wykres "Rozkład wyników"** — liczba uczniów w przedziałach 0-20%, 20-40%, 40-60%, 60-80%, 80-100% (zielone)
+- **Tabela szczegółowych wyników** — imię ucznia, data ukończenia, Punkty (X/Y), Procent (kolor zależny od wyniku), przycisk Zobacz profil
 
 ## Dane
 
 Endpoint: `GET /api/v1/teacher/lessons/{lessonPublicId}/stats`
 
-Odpowiedz:
+Odpowiedź:
 ```json
 {
   "avgScore": 80.0,
@@ -24,7 +24,7 @@ Odpowiedz:
   "bestScore": 100.0,
   "studentResults": [
     {
-      "userPublicId": 8,
+      "userPublicId": "550e8400-e29b-41d4-a716-446655440000",
       "username": "jan_kowalski",
       "completedAt": "2026-01-20T12:00:00",
       "score": 8,
@@ -35,23 +35,23 @@ Odpowiedz:
 }
 ```
 
-Kolory procentow:
+Kolory procentów:
 - >= 80% → zielony
-- 60-79% → zolty
+- 60-79% → żółty
 - < 60% → czerwony
 
 ## Nawigacja
 
-Dostep przez przycisk **Wyniki** na karcie lekcji w [[Frontend - Teacher Dashboard]].
+Dostęp przez przycisk **Wyniki** na karcie lekcji w [[Frontend - Teacher Dashboard]].
 
-Polaczenia:
+Połączenia:
 - [[Teacher Dashboard]]
 - [[Frontend - Teacher Dashboard]]
 - [[Domena - lekcje]]
-- [[Domena - postep studenta]]
+- [[Domena - postęp studenta]]
 - [[Rola - Teacher]]
 
-Zrodla:
+Źródła:
 - [LessonStatsView.tsx](../../frontend/src/features/teacher/LessonStatsView.tsx)
 - [LessonCard.tsx](../../frontend/src/components/teacher/LessonCard.tsx)
 - [lessonService.ts](../../frontend/src/api/lessonService.ts)

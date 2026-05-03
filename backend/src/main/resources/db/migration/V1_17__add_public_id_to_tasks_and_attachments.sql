@@ -12,9 +12,6 @@ ALTER TABLE choose_tasks
 ALTER TABLE choose_tasks
     ADD CONSTRAINT uk_choose_tasks_public_id UNIQUE (public_id);
 
-ALTER TABLE choose_tasks
-    ALTER COLUMN public_id SET DEFAULT (UUID());
-
 -- write_tasks
 ALTER TABLE write_tasks
     ADD COLUMN public_id VARCHAR(36) NULL;
@@ -28,9 +25,6 @@ ALTER TABLE write_tasks
 
 ALTER TABLE write_tasks
     ADD CONSTRAINT uk_write_tasks_public_id UNIQUE (public_id);
-
-ALTER TABLE write_tasks
-    ALTER COLUMN public_id SET DEFAULT (UUID());
 
 -- scatter_tasks
 ALTER TABLE scatter_tasks
@@ -46,9 +40,6 @@ ALTER TABLE scatter_tasks
 ALTER TABLE scatter_tasks
     ADD CONSTRAINT uk_scatter_tasks_public_id UNIQUE (public_id);
 
-ALTER TABLE scatter_tasks
-    ALTER COLUMN public_id SET DEFAULT (UUID());
-
 -- speak_tasks
 ALTER TABLE speak_tasks
     ADD COLUMN public_id VARCHAR(36) NULL;
@@ -63,9 +54,6 @@ ALTER TABLE speak_tasks
 ALTER TABLE speak_tasks
     ADD CONSTRAINT uk_speak_tasks_public_id UNIQUE (public_id);
 
-ALTER TABLE speak_tasks
-    ALTER COLUMN public_id SET DEFAULT (UUID());
-
 -- lesson_attachments
 ALTER TABLE lesson_attachments
     ADD COLUMN public_id VARCHAR(36) NULL;
@@ -79,6 +67,3 @@ ALTER TABLE lesson_attachments
 
 ALTER TABLE lesson_attachments
     ADD CONSTRAINT uk_lesson_attachments_public_id UNIQUE (public_id);
-
-ALTER TABLE lesson_attachments
-    ALTER COLUMN public_id SET DEFAULT (UUID());
