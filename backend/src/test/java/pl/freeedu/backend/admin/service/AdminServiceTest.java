@@ -24,6 +24,7 @@ import pl.freeedu.backend.usergroup.model.UserGroup;
 import pl.freeedu.backend.usergroup.model.UserInGroup;
 import pl.freeedu.backend.usergroup.repository.UserGroupRepository;
 import pl.freeedu.backend.usergroup.repository.UserInGroupRepository;
+import pl.freeedu.backend.usergroup.service.UserGroupPublicIdLookupService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -50,6 +51,9 @@ class AdminServiceTest {
 	private PasswordEncoder passwordEncoder;
 	@Mock
 	private TransactionTemplate transactionTemplate;
+
+	@Mock
+	private UserGroupPublicIdLookupService userGroupPublicIdLookupService;
 
 	@InjectMocks
 	private AdminService adminService;
@@ -101,7 +105,7 @@ class AdminServiceTest {
 	void shouldGetStudentsWithGroupInfo() {
 		// given
 		User student = User.builder().id(1).username("S1").role(Role.STUDENT).build();
-		UserGroup group = UserGroup.builder().id(10).name("G1").build();
+		UserGroup group = UserGroup.builder().id(10).publicId("group-public-id").name("G1").build();
 
 		when(userGroupRepository.findAll()).thenReturn(List.of(group));
 		when(userInGroupRepository.findAllMemberships())
@@ -125,7 +129,7 @@ class AdminServiceTest {
 		StepVerifier.create(result).assertNext(resp -> {
 			assertEquals(1, resp.getId());
 			assertEquals("G1", resp.getGroupName());
-			assertEquals(10, resp.getGroupId());
+			assertEquals("group-public-id", resp.getGroupPublicId());
 		}).verifyComplete();
 	}
 
@@ -133,26 +137,26 @@ class AdminServiceTest {
 	void shouldCreateStudentSucceed() {
 		// given
 		AdminCreateStudentRequest req = AdminCreateStudentRequest.builder().email("s@e.com").username("s1")
-				.password("p").groupId(10).build();
-		UserGroup group = UserGroup.builder().id(10).build();
+				.password("p").groupPublicId("group-public-id").build();
+		UserGroup group = UserGroup.builder().id(10).publicId("group-public-id").name("G1").build();
 
 		when(userRepository.existsByEmail(req.getEmail())).thenReturn(false);
 		when(userRepository.existsByUsername(req.getUsername())).thenReturn(false);
-		when(userGroupRepository.findById(10)).thenReturn(Optional.of(group));
+		when(userGroupPublicIdLookupService.getRequiredGroup("group-public-id")).thenReturn(group);
 		when(passwordEncoder.encode("p")).thenReturn("encoded");
 		when(userRepository.save(any())).thenAnswer(inv -> {
 			User u = inv.getArgument(0);
 			u.setId(1);
 			return u;
 		});
-		when(userMapper.toUserResponse(any())).thenReturn(UserResponse.builder().id(1).build());
 
 		// when
-		Mono<UserResponse> result = adminService.createStudent(req);
+		Mono<AdminStudentResponse> result = adminService.createStudent(req);
 
 		// then
 		StepVerifier.create(result).assertNext(resp -> {
 			assertEquals(1, resp.getId());
+			assertEquals("group-public-id", resp.getGroupPublicId());
 			verify(userInGroupRepository).save(any());
 		}).verifyComplete();
 	}
@@ -164,7 +168,7 @@ class AdminServiceTest {
 		when(userRepository.existsByEmail(req.getEmail())).thenReturn(true);
 
 		// when
-		Mono<UserResponse> result = adminService.createStudent(req);
+		Mono<AdminStudentResponse> result = adminService.createStudent(req);
 
 		// then
 		StepVerifier.create(result).expectErrorSatisfies(error -> {
@@ -181,7 +185,7 @@ class AdminServiceTest {
 		when(userRepository.existsByUsername("s1")).thenReturn(true);
 
 		// when
-		Mono<UserResponse> result = adminService.createStudent(req);
+		Mono<AdminStudentResponse> result = adminService.createStudent(req);
 
 		// then
 		StepVerifier.create(result).expectErrorSatisfies(error -> {
@@ -194,14 +198,14 @@ class AdminServiceTest {
 	void shouldUpdateStudentSucceed() {
 		// given
 		AdminUpdateStudentRequest req = AdminUpdateStudentRequest.builder().email("new@e.com").username("new")
-				.groupId(11).build();
+				.groupPublicId("new-group-public-id").build();
 		User student = User.builder().id(1).email("old@e.com").username("old").role(Role.STUDENT).build();
-		UserGroup newGroup = UserGroup.builder().id(11).name("NG").build();
+		UserGroup newGroup = UserGroup.builder().id(11).publicId("new-group-public-id").name("NG").build();
 
 		when(userRepository.findById(1)).thenReturn(Optional.of(student));
 		when(userRepository.existsByEmail("new@e.com")).thenReturn(false);
 		when(userRepository.existsByUsername("new")).thenReturn(false);
-		when(userGroupRepository.findById(11)).thenReturn(Optional.of(newGroup));
+		when(userGroupPublicIdLookupService.getRequiredGroup("new-group-public-id")).thenReturn(newGroup);
 		when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 		when(userInGroupRepository.findByUserId(1)).thenReturn(Optional.empty());
 
@@ -211,7 +215,7 @@ class AdminServiceTest {
 		// then
 		StepVerifier.create(result).assertNext(resp -> {
 			assertEquals("new", resp.getUsername());
-			assertEquals(11, resp.getGroupId());
+			assertEquals("new-group-public-id", resp.getGroupPublicId());
 			verify(userInGroupRepository).save(any());
 		}).verifyComplete();
 	}
@@ -220,7 +224,7 @@ class AdminServiceTest {
 	void shouldUpdateStudentRemovingGroup() {
 		// given
 		AdminUpdateStudentRequest req = AdminUpdateStudentRequest.builder().email("old@e.com").username("old")
-				.groupId(null).build();
+				.groupPublicId(null).build();
 		User student = User.builder().id(1).email("old@e.com").username("old").role(Role.STUDENT).build();
 		UserInGroup membership = UserInGroup.builder().userId(1).groupId(10).build();
 
@@ -233,7 +237,7 @@ class AdminServiceTest {
 
 		// then
 		StepVerifier.create(result).assertNext(resp -> {
-			assertNull(resp.getGroupId());
+			assertNull(resp.getGroupPublicId());
 			verify(userInGroupRepository).delete(membership);
 		}).verifyComplete();
 	}
@@ -288,11 +292,12 @@ class AdminServiceTest {
 	@Test
 	void shouldRejectCreateStudentWhenGroupNotFound() {
 		// given
-		AdminCreateStudentRequest req = AdminCreateStudentRequest.builder().groupId(999).build();
-		when(userGroupRepository.findById(999)).thenReturn(Optional.empty());
+		AdminCreateStudentRequest req = AdminCreateStudentRequest.builder().groupPublicId("missing-group").build();
+		when(userGroupPublicIdLookupService.getRequiredGroup("missing-group"))
+				.thenThrow(new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND));
 
 		// when
-		Mono<UserResponse> result = adminService.createStudent(req);
+		Mono<AdminStudentResponse> result = adminService.createStudent(req);
 
 		// then
 		StepVerifier.create(result).expectErrorSatisfies(error -> {

@@ -10,7 +10,7 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonPublicId}/attachments)', ()
     let teacherToken;
     let studentToken;
     let studentId;
-    let groupId;
+    let groupPublicId;
     let lessonPublicId;
     let attachmentId;
     let chooseTaskId;
@@ -50,12 +50,12 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonPublicId}/attachments)', ()
             description: 'Group for attachment tests',
         });
         expect(res.status).toBe(201);
-        groupId = res.data.id;
+        groupPublicId = res.data.publicId;
 
         res = await apiClient.post('/lessons', {
             title: `Attach ${uniqueId}`,
             theme: 'Attachment Tests',
-            groupIds: [groupId],
+            groupPublicIds: [groupPublicId],
         });
         expect(res.status).toBe(201);
         lessonPublicId = res.data.publicId;
@@ -80,7 +80,7 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonPublicId}/attachments)', ()
             username: `attach_student_${uniqueId}`,
             email: `attach_student_${uniqueId}@test.com`,
             password: 'admin1',
-            groupId,
+            groupPublicId,
         });
         expect(res.status).toBe(201);
         studentId = res.data.id;
@@ -121,8 +121,8 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonPublicId}/attachments)', ()
             const response = await apiClient.delete(`/users/${studentId}`);
             expect([204, 404]).toContain(response.status);
         }
-        if (groupId) {
-            const response = await apiClient.delete(`/user-groups/${groupId}`);
+        if (groupPublicId) {
+            const response = await apiClient.delete(`/user-groups/${groupPublicId}`);
             expect([204, 404]).toContain(response.status);
         }
         setAuthToken(null);
@@ -330,7 +330,7 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonPublicId}/attachments)', ()
             let res = await apiClient.post('/lessons', {
                 title: `Temp ${uniqueId}`,
                 theme: 'Cleanup test',
-                groupIds: [groupId],
+                groupPublicIds: [groupPublicId],
             });
             expect(res.status).toBe(201);
             tempLessonPublicId = res.data.publicId;

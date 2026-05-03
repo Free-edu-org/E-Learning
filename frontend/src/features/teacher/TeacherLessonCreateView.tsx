@@ -157,11 +157,11 @@ export function TeacherLessonCreateView() {
     setFieldErrors({});
 
     try {
-      const groupIds = draft.groupIds.map((group) => group.id);
+      const groupPublicIds = draft.groupIds.map((group) => group.publicId);
       const createdLesson = await lessonService.createLesson({
         title: draft.title,
         theme: draft.theme,
-        groupIds: groupIds.length > 0 ? groupIds : undefined,
+        groupPublicIds: groupPublicIds.length > 0 ? groupPublicIds : undefined,
       });
 
       const taskOperations = draft.tasks.map((task) =>
@@ -418,7 +418,7 @@ export function TeacherLessonCreateView() {
                   }
                   getOptionLabel={(option) => option.name}
                   isOptionEqualToValue={(option, value) =>
-                    option.id === value.id
+                    option.publicId === value.publicId
                   }
                   disableCloseOnSelect
                   noOptionsText="Brak dostępnych grup"

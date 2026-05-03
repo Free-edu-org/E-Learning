@@ -19,6 +19,7 @@ import pl.freeedu.backend.task.repository.ScatterTaskRepository;
 import pl.freeedu.backend.task.repository.SpeakTaskRepository;
 import pl.freeedu.backend.task.repository.WriteTaskRepository;
 import pl.freeedu.backend.user.model.User;
+import pl.freeedu.backend.usergroup.service.UserGroupPublicIdLookupService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -43,11 +44,13 @@ public class LessonService {
 	private final WriteTaskRepository writeTaskRepository;
 	private final ScatterTaskRepository scatterTaskRepository;
 	private final SpeakTaskRepository speakTaskRepository;
+	private final UserGroupPublicIdLookupService userGroupPublicIdLookupService;
 
 	public LessonService(LessonRepository lessonRepository, GroupHasLessonRepository groupHasLessonRepository,
 			LessonMapper lessonMapper, SecurityService securityService, LessonAttachmentService lessonAttachmentService,
 			ChooseTaskRepository chooseTaskRepository, WriteTaskRepository writeTaskRepository,
-			ScatterTaskRepository scatterTaskRepository, SpeakTaskRepository speakTaskRepository) {
+			ScatterTaskRepository scatterTaskRepository, SpeakTaskRepository speakTaskRepository,
+			UserGroupPublicIdLookupService userGroupPublicIdLookupService) {
 		this.lessonRepository = lessonRepository;
 		this.groupHasLessonRepository = groupHasLessonRepository;
 		this.lessonMapper = lessonMapper;
@@ -57,6 +60,7 @@ public class LessonService {
 		this.writeTaskRepository = writeTaskRepository;
 		this.scatterTaskRepository = scatterTaskRepository;
 		this.speakTaskRepository = speakTaskRepository;
+		this.userGroupPublicIdLookupService = userGroupPublicIdLookupService;
 	}
 
 	public Flux<LessonResponse> getLessons(String search, Integer groupId, Boolean status, String sort) {
@@ -119,9 +123,10 @@ public class LessonService {
 							.teacher(teacherRef).isActive(Boolean.FALSE).build();
 					Lesson saved = lessonRepository.save(lesson);
 
-					if (request.getGroupIds() != null && !request.getGroupIds().isEmpty()) {
-						log.debug("Linking lesson ID: {} to groups: {}", saved.getId(), request.getGroupIds());
-						List<GroupHasLesson> relations = request.getGroupIds().stream()
+					if (request.getGroupPublicIds() != null && !request.getGroupPublicIds().isEmpty()) {
+						List<Integer> groupIds = resolveGroupIds(request.getGroupPublicIds());
+						log.debug("Linking lesson ID: {} to groups: {}", saved.getId(), groupIds);
+						List<GroupHasLesson> relations = groupIds.stream()
 								.map(gid -> GroupHasLesson.builder().groupId(gid).lessonId(saved.getId()).build())
 								.collect(Collectors.toList());
 						groupHasLessonRepository.saveAll(relations);
@@ -147,11 +152,11 @@ public class LessonService {
 			lesson.setTheme(request.getTheme());
 			Lesson saved = lessonRepository.save(lesson);
 
-			if (request.getGroupIds() != null) {
-				log.debug("Updating group links for lesson ID: {}. New groups: {}", saved.getId(),
-						request.getGroupIds());
+			if (request.getGroupPublicIds() != null) {
+				List<Integer> groupIds = resolveGroupIds(request.getGroupPublicIds());
+				log.debug("Updating group links for lesson ID: {}. New groups: {}", saved.getId(), groupIds);
 				groupHasLessonRepository.deleteByLessonId(saved.getId());
-				List<GroupHasLesson> relations = request.getGroupIds().stream()
+				List<GroupHasLesson> relations = groupIds.stream()
 						.map(gid -> GroupHasLesson.builder().groupId(gid).lessonId(saved.getId()).build())
 						.collect(Collectors.toList());
 				groupHasLessonRepository.saveAll(relations);
@@ -206,5 +211,9 @@ public class LessonService {
 				|| !writeTaskRepository.findByLessonId(lessonId).isEmpty()
 				|| !scatterTaskRepository.findByLessonId(lessonId).isEmpty()
 				|| !speakTaskRepository.findByLessonId(lessonId).isEmpty();
+	}
+
+	private List<Integer> resolveGroupIds(List<String> groupPublicIds) {
+		return groupPublicIds.stream().map(userGroupPublicIdLookupService::getRequiredInternalId).toList();
 	}
 }

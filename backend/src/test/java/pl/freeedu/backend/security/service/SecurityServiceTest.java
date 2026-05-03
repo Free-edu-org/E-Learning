@@ -49,11 +49,11 @@ class SecurityServiceTest {
 		CustomUserDetails principal = new CustomUserDetails(10, "teacher", "pwd", Role.TEACHER);
 		Authentication authentication = new UsernamePasswordAuthenticationToken(principal, null,
 				principal.getAuthorities());
-		UserGroup group = UserGroup.builder().id(7).teacherId(10).build();
-		when(userGroupRepository.findById(7)).thenReturn(Optional.of(group));
+		UserGroup group = UserGroup.builder().id(7).publicId("group-public-id").teacherId(10).build();
+		when(userGroupRepository.findByPublicId("group-public-id")).thenReturn(Optional.of(group));
 
 		// when
-		boolean result = securityService.isGroupOwner(authentication, 7);
+		boolean result = securityService.isGroupOwner(authentication, "group-public-id");
 
 		// then
 		assertTrue(result);
@@ -65,11 +65,11 @@ class SecurityServiceTest {
 		CustomUserDetails principal = new CustomUserDetails(10, "teacher", "pwd", Role.TEACHER);
 		Authentication authentication = new UsernamePasswordAuthenticationToken(principal, null,
 				principal.getAuthorities());
-		UserGroup group = UserGroup.builder().id(7).teacherId(99).build();
-		when(userGroupRepository.findById(7)).thenReturn(Optional.of(group));
+		UserGroup group = UserGroup.builder().id(7).publicId("group-public-id").teacherId(99).build();
+		when(userGroupRepository.findByPublicId("group-public-id")).thenReturn(Optional.of(group));
 
 		// when
-		boolean result = securityService.isGroupOwner(authentication, 7);
+		boolean result = securityService.isGroupOwner(authentication, "group-public-id");
 
 		// then
 		assertFalse(result);

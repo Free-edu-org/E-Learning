@@ -29,6 +29,7 @@ import pl.freeedu.backend.lesson.service.LessonPublicIdLookupService;
 import pl.freeedu.backend.lesson.service.LessonService;
 import pl.freeedu.backend.security.service.SecurityService;
 import pl.freeedu.backend.support.ControllerTestSecurityConfig;
+import pl.freeedu.backend.usergroup.service.UserGroupPublicIdLookupService;
 import reactor.core.publisher.Mono;
 
 @SpringJUnitConfig(classes = {LessonControllerPublicIdWebTest.TestConfig.class, GlobalExceptionHandler.class,
@@ -47,9 +48,13 @@ class LessonControllerPublicIdWebTest {
 	@Autowired
 	private SecurityService securityService;
 
+	@Autowired
+	private UserGroupPublicIdLookupService userGroupPublicIdLookupService;
+
 	@BeforeEach
 	void setUp() {
-		org.mockito.Mockito.reset(lessonService, lessonPublicIdLookupService, securityService);
+		org.mockito.Mockito.reset(lessonService, lessonPublicIdLookupService, userGroupPublicIdLookupService,
+				securityService);
 	}
 
 	@Test
@@ -58,11 +63,13 @@ class LessonControllerPublicIdWebTest {
 		LessonResponse response = LessonResponse.builder().publicId("11111111-1111-1111-1111-111111111111")
 				.title("Lesson").theme("Theme").groups(List.of()).build();
 		when(lessonService.createLesson(any())).thenReturn(Mono.just(response));
+		when(userGroupPublicIdLookupService.getRequiredInternalId("group-public-1")).thenReturn(1);
+		when(userGroupPublicIdLookupService.getRequiredInternalId("group-public-2")).thenReturn(2);
 
 		// when
 		WebTestClient.ResponseSpec result = webTestClient.mutateWith(mockUser("teacher").roles("TEACHER")).post()
 				.uri("/api/v1/lessons").contentType(MediaType.APPLICATION_JSON).bodyValue("""
-						{"title":"Lesson","theme":"Theme","groupIds":[1,2]}
+						{"title":"Lesson","theme":"Theme","groupPublicIds":["group-public-1","group-public-2"]}
 						""").exchange();
 
 		// then
@@ -76,13 +83,14 @@ class LessonControllerPublicIdWebTest {
 		// given
 		when(securityService.isLessonOwner(any(), eq("lesson-public-id"))).thenReturn(true);
 		when(lessonPublicIdLookupService.getRequiredInternalId("lesson-public-id")).thenReturn(25);
+		when(userGroupPublicIdLookupService.getRequiredInternalId("group-public-3")).thenReturn(3);
 		when(lessonService.updateLesson(eq(25), any())).thenReturn(Mono
 				.just(LessonResponse.builder().publicId("lesson-public-id").title("Updated").theme("Theme").build()));
 
 		// when
 		WebTestClient.ResponseSpec result = webTestClient.mutateWith(mockUser("teacher").roles("TEACHER")).put()
 				.uri("/api/v1/lessons/lesson-public-id").contentType(MediaType.APPLICATION_JSON).bodyValue("""
-						{"title":"Updated","theme":"Theme","groupIds":[3]}
+						{"title":"Updated","theme":"Theme","groupPublicIds":["group-public-3"]}
 						""").exchange();
 
 		// then
@@ -126,6 +134,11 @@ class LessonControllerPublicIdWebTest {
 			return mock(LessonPublicIdLookupService.class);
 		}
 
+		@Bean
+		UserGroupPublicIdLookupService userGroupPublicIdLookupService() {
+			return mock(UserGroupPublicIdLookupService.class);
+		}
+
 		@Bean(name = "securityService")
 		SecurityService securityService() {
 			return mock(SecurityService.class);
@@ -133,8 +146,10 @@ class LessonControllerPublicIdWebTest {
 
 		@Bean
 		LessonController lessonController(LessonService lessonService, LessonAttachmentService lessonAttachmentService,
-				LessonPublicIdLookupService lessonPublicIdLookupService) {
-			return new LessonController(lessonService, lessonAttachmentService, lessonPublicIdLookupService);
+				LessonPublicIdLookupService lessonPublicIdLookupService,
+				UserGroupPublicIdLookupService userGroupPublicIdLookupService) {
+			return new LessonController(lessonService, lessonAttachmentService, lessonPublicIdLookupService,
+					userGroupPublicIdLookupService);
 		}
 
 		@Bean

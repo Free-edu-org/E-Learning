@@ -22,7 +22,7 @@ public class AdminStudentResponse {
 
 	private Role role;
 
-	private Integer groupId;
+	private String groupPublicId;
 
 	private String groupName;
 

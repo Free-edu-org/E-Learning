@@ -39,6 +39,7 @@ import pl.freeedu.backend.usergroup.exception.UserGroupException;
 import pl.freeedu.backend.usergroup.exception.UserGroupErrorCode;
 import pl.freeedu.backend.usergroup.model.UserGroup;
 import pl.freeedu.backend.usergroup.model.UserInGroup;
+import pl.freeedu.backend.usergroup.service.UserGroupPublicIdLookupService;
 import org.springframework.dao.DataIntegrityViolationException;
 import java.util.List;
 import java.util.Map;
@@ -60,13 +61,15 @@ public class TeacherService {
 	private final TransactionTemplate transactionTemplate;
 	private final LessonResultDetailsService lessonResultDetailsService;
 	private final LessonAttachmentService lessonAttachmentService;
+	private final UserGroupPublicIdLookupService userGroupPublicIdLookupService;
 
 	public TeacherService(TeacherStatsRepository teacherStatsRepository, LessonRepository lessonRepository,
 			GroupHasLessonRepository groupHasLessonRepository, LessonMapper lessonMapper,
 			SecurityService securityService, UserGroupService userGroupService, UserRepository userRepository,
 			UserMapper userMapper, PasswordEncoder passwordEncoder, UserGroupRepository userGroupRepository,
 			UserInGroupRepository userInGroupRepository, TransactionTemplate transactionTemplate,
-			LessonResultDetailsService lessonResultDetailsService, LessonAttachmentService lessonAttachmentService) {
+			LessonResultDetailsService lessonResultDetailsService, LessonAttachmentService lessonAttachmentService,
+			UserGroupPublicIdLookupService userGroupPublicIdLookupService) {
 		this.teacherStatsRepository = teacherStatsRepository;
 		this.lessonRepository = lessonRepository;
 		this.groupHasLessonRepository = groupHasLessonRepository;
@@ -81,6 +84,7 @@ public class TeacherService {
 		this.transactionTemplate = transactionTemplate;
 		this.lessonResultDetailsService = lessonResultDetailsService;
 		this.lessonAttachmentService = lessonAttachmentService;
+		this.userGroupPublicIdLookupService = userGroupPublicIdLookupService;
 	}
 
 	public Mono<TeacherStatsResponse> getStats() {
@@ -121,7 +125,7 @@ public class TeacherService {
 			return userRepository.findStudentsWithGroupByTeacherId(teacherId, Role.STUDENT).stream()
 					.map(proj -> TeacherStudentResponse.builder().id(proj.getId()).username(proj.getUsername())
 							.email(proj.getEmail()).role(proj.getRole().name()).createdAt(proj.getCreatedAt())
-							.groupId(proj.getGroupId()).avatarUrl(proj.getAvatarUrl()).build())
+							.groupPublicId(proj.getGroupPublicId()).avatarUrl(proj.getAvatarUrl()).build())
 					.toList();
 		}).subscribeOn(Schedulers.boundedElastic()).flatMapMany(Flux::fromIterable));
 	}
@@ -169,8 +173,7 @@ public class TeacherService {
 						throw new UserException(UserErrorCode.USERNAME_ALREADY_TAKEN);
 					}
 
-					UserGroup group = userGroupRepository.findById(request.getGroupId())
-							.orElseThrow(() -> new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND));
+					UserGroup group = userGroupPublicIdLookupService.getRequiredGroup(request.getGroupPublicId());
 
 					if (!teacherId.equals(group.getTeacherId())) {
 						throw new UserGroupException(UserGroupErrorCode.INVALID_ROLE_FOR_GROUP);
@@ -186,7 +189,7 @@ public class TeacherService {
 						return TeacherStudentResponse.builder().id(savedStudent.getId())
 								.username(savedStudent.getUsername()).email(savedStudent.getEmail())
 								.role(savedStudent.getRole().name()).createdAt(savedStudent.getCreatedAt())
-								.groupId(group.getId()).avatarUrl(savedStudent.getAvatarUrl()).build();
+								.groupPublicId(group.getPublicId()).avatarUrl(savedStudent.getAvatarUrl()).build();
 					} catch (DataIntegrityViolationException ex) {
 						if (userRepository.existsByEmail(request.getEmail())) {
 							throw new UserException(UserErrorCode.EMAIL_ALREADY_TAKEN);
@@ -213,8 +216,7 @@ public class TeacherService {
 								"Missing ownership over student");
 					}
 
-					UserGroup group = userGroupRepository.findById(request.getGroupId())
-							.orElseThrow(() -> new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND));
+					UserGroup group = userGroupPublicIdLookupService.getRequiredGroup(request.getGroupPublicId());
 
 					if (!teacherId.equals(group.getTeacherId())) {
 						throw new UserGroupException(UserGroupErrorCode.INVALID_ROLE_FOR_GROUP);
@@ -245,7 +247,7 @@ public class TeacherService {
 						return TeacherStudentResponse.builder().id(savedStudent.getId())
 								.username(savedStudent.getUsername()).email(savedStudent.getEmail())
 								.role(savedStudent.getRole().name()).createdAt(savedStudent.getCreatedAt())
-								.groupId(group.getId()).avatarUrl(savedStudent.getAvatarUrl()).build();
+								.groupPublicId(group.getPublicId()).avatarUrl(savedStudent.getAvatarUrl()).build();
 					} catch (DataIntegrityViolationException ex) {
 						if (!originalEmail.equals(request.getEmail())
 								&& userRepository.existsByEmail(request.getEmail())) {

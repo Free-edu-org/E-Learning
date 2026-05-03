@@ -8,7 +8,7 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonPublicId}/submit)', () 
     let adminToken, teacherToken;
     let studentToken, studentId;
     let student2Token, student2Id; // student NOT in group
-    let groupId, lessonPublicId;
+    let groupPublicId, lessonPublicId;
     let chooseTaskId, writeTaskId, scatterTaskId, speakTaskId;
 
     // ─── Setup: create fully isolated test data ──────────────────────
@@ -27,13 +27,13 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonPublicId}/submit)', () 
             description: 'Group for submit tests'
         });
         expect(res.status).toBe(201);
-        groupId = res.data.id;
+        groupPublicId = res.data.publicId;
 
         // Teacher creates a lesson assigned to the group
         res = await apiClient.post('/lessons', {
             title: `Submit Lesson ${uniqueId}`,
             theme: 'Submit Testing',
-            groupIds: [groupId]
+            groupPublicIds: [groupPublicId]
         });
         expect(res.status).toBe(201);
         lessonPublicId = res.data.publicId;
@@ -104,7 +104,7 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonPublicId}/submit)', () 
 
         // Add student1 to group
         setAuthToken(adminToken);
-        res = await apiClient.post(`/user-groups/${groupId}/members/${studentId}`);
+        res = await apiClient.post(`/user-groups/${groupPublicId}/members/${studentId}`);
         expect(res.status).toBe(204);
 
         // Register student2 (NOT in group — for access-denied tests)
@@ -157,8 +157,8 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonPublicId}/submit)', () 
 
         // Delete group (cascade removes members)
         setAuthToken(adminToken);
-        if (groupId) {
-            const r = await apiClient.delete(`/user-groups/${groupId}`);
+        if (groupPublicId) {
+            const r = await apiClient.delete(`/user-groups/${groupPublicId}`);
             expect([204, 404]).toContain(r.status);
         }
 

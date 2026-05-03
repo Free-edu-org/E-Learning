@@ -474,11 +474,11 @@ export function TeacherDashboard() {
     setCreateFieldErrors({});
     setCreateDialogLoading(true);
     try {
-      const groupIds = lessonDraft.groupIds.map((g) => g.id);
+      const groupPublicIds = lessonDraft.groupIds.map((g) => g.publicId);
       const createdLesson = await lessonService.createLesson({
         title: lessonDraft.title,
         theme: lessonDraft.theme,
-        groupIds: groupIds.length > 0 ? groupIds : undefined,
+        groupPublicIds: groupPublicIds.length > 0 ? groupPublicIds : undefined,
       });
 
       const taskDrafts = lessonDraft.tasks;
@@ -622,13 +622,13 @@ export function TeacherDashboard() {
 
     try {
       const lessonPublicId = editingLesson.publicId;
-      const groupIds = editDraft.groupIds.map((g) => g.id);
+      const groupPublicIds = editDraft.groupIds.map((g) => g.publicId);
 
       // 1. Update lesson metadata
       await lessonService.updateLesson(lessonPublicId, {
         title: editDraft.title,
         theme: editDraft.theme,
-        groupIds,
+        groupPublicIds,
       });
 
       // 2. Diff tasks: find creates, updates, deletes
@@ -810,9 +810,9 @@ export function TeacherDashboard() {
     }
 
     if (selectedGroups.length > 0) {
-      const selectedIds = new Set(selectedGroups.map((group) => group.id));
+      const selectedIds = new Set(selectedGroups.map((group) => group.publicId));
       result = result.filter((lesson) =>
-        lesson.groups.some((group) => selectedIds.has(group.id)),
+        lesson.groups.some((group) => selectedIds.has(group.publicId)),
       );
     }
 
@@ -1115,7 +1115,7 @@ export function TeacherDashboard() {
                   }
                   getOptionLabel={(option) => option.name}
                   isOptionEqualToValue={(option, value) =>
-                    option.id === value.id
+                    option.publicId === value.publicId
                   }
                   disableCloseOnSelect
                   noOptionsText="Brak dostępnych grup"
@@ -1383,7 +1383,7 @@ export function TeacherDashboard() {
                   }
                   getOptionLabel={(option) => option.name}
                   isOptionEqualToValue={(option, value) =>
-                    option.id === value.id
+                    option.publicId === value.publicId
                   }
                   disableCloseOnSelect
                   noOptionsText="Brak dostępnych grup"

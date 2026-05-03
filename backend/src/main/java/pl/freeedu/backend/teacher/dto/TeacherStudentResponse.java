@@ -17,6 +17,6 @@ public class TeacherStudentResponse {
 	private String email;
 	private String role;
 	private LocalDateTime createdAt;
-	private Integer groupId;
+	private String groupPublicId;
 	private String avatarUrl;
 }

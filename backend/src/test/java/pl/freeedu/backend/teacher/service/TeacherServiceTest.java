@@ -37,6 +37,7 @@ import pl.freeedu.backend.user.service.UserMapper;
 import pl.freeedu.backend.usergroup.model.UserGroup;
 import pl.freeedu.backend.usergroup.repository.UserGroupRepository;
 import pl.freeedu.backend.usergroup.repository.UserInGroupRepository;
+import pl.freeedu.backend.usergroup.service.UserGroupPublicIdLookupService;
 import pl.freeedu.backend.usergroup.service.UserGroupService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -82,6 +83,9 @@ class TeacherServiceTest {
 
 	@Mock
 	private LessonAttachmentService lessonAttachmentService;
+
+	@Mock
+	private UserGroupPublicIdLookupService userGroupPublicIdLookupService;
 
 	@InjectMocks
 	private TeacherService teacherService;
@@ -137,13 +141,13 @@ class TeacherServiceTest {
 	void shouldCreateStudentSucceed() {
 		// given
 		TeacherCreateStudentRequest req = TeacherCreateStudentRequest.builder().email("s@e.com").username("s")
-				.password("p").groupId(5).build();
-		UserGroup group = UserGroup.builder().id(5).teacherId(10).build();
+				.password("p").groupPublicId("group-public-id").build();
+		UserGroup group = UserGroup.builder().id(5).publicId("group-public-id").teacherId(10).build();
 
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
 		when(userRepository.existsByEmail(any())).thenReturn(false);
 		when(userRepository.existsByUsername(any())).thenReturn(false);
-		when(userGroupRepository.findById(5)).thenReturn(Optional.of(group));
+		when(userGroupPublicIdLookupService.getRequiredGroup("group-public-id")).thenReturn(group);
 		when(passwordEncoder.encode("p")).thenReturn("enc");
 		when(userRepository.save(any())).thenAnswer(inv -> {
 			User u = inv.getArgument(0);
@@ -158,6 +162,7 @@ class TeacherServiceTest {
 		StepVerifier.create(result).assertNext(resp -> {
 			assertEquals(1, resp.getId());
 			assertEquals("s", resp.getUsername());
+			assertEquals("group-public-id", resp.getGroupPublicId());
 			verify(userInGroupRepository).save(any());
 		}).verifyComplete();
 	}
@@ -166,11 +171,11 @@ class TeacherServiceTest {
 	void shouldHandleDataIntegrityViolationOnCreate() {
 		// given
 		TeacherCreateStudentRequest req = TeacherCreateStudentRequest.builder().email("s@e.com").username("s")
-				.groupId(5).build();
-		UserGroup group = UserGroup.builder().id(5).teacherId(10).build();
+				.groupPublicId("group-public-id").build();
+		UserGroup group = UserGroup.builder().id(5).publicId("group-public-id").teacherId(10).build();
 
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
-		when(userGroupRepository.findById(5)).thenReturn(Optional.of(group));
+		when(userGroupPublicIdLookupService.getRequiredGroup("group-public-id")).thenReturn(group);
 		when(userRepository.save(any())).thenThrow(new DataIntegrityViolationException("Duplicate"));
 
 		// First call returns false (pass through), second call (in catch) returns true
@@ -190,9 +195,9 @@ class TeacherServiceTest {
 	void shouldUpdateStudentSucceed() {
 		// given
 		TeacherUpdateStudentRequest req = TeacherUpdateStudentRequest.builder().email("n@e.com").username("n")
-				.groupId(5).build();
+				.groupPublicId("group-public-id").build();
 		User student = User.builder().id(1).email("o@e.com").username("o").role(Role.STUDENT).build();
-		UserGroup group = UserGroup.builder().id(5).teacherId(10).build();
+		UserGroup group = UserGroup.builder().id(5).publicId("group-public-id").teacherId(10).build();
 
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
 		when(userRepository.findById(1)).thenReturn(Optional.of(student));
@@ -200,7 +205,7 @@ class TeacherServiceTest {
 		when(proj.getId()).thenReturn(1);
 		when(userRepository.findStudentsWithGroupByTeacherId(10, Role.STUDENT)).thenReturn(List.of(proj));
 
-		when(userGroupRepository.findById(5)).thenReturn(Optional.of(group));
+		when(userGroupPublicIdLookupService.getRequiredGroup("group-public-id")).thenReturn(group);
 		when(userRepository.existsByEmail("n@e.com")).thenReturn(false);
 		when(userRepository.existsByUsername("n")).thenReturn(false);
 		when(userRepository.save(any())).thenReturn(student);
@@ -212,6 +217,7 @@ class TeacherServiceTest {
 		// then
 		StepVerifier.create(result).assertNext(resp -> {
 			assertEquals("n", resp.getUsername());
+			assertEquals("group-public-id", resp.getGroupPublicId());
 		}).verifyComplete();
 	}
 
@@ -236,7 +242,7 @@ class TeacherServiceTest {
 	void shouldGetMyGroups() {
 		// given
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
-		UserGroupResponse group = UserGroupResponse.builder().id(5).name("G1").build();
+		UserGroupResponse group = UserGroupResponse.builder().publicId("group-public-id").name("G1").build();
 		when(userGroupService.getGroupsByTeacherId(10)).thenReturn(Flux.just(group));
 
 		// when
@@ -244,7 +250,7 @@ class TeacherServiceTest {
 
 		// then
 		StepVerifier.create(groups).assertNext(g -> {
-			assertEquals(5, g.getId());
+			assertEquals("group-public-id", g.getPublicId());
 			assertEquals("G1", g.getName());
 		}).verifyComplete();
 	}
@@ -259,7 +265,7 @@ class TeacherServiceTest {
 		when(proj.getEmail()).thenReturn("s1@e.com");
 		when(proj.getRole()).thenReturn(Role.STUDENT);
 		when(proj.getCreatedAt()).thenReturn(null);
-		when(proj.getGroupId()).thenReturn(5);
+		when(proj.getGroupPublicId()).thenReturn("group-public-id");
 		when(proj.getAvatarUrl()).thenReturn("preset:avatar_3");
 		when(userRepository.findStudentsWithGroupByTeacherId(10, Role.STUDENT)).thenReturn(List.of(proj));
 
@@ -270,6 +276,7 @@ class TeacherServiceTest {
 		StepVerifier.create(students).assertNext(s -> {
 			assertEquals(1, s.getId());
 			assertEquals("s1", s.getUsername());
+			assertEquals("group-public-id", s.getGroupPublicId());
 			assertEquals("preset:avatar_3", s.getAvatarUrl());
 		}).verifyComplete();
 	}

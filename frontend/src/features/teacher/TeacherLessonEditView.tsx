@@ -285,12 +285,12 @@ export function TeacherLessonEditView() {
     setFieldErrors({});
 
     try {
-      const groupIds = draft.groupIds.map((group) => group.id);
+      const groupPublicIds = draft.groupIds.map((group) => group.publicId);
 
       await lessonService.updateLesson(lesson.publicId, {
         title: draft.title,
         theme: draft.theme,
-        groupIds,
+        groupPublicIds,
       });
 
       let nextFeedback: DialogFeedbackState = {
@@ -667,7 +667,7 @@ export function TeacherLessonEditView() {
                   }
                   getOptionLabel={(option) => option.name}
                   isOptionEqualToValue={(option, value) =>
-                    option.id === value.id
+                    option.publicId === value.publicId
                   }
                   disableCloseOnSelect
                   noOptionsText="Brak dostępnych grup"

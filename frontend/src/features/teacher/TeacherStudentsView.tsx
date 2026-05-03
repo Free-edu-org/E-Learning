@@ -98,7 +98,7 @@ const getOperationErrorMessage = (error: unknown, fallback: string) => {
       username: "Nazwa użytkownika",
       email: "E-mail",
       password: "Hasło",
-      groupId: "Grupa",
+      groupPublicId: "Grupa",
       name: "Nazwa",
       description: "Opis",
     });
@@ -113,7 +113,7 @@ const emptyStudentDraft = {
   username: "",
   email: "",
   password: "",
-  groupId: "" as number | "",
+  groupPublicId: "" as string | "",
 };
 
 const emptyGroupDraft = {
@@ -152,7 +152,7 @@ export function TeacherStudentsView() {
   const [editStudentDraft, setEditStudentDraft] = useState({
     username: "",
     email: "",
-    groupId: "" as number | "",
+    groupPublicId: "" as string | "",
   });
   const [editStudentLoading, setEditStudentLoading] = useState(false);
   const [editStudentFeedback, setEditStudentFeedback] =
@@ -167,9 +167,9 @@ export function TeacherStudentsView() {
   const [draggingStudentId, setDraggingStudentId] = useState<number | null>(
     null,
   );
-  const [dragOverGroupId, setDragOverGroupId] = useState<number | null>(null);
+  const [dragOverGroupId, setDragOverGroupId] = useState<string | null>(null);
   const [movingStudentId, setMovingStudentId] = useState<number | null>(null);
-  const [expandedGroupIds, setExpandedGroupIds] = useState<Set<number>>(
+  const [expandedGroupIds, setExpandedGroupIds] = useState<Set<string>>(
     () => new Set(),
   );
 
@@ -210,14 +210,16 @@ export function TeacherStudentsView() {
   }, [fetchData]);
 
   useEffect(() => {
-    setExpandedGroupIds(new Set(availableGroups.map((group) => group.id)));
+    setExpandedGroupIds(new Set(availableGroups.map((group) => group.publicId)));
   }, [availableGroups]);
 
   const groupsWithStudents = useMemo(
     () =>
       availableGroups.map((group) => ({
         ...group,
-        students: students.filter((student) => student.groupId === group.id),
+        students: students.filter(
+          (student) => student.groupPublicId === group.publicId,
+        ),
       })),
     [availableGroups, students],
   );
@@ -231,7 +233,7 @@ export function TeacherStudentsView() {
         const groupMatches = [
           group.name,
           group.description ?? "",
-          String(group.id),
+          group.publicId,
         ].some((value) => value.toLowerCase().includes(query));
         const matchingStudents = group.students.filter((student) =>
           [student.username, student.email, String(student.id)].some((value) =>
@@ -278,7 +280,7 @@ export function TeacherStudentsView() {
       });
       return;
     }
-    if (createStudentDraft.groupId === "") {
+    if (createStudentDraft.groupPublicId === "") {
       setCreateStudentFeedback({
         severity: "error",
         message: "Wybierz grupę, do której przypisać ucznia.",
@@ -293,7 +295,7 @@ export function TeacherStudentsView() {
         username: createStudentDraft.username.trim(),
         email: createStudentDraft.email.trim(),
         password: createStudentDraft.password.trim(),
-        groupId: createStudentDraft.groupId,
+        groupPublicId: createStudentDraft.groupPublicId,
       });
       setCreateStudentFeedback({
         severity: "success",
@@ -316,7 +318,7 @@ export function TeacherStudentsView() {
     setEditStudentDraft({
       username: student.username,
       email: student.email,
-      groupId: student.groupId,
+      groupPublicId: student.groupPublicId,
     });
     setEditStudentFeedback(null);
     setEditStudentOpen(true);
@@ -337,7 +339,7 @@ export function TeacherStudentsView() {
       });
       return;
     }
-    if (editStudentDraft.groupId === "") {
+    if (editStudentDraft.groupPublicId === "") {
       setEditStudentFeedback({
         severity: "error",
         message: "Wybierz docelową grupę.",
@@ -351,7 +353,7 @@ export function TeacherStudentsView() {
       await lessonService.updateTeacherStudent(editingStudent.id, {
         username: editStudentDraft.username.trim(),
         email: editStudentDraft.email.trim(),
-        groupId: editStudentDraft.groupId,
+        groupPublicId: editStudentDraft.groupPublicId,
       });
       setEditStudentFeedback({
         severity: "success",
@@ -418,19 +420,26 @@ export function TeacherStudentsView() {
 
   const moveStudentToGroup = async (
     student: TeacherStudentResponse,
-    targetGroupId: number,
+    targetGroupPublicId: string,
   ) => {
-    if (student.groupId === targetGroupId || movingStudentId !== null) return;
+    if (
+      student.groupPublicId === targetGroupPublicId ||
+      movingStudentId !== null
+    ) {
+      return;
+    }
 
-    const previousGroupId = student.groupId;
+    const previousGroupPublicId = student.groupPublicId;
     setMovingStudentId(student.id);
     setPageFeedback({
       severity: "info",
       message: "Przenoszenie ucznia do nowej grupy...",
     });
     setStudents((current) =>
-      current.map((item) =>
-        item.id === student.id ? { ...item, groupId: targetGroupId } : item,
+        current.map((item) =>
+        item.id === student.id
+          ? { ...item, groupPublicId: targetGroupPublicId }
+          : item,
       ),
     );
 
@@ -438,10 +447,10 @@ export function TeacherStudentsView() {
       await lessonService.updateTeacherStudent(student.id, {
         username: student.username,
         email: student.email,
-        groupId: targetGroupId,
+        groupPublicId: targetGroupPublicId,
       });
       const targetGroup = availableGroups.find(
-        (group) => group.id === targetGroupId,
+        (group) => group.publicId === targetGroupPublicId,
       );
       setPageFeedback({
         severity: "success",
@@ -451,7 +460,9 @@ export function TeacherStudentsView() {
     } catch (error) {
       setStudents((current) =>
         current.map((item) =>
-          item.id === student.id ? { ...item, groupId: previousGroupId } : item,
+          item.id === student.id
+            ? { ...item, groupPublicId: previousGroupPublicId }
+            : item,
         ),
       );
       setPageFeedback({
@@ -468,23 +479,23 @@ export function TeacherStudentsView() {
     }
   };
 
-  const handleDrop = (event: DragEvent, targetGroupId: number) => {
+  const handleDrop = (event: DragEvent, targetGroupPublicId: string) => {
     event.preventDefault();
     const rawStudentId = event.dataTransfer.getData("text/plain");
     const studentId = Number(rawStudentId);
     const student = students.find((item) => item.id === studentId);
     if (student) {
-      moveStudentToGroup(student, targetGroupId);
+      moveStudentToGroup(student, targetGroupPublicId);
     }
   };
 
-  const toggleGroupExpanded = (groupId: number) => {
+  const toggleGroupExpanded = (groupPublicId: string) => {
     setExpandedGroupIds((current) => {
       const next = new Set(current);
-      if (next.has(groupId)) {
-        next.delete(groupId);
+      if (next.has(groupPublicId)) {
+        next.delete(groupPublicId);
       } else {
-        next.add(groupId);
+        next.add(groupPublicId);
       }
       return next;
     });
@@ -653,8 +664,8 @@ export function TeacherStudentsView() {
         ) : (
           <Stack spacing={1.25}>
             {filteredGroupsWithStudents.map((group) => {
-              const isDropTarget = dragOverGroupId === group.id;
-              const isExpanded = expandedGroupIds.has(group.id);
+              const isDropTarget = dragOverGroupId === group.publicId;
+              const isExpanded = expandedGroupIds.has(group.publicId);
               const visibleStudentCount = group.students.length;
               const totalStudentCount =
                 "totalStudentCount" in group
@@ -666,14 +677,14 @@ export function TeacherStudentsView() {
                   : `${totalStudentCount} uczniów`;
               return (
                 <Box
-                  key={group.id}
+                  key={group.publicId}
                   onDragOver={(event) => {
                     event.preventDefault();
                     event.dataTransfer.dropEffect = "move";
-                    setDragOverGroupId(group.id);
+                    setDragOverGroupId(group.publicId);
                   }}
                   onDragLeave={() => setDragOverGroupId(null)}
-                  onDrop={(event) => handleDrop(event, group.id)}
+                  onDrop={(event) => handleDrop(event, group.publicId)}
                   sx={{
                     ...panelSurfaceSx,
                     borderColor: isDropTarget ? "primary.main" : "divider",
@@ -687,7 +698,7 @@ export function TeacherStudentsView() {
                   }}
                 >
                   <ButtonBase
-                    onClick={() => toggleGroupExpanded(group.id)}
+                    onClick={() => toggleGroupExpanded(group.publicId)}
                     sx={{
                       width: "100%",
                       display: "flex",
@@ -975,16 +986,16 @@ export function TeacherStudentsView() {
                     <InputLabel>Grupa ucznia</InputLabel>
                     <Select
                       label="Grupa ucznia"
-                      value={createStudentDraft.groupId}
+                      value={createStudentDraft.groupPublicId}
                       onChange={(event) =>
                         setCreateStudentDraft((draft) => ({
                           ...draft,
-                          groupId: event.target.value as number | "",
+                          groupPublicId: event.target.value as string | "",
                         }))
                       }
                     >
                       {availableGroups.map((group) => (
-                        <MenuItem key={group.id} value={group.id}>
+                        <MenuItem key={group.publicId} value={group.publicId}>
                           {group.name}
                         </MenuItem>
                       ))}
@@ -1088,16 +1099,16 @@ export function TeacherStudentsView() {
                     <InputLabel>Grupa ucznia</InputLabel>
                     <Select
                       label="Grupa ucznia"
-                      value={editStudentDraft.groupId}
+                      value={editStudentDraft.groupPublicId}
                       onChange={(event) =>
                         setEditStudentDraft((draft) => ({
                           ...draft,
-                          groupId: event.target.value as number | "",
+                          groupPublicId: event.target.value as string | "",
                         }))
                       }
                     >
                       {availableGroups.map((group) => (
-                        <MenuItem key={group.id} value={group.id}>
+                        <MenuItem key={group.publicId} value={group.publicId}>
                           {group.name}
                         </MenuItem>
                       ))}

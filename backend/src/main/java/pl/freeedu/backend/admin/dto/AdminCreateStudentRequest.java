@@ -26,5 +26,5 @@ public class AdminCreateStudentRequest {
 	@NotBlank(message = "Password is required")
 	private String password;
 
-	private Integer groupId;
+	private String groupPublicId;
 }

@@ -23,6 +23,8 @@ import pl.freeedu.backend.task.model.UserLesson;
 import pl.freeedu.backend.task.model.UserLessonStatus;
 import pl.freeedu.backend.task.repository.UserLessonRepository;
 import pl.freeedu.backend.task.service.LessonResultDetailsService;
+import pl.freeedu.backend.usergroup.model.UserGroup;
+import pl.freeedu.backend.usergroup.repository.UserGroupRepository;
 import pl.freeedu.backend.usergroup.model.UserInGroup;
 import pl.freeedu.backend.usergroup.repository.UserInGroupRepository;
 import reactor.core.publisher.Flux;
@@ -57,6 +59,9 @@ class StudentServiceTest {
 	@Mock
 	private LessonAttachmentService lessonAttachmentService;
 
+	@Mock
+	private UserGroupRepository userGroupRepository;
+
 	@InjectMocks
 	private StudentService studentService;
 
@@ -86,12 +91,15 @@ class StudentServiceTest {
 
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(userId));
 		when(userInGroupRepository.findByUserId(userId)).thenReturn(Optional.of(membership));
+		when(userGroupRepository.findById(groupId))
+				.thenReturn(Optional.of(UserGroup.builder().id(groupId).publicId("group-public-id").build()));
 		when(groupHasLessonRepository.findLessonIdsByGroupId(groupId)).thenReturn(List.of(1));
 		when(lessonRepository.findByIdIn(List.of(1))).thenReturn(List.of(lesson));
 		when(userLessonRepository.findByUserIdAndLessonIdIn(eq(userId), any())).thenReturn(List.of());
 		when(lessonMapper.toResponse(lesson))
 				.thenReturn(LessonResponse.builder().publicId("lesson-1").title("L1").build());
-		when(groupHasLessonRepository.findGroupsForLesson(1)).thenReturn(List.of(new GroupDto(groupId, "G1")));
+		when(groupHasLessonRepository.findGroupsForLesson(1))
+				.thenReturn(List.of(new GroupDto("group-public-id", "G1")));
 
 		// when
 		Flux<StudentLessonResponse> result = studentService.getLessons();
@@ -114,6 +122,8 @@ class StudentServiceTest {
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(userId));
 		when(userInGroupRepository.findByUserId(userId))
 				.thenReturn(Optional.of(UserInGroup.builder().groupId(groupId).build()));
+		when(userGroupRepository.findById(groupId))
+				.thenReturn(Optional.of(UserGroup.builder().id(groupId).publicId("group-public-id").build()));
 		when(groupHasLessonRepository.findLessonIdsByGroupId(groupId)).thenReturn(List.of(1, 2));
 		when(lessonRepository.findByIdIn(any())).thenReturn(List.of(l1, l2));
 
@@ -173,6 +183,8 @@ class StudentServiceTest {
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(userId));
 		when(userInGroupRepository.findByUserId(userId))
 				.thenReturn(Optional.of(UserInGroup.builder().groupId(groupId).build()));
+		when(userGroupRepository.findById(groupId))
+				.thenReturn(Optional.of(UserGroup.builder().id(groupId).publicId("group-public-id").build()));
 		when(groupHasLessonRepository.findLessonIdsByGroupId(groupId)).thenReturn(List.of(1));
 		when(lessonRepository.findByIdIn(any())).thenReturn(List.of(l1));
 		when(lessonMapper.toResponse(any())).thenReturn(LessonResponse.builder().publicId("lesson-1").build());

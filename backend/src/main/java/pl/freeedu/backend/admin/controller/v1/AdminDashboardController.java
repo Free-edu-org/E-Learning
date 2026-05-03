@@ -81,7 +81,7 @@ public class AdminDashboardController {
 	@PostMapping("/students")
 	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseStatus(HttpStatus.CREATED)
-	public Mono<UserResponse> createStudent(@Valid @RequestBody Mono<AdminCreateStudentRequest> request) {
+	public Mono<AdminStudentResponse> createStudent(@Valid @RequestBody Mono<AdminCreateStudentRequest> request) {
 		return request.flatMap(adminService::createStudent);
 	}
 

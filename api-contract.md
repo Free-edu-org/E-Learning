@@ -420,14 +420,14 @@ Default local development base URL is `http://localhost:8080`
 ---
 
 ### 3.3. Get User Group by ID
-- **URL**: `/api/v1/user-groups/{id}`
+- **URL**: `/api/v1/user-groups/{groupPublicId}`
 - **Method**: `GET`
 - **Description**: Returns a single user group by its ID. Requires `ADMIN` OR teacher who owns that group.
 
 **Success (200 OK):**
 ```json
 {
-  "id": 1,
+  "publicId": "11111111-1111-1111-1111-111111111111",
   "name": "Angielski A1",
   "description": "Grupa początkująca - semestr letni",
   "studentCount": 2,
@@ -444,7 +444,7 @@ Default local development base URL is `http://localhost:8080`
 ---
 
 ### 3.4. Update User Group
-- **URL**: `/api/v1/user-groups/{id}`
+- **URL**: `/api/v1/user-groups/{groupPublicId}`
 - **Method**: `PUT`
 - **Description**: Updates name and/or description of an existing group. Requires `ADMIN` authority OR the requesting user must be the group owner (`TEACHER`).
 
@@ -459,7 +459,7 @@ Default local development base URL is `http://localhost:8080`
 **Success (200 OK):**
 ```json
 {
-  "id": 1,
+  "publicId": "11111111-1111-1111-1111-111111111111",
   "name": "Angielski B1",
   "description": "Grupa średniozaawansowana",
   "studentCount": 2,
@@ -477,7 +477,7 @@ Default local development base URL is `http://localhost:8080`
 ---
 
 ### 3.5. Delete User Group
-- **URL**: `/api/v1/user-groups/{id}`
+- **URL**: `/api/v1/user-groups/{groupPublicId}`
 - **Method**: `DELETE`
 - **Description**: Deletes a user group and all member associations. Does not delete user accounts. Requires `ADMIN` authority OR the requesting user must be the group owner (`TEACHER`).
 
@@ -492,7 +492,7 @@ Default local development base URL is `http://localhost:8080`
 ---
 
 ### 3.6. Add Member to Group
-- **URL**: `/api/v1/user-groups/{id}/members/{userId}`
+- **URL**: `/api/v1/user-groups/{groupPublicId}/members/{userId}`
 - **Method**: `POST`
 - **Description**: Adds a student to a group. Only users with role `STUDENT` can be added. A student can belong to at most one group. Requires `ADMIN` authority OR the requesting user must be the group owner (`TEACHER`).
 
@@ -510,7 +510,7 @@ Default local development base URL is `http://localhost:8080`
 ---
 
 ### 3.7. Remove Member from Group
-- **URL**: `/api/v1/user-groups/{id}/members/{userId}`
+- **URL**: `/api/v1/user-groups/{groupPublicId}/members/{userId}`
 - **Method**: `DELETE`
 - **Description**: Removes a student from a group. Does not delete the user account. Requires `ADMIN` authority OR the requesting user must be the group owner (`TEACHER`).
 
@@ -535,7 +535,7 @@ Poniżej znajdziesz opis endpointów do zarządzania lekcjami. Ścieżka bazowa:
 - **Description**: Pobiera listę lekcji. Obsługuje filtry i sortowanie.
 - **Query params**:
   - `search` (string, opcjonalne) — wyszukiwanie po tytule / temacie
-  - `groupId` (integer, opcjonalne) — filtr po przypisanej grupie
+  - `groupPublicId` (string UUID, opcjonalne) — filtr po przypisanej grupie
   - `status` (boolean, opcjonalne) — filtr po polu `isActive`
   - `sort` (string, opcjonalne) — np. `createdAt:desc` lub `title:asc`
 - **Authorization**: `TEACHER` lub `ADMIN`
@@ -587,7 +587,7 @@ Poniżej znajdziesz opis endpointów do zarządzania lekcjami. Ścieżka bazowa:
 {
   "title": "Present Simple - lesson 1",
   "theme": "Grammar",
-  "groupIds": [1, 2]
+  "groupPublicIds": ["11111111-1111-1111-1111-111111111111", "22222222-2222-2222-2222-222222222222"]
 }
 ```
 
@@ -602,7 +602,7 @@ Zwraca utworzoną reprezentację `LessonResponse` (jak w sekcji 4.1).
 ---
 
 ### 4.3. Update lesson data
-- **URL**: `/api/v1/lessons/{id}`
+- **URL**: `/api/v1/lessons/{lessonPublicId}`
 - **Method**: `PUT`
 - **Description**: Aktualizuje pola lekcji (title, theme, description, group assignment). Wymaga uprawnień nauczyciela. `title` może mieć maksymalnie 30 znaków.
 - **Authorization**: `ADMIN` lub właściciel lekcji (`TEACHER`)
@@ -622,7 +622,7 @@ Zwraca zaktualizowaną reprezentację `LessonResponse`.
 ---
 
 ### 4.4. Quick status change (is_active)
-- **URL**: `/api/v1/lessons/{id}/status`
+- **URL**: `/api/v1/lessons/{lessonPublicId}/status`
 - **Method**: `PATCH`
 - **Description**: Szybka zmiana flagi `isActive` (włącz/wyłącz lekcję).
 - **Authorization**: `ADMIN` lub właściciel lekcji (`TEACHER`)
@@ -644,7 +644,7 @@ Zwraca zaktualizowaną reprezentację `LessonResponse`.
 ---
 
 ### 4.5. Delete lesson
-- **URL**: `/api/v1/lessons/{id}`
+- **URL**: `/api/v1/lessons/{lessonPublicId}`
 - **Method**: `DELETE`
 - **Description**: Usuwa lekcję. Dostęp dla `ADMIN` lub właściciela lekcji (`TEACHER`).
 - **Authorization**: `ADMIN` lub właściciel lekcji (`TEACHER`)
@@ -929,7 +929,7 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
 - **Description**: Zwraca listę uczniów przypisanych do grup aktualnie zalogowanego nauczyciela (relacja przez `UserInGroup` oraz `UserGroup.teacherId`).
 - **Authorization**: `TEACHER`
 
-**Success (200 OK):** Zwraca macierz elementów `TeacherStudentResponse` (wyłącznie użytkownicy z rolą `STUDENT`) z `groupId` aktualnego przypisania do grupy nauczyciela.
+**Success (200 OK):** Zwraca macierz elementów `TeacherStudentResponse` (wyłącznie użytkownicy z rolą `STUDENT`) z `groupPublicId` aktualnego przypisania do grupy nauczyciela.
 
 **Known Errors:**
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
@@ -940,7 +940,7 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
 ### 5.6. Create Student (Teacher API)
 - **URL**: `/api/v1/teacher/students`
 - **Method**: `POST`
-- **Description**: Tworzy konto ucznia i od razu przypisuje go do wskazanej grupy należącej do aktualnie zalogowanego nauczyciela. Pole `groupId` jest **wymagane**.
+- **Description**: Tworzy konto ucznia i od razu przypisuje go do wskazanej grupy należącej do aktualnie zalogowanego nauczyciela. Pole `groupPublicId` jest **wymagane**.
 - **Authorization**: `TEACHER`
 
 **Request Body (JSON):**
@@ -949,7 +949,7 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
   "username": "new_student",
   "email": "new.student@example.com",
   "password": "password123",
-  "groupId": 1
+  "groupPublicId": "11111111-1111-1111-1111-111111111111"
 }
 ```
 
@@ -961,13 +961,13 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
   "email": "new.student@example.com",
   "role": "STUDENT",
   "createdAt": "2026-03-30T20:15:00",
-  "groupId": 1,
+  "groupPublicId": "11111111-1111-1111-1111-111111111111",
   "avatarUrl": "preset:avatar_1"
 }
 ```
 
 **Known Errors:**
-- `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid (w tym brak `groupId`).
+- `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid (w tym brak `groupPublicId`).
 - `INVALID_ROLE_FOR_GROUP` (400 Bad Request): Wskazana grupa nie należy do aktualnego nauczyciela.
 - `USER_GROUP_NOT_FOUND` (404 Not Found): Grupa o podanym ID nie istnieje.
 - `EMAIL_ALREADY_TAKEN` (409 Conflict): Email already exists.
@@ -980,7 +980,7 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
 ### 5.7. Update Student (Teacher API)
 - **URL**: `/api/v1/teacher/students/{id}`
 - **Method**: `PUT`
-- **Description**: Aktualizuje dane ucznia (username, email) oraz przypisaną grupę. Uczeń musi należeć do jednej z grup nauczyciela. `groupId` jest wymagany i docelowa grupa również musi należeć do nauczyciela.
+- **Description**: Aktualizuje dane ucznia (username, email) oraz przypisaną grupę. Uczeń musi należeć do jednej z grup nauczyciela. `groupPublicId` jest wymagany i docelowa grupa również musi należeć do nauczyciela.
 - **Authorization**: `TEACHER`
 
 **Request Body (JSON):**
@@ -988,7 +988,7 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
 {
   "username": "updated_student",
   "email": "updated.student@example.com",
-  "groupId": 2
+  "groupPublicId": "22222222-2222-2222-2222-222222222222"
 }
 ```
 
@@ -1000,7 +1000,7 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
   "email": "updated.student@example.com",
   "role": "STUDENT",
   "createdAt": "2026-03-30T20:15:00",
-  "groupId": 2,
+  "groupPublicId": "22222222-2222-2222-2222-222222222222",
   "avatarUrl": "preset:avatar_5"
 }
 ```
@@ -1080,7 +1080,7 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
     "username": "student1",
     "email": "user@example.com",
     "role": "STUDENT",
-    "groupId": 1,
+    "groupPublicId": "11111111-1111-1111-1111-111111111111",
     "groupName": "Angielski A1",
     "createdAt": "2026-03-02T21:00:00"
   }
@@ -1103,10 +1103,10 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
   "username": "new_student",
   "email": "new.student@example.com",
   "password": "password123",
-  "groupId": 1
+  "groupPublicId": "11111111-1111-1111-1111-111111111111"
 }
 ```
-> `groupId` jest opcjonalne. Jeśli nie podano, uczeń zostaje stworzony bez przypisania do grupy.
+> `groupPublicId` jest opcjonalne. Jeśli nie podano, uczeń zostaje stworzony bez przypisania do grupy.
 
 **Success (201 Created):**
 ```json
@@ -1138,10 +1138,10 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
 {
   "username": "updated_student",
   "email": "updated.student@example.com",
-  "groupId": 2
+  "groupPublicId": "22222222-2222-2222-2222-222222222222"
 }
 ```
-> Jeśli `groupId` jest `null` lub pominięte, dotychczasowe powiązanie z grupą zostaje usunięte.
+> Jeśli `groupPublicId` jest `null` lub pominięte, dotychczasowe powiązanie z grupą zostaje usunięte.
 
 **Success (200 OK):**
 ```json
@@ -1150,7 +1150,7 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
   "username": "updated_student",
   "email": "updated.student@example.com",
   "role": "STUDENT",
-  "groupId": 2,
+  "groupPublicId": "22222222-2222-2222-2222-222222222222",
   "groupName": "Angielski B2",
   "createdAt": "2026-03-26T20:15:00"
 }

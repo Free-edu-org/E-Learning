@@ -10,6 +10,7 @@ import pl.freeedu.backend.usergroup.model.UserGroup;
 public interface UserGroupMapper {
 
 	@Mapping(target = "id", ignore = true)
+	@Mapping(target = "publicId", ignore = true)
 	@Mapping(target = "createdAt", ignore = true)
 	UserGroup toUserGroup(UserGroupRequest request);
 

@@ -41,7 +41,7 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
             const updateResponse = await apiClient.put(`/lessons/${lessonPublicIdToUpdate}`, {
                 title: lesson.title,
                 theme: lesson.theme,
-                groupIds: []
+                groupPublicIds: []
             });
             return updateResponse.status === 200;
         };
@@ -87,7 +87,7 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
             const response = await apiClient.post('/lessons', {
                 title: `CRUD Lesson ${uniqueId}`,
                 theme: 'Testing',
-                groupIds: []
+                groupPublicIds: []
             });
             expect(response.status).toBe(201);
             expect(response.data.publicId).toBeDefined();
@@ -109,7 +109,7 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
             const response = await apiClient.post('/lessons', {
                 title: `Admin Lesson ${uniqueId}`,
                 theme: 'Admin',
-                groupIds: []
+                groupPublicIds: []
             });
             expect(response.status).toBe(201);
             expect(response.data.title).toBe(`Admin Lesson ${uniqueId}`);
@@ -117,7 +117,7 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
             createdLessonPublicIds.push(response.data.publicId);
         });
 
-        it('should create a lesson without groupIds (201)', async () => {
+        it('should create a lesson without groupPublicIds (201)', async () => {
             setAuthToken(teacherToken);
             const response = await apiClient.post('/lessons', {
                 title: `No Group Lesson ${uniqueId}`,

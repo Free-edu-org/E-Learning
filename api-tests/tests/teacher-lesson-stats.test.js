@@ -30,12 +30,12 @@ describe('Teacher Lesson Stats API (GET /api/v1/teacher/lessons/{lessonPublicId}
             description: 'Group for lesson stats test'
         });
         expect(res.status).toBe(201);
-        isolatedGroupId = res.data.id;
+        isolatedGroupId = res.data.publicId;
 
         res = await apiClient.post('/lessons', {
             title: `Stats ${uniqueId}`,
             theme: 'Lesson Stats Testing',
-            groupIds: [isolatedGroupId]
+            groupPublicIds: [isolatedGroupId]
         });
         expect(res.status).toBe(201);
         isolatedLessonPublicId = res.data.publicId;
@@ -291,7 +291,7 @@ describe('Teacher Lesson Stats API (GET /api/v1/teacher/lessons/{lessonPublicId}
             const res = await apiClient.post('/lessons', {
                 title: `Empty Stats ${uniqueId}`,
                 theme: 'No submissions',
-                groupIds: [isolatedGroupId]
+                groupPublicIds: [isolatedGroupId]
             });
             expect(res.status).toBe(201);
             emptyLessonPublicId = res.data.publicId;

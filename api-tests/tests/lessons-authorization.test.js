@@ -44,7 +44,7 @@ describe('Lessons API Authorization (/api/v1/lessons)', () => {
         res = await apiClient.post('/lessons', {
             title: `Own Lesson ${uniqueId}`,
             theme: 'Grammar',
-            groupIds: []
+            groupPublicIds: []
         });
         ownLessonPublicId = res.data.publicId;
         expect(res.data).not.toHaveProperty('id');
@@ -67,7 +67,7 @@ describe('Lessons API Authorization (/api/v1/lessons)', () => {
         const response = await apiClient.post('/lessons', {
             title: '   ',
             theme: '',
-            groupIds: []
+            groupPublicIds: []
         });
         expect(response.status).toBe(400);
         expect(response.data.code).toBe('VALIDATION_FAILED');
@@ -78,7 +78,7 @@ describe('Lessons API Authorization (/api/v1/lessons)', () => {
         const response = await apiClient.put(`/lessons/${ownLessonPublicId}`, {
             title: 'Tampered title',
             theme: 'Tampered',
-            groupIds: []
+            groupPublicIds: []
         });
         expect(response.status).toBe(403);
         expect(response.data.code).toBe('FORBIDDEN');
@@ -105,7 +105,7 @@ describe('Lessons API Authorization (/api/v1/lessons)', () => {
         const response = await apiClient.put(`/lessons/${ownLessonPublicId}`, {
             title: `Admin Updated ${uniqueId}`,
             theme: 'Admin Review',
-            groupIds: []
+            groupPublicIds: []
         });
         expect(response.status).toBe(200);
         expect(response.data.publicId).toBe(ownLessonPublicId);

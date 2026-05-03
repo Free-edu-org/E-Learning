@@ -10,6 +10,6 @@ public interface TeacherStudentProjection {
 	String getEmail();
 	Role getRole();
 	LocalDateTime getCreatedAt();
-	Integer getGroupId();
+	String getGroupPublicId();
 	String getAvatarUrl();
 }

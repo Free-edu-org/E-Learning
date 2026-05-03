@@ -12,8 +12,8 @@ describe('Teacher Dashboard Access API (/api/v1/teacher/*)', () => {
     let teacherId;
     let secondTeacherToken;
     let secondTeacherId;
-    let firstTeacherGroupId;
-    let secondTeacherGroupId;
+    let firstTeacherGroupPublicId;
+    let secondTeacherGroupPublicId;
     let teacherStudentId;
     let foreignTeacherStudentId;
 
@@ -53,14 +53,14 @@ describe('Teacher Dashboard Access API (/api/v1/teacher/*)', () => {
             name: `TeacherScopeGroup_${uniqueId}`,
             description: 'Owned by seed teacher'
         });
-        firstTeacherGroupId = res.data.id;
+        firstTeacherGroupPublicId = res.data.publicId;
 
         setAuthToken(secondTeacherToken);
         res = await apiClient.post('/user-groups', {
             name: `SecondTeacherScopeGroup_${uniqueId}`,
             description: 'Owned by second teacher'
         });
-        secondTeacherGroupId = res.data.id;
+        secondTeacherGroupPublicId = res.data.publicId;
 
         setAuthToken(adminToken);
         const teacherStudent = {
@@ -93,22 +93,22 @@ describe('Teacher Dashboard Access API (/api/v1/teacher/*)', () => {
         foreignTeacherStudentId = res.data.id;
 
         setAuthToken(teacherToken);
-        await apiClient.post(`/user-groups/${firstTeacherGroupId}/members/${teacherStudentId}`);
+        await apiClient.post(`/user-groups/${firstTeacherGroupPublicId}/members/${teacherStudentId}`);
 
         setAuthToken(secondTeacherToken);
-        await apiClient.post(`/user-groups/${secondTeacherGroupId}/members/${foreignTeacherStudentId}`);
+        await apiClient.post(`/user-groups/${secondTeacherGroupPublicId}/members/${foreignTeacherStudentId}`);
     });
 
     afterAll(async () => {
         setAuthToken(adminToken);
 
-        if (firstTeacherGroupId) {
-            const response = await apiClient.delete(`/user-groups/${firstTeacherGroupId}`);
+        if (firstTeacherGroupPublicId) {
+            const response = await apiClient.delete(`/user-groups/${firstTeacherGroupPublicId}`);
             expect([204, 404]).toContain(response.status);
         }
 
-        if (secondTeacherGroupId) {
-            const response = await apiClient.delete(`/user-groups/${secondTeacherGroupId}`);
+        if (secondTeacherGroupPublicId) {
+            const response = await apiClient.delete(`/user-groups/${secondTeacherGroupPublicId}`);
             expect([204, 404]).toContain(response.status);
         }
 
@@ -208,12 +208,13 @@ describe('Teacher Dashboard Access API (/api/v1/teacher/*)', () => {
         const response = await apiClient.get('/teacher/my-groups');
         expect(response.status).toBe(200);
         expect(Array.isArray(response.data)).toBe(true);
-        expect(response.data.some((g) => g.id === firstTeacherGroupId)).toBe(true);
+        expect(response.data.some((g) => g.publicId === firstTeacherGroupPublicId)).toBe(true);
+        expect(response.data.every((g) => !Object.prototype.hasOwnProperty.call(g, 'id'))).toBe(true);
 
         setAuthToken(secondTeacherToken);
         const secondTeacherResponse = await apiClient.get('/teacher/my-groups');
         expect(secondTeacherResponse.status).toBe(200);
-        expect(secondTeacherResponse.data.some((g) => g.id === firstTeacherGroupId)).toBe(false);
+        expect(secondTeacherResponse.data.some((g) => g.publicId === firstTeacherGroupPublicId)).toBe(false);
     });
 
     it('should block TEACHER from admin-only endpoint /admin/stats', async () => {
@@ -270,7 +271,7 @@ describe('Teacher Dashboard Access API (/api/v1/teacher/*)', () => {
                 email: `unauth.ts.${uniqueId}@example.com`,
                 username: `unauth_ts_${uniqueId}`,
                 password: 'password123',
-                groupId: firstTeacherGroupId
+                groupPublicId: firstTeacherGroupPublicId
             });
             expect(response.status).toBe(401);
         });
@@ -281,7 +282,7 @@ describe('Teacher Dashboard Access API (/api/v1/teacher/*)', () => {
                 email: `stud.ts.${uniqueId}@example.com`,
                 username: `stud_ts_${uniqueId}`,
                 password: 'password123',
-                groupId: firstTeacherGroupId
+                groupPublicId: firstTeacherGroupPublicId
             });
             expect(response.status).toBe(403);
         });
@@ -292,7 +293,7 @@ describe('Teacher Dashboard Access API (/api/v1/teacher/*)', () => {
                 email: `admin.ts.${uniqueId}@example.com`,
                 username: `admin_ts_${uniqueId}`,
                 password: 'password123',
-                groupId: firstTeacherGroupId
+                groupPublicId: firstTeacherGroupPublicId
             });
             expect(response.status).toBe(403);
         });
@@ -303,7 +304,7 @@ describe('Teacher Dashboard Access API (/api/v1/teacher/*)', () => {
                 email: `teacher.new.student.${uniqueId}@example.com`,
                 username: `teacher_new_student_${uniqueId}`,
                 password: 'password123',
-                groupId: firstTeacherGroupId
+                groupPublicId: firstTeacherGroupPublicId
             });
 
             expect(response.status).toBe(201);
@@ -327,25 +328,25 @@ describe('Teacher Dashboard Access API (/api/v1/teacher/*)', () => {
                 email: `teacher.foreign.grp.${uniqueId}@example.com`,
                 username: `teacher_foreign_grp_${uniqueId}`,
                 password: 'password123',
-                groupId: secondTeacherGroupId
+                groupPublicId: secondTeacherGroupPublicId
             });
             expect(response.status).toBe(400);
             expect(response.data.code).toBe('INVALID_ROLE_FOR_GROUP');
         });
 
-        it('should reject non-existent groupId (404 USER_GROUP_NOT_FOUND)', async () => {
+        it('should reject non-existent groupPublicId (404 USER_GROUP_NOT_FOUND)', async () => {
             setAuthToken(teacherToken);
             const response = await apiClient.post('/teacher/students', {
                 email: `teacher.nogrp.${uniqueId}@example.com`,
                 username: `teacher_nogrp_${uniqueId}`,
                 password: 'password123',
-                groupId: 999999
+                groupPublicId: 'missing-group-public-id'
             });
             expect(response.status).toBe(404);
             expect(response.data.code).toBe('USER_GROUP_NOT_FOUND');
         });
 
-        it('should reject missing groupId (400 VALIDATION_FAILED)', async () => {
+        it('should reject missing groupPublicId (400 VALIDATION_FAILED)', async () => {
             setAuthToken(teacherToken);
             const response = await apiClient.post('/teacher/students', {
                 email: `teacher.noid.${uniqueId}@example.com`,
@@ -362,7 +363,7 @@ describe('Teacher Dashboard Access API (/api/v1/teacher/*)', () => {
                 email: 'not-an-email',
                 username: '',
                 password: '',
-                groupId: firstTeacherGroupId
+                groupPublicId: firstTeacherGroupPublicId
             });
             expect(response.status).toBe(400);
             expect(response.data.code).toBe('VALIDATION_FAILED');
@@ -374,7 +375,7 @@ describe('Teacher Dashboard Access API (/api/v1/teacher/*)', () => {
                 email: `teacher.new.student.${uniqueId}@example.com`,
                 username: `teacher_dup_check_${uniqueId}`,
                 password: 'password123',
-                groupId: firstTeacherGroupId
+                groupPublicId: firstTeacherGroupPublicId
             });
             expect(response.status).toBe(409);
             expect(response.data.code).toBe('EMAIL_ALREADY_TAKEN');
@@ -386,7 +387,7 @@ describe('Teacher Dashboard Access API (/api/v1/teacher/*)', () => {
                 email: `teacher.dup.username.${uniqueId}@example.com`,
                 username: `teacher_new_student_${uniqueId}`,
                 password: 'password123',
-                groupId: firstTeacherGroupId
+                groupPublicId: firstTeacherGroupPublicId
             });
             expect(response.status).toBe(409);
             expect(response.data.code).toBe('USERNAME_ALREADY_TAKEN');
@@ -402,7 +403,7 @@ describe('Teacher Dashboard Access API (/api/v1/teacher/*)', () => {
                 email: `teacher.upd.base.${uniqueId}@example.com`,
                 username: `teacher_upd_base_${uniqueId}`,
                 password: 'password123',
-                groupId: firstTeacherGroupId
+                groupPublicId: firstTeacherGroupPublicId
             });
             expect(res.status).toBe(201);
             updatableStudentId = res.data.id;
@@ -421,7 +422,7 @@ describe('Teacher Dashboard Access API (/api/v1/teacher/*)', () => {
             const response = await apiClient.put(`/teacher/students/${updatableStudentId}`, {
                 email: `unauth.upd.${uniqueId}@example.com`,
                 username: `unauth_upd_${uniqueId}`,
-                groupId: firstTeacherGroupId
+                groupPublicId: firstTeacherGroupPublicId
             });
             expect(response.status).toBe(401);
         });
@@ -431,7 +432,7 @@ describe('Teacher Dashboard Access API (/api/v1/teacher/*)', () => {
             const response = await apiClient.put(`/teacher/students/${updatableStudentId}`, {
                 email: `stud.upd.${uniqueId}@example.com`,
                 username: `stud_upd_${uniqueId}`,
-                groupId: firstTeacherGroupId
+                groupPublicId: firstTeacherGroupPublicId
             });
             expect(response.status).toBe(403);
         });
@@ -441,7 +442,7 @@ describe('Teacher Dashboard Access API (/api/v1/teacher/*)', () => {
             const response = await apiClient.put(`/teacher/students/${updatableStudentId}`, {
                 email: `admin.upd.${uniqueId}@example.com`,
                 username: `admin_upd_${uniqueId}`,
-                groupId: firstTeacherGroupId
+                groupPublicId: firstTeacherGroupPublicId
             });
             expect(response.status).toBe(403);
         });
@@ -452,12 +453,12 @@ describe('Teacher Dashboard Access API (/api/v1/teacher/*)', () => {
             const response = await apiClient.put(`/teacher/students/${updatableStudentId}`, {
                 email: `teacher.upd.ok.${uid}@example.com`,
                 username: `teacher_upd_ok_${uid}`,
-                groupId: firstTeacherGroupId
+                groupPublicId: firstTeacherGroupPublicId
             });
             expect(response.status).toBe(200);
             expect(response.data.id).toBe(updatableStudentId);
             expect(response.data.role).toBe('STUDENT');
-            expect(response.data.groupId).toBe(firstTeacherGroupId);
+            expect(response.data.groupPublicId).toBe(firstTeacherGroupPublicId);
             expect(response.data).toHaveProperty('avatarUrl');
         });
 
@@ -467,7 +468,7 @@ describe('Teacher Dashboard Access API (/api/v1/teacher/*)', () => {
             const response = await apiClient.put(`/teacher/students/${updatableStudentId}`, {
                 email: `teacher.upd.fg.${uid}@example.com`,
                 username: `teacher_upd_fg_${uid}`,
-                groupId: secondTeacherGroupId
+                groupPublicId: secondTeacherGroupPublicId
             });
             expect(response.status).toBe(400);
             expect(response.data.code).toBe('INVALID_ROLE_FOR_GROUP');
@@ -478,7 +479,7 @@ describe('Teacher Dashboard Access API (/api/v1/teacher/*)', () => {
             const response = await apiClient.put('/teacher/students/999999', {
                 email: `notfound.upd.${uniqueId}@example.com`,
                 username: `notfound_upd_${uniqueId}`,
-                groupId: firstTeacherGroupId
+                groupPublicId: firstTeacherGroupPublicId
             });
             expect(response.status).toBe(404);
             expect(response.data.code).toBe('USER_NOT_FOUND');
@@ -489,7 +490,7 @@ describe('Teacher Dashboard Access API (/api/v1/teacher/*)', () => {
             const response = await apiClient.put(`/teacher/students/${foreignTeacherStudentId}`, {
                 email: `teacher.hijack.${uniqueId}@example.com`,
                 username: `teacher_hijack_${uniqueId}`,
-                groupId: firstTeacherGroupId
+                groupPublicId: firstTeacherGroupPublicId
             });
             expect(response.status).toBe(403);
         });
@@ -499,7 +500,7 @@ describe('Teacher Dashboard Access API (/api/v1/teacher/*)', () => {
             const response = await apiClient.put(`/teacher/students/${updatableStudentId}`, {
                 email: 'not-an-email',
                 username: '',
-                groupId: firstTeacherGroupId
+                groupPublicId: firstTeacherGroupPublicId
             });
             expect(response.status).toBe(400);
             expect(response.data.code).toBe('VALIDATION_FAILED');

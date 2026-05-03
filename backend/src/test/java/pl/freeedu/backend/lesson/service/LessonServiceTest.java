@@ -18,6 +18,7 @@ import pl.freeedu.backend.task.repository.ChooseTaskRepository;
 import pl.freeedu.backend.task.repository.ScatterTaskRepository;
 import pl.freeedu.backend.task.repository.SpeakTaskRepository;
 import pl.freeedu.backend.task.repository.WriteTaskRepository;
+import pl.freeedu.backend.usergroup.service.UserGroupPublicIdLookupService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -59,6 +60,9 @@ class LessonServiceTest {
 
 	@Mock
 	private SpeakTaskRepository speakTaskRepository;
+
+	@Mock
+	private UserGroupPublicIdLookupService userGroupPublicIdLookupService;
 
 	@InjectMocks
 	private LessonService lessonService;
@@ -102,7 +106,7 @@ class LessonServiceTest {
 			assertEquals("lesson-1", list.get(1).getPublicId());
 		}).verifyComplete();
 
-		// 3. Filter by groupId
+		// 3. Filter by internal groupId after controller-side publicId lookup
 		// when
 		when(groupHasLessonRepository.findLessonIdsByGroupId(10)).thenReturn(List.of(2));
 		Flux<LessonResponse> result3 = lessonService.getLessons(null, 10, null, null);
@@ -126,8 +130,11 @@ class LessonServiceTest {
 	@Test
 	void shouldCreateLessonProperly() {
 		// given
-		LessonRequest request = LessonRequest.builder().title("Title").theme("Theme").groupIds(List.of(1, 2)).build();
+		LessonRequest request = LessonRequest.builder().title("Title").theme("Theme")
+				.groupPublicIds(List.of("group-public-1", "group-public-2")).build();
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
+		when(userGroupPublicIdLookupService.getRequiredInternalId("group-public-1")).thenReturn(1);
+		when(userGroupPublicIdLookupService.getRequiredInternalId("group-public-2")).thenReturn(2);
 		when(lessonRepository.save(any())).thenAnswer(inv -> {
 			Lesson l = inv.getArgument(0);
 			l.setId(99);
@@ -145,16 +152,20 @@ class LessonServiceTest {
 			assertEquals("lesson-99", resp.getPublicId());
 			assertEquals("preset:avatar_1", resp.getTeacherAvatarUrl());
 			verify(groupHasLessonRepository, times(1)).saveAll(any());
+			verify(userGroupPublicIdLookupService).getRequiredInternalId("group-public-1");
+			verify(userGroupPublicIdLookupService).getRequiredInternalId("group-public-2");
 		}).verifyComplete();
 	}
 
 	@Test
 	void shouldUpdateLessonProperly() {
 		// given
-		LessonRequest request = LessonRequest.builder().title("New").theme("Theme").groupIds(List.of(3)).build();
+		LessonRequest request = LessonRequest.builder().title("New").theme("Theme")
+				.groupPublicIds(List.of("group-public-3")).build();
 		Lesson lesson = Lesson.builder().id(10).title("Old").build();
 
 		when(lessonRepository.findById(10)).thenReturn(Optional.of(lesson));
+		when(userGroupPublicIdLookupService.getRequiredInternalId("group-public-3")).thenReturn(3);
 		when(lessonRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 		when(lessonMapper.toResponse(any())).thenReturn(LessonResponse.builder().publicId("lesson-10").build());
 
@@ -166,6 +177,7 @@ class LessonServiceTest {
 			assertEquals("lesson-10", resp.getPublicId());
 			verify(groupHasLessonRepository, times(1)).deleteByLessonId(10);
 			verify(groupHasLessonRepository, times(1)).saveAll(any());
+			verify(userGroupPublicIdLookupService).getRequiredInternalId("group-public-3");
 			assertEquals("New", lesson.getTitle());
 		}).verifyComplete();
 	}

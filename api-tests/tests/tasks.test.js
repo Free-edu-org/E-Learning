@@ -51,7 +51,7 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
         res = await apiClient.post('/lessons', {
             title: `Task Lesson ${uniqueId}`,
             theme: 'Testing',
-            groupIds: []
+            groupPublicIds: []
         });
         lessonPublicId = res.data.publicId;
     });

@@ -10,7 +10,7 @@ describe('Lesson Result Details API', () => {
     let studentToken, studentId;
     let foreignStudentToken, foreignStudentId;
     let otherTeacherToken, otherTeacherId;
-    let groupId, lessonPublicId, emptyLessonPublicId;
+    let groupPublicId, lessonPublicId, emptyLessonPublicId;
     let chooseTaskId, writeTaskId;
 
     beforeAll(async () => {
@@ -31,12 +31,12 @@ describe('Lesson Result Details API', () => {
             description: 'Group for lesson result details tests'
         });
         expect(response.status).toBe(201);
-        groupId = response.data.id;
+        groupPublicId = response.data.publicId;
 
         response = await apiClient.post('/lessons', {
             title: `Result Lesson ${uniqueId}`,
             theme: 'Result details testing',
-            groupIds: [groupId]
+            groupPublicIds: [groupPublicId]
         });
         expect(response.status).toBe(201);
         lessonPublicId = response.data.publicId;
@@ -67,7 +67,7 @@ describe('Lesson Result Details API', () => {
         response = await apiClient.post('/lessons', {
             title: `Empty Result ${uniqueId}`,
             theme: 'No submission yet',
-            groupIds: [groupId]
+            groupPublicIds: [groupPublicId]
         });
         expect(response.status).toBe(201);
         emptyLessonPublicId = response.data.publicId;
@@ -93,7 +93,7 @@ describe('Lesson Result Details API', () => {
         studentId = response.data.id;
 
         setAuthToken(adminToken);
-        response = await apiClient.post(`/user-groups/${groupId}/members/${studentId}`);
+        response = await apiClient.post(`/user-groups/${groupPublicId}/members/${studentId}`);
         expect(response.status).toBe(204);
 
         const foreignStudentData = {
@@ -172,8 +172,8 @@ describe('Lesson Result Details API', () => {
         }
 
         setAuthToken(adminToken);
-        if (groupId) {
-            const deleteGroupResponse = await apiClient.delete(`/user-groups/${groupId}`);
+        if (groupPublicId) {
+            const deleteGroupResponse = await apiClient.delete(`/user-groups/${groupPublicId}`);
             expect([204, 404]).toContain(deleteGroupResponse.status);
         }
 

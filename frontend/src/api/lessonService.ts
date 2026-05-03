@@ -2,7 +2,7 @@ import { fetchApi, fetchApiBlob } from "./apiClient";
 import type { LessonResultDetailsResponse } from "./studentService";
 
 export interface Group {
-  id: number;
+  publicId: string;
   name: string;
   description?: string;
   studentCount?: number;
@@ -44,7 +44,7 @@ export interface TeacherStudentResponse {
   email: string;
   role: string;
   createdAt: string;
-  groupId: number;
+  groupPublicId: string;
   avatarUrl?: string | null;
 }
 
@@ -71,19 +71,19 @@ export interface CreateTeacherStudentRequest {
   username: string;
   email: string;
   password: string;
-  groupId: number;
+  groupPublicId: string;
 }
 
 export interface UpdateTeacherStudentRequest {
   username: string;
   email: string;
-  groupId: number;
+  groupPublicId: string;
 }
 
 export interface CreateLessonRequest {
   title: string;
   theme: string;
-  groupIds?: number[];
+  groupPublicIds?: string[];
 }
 
 export const lessonService = {

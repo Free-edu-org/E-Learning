@@ -12,7 +12,7 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
     let studentToken;
     let createdTeacherId;
     let createdStudentId;
-    let seedGroupId;
+    let seedGroupPublicId;
 
     beforeAll(async () => {
         let res = await apiClient.post('/auth/login', adminCreds);
@@ -27,7 +27,7 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
         setAuthToken(adminToken);
         res = await apiClient.get('/user-groups');
         const seedGroup = res.data.find((group) => group.name === 'Angielski A1');
-        seedGroupId = seedGroup.id;
+        seedGroupPublicId = seedGroup.publicId;
     });
 
     afterAll(async () => {
@@ -112,7 +112,7 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
             expect(response.status).toBe(403);
         });
 
-        it('should create student WITHOUT groupId for ADMIN (201)', async () => {
+        it('should create student WITHOUT groupPublicId for ADMIN (201)', async () => {
             setAuthToken(adminToken);
             const response = await apiClient.post('/admin/students', {
                 email: `admin.student.nogroup.${uniqueId}@example.com`,
@@ -133,7 +133,7 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
             expect(loginResponse.status).toBe(200);
         });
 
-        it('should create student WITH groupId for ADMIN (201)', async () => {
+        it('should create student WITH groupPublicId for ADMIN (201)', async () => {
             setAuthToken(adminToken);
             // First delete the student created above to reuse the slot
             if (createdStudentId) {
@@ -144,7 +144,7 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
                 email: `admin.student.grp.${uniqueId}@example.com`,
                 username: `admin_student_grp_${uniqueId}`,
                 password: 'password123',
-                groupId: seedGroupId
+                groupPublicId: seedGroupPublicId
             });
 
             expect(response.status).toBe(201);
@@ -152,13 +152,13 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
             createdStudentId = response.data.id;
         });
 
-        it('should return 404 for non-existent groupId', async () => {
+        it('should return 404 for non-existent groupPublicId', async () => {
             setAuthToken(adminToken);
             const response = await apiClient.post('/admin/students', {
                 email: `admin.student.badgrp.${uniqueId}@example.com`,
                 username: `admin_student_badgrp_${uniqueId}`,
                 password: 'password123',
-                groupId: 999999
+                groupPublicId: 'missing-group-public-id'
             });
             expect(response.status).toBe(404);
             expect(response.data.code).toBe('USER_GROUP_NOT_FOUND');
@@ -217,35 +217,35 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
             expect(response.status).toBe(403);
         });
 
-        it('should update student with groupId for ADMIN (200)', async () => {
+        it('should update student with groupPublicId for ADMIN (200)', async () => {
             const updateId = freshId();
             setAuthToken(adminToken);
             const response = await apiClient.put(`/admin/students/${createdStudentId}`, {
                 email: `admin.student.updated.${updateId}@example.com`,
                 username: `admin_student_updated_${updateId}`,
-                groupId: seedGroupId
+                groupPublicId: seedGroupPublicId
             });
 
             expect(response.status).toBe(200);
             expect(response.data.id).toBe(createdStudentId);
-            expect(response.data.groupId).toBe(seedGroupId);
+            expect(response.data.groupPublicId).toBe(seedGroupPublicId);
             expect(response.data.groupName).toBeTruthy();
             expect(response.data).not.toHaveProperty('teacherId');
             expect(response.data).not.toHaveProperty('teacherName');
         });
 
-        it('should unassign student from group when groupId is null (200)', async () => {
+        it('should unassign student from group when groupPublicId is null (200)', async () => {
             const updateId = freshId();
             setAuthToken(adminToken);
             const response = await apiClient.put(`/admin/students/${createdStudentId}`, {
                 email: `admin.student.updated.${updateId}@example.com`,
                 username: `admin_student_updated_${updateId}`,
-                groupId: null
+                groupPublicId: null
             });
 
             expect(response.status).toBe(200);
             expect(response.data.id).toBe(createdStudentId);
-            expect(response.data.groupId).toBeNull();
+            expect(response.data.groupPublicId).toBeNull();
             expect(response.data.groupName).toBeNull();
         });
 
@@ -259,13 +259,13 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
             expect(response.data.code).toBe('USER_NOT_FOUND');
         });
 
-        it('should return 404 for non-existent groupId', async () => {
+        it('should return 404 for non-existent groupPublicId', async () => {
             const updateId = freshId();
             setAuthToken(adminToken);
             const response = await apiClient.put(`/admin/students/${createdStudentId}`, {
                 email: `admin.student.updated.${updateId}@example.com`,
                 username: `admin_student_updated_${updateId}`,
-                groupId: 999999
+                groupPublicId: 'missing-group-public-id'
             });
             expect(response.status).toBe(404);
             expect(response.data.code).toBe('USER_GROUP_NOT_FOUND');
@@ -346,7 +346,7 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
             expect(response.data.some((user) => user.id === createdStudentId)).toBe(true);
             response.data.forEach((user) => {
                 expect(user.role).toBe('STUDENT');
-                expect(user).toHaveProperty('groupId');
+                expect(user).toHaveProperty('groupPublicId');
             });
         });
 

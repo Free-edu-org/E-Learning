@@ -59,12 +59,12 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
             description: 'Group for student attachment tests',
         });
         expect(res.status).toBe(201);
-        attachmentGroupId = res.data.id;
+        attachmentGroupId = res.data.publicId;
 
         res = await apiClient.post('/lessons', {
             title: `Attach Lesson ${uniqueId}`,
             theme: 'Attachment Tests',
-            groupIds: [attachmentGroupId],
+            groupPublicIds: [attachmentGroupId],
         });
         expect(res.status).toBe(201);
         attachmentLessonPublicId = res.data.publicId;
@@ -167,9 +167,9 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
         }
 
         setAuthToken(adminToken);
-        for (const groupId of [isolatedGroupId, otherGroupId, attachmentGroupId]) {
-            if (groupId) {
-                const response = await apiClient.delete(`/user-groups/${groupId}`);
+        for (const groupPublicId of [isolatedGroupId, otherGroupId, attachmentGroupId]) {
+            if (groupPublicId) {
+                const response = await apiClient.delete(`/user-groups/${groupPublicId}`);
                 expect([204, 404]).toContain(response.status);
             }
         }
@@ -192,19 +192,19 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
             description: 'Own group for student dashboard regression test'
         });
         expect(res.status).toBe(201);
-        isolatedGroupId = res.data.id;
+        isolatedGroupId = res.data.publicId;
 
         res = await apiClient.post('/user-groups', {
             name: `Student Dashboard Other Group ${uniqueId}`,
             description: 'Other group for student dashboard regression test'
         });
         expect(res.status).toBe(201);
-        otherGroupId = res.data.id;
+        otherGroupId = res.data.publicId;
 
         res = await apiClient.post('/lessons', {
             title: `Shared Lesson ${uniqueId}`,
             theme: 'Student Dashboard Regression',
-            groupIds: [isolatedGroupId, otherGroupId]
+            groupPublicIds: [isolatedGroupId, otherGroupId]
         });
         expect(res.status).toBe(201);
         sharedLessonPublicId = res.data.publicId;
@@ -318,7 +318,8 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
                 expect(['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED']).toContain(lesson.status);
                 expect(Array.isArray(lesson.groups)).toBe(true);
                 lesson.groups.forEach((group) => {
-                    expect(group).toHaveProperty('id');
+                    expect(group).toHaveProperty('publicId');
+                    expect(group).not.toHaveProperty('id');
                     expect(group).toHaveProperty('name');
                 });
             });
@@ -335,8 +336,8 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
             expect(lesson).toBeDefined();
             expect(lesson).not.toHaveProperty('id');
             expect(lesson.groups).toHaveLength(1);
-            expect(lesson.groups[0].id).toBe(isolatedGroupId);
-            expect(lesson.groups.map((group) => group.id)).not.toContain(otherGroupId);
+            expect(lesson.groups[0].publicId).toBe(isolatedGroupId);
+            expect(lesson.groups.map((group) => group.publicId)).not.toContain(otherGroupId);
         });
 
         it('should deny TEACHER (403)', async () => {

@@ -1,7 +1,7 @@
 import { fetchApi } from "./apiClient";
 
 export interface UserGroup {
-  id: number;
+  publicId: string;
   name: string;
   description: string;
   studentCount: number;
@@ -22,21 +22,21 @@ export const userGroupService = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
-  updateGroup: (id: number, payload: UserGroupRequest) =>
-    fetchApi<UserGroup>(`/api/v1/user-groups/${id}`, {
+  updateGroup: (publicId: string, payload: UserGroupRequest) =>
+    fetchApi<UserGroup>(`/api/v1/user-groups/${publicId}`, {
       method: "PUT",
       body: JSON.stringify(payload),
     }),
-  deleteGroup: (id: number) =>
-    fetchApi<void>(`/api/v1/user-groups/${id}`, {
+  deleteGroup: (publicId: string) =>
+    fetchApi<void>(`/api/v1/user-groups/${publicId}`, {
       method: "DELETE",
     }),
-  addStudentToGroup: (groupId: number, userId: number) =>
-    fetchApi<void>(`/api/v1/user-groups/${groupId}/members/${userId}`, {
+  addStudentToGroup: (groupPublicId: string, userId: number) =>
+    fetchApi<void>(`/api/v1/user-groups/${groupPublicId}/members/${userId}`, {
       method: "POST",
     }),
-  removeStudentFromGroup: (groupId: number, userId: number) =>
-    fetchApi<void>(`/api/v1/user-groups/${groupId}/members/${userId}`, {
+  removeStudentFromGroup: (groupPublicId: string, userId: number) =>
+    fetchApi<void>(`/api/v1/user-groups/${groupPublicId}/members/${userId}`, {
       method: "DELETE",
     }),
 };

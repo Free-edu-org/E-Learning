@@ -1,5 +1,5 @@
 ### Get list of lessons (supports filters)
-GET http://localhost:8080/api/v1/lessons?search=Present&groupId=1&status=true&sort=createdAt:desc
+GET http://localhost:8080/api/v1/lessons?search=Present&groupPublicId={{group_public_id}}&status=true&sort=createdAt:desc
 Authorization: Bearer {{auth_token}}
 
 ### Create a new lesson (requires ROLE_TEACHER or ADMIN)
@@ -10,22 +10,22 @@ Authorization: Bearer {{auth_token}}
 {
   "title": "Present Simple - lesson 1",
   "theme": "Grammar",
-  "groupIds": [1, 2]
+  "groupPublicIds": ["{{group_public_id}}", "{{second_group_public_id}}"]
 }
 
 ### Update lesson data (requires ADMIN or lesson owner TEACHER)
-PUT http://localhost:8080/api/v1/lessons/1
+PUT http://localhost:8080/api/v1/lessons/{{lesson_public_id}}
 Content-Type: application/json
 Authorization: Bearer {{auth_token}}
 
 {
   "title": "Present Simple - lesson 1 (updated)",
   "theme": "Grammar",
-  "groupIds": [1]
+  "groupPublicIds": ["{{group_public_id}}"]
 }
 
 ### Quick status change (isActive) (requires ADMIN or lesson owner TEACHER)
-PATCH http://localhost:8080/api/v1/lessons/1/status
+PATCH http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/status
 Content-Type: application/json
 Authorization: Bearer {{auth_token}}
 
@@ -39,11 +39,11 @@ Authorization: Bearer {{auth_token}}
 { "isActive": true }
 
 ### Delete lesson (requires ADMIN or lesson owner TEACHER)
-DELETE http://localhost:8080/api/v1/lessons/1
+DELETE http://localhost:8080/api/v1/lessons/{{lesson_public_id}}
 Authorization: Bearer {{auth_token}}
 
 ### Upload lesson attachment (PDF/TXT/DOCX/DOC/ODT) (requires ADMIN or lesson owner TEACHER)
-POST http://localhost:8080/api/v1/lessons/1/attachments
+POST http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/attachments
 Content-Type: multipart/form-data; boundary=boundary
 Authorization: Bearer {{auth_token}}
 
@@ -55,7 +55,7 @@ Content-Type: application/pdf
 --boundary--
 
 ### Upload lesson attachment — TXT example
-POST http://localhost:8080/api/v1/lessons/1/attachments
+POST http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/attachments
 Content-Type: multipart/form-data; boundary=boundary
 Authorization: Bearer {{auth_token}}
 
@@ -67,11 +67,11 @@ Content-Type: text/plain
 --boundary--
 
 ### Download lesson attachment (requires ADMIN, lesson owner TEACHER, or STUDENT with lesson access)
-GET http://localhost:8080/api/v1/lessons/1/attachments/1
+GET http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/attachments/1
 Authorization: Bearer {{auth_token}}
 
 ### Delete lesson attachment (requires ADMIN or lesson owner TEACHER)
-DELETE http://localhost:8080/api/v1/lessons/1/attachments/1
+DELETE http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/attachments/1
 Authorization: Bearer {{auth_token}}
 
 ### Create lesson with invalid payload (expect 400)

@@ -51,7 +51,7 @@ public class SecurityService {
 		return result;
 	}
 
-	public boolean isGroupOwner(Authentication authentication, Integer groupId) {
+	public boolean isGroupOwner(Authentication authentication, String groupPublicId) {
 		if (authentication == null || !authentication.isAuthenticated()) {
 			return false;
 		}
@@ -59,11 +59,11 @@ public class SecurityService {
 		if (!(principal instanceof CustomUserDetails userDetails)) {
 			return false;
 		}
-		boolean result = userGroupRepository.findById(groupId)
+		boolean result = userGroupRepository.findByPublicId(groupPublicId)
 				.map(group -> userDetails.getId().equals(group.getTeacherId())).orElse(false);
 		if (!result) {
-			log.debug("Group ownership check failed: Principal ID: {} is not the owner of group ID: {}",
-					userDetails.getId(), groupId);
+			log.debug("Group ownership check failed: Principal ID: {} is not the owner of group public ID: {}",
+					userDetails.getId(), groupPublicId);
 		}
 		return result;
 	}

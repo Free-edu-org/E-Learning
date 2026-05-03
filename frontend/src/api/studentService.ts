@@ -16,7 +16,7 @@ export interface StudentProgress {
 }
 
 export interface StudentLessonGroup {
-  id: number;
+  publicId: string;
   name: string;
 }
 

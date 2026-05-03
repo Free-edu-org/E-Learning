@@ -22,6 +22,7 @@ import pl.freeedu.backend.lesson.dto.LessonStatusRequest;
 import pl.freeedu.backend.lesson.service.LessonAttachmentService;
 import pl.freeedu.backend.lesson.service.LessonPublicIdLookupService;
 import pl.freeedu.backend.lesson.service.LessonService;
+import pl.freeedu.backend.usergroup.service.UserGroupPublicIdLookupService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -33,12 +34,15 @@ public class LessonController {
 	private final LessonService lessonService;
 	private final LessonAttachmentService lessonAttachmentService;
 	private final LessonPublicIdLookupService lessonPublicIdLookupService;
+	private final UserGroupPublicIdLookupService userGroupPublicIdLookupService;
 
 	public LessonController(LessonService lessonService, LessonAttachmentService lessonAttachmentService,
-			LessonPublicIdLookupService lessonPublicIdLookupService) {
+			LessonPublicIdLookupService lessonPublicIdLookupService,
+			UserGroupPublicIdLookupService userGroupPublicIdLookupService) {
 		this.lessonService = lessonService;
 		this.lessonAttachmentService = lessonAttachmentService;
 		this.lessonPublicIdLookupService = lessonPublicIdLookupService;
+		this.userGroupPublicIdLookupService = userGroupPublicIdLookupService;
 	}
 
 	@Operation(summary = "Get list of lessons (with filters)")
@@ -46,8 +50,11 @@ public class LessonController {
 	@GetMapping
 	@PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
 	public Flux<LessonResponse> getLessons(@RequestParam(required = false) String search,
-			@RequestParam(required = false) Integer groupId, @RequestParam(required = false) Boolean status,
+			@RequestParam(required = false) String groupPublicId, @RequestParam(required = false) Boolean status,
 			@RequestParam(required = false) String sort) {
+		Integer groupId = groupPublicId != null
+				? userGroupPublicIdLookupService.getRequiredInternalId(groupPublicId)
+				: null;
 		return lessonService.getLessons(search, groupId, status, sort);
 	}
 
