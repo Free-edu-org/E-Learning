@@ -139,7 +139,7 @@ function buildDistributionData(results: LessonStatsStudentResult[]) {
 }
 
 export function LessonStatsView() {
-  const { lessonId } = useParams<{ lessonId: string }>();
+  const { lessonPublicId } = useParams<{ lessonPublicId: string }>();
   const navigate = useNavigate();
   const { logout } = useAuth();
   const [stats, setStats] = useState<LessonStatsResponse | null>(null);
@@ -165,39 +165,36 @@ export function LessonStatsView() {
   }, []);
 
   useEffect(() => {
-    if (!lessonId) return;
-    const id = Number(lessonId);
+    if (!lessonPublicId) return;
 
     Promise.all([
-      lessonService.getLessonStats(id),
+      lessonService.getLessonStats(lessonPublicId),
       lessonService.getTeacherLessons(),
     ])
       .then(([statsData, lessons]) => {
         setStats(statsData);
-        const lesson = lessons.find((l) => l.id === id);
+        const lesson = lessons.find((l) => l.publicId === lessonPublicId);
         if (lesson) setLessonTitle(lesson.title);
       })
       .catch(() => setError("Nie udało się wczytać wyników lekcji."))
       .finally(() => setLoading(false));
-  }, [lessonId]);
+  }, [lessonPublicId]);
 
   const handleResetStudentProgress = async (
     student: LessonStatsStudentResult,
   ) => {
-    if (!lessonId) return;
-    const numericLessonId = Number(lessonId);
-    if (isNaN(numericLessonId)) return;
+    if (!lessonPublicId) return;
 
     setActionFeedback(null);
     setResettingUserIds((prev) => [...prev, student.userId]);
 
     try {
       await lessonService.resetStudentLessonProgress(
-        numericLessonId,
+        lessonPublicId,
         student.userId,
       );
       const refreshedStats =
-        await lessonService.getLessonStats(numericLessonId);
+        await lessonService.getLessonStats(lessonPublicId);
       setStats(refreshedStats);
       setActionFeedback({
         severity: "success",
@@ -559,7 +556,7 @@ export function LessonStatsView() {
                           }}
                           onClick={() =>
                             navigate(
-                              `/teacher/lessons/${lessonId}/students/${student.userId}/result`,
+                              `/teacher/lessons/${lessonPublicId}/students/${student.userId}/result`,
                             )
                           }
                         >

@@ -154,12 +154,12 @@ function getTaskValidationError(
   return null;
 }
 
-async function createLessonTask(lessonId: number, task: LessonTaskDraft) {
+async function createLessonTask(lessonPublicId: string, task: LessonTaskDraft) {
   const hint = task.hint.trim() || undefined;
   const section = task.section.trim() || undefined;
 
   if (task.type === "choose") {
-    return taskService.createChooseTask(lessonId, {
+    return taskService.createChooseTask(lessonPublicId, {
       task: task.task.trim(),
       possibleAnswers: task.possibleAnswers.trim(),
       correctAnswer: Number(task.correctAnswer.trim()),
@@ -169,7 +169,7 @@ async function createLessonTask(lessonId: number, task: LessonTaskDraft) {
   }
 
   if (task.type === "write") {
-    return taskService.createWriteTask(lessonId, {
+    return taskService.createWriteTask(lessonPublicId, {
       task: task.task.trim(),
       correctAnswer: task.correctAnswer.trim(),
       hint,
@@ -178,7 +178,7 @@ async function createLessonTask(lessonId: number, task: LessonTaskDraft) {
   }
 
   if (task.type === "scatter") {
-    return taskService.createScatterTask(lessonId, {
+    return taskService.createScatterTask(lessonPublicId, {
       task: task.task.trim(),
       words: task.words.trim(),
       correctAnswer: task.correctAnswer.trim(),
@@ -187,7 +187,7 @@ async function createLessonTask(lessonId: number, task: LessonTaskDraft) {
     });
   }
 
-  return taskService.createSpeakTask(lessonId, {
+  return taskService.createSpeakTask(lessonPublicId, {
     task: task.task.trim(),
     expectedText: task.correctAnswer.trim(),
     hint,
@@ -196,7 +196,7 @@ async function createLessonTask(lessonId: number, task: LessonTaskDraft) {
 }
 
 async function updateLessonTask(
-  lessonId: number,
+  lessonPublicId: string,
   backendId: number,
   task: LessonTaskDraft,
 ) {
@@ -204,7 +204,7 @@ async function updateLessonTask(
   const section = task.section.trim() || undefined;
 
   if (task.type === "choose") {
-    return taskService.updateChooseTask(lessonId, backendId, {
+    return taskService.updateChooseTask(lessonPublicId, backendId, {
       task: task.task.trim(),
       possibleAnswers: task.possibleAnswers.trim(),
       correctAnswer: Number(task.correctAnswer.trim()),
@@ -213,7 +213,7 @@ async function updateLessonTask(
     });
   }
   if (task.type === "write") {
-    return taskService.updateWriteTask(lessonId, backendId, {
+    return taskService.updateWriteTask(lessonPublicId, backendId, {
       task: task.task.trim(),
       correctAnswer: task.correctAnswer.trim(),
       hint,
@@ -221,7 +221,7 @@ async function updateLessonTask(
     });
   }
   if (task.type === "scatter") {
-    return taskService.updateScatterTask(lessonId, backendId, {
+    return taskService.updateScatterTask(lessonPublicId, backendId, {
       task: task.task.trim(),
       words: task.words.trim(),
       correctAnswer: task.correctAnswer.trim(),
@@ -229,7 +229,7 @@ async function updateLessonTask(
       section,
     });
   }
-  return taskService.updateSpeakTask(lessonId, backendId, {
+  return taskService.updateSpeakTask(lessonPublicId, backendId, {
     task: task.task.trim(),
     expectedText: task.correctAnswer.trim(),
     hint,
@@ -486,7 +486,7 @@ export function TeacherDashboard() {
         pendingAttachmentFiles.length > 0
           ? await Promise.allSettled(
               pendingAttachmentFiles.map((file) =>
-                lessonService.uploadAttachment(createdLesson.id, file),
+                lessonService.uploadAttachment(createdLesson.publicId, file),
               ),
             )
           : [];
@@ -496,7 +496,9 @@ export function TeacherDashboard() {
 
       if (taskDrafts.length > 0) {
         const taskResults = await Promise.allSettled(
-          taskDrafts.map((task) => createLessonTask(createdLesson.id, task)),
+          taskDrafts.map((task) =>
+            createLessonTask(createdLesson.publicId, task),
+          ),
         );
         const failedTaskCount = taskResults.filter(
           (result) => result.status === "rejected",
@@ -558,7 +560,7 @@ export function TeacherDashboard() {
     setEditTasksLoading(true);
 
     try {
-      const tasksResponse = await taskService.getLessonTasks(lesson.id);
+      const tasksResponse = await taskService.getLessonTasks(lesson.publicId);
       const drafts = tasksResponseToDrafts(tasksResponse);
       setEditDraft((prev) => ({ ...prev, tasks: drafts }));
       setEditOriginalTasks(drafts);
@@ -619,11 +621,11 @@ export function TeacherDashboard() {
     setEditDialogLoading(true);
 
     try {
-      const lessonId = editingLesson.id;
+      const lessonPublicId = editingLesson.publicId;
       const groupIds = editDraft.groupIds.map((g) => g.id);
 
       // 1. Update lesson metadata
-      await lessonService.updateLesson(lessonId, {
+      await lessonService.updateLesson(lessonPublicId, {
         title: editDraft.title,
         theme: editDraft.theme,
         groupIds,
@@ -650,7 +652,11 @@ export function TeacherDashboard() {
         const parsed = parseBackendDraftId(task.id);
         if (parsed) {
           allTaskOps.push(
-            taskService.deleteTask(lessonId, task.type, parsed.backendId),
+            taskService.deleteTask(
+              lessonPublicId,
+              task.type,
+              parsed.backendId,
+            ),
           );
         }
       }
@@ -659,13 +665,15 @@ export function TeacherDashboard() {
       for (const task of tasksToUpdate) {
         const parsed = parseBackendDraftId(task.id);
         if (parsed) {
-          allTaskOps.push(updateLessonTask(lessonId, parsed.backendId, task));
+          allTaskOps.push(
+            updateLessonTask(lessonPublicId, parsed.backendId, task),
+          );
         }
       }
 
       // Creates
       for (const task of tasksToCreate) {
-        allTaskOps.push(createLessonTask(lessonId, task));
+        allTaskOps.push(createLessonTask(lessonPublicId, task));
       }
 
       if (allTaskOps.length > 0) {
@@ -708,11 +716,13 @@ export function TeacherDashboard() {
 
     // Optimistic local update — no jump / re-order
     setLessons((prev) =>
-      prev.map((l) => (l.id === lesson.id ? { ...l, isActive: newStatus } : l)),
+      prev.map((l) =>
+        l.publicId === lesson.publicId ? { ...l, isActive: newStatus } : l,
+      ),
     );
 
     try {
-      await lessonService.updateLessonStatus(lesson.id, newStatus);
+      await lessonService.updateLessonStatus(lesson.publicId, newStatus);
       setSnackbar({
         message: newStatus
           ? `Lekcja "${lesson.title}" została aktywowana.`
@@ -726,7 +736,9 @@ export function TeacherDashboard() {
       // Revert on failure
       setLessons((prev) =>
         prev.map((l) =>
-          l.id === lesson.id ? { ...l, isActive: !newStatus } : l,
+          l.publicId === lesson.publicId
+            ? { ...l, isActive: !newStatus }
+            : l,
         ),
       );
       setSnackbar({
@@ -762,7 +774,7 @@ export function TeacherDashboard() {
     setDeleteDialogLoading(true);
     setDeleteDialogFeedback(null);
     try {
-      await lessonService.deleteLesson(deletingLesson.id);
+      await lessonService.deleteLesson(deletingLesson.publicId);
       setDeleteDialogFeedback({
         severity: "success",
         message: "Lekcja została usunięta.",
@@ -953,30 +965,37 @@ export function TeacherDashboard() {
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
             {displayedLessons.map((lesson) => (
               <LessonCard
-                key={lesson.id}
+                key={lesson.publicId}
                 lesson={lesson}
                 listView
                 onEdit={(selectedLesson) =>
-                  navigate(`/teacher/lessons/${selectedLesson.id}/edit`)
+                  navigate(`/teacher/lessons/${selectedLesson.publicId}/edit`)
                 }
                 onDelete={openDeleteDialog}
                 onToggleStatus={handleToggleLessonStatus}
-                onResults={(l) => navigate(`/teacher/lessons/${l.id}/stats`)}
+                onResults={(l) =>
+                  navigate(`/teacher/lessons/${l.publicId}/stats`)
+                }
               />
             ))}
           </Box>
         ) : (
           <Grid container spacing={2}>
             {displayedLessons.map((lesson) => (
-              <Grid key={lesson.id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
+              <Grid
+                key={lesson.publicId}
+                size={{ xs: 12, sm: 6, md: 4, lg: 3 }}
+              >
                 <LessonCard
                   lesson={lesson}
                   onEdit={(selectedLesson) =>
-                    navigate(`/teacher/lessons/${selectedLesson.id}/edit`)
+                    navigate(`/teacher/lessons/${selectedLesson.publicId}/edit`)
                   }
                   onDelete={openDeleteDialog}
                   onToggleStatus={handleToggleLessonStatus}
-                  onResults={(l) => navigate(`/teacher/lessons/${l.id}/stats`)}
+                  onResults={(l) =>
+                    navigate(`/teacher/lessons/${l.publicId}/stats`)
+                  }
                 />
               </Grid>
             ))}

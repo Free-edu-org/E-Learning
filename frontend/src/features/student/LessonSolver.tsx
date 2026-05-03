@@ -134,7 +134,7 @@ function flattenTasks(lessonData: LessonTasksResponse): FlatTask[] {
 // ── Component ────────────────────────────────────────────────────────────────
 
 export function LessonSolver() {
-  const { lessonId } = useParams<{ lessonId: string }>();
+  const { lessonPublicId } = useParams<{ lessonPublicId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
   const { logout } = useAuth();
@@ -157,25 +157,25 @@ export function LessonSolver() {
   // Fallback: if navigation state had no attachments (refresh / direct URL),
   // fetch them from the student lessons list.
   useEffect(() => {
-    if (stateAttachments !== null || !lessonId) return;
+    if (stateAttachments !== null || !lessonPublicId) return;
     let cancelled = false;
     void studentService.getLessons().then((lessons) => {
       if (cancelled) return;
-      const lesson = lessons.find((l) => l.id === Number(lessonId));
+      const lesson = lessons.find((l) => l.publicId === lessonPublicId);
       if (lesson) setAttachments(lesson.attachments);
     });
     return () => {
       cancelled = true;
     };
-  }, [lessonId, stateAttachments]);
+  }, [lessonPublicId, stateAttachments]);
 
   const handleDownloadAttachment = async (att: LessonAttachment) => {
-    if (!lessonId) return;
+    if (!lessonPublicId) return;
     setDownloadingAttachmentId(att.id);
     setAttachmentDownloadError(null);
     try {
       const blob = await lessonService.downloadAttachment(
-        Number(lessonId),
+        lessonPublicId,
         att.id,
       );
       const url = URL.createObjectURL(blob);
@@ -217,15 +217,14 @@ export function LessonSolver() {
 
   // Load lesson tasks
   useEffect(() => {
-    const id = Number(lessonId);
-    if (isNaN(id)) {
+    if (!lessonPublicId) {
       setError("Nieprawidłowy identyfikator lekcji.");
       setLoading(false);
       return;
     }
 
     taskService
-      .getLessonTasks(id)
+      .getLessonTasks(lessonPublicId)
       .then(setLessonData)
       .catch((err: unknown) => {
         if (err instanceof ApiError) {
@@ -244,7 +243,7 @@ export function LessonSolver() {
         }
       })
       .finally(() => setLoading(false));
-  }, [lessonId]);
+  }, [lessonPublicId]);
 
   // Flatten all tasks
   const flatTasks = useMemo(
@@ -349,9 +348,7 @@ export function LessonSolver() {
   );
 
   const doSubmit = async (options?: { navigateAfterSubmit?: boolean }) => {
-    if (!lessonData) return;
-    const id = Number(lessonId);
-
+    if (!lessonData || !lessonPublicId) return;
     const completeAnswers = buildCompleteAnswers();
 
     setSubmitting(true);
@@ -360,7 +357,7 @@ export function LessonSolver() {
     setShowUnansweredAlert(false);
 
     try {
-      const result = await studentService.submitAnswers(id, {
+      const result = await studentService.submitAnswers(lessonPublicId, {
         answers: completeAnswers,
       });
       setSubmitResult(result);
@@ -394,8 +391,8 @@ export function LessonSolver() {
 
   const goBack = () => navigate("/student");
   const openResultDetails = () => {
-    if (!lessonId) return;
-    navigate(`/student/lessons/${lessonId}/result`);
+    if (!lessonPublicId) return;
+    navigate(`/student/lessons/${lessonPublicId}/result`);
   };
 
   const requestExit = () => {
@@ -424,7 +421,7 @@ export function LessonSolver() {
     };
 
     const handlePageHide = () => {
-      if (unloadSubmitSentRef.current || !lessonId) return;
+      if (unloadSubmitSentRef.current || !lessonPublicId) return;
       unloadSubmitSentRef.current = true;
 
       const token = localStorage.getItem("token");
@@ -436,7 +433,7 @@ export function LessonSolver() {
       }
 
       fetch(
-        `${import.meta.env.VITE_API_URL || "http://localhost:8080"}/api/v1/lessons/${lessonId}/submit`,
+        `${import.meta.env.VITE_API_URL || "http://localhost:8080"}/api/v1/lessons/${lessonPublicId}/submit`,
         {
           method: "POST",
           headers,
@@ -456,7 +453,7 @@ export function LessonSolver() {
       window.removeEventListener("popstate", handlePopState);
       window.removeEventListener("pagehide", handlePageHide);
     };
-  }, [buildCompleteAnswers, lessonId, shouldBlockExit]);
+  }, [buildCompleteAnswers, lessonPublicId, shouldBlockExit]);
 
   const hasNoTasks = lessonData != null && totalTaskCount === 0;
   const progressPercent =
@@ -528,7 +525,7 @@ export function LessonSolver() {
         return (
           <SpeakTaskSolver
             key={`speak_${currentTask.taskId}`}
-            lessonId={Number(lessonId)}
+            lessonPublicId={lessonPublicId ?? ""}
             task={currentTask.taskData as SpeakTaskResponse}
             transcriptionResult={speakAttempt?.result ?? null}
             attempts={speakAttempt?.attempts ?? 0}

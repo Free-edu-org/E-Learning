@@ -79,7 +79,7 @@ function buildDraftFromLesson(
 }
 
 export function TeacherLessonEditView() {
-  const { lessonId } = useParams<{ lessonId: string }>();
+  const { lessonPublicId } = useParams<{ lessonPublicId: string }>();
   const navigate = useNavigate();
   const { logout } = useAuth();
 
@@ -138,8 +138,7 @@ export function TeacherLessonEditView() {
   }, []);
 
   useEffect(() => {
-    const numericLessonId = Number(lessonId);
-    if (Number.isNaN(numericLessonId)) {
+    if (!lessonPublicId) {
       setError("Nieprawidłowy identyfikator lekcji.");
       setLoading(false);
       setTasksLoading(false);
@@ -165,7 +164,7 @@ export function TeacherLessonEditView() {
         }
 
         const matchedLesson = lessons.find(
-          (item) => item.id === numericLessonId,
+          (item) => item.publicId === lessonPublicId,
         );
         if (!matchedLesson) {
           setError("Nie znaleziono lekcji do edycji.");
@@ -183,7 +182,7 @@ export function TeacherLessonEditView() {
 
         try {
           const tasksResponse =
-            await taskService.getLessonTasks(numericLessonId);
+            await taskService.getLessonTasks(lessonPublicId);
           if (cancelled) {
             return;
           }
@@ -236,7 +235,7 @@ export function TeacherLessonEditView() {
     return () => {
       cancelled = true;
     };
-  }, [lessonId]);
+  }, [lessonPublicId]);
 
   const handleBack = () => {
     if (
@@ -288,7 +287,7 @@ export function TeacherLessonEditView() {
     try {
       const groupIds = draft.groupIds.map((group) => group.id);
 
-      await lessonService.updateLesson(lesson.id, {
+      await lessonService.updateLesson(lesson.publicId, {
         title: draft.title,
         theme: draft.theme,
         groupIds,
@@ -319,7 +318,11 @@ export function TeacherLessonEditView() {
           const parsed = parseBackendDraftId(task.id);
           if (parsed) {
             taskOperations.push(
-              taskService.deleteTask(lesson.id, task.type, parsed.backendId),
+              taskService.deleteTask(
+                lesson.publicId,
+                task.type,
+                parsed.backendId,
+              ),
             );
           }
         }
@@ -328,13 +331,13 @@ export function TeacherLessonEditView() {
           const parsed = parseBackendDraftId(task.id);
           if (parsed) {
             taskOperations.push(
-              updateLessonTask(lesson.id, parsed.backendId, task),
+              updateLessonTask(lesson.publicId, parsed.backendId, task),
             );
           }
         }
 
         for (const task of tasksToCreate) {
-          taskOperations.push(createLessonTask(lesson.id, task));
+          taskOperations.push(createLessonTask(lesson.publicId, task));
         }
 
         if (taskOperations.length > 0) {
@@ -359,12 +362,12 @@ export function TeacherLessonEditView() {
       const [refreshedLessons, refreshedTasksResponse] = await Promise.all([
         lessonService.getTeacherLessons(),
         tasksAvailable
-          ? taskService.getLessonTasks(lesson.id)
+          ? taskService.getLessonTasks(lesson.publicId)
           : Promise.resolve(null),
       ]);
 
       const refreshedLesson = refreshedLessons.find(
-        (item) => item.id === lesson.id,
+        (item) => item.publicId === lesson.publicId,
       ) ?? {
         ...lesson,
         title: draft.title,
@@ -416,7 +419,7 @@ export function TeacherLessonEditView() {
     setAttachmentFeedback(null);
     try {
       const result = await lessonService.uploadAttachment(
-        lesson.id,
+        lesson.publicId,
         attachmentFile,
       );
       setAttachments((prev) => [...prev, result]);
@@ -439,7 +442,7 @@ export function TeacherLessonEditView() {
     setDeletingAttachmentId(att.id);
     setAttachmentFeedback(null);
     try {
-      await lessonService.deleteAttachment(lesson.id, att.id);
+      await lessonService.deleteAttachment(lesson.publicId, att.id);
       setAttachments((prev) => prev.filter((a) => a.id !== att.id));
       setAttachmentFeedback("Załącznik został usunięty.");
     } catch {
@@ -452,7 +455,10 @@ export function TeacherLessonEditView() {
   const handleDownloadAttachment = async (att: LessonAttachment) => {
     if (!lesson) return;
     try {
-      const blob = await lessonService.downloadAttachment(lesson.id, att.id);
+      const blob = await lessonService.downloadAttachment(
+        lesson.publicId,
+        att.id,
+      );
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;

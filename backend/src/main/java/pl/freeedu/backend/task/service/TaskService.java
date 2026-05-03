@@ -106,8 +106,8 @@ public class TaskService {
 			log.debug("Tasks fetched for lesson ID: {}. Choose: {}, Write: {}, Scatter: {}, Speak: {}", lessonId,
 					chooseTasks.size(), writeTasks.size(), scatterTasks.size(), speakTasks.size());
 
-			return buildLessonTasksResponse(lessonId, status, chooseTasks, writeTasks, scatterTasks, speakTasks,
-					isStudent);
+			return buildLessonTasksResponse(lesson.getPublicId(), status, chooseTasks, writeTasks, scatterTasks,
+					speakTasks, isStudent);
 		}).subscribeOn(Schedulers.boundedElastic()));
 	}
 
@@ -125,7 +125,7 @@ public class TaskService {
 					.hint(request.getHint()).section(request.getSection()).build();
 			ChooseTask saved = chooseTaskRepository.save(task);
 			log.info("ChooseTask ID: {} created for lesson ID: {}", saved.getId(), lessonId);
-			return toChooseTaskResponse(saved, false);
+			return toChooseTaskResponse(saved, false, requireLessonPublicId(lessonId));
 		}).subscribeOn(Schedulers.boundedElastic()));
 	}
 
@@ -141,7 +141,7 @@ public class TaskService {
 			task.setSection(request.getSection());
 			ChooseTask saved = chooseTaskRepository.save(task);
 			log.info("ChooseTask ID: {} updated successfully", taskId);
-			return toChooseTaskResponse(saved, false);
+			return toChooseTaskResponse(saved, false, requireLessonPublicId(lessonId));
 		}).subscribeOn(Schedulers.boundedElastic()));
 	}
 
@@ -164,7 +164,7 @@ public class TaskService {
 					.correctAnswer(request.getCorrectAnswer()).hint(request.getHint()).section(request.getSection())
 					.build();
 			WriteTask saved = writeTaskRepository.save(task);
-			return toWriteTaskResponse(saved, false);
+			return toWriteTaskResponse(saved, false, requireLessonPublicId(lessonId));
 		}).subscribeOn(Schedulers.boundedElastic()));
 	}
 
@@ -177,7 +177,7 @@ public class TaskService {
 			task.setHint(request.getHint());
 			task.setSection(request.getSection());
 			WriteTask saved = writeTaskRepository.save(task);
-			return toWriteTaskResponse(saved, false);
+			return toWriteTaskResponse(saved, false, requireLessonPublicId(lessonId));
 		}).subscribeOn(Schedulers.boundedElastic()));
 	}
 
@@ -198,7 +198,7 @@ public class TaskService {
 					.words(request.getWords()).correctAnswer(request.getCorrectAnswer()).hint(request.getHint())
 					.section(request.getSection()).build();
 			ScatterTask saved = scatterTaskRepository.save(task);
-			return toScatterTaskResponse(saved, false);
+			return toScatterTaskResponse(saved, false, requireLessonPublicId(lessonId));
 		}).subscribeOn(Schedulers.boundedElastic()));
 	}
 
@@ -212,7 +212,7 @@ public class TaskService {
 			task.setHint(request.getHint());
 			task.setSection(request.getSection());
 			ScatterTask saved = scatterTaskRepository.save(task);
-			return toScatterTaskResponse(saved, false);
+			return toScatterTaskResponse(saved, false, requireLessonPublicId(lessonId));
 		}).subscribeOn(Schedulers.boundedElastic()));
 	}
 
@@ -233,7 +233,7 @@ public class TaskService {
 					.expectedText(request.getExpectedText()).hint(request.getHint()).section(request.getSection())
 					.build();
 			SpeakTask saved = speakTaskRepository.save(task);
-			return toSpeakTaskResponse(saved);
+			return toSpeakTaskResponse(saved, requireLessonPublicId(lessonId));
 		}).subscribeOn(Schedulers.boundedElastic()));
 	}
 
@@ -246,7 +246,7 @@ public class TaskService {
 			task.setHint(request.getHint());
 			task.setSection(request.getSection());
 			SpeakTask saved = speakTaskRepository.save(task);
-			return toSpeakTaskResponse(saved);
+			return toSpeakTaskResponse(saved, requireLessonPublicId(lessonId));
 		}).subscribeOn(Schedulers.boundedElastic()));
 	}
 
@@ -443,9 +443,9 @@ public class TaskService {
 		return task;
 	}
 
-	private LessonTasksResponse buildLessonTasksResponse(Integer lessonId, String status, List<ChooseTask> chooseTasks,
-			List<WriteTask> writeTasks, List<ScatterTask> scatterTasks, List<SpeakTask> speakTasks,
-			boolean stripAnswers) {
+	private LessonTasksResponse buildLessonTasksResponse(String lessonPublicId, String status,
+			List<ChooseTask> chooseTasks, List<WriteTask> writeTasks, List<ScatterTask> scatterTasks,
+			List<SpeakTask> speakTasks, boolean stripAnswers) {
 
 		Set<String> allSections = new TreeSet<>(Comparator.nullsFirst(Comparator.naturalOrder()));
 		chooseTasks.forEach(t -> allSections.add(t.getSection()));
@@ -455,43 +455,48 @@ public class TaskService {
 
 		List<TaskSectionDto> sections = allSections.stream().map(section -> {
 			List<ChooseTaskResponse> choose = chooseTasks.stream().filter(t -> Objects.equals(t.getSection(), section))
-					.map(t -> toChooseTaskResponse(t, stripAnswers)).collect(Collectors.toList());
+					.map(t -> toChooseTaskResponse(t, stripAnswers, lessonPublicId)).collect(Collectors.toList());
 			List<WriteTaskResponse> write = writeTasks.stream().filter(t -> Objects.equals(t.getSection(), section))
-					.map(t -> toWriteTaskResponse(t, stripAnswers)).collect(Collectors.toList());
+					.map(t -> toWriteTaskResponse(t, stripAnswers, lessonPublicId)).collect(Collectors.toList());
 			List<ScatterTaskResponse> scatter = scatterTasks.stream()
 					.filter(t -> Objects.equals(t.getSection(), section))
-					.map(t -> toScatterTaskResponse(t, stripAnswers)).collect(Collectors.toList());
+					.map(t -> toScatterTaskResponse(t, stripAnswers, lessonPublicId)).collect(Collectors.toList());
 			List<SpeakTaskResponse> speak = speakTasks.stream().filter(t -> Objects.equals(t.getSection(), section))
-					.map(this::toSpeakTaskResponse).collect(Collectors.toList());
+					.map(t -> toSpeakTaskResponse(t, lessonPublicId)).collect(Collectors.toList());
 			return TaskSectionDto.builder().section(section).chooseTasks(choose).writeTasks(write).scatterTasks(scatter)
 					.speakTasks(speak).build();
 		}).collect(Collectors.toList());
 
-		return LessonTasksResponse.builder().lessonId(lessonId).status(status).sections(sections).build();
+		return LessonTasksResponse.builder().lessonPublicId(lessonPublicId).status(status).sections(sections).build();
 	}
 
-	private ChooseTaskResponse toChooseTaskResponse(ChooseTask t, boolean stripAnswer) {
-		return ChooseTaskResponse.builder().id(t.getId()).lessonId(t.getLessonId()).task(t.getTask())
+	private ChooseTaskResponse toChooseTaskResponse(ChooseTask t, boolean stripAnswer, String lessonPublicId) {
+		return ChooseTaskResponse.builder().id(t.getId()).lessonPublicId(lessonPublicId).task(t.getTask())
 				.possibleAnswers(t.getPossibleAnswers()).correctAnswer(stripAnswer ? null : t.getCorrectAnswer())
 				.hint(t.getHint()).section(t.getSection()).createdAt(t.getCreatedAt()).build();
 	}
 
-	private WriteTaskResponse toWriteTaskResponse(WriteTask t, boolean stripAnswer) {
-		return WriteTaskResponse.builder().id(t.getId()).lessonId(t.getLessonId()).task(t.getTask())
+	private WriteTaskResponse toWriteTaskResponse(WriteTask t, boolean stripAnswer, String lessonPublicId) {
+		return WriteTaskResponse.builder().id(t.getId()).lessonPublicId(lessonPublicId).task(t.getTask())
 				.correctAnswer(stripAnswer ? null : t.getCorrectAnswer()).hint(t.getHint()).section(t.getSection())
 				.createdAt(t.getCreatedAt()).build();
 	}
 
-	private ScatterTaskResponse toScatterTaskResponse(ScatterTask t, boolean stripAnswer) {
-		return ScatterTaskResponse.builder().id(t.getId()).lessonId(t.getLessonId()).task(t.getTask())
+	private ScatterTaskResponse toScatterTaskResponse(ScatterTask t, boolean stripAnswer, String lessonPublicId) {
+		return ScatterTaskResponse.builder().id(t.getId()).lessonPublicId(lessonPublicId).task(t.getTask())
 				.words(t.getWords()).correctAnswer(stripAnswer ? null : t.getCorrectAnswer()).hint(t.getHint())
 				.section(t.getSection()).createdAt(t.getCreatedAt()).build();
 	}
 
-	private SpeakTaskResponse toSpeakTaskResponse(SpeakTask t) {
-		return SpeakTaskResponse.builder().id(t.getId()).lessonId(t.getLessonId()).task(t.getTask())
+	private SpeakTaskResponse toSpeakTaskResponse(SpeakTask t, String lessonPublicId) {
+		return SpeakTaskResponse.builder().id(t.getId()).lessonPublicId(lessonPublicId).task(t.getTask())
 				.expectedText(t.getExpectedText()).hint(t.getHint()).section(t.getSection()).createdAt(t.getCreatedAt())
 				.build();
+	}
+
+	private String requireLessonPublicId(Integer lessonId) {
+		return lessonRepository.findById(lessonId).map(Lesson::getPublicId)
+				.orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_FOUND));
 	}
 
 	private SpeakTranscriptionResponse buildSpeakTranscriptionResponse(SpeakTask speakTask, String transcription) {

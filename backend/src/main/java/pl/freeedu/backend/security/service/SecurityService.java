@@ -68,7 +68,7 @@ public class SecurityService {
 		return result;
 	}
 
-	public boolean isLessonOwner(Authentication authentication, Integer lessonId) {
+	public boolean isLessonOwner(Authentication authentication, String lessonPublicId) {
 		if (authentication == null || !authentication.isAuthenticated()) {
 			return false;
 		}
@@ -76,12 +76,12 @@ public class SecurityService {
 		if (!(principal instanceof CustomUserDetails userDetails)) {
 			return false;
 		}
-		boolean result = lessonRepository.findById(lessonId)
+		boolean result = lessonRepository.findByPublicId(lessonPublicId)
 				.map(lesson -> lesson.getTeacher() != null && userDetails.getId().equals(lesson.getTeacher().getId()))
 				.orElse(false);
 		if (!result) {
-			log.debug("Lesson ownership check failed: Principal ID: {} is not the owner of lesson ID: {}",
-					userDetails.getId(), lessonId);
+			log.debug("Lesson ownership check failed: Principal ID: {} is not the owner of lesson public ID: {}",
+					userDetails.getId(), lessonPublicId);
 		}
 		return result;
 	}
@@ -108,7 +108,7 @@ public class SecurityService {
 		return userInGroupRepository.isStudentInTeachersGroup(studentId, userDetails.getId());
 	}
 
-	public boolean hasStudentAccessToLesson(Authentication authentication, Integer lessonId) {
+	public boolean hasStudentAccessToLesson(Authentication authentication, String lessonPublicId) {
 		if (authentication == null || !authentication.isAuthenticated()) {
 			return false;
 		}
@@ -116,10 +116,12 @@ public class SecurityService {
 		if (!(principal instanceof CustomUserDetails userDetails)) {
 			return false;
 		}
-		boolean result = userInGroupRepository.hasAccessToLesson(userDetails.getId(), lessonId);
+		boolean result = lessonRepository.findByPublicId(lessonPublicId)
+				.map(lesson -> userInGroupRepository.hasAccessToLesson(userDetails.getId(), lesson.getId()))
+				.orElse(false);
 		if (!result) {
-			log.debug("Student access check failed: Student ID: {} has no access to lesson ID: {}", userDetails.getId(),
-					lessonId);
+			log.debug("Student access check failed: Student ID: {} has no access to lesson public ID: {}",
+					userDetails.getId(), lessonPublicId);
 		}
 		return result;
 	}

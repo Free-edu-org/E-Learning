@@ -10,7 +10,7 @@ import { ScatterTaskSolver } from "./ScatterTaskSolver";
 import { SpeakTaskSolver } from "./SpeakTaskSolver";
 
 interface TaskSectionGroupProps {
-  lessonId: number;
+  lessonPublicId: string;
   section: TaskSectionDto;
   answers: Record<number, SubmitAnswerItem>;
   onAnswer: (
@@ -23,7 +23,7 @@ interface TaskSectionGroupProps {
 }
 
 export function TaskSectionGroup({
-  lessonId,
+  lessonPublicId,
   section,
   answers,
   onAnswer,
@@ -87,7 +87,7 @@ export function TaskSectionGroup({
         {section.speakTasks.map((task) => (
           <SpeakTaskSolver
             key={`speak-${task.id}`}
-            lessonId={lessonId}
+            lessonPublicId={lessonPublicId}
             task={task}
             transcriptionResult={null}
             attempts={0}

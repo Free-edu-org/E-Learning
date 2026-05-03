@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 public class ScatterTaskResponse {
 
 	private Integer id;
-	private Integer lessonId;
+	private String lessonPublicId;
 	private String task;
 	private String words;
 	private String correctAnswer;

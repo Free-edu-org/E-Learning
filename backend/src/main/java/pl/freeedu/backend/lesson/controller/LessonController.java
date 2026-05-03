@@ -20,6 +20,7 @@ import pl.freeedu.backend.lesson.dto.LessonRequest;
 import pl.freeedu.backend.lesson.dto.LessonResponse;
 import pl.freeedu.backend.lesson.dto.LessonStatusRequest;
 import pl.freeedu.backend.lesson.service.LessonAttachmentService;
+import pl.freeedu.backend.lesson.service.LessonPublicIdLookupService;
 import pl.freeedu.backend.lesson.service.LessonService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -31,10 +32,13 @@ public class LessonController {
 
 	private final LessonService lessonService;
 	private final LessonAttachmentService lessonAttachmentService;
+	private final LessonPublicIdLookupService lessonPublicIdLookupService;
 
-	public LessonController(LessonService lessonService, LessonAttachmentService lessonAttachmentService) {
+	public LessonController(LessonService lessonService, LessonAttachmentService lessonAttachmentService,
+			LessonPublicIdLookupService lessonPublicIdLookupService) {
 		this.lessonService = lessonService;
 		this.lessonAttachmentService = lessonAttachmentService;
+		this.lessonPublicIdLookupService = lessonPublicIdLookupService;
 	}
 
 	@Operation(summary = "Get list of lessons (with filters)")
@@ -61,66 +65,71 @@ public class LessonController {
 	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Lesson successfully updated"),
 			@ApiResponse(responseCode = "400", description = "Invalid input data", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "404", description = "Lesson not found")})
-	@PutMapping("/{id}")
-	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #id))")
-	public Mono<LessonResponse> updateLesson(@PathVariable Integer id,
+	@PutMapping("/{lessonPublicId}")
+	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
+	public Mono<LessonResponse> updateLesson(@PathVariable String lessonPublicId,
 			@Valid @RequestBody Mono<LessonRequest> lessonRequest) {
-		return lessonService.updateLesson(id, lessonRequest);
+		return lessonService.updateLesson(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId),
+				lessonRequest);
 	}
 
 	@Operation(summary = "Quick status change (is_active)")
 	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Lesson status updated"),
 			@ApiResponse(responseCode = "400", description = "Invalid input data", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "404", description = "Lesson not found")})
-	@PatchMapping("/{id}/status")
-	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #id))")
+	@PatchMapping("/{lessonPublicId}/status")
+	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public Mono<Void> updateLessonStatus(@PathVariable Integer id,
+	public Mono<Void> updateLessonStatus(@PathVariable String lessonPublicId,
 			@Valid @RequestBody Mono<LessonStatusRequest> statusRequest) {
-		return lessonService.updateLessonStatus(id, statusRequest);
+		return lessonService.updateLessonStatus(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId),
+				statusRequest);
 	}
 
 	@Operation(summary = "Delete lesson")
 	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Lesson successfully deleted"),
 			@ApiResponse(responseCode = "404", description = "Lesson not found")})
-	@DeleteMapping("/{id}")
-	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #id))")
+	@DeleteMapping("/{lessonPublicId}")
+	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public Mono<Void> deleteLesson(@PathVariable Integer id) {
-		return lessonService.deleteLesson(id);
+	public Mono<Void> deleteLesson(@PathVariable String lessonPublicId) {
+		return lessonService.deleteLesson(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId));
 	}
 
 	@Operation(summary = "Upload PDF attachment for a lesson")
 	@ApiResponses(value = {@ApiResponse(responseCode = "201", description = "Attachment uploaded successfully"),
 			@ApiResponse(responseCode = "400", description = "Invalid file type or file too large", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "404", description = "Lesson not found")})
-	@PostMapping(value = "/{lessonId}/attachments", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonId))")
+	@PostMapping(value = "/{lessonPublicId}/attachments", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
 	@ResponseStatus(HttpStatus.CREATED)
-	public Mono<LessonAttachmentResponse> uploadAttachment(@PathVariable Integer lessonId,
+	public Mono<LessonAttachmentResponse> uploadAttachment(@PathVariable String lessonPublicId,
 			@RequestPart("file") FilePart filePart) {
-		return lessonAttachmentService.uploadAttachment(lessonId, filePart);
+		return lessonAttachmentService
+				.uploadAttachment(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), filePart);
 	}
 
 	@Operation(summary = "Download PDF attachment for a lesson")
 	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "PDF file"),
 			@ApiResponse(responseCode = "404", description = "Lesson or attachment not found")})
-	@GetMapping("/{lessonId}/attachments/{attachmentId}")
+	@GetMapping("/{lessonPublicId}/attachments/{attachmentId}")
 	@PreAuthorize("@securityService.isAdmin(authentication) or "
-			+ "(hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonId)) or "
-			+ "(hasRole('STUDENT') and @securityService.hasStudentAccessToLesson(authentication, #lessonId))")
-	public Mono<ResponseEntity<Resource>> downloadAttachment(@PathVariable Integer lessonId,
+			+ "(hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId)) or "
+			+ "(hasRole('STUDENT') and @securityService.hasStudentAccessToLesson(authentication, #lessonPublicId))")
+	public Mono<ResponseEntity<Resource>> downloadAttachment(@PathVariable String lessonPublicId,
 			@PathVariable Integer attachmentId) {
-		return lessonAttachmentService.downloadAttachment(lessonId, attachmentId);
+		return lessonAttachmentService
+				.downloadAttachment(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), attachmentId);
 	}
 
 	@Operation(summary = "Delete PDF attachment for a lesson")
 	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Attachment deleted"),
 			@ApiResponse(responseCode = "404", description = "Lesson or attachment not found")})
-	@DeleteMapping("/{lessonId}/attachments/{attachmentId}")
-	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonId))")
+	@DeleteMapping("/{lessonPublicId}/attachments/{attachmentId}")
+	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public Mono<Void> deleteAttachment(@PathVariable Integer lessonId, @PathVariable Integer attachmentId) {
-		return lessonAttachmentService.deleteAttachment(lessonId, attachmentId);
+	public Mono<Void> deleteAttachment(@PathVariable String lessonPublicId, @PathVariable Integer attachmentId) {
+		return lessonAttachmentService
+				.deleteAttachment(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), attachmentId);
 	}
 }

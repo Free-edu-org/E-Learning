@@ -14,7 +14,7 @@ import java.util.List;
 @AllArgsConstructor
 public class LessonResponse {
 
-	private Integer id;
+	private String publicId;
 	private String title;
 	private String theme;
 	private Boolean isActive;

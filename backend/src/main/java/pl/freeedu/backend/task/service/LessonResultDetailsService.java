@@ -82,9 +82,9 @@ public class LessonResultDetailsService {
 					.map(task -> task.toDto(answersByKey.get(answerKey(task.dbTaskType(), task.taskId())))).toList();
 
 			log.info("Result details fetched successfully for user ID: {} and lesson ID: {}", userId, lessonId);
-			return LessonResultDetailsResponse.builder().lessonId(lesson.getId()).lessonTitle(lesson.getTitle())
-					.userId(user.getId()).username(user.getUsername()).score(userLesson.getScore())
-					.maxScore(userLesson.getMaxScore())
+			return LessonResultDetailsResponse.builder().lessonPublicId(lesson.getPublicId())
+					.lessonTitle(lesson.getTitle()).userId(user.getId()).username(user.getUsername())
+					.score(userLesson.getScore()).maxScore(userLesson.getMaxScore())
 					.resultPercent(toPercent(userLesson.getScore(), userLesson.getMaxScore()))
 					.completedAt(userLesson.getFinishedAt()).tasks(taskDetails).build();
 		}).subscribeOn(Schedulers.boundedElastic());

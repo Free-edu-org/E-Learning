@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 public class ChooseTaskResponse {
 
 	private Integer id;
-	private Integer lessonId;
+	private String lessonPublicId;
 	private String task;
 	private String possibleAnswers;
 	private Integer correctAnswer;

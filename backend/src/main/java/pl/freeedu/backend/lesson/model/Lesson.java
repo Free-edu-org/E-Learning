@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import pl.freeedu.backend.user.model.User;
 
@@ -18,6 +19,9 @@ public class Lesson {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Integer id;
+
+	@Column(name = "public_id", nullable = false, unique = true, length = 36)
+	private String publicId;
 
 	@Column(nullable = false, columnDefinition = "TEXT")
 	private String title;
@@ -34,4 +38,11 @@ public class Lesson {
 
 	@Column(name = "created_at", insertable = false, updatable = false)
 	private LocalDateTime createdAt;
+
+	@PrePersist
+	void ensurePublicId() {
+		if (publicId == null || publicId.isBlank()) {
+			publicId = UUID.randomUUID().toString();
+		}
+	}
 }

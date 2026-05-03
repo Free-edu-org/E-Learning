@@ -13,19 +13,22 @@ import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
+import pl.freeedu.backend.lesson.service.LessonPublicIdLookupService;
 import pl.freeedu.backend.task.dto.*;
 import pl.freeedu.backend.task.service.TaskService;
 import reactor.core.publisher.Mono;
 
 @RestController
-@RequestMapping("/api/v1/lessons/{lessonId}")
+@RequestMapping("/api/v1/lessons/{lessonPublicId}")
 @Tag(name = "Tasks", description = "Endpoints for managing lesson tasks and submissions")
 public class TaskController {
 
 	private final TaskService taskService;
+	private final LessonPublicIdLookupService lessonPublicIdLookupService;
 
-	public TaskController(TaskService taskService) {
+	public TaskController(TaskService taskService, LessonPublicIdLookupService lessonPublicIdLookupService) {
 		this.taskService = taskService;
+		this.lessonPublicIdLookupService = lessonPublicIdLookupService;
 	}
 
 	// --- Get all tasks for a lesson ---
@@ -36,8 +39,8 @@ public class TaskController {
 			@ApiResponse(responseCode = "404", description = "Lesson not found", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@GetMapping("/tasks")
 	@PreAuthorize("hasRole('STUDENT') or hasRole('TEACHER') or hasRole('ADMIN')")
-	public Mono<LessonTasksResponse> getLessonTasks(@PathVariable Integer lessonId) {
-		return taskService.getLessonTasks(lessonId);
+	public Mono<LessonTasksResponse> getLessonTasks(@PathVariable String lessonPublicId) {
+		return taskService.getLessonTasks(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId));
 	}
 
 	// --- Choose Task CRUD ---
@@ -46,11 +49,11 @@ public class TaskController {
 	@ApiResponses(value = {@ApiResponse(responseCode = "201", description = "Choose task created"),
 			@ApiResponse(responseCode = "400", description = "Invalid input", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PostMapping("/tasks/choose")
-	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonId))")
+	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
 	@ResponseStatus(HttpStatus.CREATED)
-	public Mono<ChooseTaskResponse> createChooseTask(@PathVariable Integer lessonId,
+	public Mono<ChooseTaskResponse> createChooseTask(@PathVariable String lessonPublicId,
 			@Valid @RequestBody Mono<ChooseTaskRequest> request) {
-		return taskService.createChooseTask(lessonId, request);
+		return taskService.createChooseTask(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), request);
 	}
 
 	@Operation(summary = "Update a choose task")
@@ -58,20 +61,21 @@ public class TaskController {
 			@ApiResponse(responseCode = "400", description = "Invalid input", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "404", description = "Task not found in the lesson", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PutMapping("/tasks/choose/{taskId}")
-	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonId))")
-	public Mono<ChooseTaskResponse> updateChooseTask(@PathVariable Integer lessonId, @PathVariable Integer taskId,
+	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
+	public Mono<ChooseTaskResponse> updateChooseTask(@PathVariable String lessonPublicId, @PathVariable Integer taskId,
 			@Valid @RequestBody Mono<ChooseTaskRequest> request) {
-		return taskService.updateChooseTask(lessonId, taskId, request);
+		return taskService.updateChooseTask(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), taskId,
+				request);
 	}
 
 	@Operation(summary = "Delete a choose task")
 	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Choose task deleted"),
 			@ApiResponse(responseCode = "404", description = "Task not found in the lesson", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@DeleteMapping("/tasks/choose/{taskId}")
-	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonId))")
+	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public Mono<Void> deleteChooseTask(@PathVariable Integer lessonId, @PathVariable Integer taskId) {
-		return taskService.deleteChooseTask(lessonId, taskId);
+	public Mono<Void> deleteChooseTask(@PathVariable String lessonPublicId, @PathVariable Integer taskId) {
+		return taskService.deleteChooseTask(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), taskId);
 	}
 
 	// --- Write Task CRUD ---
@@ -80,11 +84,11 @@ public class TaskController {
 	@ApiResponses(value = {@ApiResponse(responseCode = "201", description = "Write task created"),
 			@ApiResponse(responseCode = "400", description = "Invalid input", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PostMapping("/tasks/write")
-	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonId))")
+	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
 	@ResponseStatus(HttpStatus.CREATED)
-	public Mono<WriteTaskResponse> createWriteTask(@PathVariable Integer lessonId,
+	public Mono<WriteTaskResponse> createWriteTask(@PathVariable String lessonPublicId,
 			@Valid @RequestBody Mono<WriteTaskRequest> request) {
-		return taskService.createWriteTask(lessonId, request);
+		return taskService.createWriteTask(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), request);
 	}
 
 	@Operation(summary = "Update a write task")
@@ -92,20 +96,21 @@ public class TaskController {
 			@ApiResponse(responseCode = "400", description = "Invalid input", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "404", description = "Task not found in the lesson", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PutMapping("/tasks/write/{taskId}")
-	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonId))")
-	public Mono<WriteTaskResponse> updateWriteTask(@PathVariable Integer lessonId, @PathVariable Integer taskId,
+	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
+	public Mono<WriteTaskResponse> updateWriteTask(@PathVariable String lessonPublicId, @PathVariable Integer taskId,
 			@Valid @RequestBody Mono<WriteTaskRequest> request) {
-		return taskService.updateWriteTask(lessonId, taskId, request);
+		return taskService.updateWriteTask(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), taskId,
+				request);
 	}
 
 	@Operation(summary = "Delete a write task")
 	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Write task deleted"),
 			@ApiResponse(responseCode = "404", description = "Task not found in the lesson", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@DeleteMapping("/tasks/write/{taskId}")
-	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonId))")
+	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public Mono<Void> deleteWriteTask(@PathVariable Integer lessonId, @PathVariable Integer taskId) {
-		return taskService.deleteWriteTask(lessonId, taskId);
+	public Mono<Void> deleteWriteTask(@PathVariable String lessonPublicId, @PathVariable Integer taskId) {
+		return taskService.deleteWriteTask(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), taskId);
 	}
 
 	// --- Scatter Task CRUD ---
@@ -114,11 +119,12 @@ public class TaskController {
 	@ApiResponses(value = {@ApiResponse(responseCode = "201", description = "Scatter task created"),
 			@ApiResponse(responseCode = "400", description = "Invalid input", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PostMapping("/tasks/scatter")
-	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonId))")
+	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
 	@ResponseStatus(HttpStatus.CREATED)
-	public Mono<ScatterTaskResponse> createScatterTask(@PathVariable Integer lessonId,
+	public Mono<ScatterTaskResponse> createScatterTask(@PathVariable String lessonPublicId,
 			@Valid @RequestBody Mono<ScatterTaskRequest> request) {
-		return taskService.createScatterTask(lessonId, request);
+		return taskService.createScatterTask(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId),
+				request);
 	}
 
 	@Operation(summary = "Update a scatter task")
@@ -126,20 +132,21 @@ public class TaskController {
 			@ApiResponse(responseCode = "400", description = "Invalid input", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "404", description = "Task not found in the lesson", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PutMapping("/tasks/scatter/{taskId}")
-	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonId))")
-	public Mono<ScatterTaskResponse> updateScatterTask(@PathVariable Integer lessonId, @PathVariable Integer taskId,
-			@Valid @RequestBody Mono<ScatterTaskRequest> request) {
-		return taskService.updateScatterTask(lessonId, taskId, request);
+	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
+	public Mono<ScatterTaskResponse> updateScatterTask(@PathVariable String lessonPublicId,
+			@PathVariable Integer taskId, @Valid @RequestBody Mono<ScatterTaskRequest> request) {
+		return taskService.updateScatterTask(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), taskId,
+				request);
 	}
 
 	@Operation(summary = "Delete a scatter task")
 	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Scatter task deleted"),
 			@ApiResponse(responseCode = "404", description = "Task not found in the lesson", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@DeleteMapping("/tasks/scatter/{taskId}")
-	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonId))")
+	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public Mono<Void> deleteScatterTask(@PathVariable Integer lessonId, @PathVariable Integer taskId) {
-		return taskService.deleteScatterTask(lessonId, taskId);
+	public Mono<Void> deleteScatterTask(@PathVariable String lessonPublicId, @PathVariable Integer taskId) {
+		return taskService.deleteScatterTask(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), taskId);
 	}
 
 	// --- Speak Task CRUD ---
@@ -148,11 +155,11 @@ public class TaskController {
 	@ApiResponses(value = {@ApiResponse(responseCode = "201", description = "Speak task created"),
 			@ApiResponse(responseCode = "400", description = "Invalid input", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PostMapping("/tasks/speak")
-	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonId))")
+	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
 	@ResponseStatus(HttpStatus.CREATED)
-	public Mono<SpeakTaskResponse> createSpeakTask(@PathVariable Integer lessonId,
+	public Mono<SpeakTaskResponse> createSpeakTask(@PathVariable String lessonPublicId,
 			@Valid @RequestBody Mono<SpeakTaskRequest> request) {
-		return taskService.createSpeakTask(lessonId, request);
+		return taskService.createSpeakTask(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), request);
 	}
 
 	@Operation(summary = "Update a speak task")
@@ -160,20 +167,21 @@ public class TaskController {
 			@ApiResponse(responseCode = "400", description = "Invalid input", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "404", description = "Task not found in the lesson", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PutMapping("/tasks/speak/{taskId}")
-	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonId))")
-	public Mono<SpeakTaskResponse> updateSpeakTask(@PathVariable Integer lessonId, @PathVariable Integer taskId,
+	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
+	public Mono<SpeakTaskResponse> updateSpeakTask(@PathVariable String lessonPublicId, @PathVariable Integer taskId,
 			@Valid @RequestBody Mono<SpeakTaskRequest> request) {
-		return taskService.updateSpeakTask(lessonId, taskId, request);
+		return taskService.updateSpeakTask(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), taskId,
+				request);
 	}
 
 	@Operation(summary = "Delete a speak task")
 	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Speak task deleted"),
 			@ApiResponse(responseCode = "404", description = "Task not found in the lesson", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@DeleteMapping("/tasks/speak/{taskId}")
-	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonId))")
+	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public Mono<Void> deleteSpeakTask(@PathVariable Integer lessonId, @PathVariable Integer taskId) {
-		return taskService.deleteSpeakTask(lessonId, taskId);
+	public Mono<Void> deleteSpeakTask(@PathVariable String lessonPublicId, @PathVariable Integer taskId) {
+		return taskService.deleteSpeakTask(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), taskId);
 	}
 
 	@Operation(summary = "Transcribe a speak task audio answer")
@@ -184,9 +192,10 @@ public class TaskController {
 			@ApiResponse(responseCode = "503", description = "STT service unavailable", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PostMapping(value = "/tasks/speak/{taskId}/transcribe", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	@PreAuthorize("hasRole('STUDENT')")
-	public Mono<SpeakTranscriptionResponse> transcribeSpeakTask(@PathVariable Integer lessonId,
+	public Mono<SpeakTranscriptionResponse> transcribeSpeakTask(@PathVariable String lessonPublicId,
 			@PathVariable Integer taskId, @RequestPart("file") Mono<FilePart> audio) {
-		return taskService.transcribeSpeakTask(lessonId, taskId, audio);
+		return taskService.transcribeSpeakTask(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId),
+				taskId, audio);
 	}
 
 	// --- Submit lesson answers ---
@@ -198,9 +207,9 @@ public class TaskController {
 			@ApiResponse(responseCode = "404", description = "Lesson or task not found", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PostMapping("/submit")
 	@PreAuthorize("hasRole('STUDENT')")
-	public Mono<SubmitResponse> submitLesson(@PathVariable Integer lessonId,
+	public Mono<SubmitResponse> submitLesson(@PathVariable String lessonPublicId,
 			@Valid @RequestBody Mono<SubmitRequest> request) {
-		return taskService.submitLesson(lessonId, request);
+		return taskService.submitLesson(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), request);
 	}
 
 	// --- Reset user progress ---
@@ -209,9 +218,9 @@ public class TaskController {
 	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Progress reset successfully"),
 			@ApiResponse(responseCode = "404", description = "Lesson not found", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PostMapping("/users/{userId}/reset")
-	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonId))")
+	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public Mono<Void> resetProgress(@PathVariable Integer lessonId, @PathVariable Integer userId) {
-		return taskService.resetUserProgress(lessonId, userId);
+	public Mono<Void> resetProgress(@PathVariable String lessonPublicId, @PathVariable Integer userId) {
+		return taskService.resetUserProgress(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), userId);
 	}
 }

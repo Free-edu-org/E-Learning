@@ -19,7 +19,7 @@ export interface LessonAttachment {
 }
 
 export interface Lesson {
-  id: number;
+  publicId: string;
   title: string;
   theme: string;
   isActive: boolean;
@@ -108,45 +108,52 @@ export const lessonService = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
-  updateLesson: (id: number, payload: CreateLessonRequest) =>
-    fetchApi<Lesson>(`/api/v1/lessons/${id}`, {
+  updateLesson: (publicId: string, payload: CreateLessonRequest) =>
+    fetchApi<Lesson>(`/api/v1/lessons/${publicId}`, {
       method: "PUT",
       body: JSON.stringify(payload),
     }),
-  updateLessonStatus: (id: number, isActive: boolean) =>
-    fetchApi<void>(`/api/v1/lessons/${id}/status`, {
+  updateLessonStatus: (publicId: string, isActive: boolean) =>
+    fetchApi<void>(`/api/v1/lessons/${publicId}/status`, {
       method: "PATCH",
       body: JSON.stringify({ isActive }),
     }),
-  deleteLesson: (id: number) =>
-    fetchApi<void>(`/api/v1/lessons/${id}`, {
+  deleteLesson: (publicId: string) =>
+    fetchApi<void>(`/api/v1/lessons/${publicId}`, {
       method: "DELETE",
     }),
-  getLessonStats: (lessonId: number) =>
-    fetchApi<LessonStatsResponse>(`/api/v1/teacher/lessons/${lessonId}/stats`),
-  getLessonResultDetails: (lessonId: number, userId: number) =>
-    fetchApi<LessonResultDetailsResponse>(
-      `/api/v1/teacher/lessons/${lessonId}/students/${userId}/result`,
+  getLessonStats: (lessonPublicId: string) =>
+    fetchApi<LessonStatsResponse>(
+      `/api/v1/teacher/lessons/${lessonPublicId}/stats`,
     ),
-  resetStudentLessonProgress: (lessonId: number, userId: number) =>
-    fetchApi<void>(`/api/v1/lessons/${lessonId}/users/${userId}/reset`, {
+  getLessonResultDetails: (lessonPublicId: string, userId: number) =>
+    fetchApi<LessonResultDetailsResponse>(
+      `/api/v1/teacher/lessons/${lessonPublicId}/students/${userId}/result`,
+    ),
+  resetStudentLessonProgress: (lessonPublicId: string, userId: number) =>
+    fetchApi<void>(`/api/v1/lessons/${lessonPublicId}/users/${userId}/reset`, {
       method: "POST",
     }),
-  uploadAttachment: (lessonId: number, file: File) => {
+  uploadAttachment: (lessonPublicId: string, file: File) => {
     const formData = new FormData();
     formData.append("file", file);
     return fetchApi<LessonAttachment>(
-      `/api/v1/lessons/${lessonId}/attachments`,
+      `/api/v1/lessons/${lessonPublicId}/attachments`,
       {
         method: "POST",
         body: formData,
       },
     );
   },
-  downloadAttachment: (lessonId: number, attachmentId: number) =>
-    fetchApiBlob(`/api/v1/lessons/${lessonId}/attachments/${attachmentId}`),
-  deleteAttachment: (lessonId: number, attachmentId: number) =>
-    fetchApi<void>(`/api/v1/lessons/${lessonId}/attachments/${attachmentId}`, {
+  downloadAttachment: (lessonPublicId: string, attachmentId: number) =>
+    fetchApiBlob(
+      `/api/v1/lessons/${lessonPublicId}/attachments/${attachmentId}`,
+    ),
+  deleteAttachment: (lessonPublicId: string, attachmentId: number) =>
+    fetchApi<void>(
+      `/api/v1/lessons/${lessonPublicId}/attachments/${attachmentId}`,
+      {
       method: "DELETE",
-    }),
+      },
+    ),
 };

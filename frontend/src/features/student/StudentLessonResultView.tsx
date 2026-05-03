@@ -14,11 +14,10 @@ import { useAuth } from "@/context/AuthContext";
 import { getErrorMessage } from "@/utils/dashboardUtils";
 
 export function StudentLessonResultView() {
-  const { lessonId } = useParams<{ lessonId: string }>();
+  const { lessonPublicId } = useParams<{ lessonPublicId: string }>();
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const numericLessonId = Number(lessonId);
-  const routeError = Number.isNaN(numericLessonId)
+  const routeError = !lessonPublicId
     ? "Nieprawidlowy identyfikator lekcji."
     : null;
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -43,7 +42,7 @@ export function StudentLessonResultView() {
     }
 
     studentService
-      .getLessonResultDetails(numericLessonId)
+      .getLessonResultDetails(lessonPublicId!)
       .then(setResult)
       .catch((err: unknown) =>
         setError(
@@ -54,7 +53,7 @@ export function StudentLessonResultView() {
         ),
       )
       .finally(() => setLoading(false));
-  }, [numericLessonId, routeError]);
+  }, [lessonPublicId, routeError]);
 
   return (
     <Box

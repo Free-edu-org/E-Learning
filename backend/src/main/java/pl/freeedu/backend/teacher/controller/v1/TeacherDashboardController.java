@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import pl.freeedu.backend.lesson.dto.LessonResponse;
+import pl.freeedu.backend.lesson.service.LessonPublicIdLookupService;
 import pl.freeedu.backend.teacher.dto.LessonStatsResponse;
 import pl.freeedu.backend.teacher.dto.TeacherCreateStudentRequest;
 import pl.freeedu.backend.teacher.dto.TeacherStatsResponse;
@@ -32,9 +33,12 @@ import reactor.core.publisher.Mono;
 public class TeacherDashboardController {
 
 	private final TeacherService teacherService;
+	private final LessonPublicIdLookupService lessonPublicIdLookupService;
 
-	public TeacherDashboardController(TeacherService teacherService) {
+	public TeacherDashboardController(TeacherService teacherService,
+			LessonPublicIdLookupService lessonPublicIdLookupService) {
 		this.teacherService = teacherService;
+		this.lessonPublicIdLookupService = lessonPublicIdLookupService;
 	}
 
 	@Operation(summary = "Get private dashboard statistics")
@@ -66,21 +70,22 @@ public class TeacherDashboardController {
 
 	@Operation(summary = "Get lesson statistics for teacher")
 	@ApiResponse(responseCode = "200", description = "Lesson statistics scoped to current teacher")
-	@GetMapping("/lessons/{lessonId}/stats")
+	@GetMapping("/lessons/{lessonPublicId}/stats")
 	@PreAuthorize("hasRole('TEACHER')")
 	@ResponseStatus(HttpStatus.OK)
-	public Mono<LessonStatsResponse> getLessonStats(@PathVariable Integer lessonId) {
-		return teacherService.getLessonStats(lessonId);
+	public Mono<LessonStatsResponse> getLessonStats(@PathVariable String lessonPublicId) {
+		return teacherService.getLessonStats(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId));
 	}
 
 	@Operation(summary = "Get detailed lesson result for a student")
 	@ApiResponse(responseCode = "200", description = "Detailed lesson result scoped to current teacher and selected student")
-	@GetMapping("/lessons/{lessonId}/students/{userId}/result")
+	@GetMapping("/lessons/{lessonPublicId}/students/{userId}/result")
 	@PreAuthorize("hasRole('TEACHER')")
 	@ResponseStatus(HttpStatus.OK)
-	public Mono<LessonResultDetailsResponse> getLessonResultDetails(@PathVariable Integer lessonId,
+	public Mono<LessonResultDetailsResponse> getLessonResultDetails(@PathVariable String lessonPublicId,
 			@PathVariable Integer userId) {
-		return teacherService.getLessonResultDetails(lessonId, userId);
+		return teacherService.getLessonResultDetails(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId),
+				userId);
 	}
 
 	@Operation(summary = "Get teacher's students")

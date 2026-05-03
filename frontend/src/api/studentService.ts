@@ -29,7 +29,7 @@ export interface StudentLessonAttachment {
 }
 
 export interface StudentLesson {
-  id: number;
+  publicId: string;
   title: string;
   theme: string;
   isActive: boolean;
@@ -82,7 +82,7 @@ export interface LessonResultTaskDetail {
 }
 
 export interface LessonResultDetailsResponse {
-  lessonId: number;
+  lessonPublicId: string;
   lessonTitle: string;
   userId: number;
   username: string;
@@ -97,12 +97,12 @@ export const studentService = {
   getStats: () => fetchApi<StudentStats>("/api/v1/student/stats"),
   getLessons: () => fetchApi<StudentLesson[]>("/api/v1/student/lessons"),
   getProgress: () => fetchApi<StudentProgress>("/api/v1/student/progress"),
-  getLessonResultDetails: (lessonId: number) =>
+  getLessonResultDetails: (lessonPublicId: string) =>
     fetchApi<LessonResultDetailsResponse>(
-      `/api/v1/student/lessons/${lessonId}/result`,
+      `/api/v1/student/lessons/${lessonPublicId}/result`,
     ),
-  submitAnswers: (lessonId: number, payload: SubmitAnswersRequest) =>
-    fetchApi<SubmitAnswersResponse>(`/api/v1/lessons/${lessonId}/submit`, {
+  submitAnswers: (lessonPublicId: string, payload: SubmitAnswersRequest) =>
+    fetchApi<SubmitAnswersResponse>(`/api/v1/lessons/${lessonPublicId}/submit`, {
       method: "POST",
       body: JSON.stringify(payload),
     }),

@@ -116,7 +116,7 @@ public class StudentService {
 			Integer score = userLesson != null ? userLesson.getScore() : null;
 			Integer maxScore = userLesson != null ? userLesson.getMaxScore() : null;
 
-			studentLessons.add(StudentLessonResponse.builder().id(lessonResponse.getId())
+			studentLessons.add(StudentLessonResponse.builder().publicId(lessonResponse.getPublicId())
 					.title(lessonResponse.getTitle()).theme(lessonResponse.getTheme())
 					.isActive(lessonResponse.getIsActive()).teacherId(lessonResponse.getTeacherId())
 					.teacherName(lessonResponse.getTeacherName()).teacherAvatarUrl(lessonResponse.getTeacherAvatarUrl())

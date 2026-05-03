@@ -165,7 +165,7 @@ export function TeacherLessonCreateView() {
       });
 
       const taskOperations = draft.tasks.map((task) =>
-        createLessonTask(createdLesson.id, task),
+        createLessonTask(createdLesson.publicId, task),
       );
 
       let nextFeedback: DialogFeedbackState;
@@ -200,7 +200,7 @@ export function TeacherLessonCreateView() {
       if (attachmentFile) {
         try {
           await lessonService.uploadAttachment(
-            createdLesson.id,
+            createdLesson.publicId,
             attachmentFile,
           );
         } catch {
@@ -222,7 +222,7 @@ export function TeacherLessonCreateView() {
       setFeedback(nextFeedback);
       setSavedDraftSignature(draftSignature);
       window.setTimeout(
-        () => navigate(`/teacher/lessons/${createdLesson.id}/edit`),
+        () => navigate(`/teacher/lessons/${createdLesson.publicId}/edit`),
         700,
       );
     } catch (createError) {

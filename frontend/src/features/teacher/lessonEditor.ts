@@ -149,14 +149,14 @@ export function getTaskValidationError(
 }
 
 export async function createLessonTask(
-  lessonId: number,
+  lessonPublicId: string,
   task: LessonTaskDraft,
 ) {
   const hint = task.hint.trim() || undefined;
   const section = task.section.trim() || undefined;
 
   if (task.type === "choose") {
-    return taskService.createChooseTask(lessonId, {
+    return taskService.createChooseTask(lessonPublicId, {
       task: task.task.trim(),
       possibleAnswers: task.possibleAnswers.trim(),
       correctAnswer: Number(task.correctAnswer.trim()),
@@ -166,7 +166,7 @@ export async function createLessonTask(
   }
 
   if (task.type === "write") {
-    return taskService.createWriteTask(lessonId, {
+    return taskService.createWriteTask(lessonPublicId, {
       task: task.task.trim(),
       correctAnswer: task.correctAnswer.trim(),
       hint,
@@ -175,7 +175,7 @@ export async function createLessonTask(
   }
 
   if (task.type === "scatter") {
-    return taskService.createScatterTask(lessonId, {
+    return taskService.createScatterTask(lessonPublicId, {
       task: task.task.trim(),
       words: task.words.trim(),
       correctAnswer: task.correctAnswer.trim(),
@@ -184,7 +184,7 @@ export async function createLessonTask(
     });
   }
 
-  return taskService.createSpeakTask(lessonId, {
+  return taskService.createSpeakTask(lessonPublicId, {
     task: task.task.trim(),
     expectedText: task.correctAnswer.trim(),
     hint,
@@ -193,7 +193,7 @@ export async function createLessonTask(
 }
 
 export async function updateLessonTask(
-  lessonId: number,
+  lessonPublicId: string,
   backendId: number,
   task: LessonTaskDraft,
 ) {
@@ -201,7 +201,7 @@ export async function updateLessonTask(
   const section = task.section.trim() || undefined;
 
   if (task.type === "choose") {
-    return taskService.updateChooseTask(lessonId, backendId, {
+    return taskService.updateChooseTask(lessonPublicId, backendId, {
       task: task.task.trim(),
       possibleAnswers: task.possibleAnswers.trim(),
       correctAnswer: Number(task.correctAnswer.trim()),
@@ -211,7 +211,7 @@ export async function updateLessonTask(
   }
 
   if (task.type === "write") {
-    return taskService.updateWriteTask(lessonId, backendId, {
+    return taskService.updateWriteTask(lessonPublicId, backendId, {
       task: task.task.trim(),
       correctAnswer: task.correctAnswer.trim(),
       hint,
@@ -220,7 +220,7 @@ export async function updateLessonTask(
   }
 
   if (task.type === "scatter") {
-    return taskService.updateScatterTask(lessonId, backendId, {
+    return taskService.updateScatterTask(lessonPublicId, backendId, {
       task: task.task.trim(),
       words: task.words.trim(),
       correctAnswer: task.correctAnswer.trim(),
@@ -229,7 +229,7 @@ export async function updateLessonTask(
     });
   }
 
-  return taskService.updateSpeakTask(lessonId, backendId, {
+  return taskService.updateSpeakTask(lessonPublicId, backendId, {
     task: task.task.trim(),
     expectedText: task.correctAnswer.trim(),
     hint,

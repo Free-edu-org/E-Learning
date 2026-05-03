@@ -16,7 +16,7 @@ import pl.freeedu.backend.lesson.dto.LessonAttachmentResponse;
 @AllArgsConstructor
 public class StudentLessonResponse {
 
-	private Integer id;
+	private String publicId;
 	private String title;
 	private String theme;
 	private Boolean isActive;
