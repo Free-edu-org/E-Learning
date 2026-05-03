@@ -65,7 +65,7 @@ class TaskServiceTest {
 		// given
 		Integer lessonId = 1;
 		CustomUserDetails student = new CustomUserDetails(10, "student", "pass", Role.STUDENT);
-		Lesson lesson = Lesson.builder().id(lessonId).isActive(true).build();
+		Lesson lesson = Lesson.builder().id(lessonId).publicId("lesson-1").isActive(true).build();
 
 		when(securityService.getCurrentUser()).thenReturn(Mono.just(student));
 		when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
@@ -83,7 +83,7 @@ class TaskServiceTest {
 
 		// then
 		StepVerifier.create(result).assertNext(resp -> {
-			assertEquals(lessonId, resp.getLessonId());
+			assertEquals("lesson-1", resp.getLessonPublicId());
 			assertEquals("IN_PROGRESS", resp.getStatus());
 			assertNull(resp.getSections().get(0).getChooseTasks().get(0).getCorrectAnswer()); // stripped for student
 			verify(userLessonRepository).save(any());
@@ -222,7 +222,7 @@ class TaskServiceTest {
 		// given
 		Integer lessonId = 1;
 		ChooseTaskRequest request = ChooseTaskRequest.builder().task("T").correctAnswer(1).build();
-		Lesson lesson = Lesson.builder().id(1).build();
+		Lesson lesson = Lesson.builder().id(1).publicId("lesson-1").build();
 
 		when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
 		when(chooseTaskRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -246,6 +246,8 @@ class TaskServiceTest {
 		ChooseTask task = ChooseTask.builder().id(taskId).lessonId(lessonId).build();
 
 		when(chooseTaskRepository.findById(taskId)).thenReturn(Optional.of(task));
+		when(lessonRepository.findById(lessonId))
+				.thenReturn(Optional.of(Lesson.builder().id(lessonId).publicId("lesson-1").build()));
 		when(chooseTaskRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
 		// when
@@ -296,7 +298,7 @@ class TaskServiceTest {
 	@Test
 	void shouldCreateWriteTask() {
 		// given
-		Lesson lesson = Lesson.builder().id(1).build();
+		Lesson lesson = Lesson.builder().id(1).publicId("lesson-1").build();
 		when(lessonRepository.findById(1)).thenReturn(Optional.of(lesson));
 		when(writeTaskRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -311,7 +313,7 @@ class TaskServiceTest {
 	@Test
 	void shouldCreateScatterTask() {
 		// given
-		Lesson lesson = Lesson.builder().id(1).build();
+		Lesson lesson = Lesson.builder().id(1).publicId("lesson-1").build();
 		when(lessonRepository.findById(1)).thenReturn(Optional.of(lesson));
 		when(scatterTaskRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -326,7 +328,7 @@ class TaskServiceTest {
 	@Test
 	void shouldCreateSpeakTask() {
 		// given
-		Lesson lesson = Lesson.builder().id(1).build();
+		Lesson lesson = Lesson.builder().id(1).publicId("lesson-1").build();
 		when(lessonRepository.findById(1)).thenReturn(Optional.of(lesson));
 		when(speakTaskRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 

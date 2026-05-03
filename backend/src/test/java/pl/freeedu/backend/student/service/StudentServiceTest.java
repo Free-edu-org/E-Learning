@@ -89,7 +89,8 @@ class StudentServiceTest {
 		when(groupHasLessonRepository.findLessonIdsByGroupId(groupId)).thenReturn(List.of(1));
 		when(lessonRepository.findByIdIn(List.of(1))).thenReturn(List.of(lesson));
 		when(userLessonRepository.findByUserIdAndLessonIdIn(eq(userId), any())).thenReturn(List.of());
-		when(lessonMapper.toResponse(lesson)).thenReturn(LessonResponse.builder().id(1).title("L1").build());
+		when(lessonMapper.toResponse(lesson))
+				.thenReturn(LessonResponse.builder().publicId("lesson-1").title("L1").build());
 		when(groupHasLessonRepository.findGroupsForLesson(1)).thenReturn(List.of(new GroupDto(groupId, "G1")));
 
 		// when
@@ -97,7 +98,7 @@ class StudentServiceTest {
 
 		// then
 		StepVerifier.create(result).assertNext(resp -> {
-			assertEquals(1, resp.getId());
+			assertEquals("lesson-1", resp.getPublicId());
 			assertEquals("NOT_STARTED", resp.getStatus());
 		}).verifyComplete();
 	}
@@ -120,8 +121,8 @@ class StudentServiceTest {
 				UserLesson.builder().lessonId(1).status(UserLessonStatus.COMPLETED).score(10).maxScore(10).build(),
 				UserLesson.builder().lessonId(2).status(UserLessonStatus.IN_PROGRESS).build()));
 
-		when(lessonMapper.toResponse(l1)).thenReturn(LessonResponse.builder().id(1).build());
-		when(lessonMapper.toResponse(l2)).thenReturn(LessonResponse.builder().id(2).build());
+		when(lessonMapper.toResponse(l1)).thenReturn(LessonResponse.builder().publicId("lesson-1").build());
+		when(lessonMapper.toResponse(l2)).thenReturn(LessonResponse.builder().publicId("lesson-2").build());
 
 		// when
 		Mono<StudentStatsResponse> result = studentService.getStats();
@@ -174,7 +175,7 @@ class StudentServiceTest {
 				.thenReturn(Optional.of(UserInGroup.builder().groupId(groupId).build()));
 		when(groupHasLessonRepository.findLessonIdsByGroupId(groupId)).thenReturn(List.of(1));
 		when(lessonRepository.findByIdIn(any())).thenReturn(List.of(l1));
-		when(lessonMapper.toResponse(any())).thenReturn(LessonResponse.builder().id(1).build());
+		when(lessonMapper.toResponse(any())).thenReturn(LessonResponse.builder().publicId("lesson-1").build());
 
 		// Score 0/0 -> null percent
 		when(userLessonRepository.findByUserIdAndLessonIdIn(anyInt(), any())).thenReturn(List
@@ -205,15 +206,15 @@ class StudentServiceTest {
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
 		when(lessonRepository.findById(5)).thenReturn(Optional.of(Lesson.builder().id(5).build()));
 		when(userInGroupRepository.hasAccessToLesson(10, 5)).thenReturn(true);
-		when(lessonResultDetailsService.getCompletedLessonResult(5, 10))
-				.thenReturn(Mono.just(LessonResultDetailsResponse.builder().lessonId(5).userId(10).build()));
+		when(lessonResultDetailsService.getCompletedLessonResult(5, 10)).thenReturn(
+				Mono.just(LessonResultDetailsResponse.builder().lessonPublicId("lesson-5").userId(10).build()));
 
 		// when
 		Mono<LessonResultDetailsResponse> result = studentService.getLessonResultDetails(5);
 
 		// then
 		StepVerifier.create(result).assertNext(response -> {
-			assertEquals(5, response.getLessonId());
+			assertEquals("lesson-5", response.getLessonPublicId());
 			assertEquals(10, response.getUserId());
 		}).verifyComplete();
 	}

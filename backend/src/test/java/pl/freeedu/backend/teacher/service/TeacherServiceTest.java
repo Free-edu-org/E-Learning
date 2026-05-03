@@ -121,14 +121,14 @@ class TeacherServiceTest {
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
 		when(lessonRepository.findByTeacher_Id(10)).thenReturn(List.of(lesson));
 		when(lessonMapper.toResponse(lesson))
-				.thenReturn(LessonResponse.builder().id(1).teacherAvatarUrl("preset:avatar_1").build());
+				.thenReturn(LessonResponse.builder().publicId("lesson-1").teacherAvatarUrl("preset:avatar_1").build());
 
 		// when
 		Flux<LessonResponse> result = teacherService.getLessons();
 
 		// then
 		StepVerifier.create(result).assertNext(resp -> {
-			assertEquals(1, resp.getId());
+			assertEquals("lesson-1", resp.getPublicId());
 			assertEquals("preset:avatar_1", resp.getTeacherAvatarUrl());
 		}).verifyComplete();
 	}
@@ -279,7 +279,8 @@ class TeacherServiceTest {
 		// given
 		User teacher = User.builder().id(10).build();
 		Lesson lesson = Lesson.builder().id(3).teacher(teacher).build();
-		LessonResultDetailsResponse details = LessonResultDetailsResponse.builder().lessonId(3).userId(21).build();
+		LessonResultDetailsResponse details = LessonResultDetailsResponse.builder().lessonPublicId("lesson-3")
+				.userId(21).build();
 
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
 		when(lessonRepository.findById(3)).thenReturn(Optional.of(lesson));
@@ -291,7 +292,7 @@ class TeacherServiceTest {
 
 		// then
 		StepVerifier.create(result).assertNext(response -> {
-			assertEquals(3, response.getLessonId());
+			assertEquals("lesson-3", response.getLessonPublicId());
 			assertEquals(21, response.getUserId());
 		}).verifyComplete();
 	}

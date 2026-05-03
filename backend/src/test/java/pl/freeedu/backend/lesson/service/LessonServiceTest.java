@@ -71,9 +71,9 @@ class LessonServiceTest {
 		Lesson lesson2 = Lesson.builder().id(2).title("B").isActive(false).createdAt(LocalDateTime.now()).build();
 		when(lessonRepository.findAll()).thenReturn(List.of(lesson1, lesson2));
 		when(lessonMapper.toResponse(lesson1))
-				.thenReturn(LessonResponse.builder().id(1).teacherAvatarUrl("preset:avatar_1").build());
+				.thenReturn(LessonResponse.builder().publicId("lesson-1").teacherAvatarUrl("preset:avatar_1").build());
 		when(lessonMapper.toResponse(lesson2))
-				.thenReturn(LessonResponse.builder().id(2).teacherAvatarUrl("preset:avatar_2").build());
+				.thenReturn(LessonResponse.builder().publicId("lesson-2").teacherAvatarUrl("preset:avatar_2").build());
 		when(groupHasLessonRepository.findGroupsForLesson(1)).thenReturn(List.of());
 		when(groupHasLessonRepository.findGroupsForLesson(2)).thenReturn(List.of());
 
@@ -88,7 +88,7 @@ class LessonServiceTest {
 		// then
 		StepVerifier.create(result1.collectList()).assertNext(list -> {
 			assertEquals(1, list.size());
-			assertEquals(1, list.get(0).getId());
+			assertEquals("lesson-1", list.get(0).getPublicId());
 			assertEquals("preset:avatar_1", list.get(0).getTeacherAvatarUrl());
 		}).verifyComplete();
 
@@ -98,8 +98,8 @@ class LessonServiceTest {
 		// then
 		StepVerifier.create(result2.collectList()).assertNext(list -> {
 			assertEquals(2, list.size());
-			assertEquals(2, list.get(0).getId());
-			assertEquals(1, list.get(1).getId());
+			assertEquals("lesson-2", list.get(0).getPublicId());
+			assertEquals("lesson-1", list.get(1).getPublicId());
 		}).verifyComplete();
 
 		// 3. Filter by groupId
@@ -109,7 +109,7 @@ class LessonServiceTest {
 		// then
 		StepVerifier.create(result3.collectList()).assertNext(list -> {
 			assertEquals(1, list.size());
-			assertEquals(2, list.get(0).getId());
+			assertEquals("lesson-2", list.get(0).getPublicId());
 		}).verifyComplete();
 
 		// 4. Sort by date_asc
@@ -118,8 +118,8 @@ class LessonServiceTest {
 		// then
 		StepVerifier.create(result4.collectList()).assertNext(list -> {
 			assertEquals(2, list.size());
-			assertEquals(1, list.get(0).getId());
-			assertEquals(2, list.get(1).getId());
+			assertEquals("lesson-1", list.get(0).getPublicId());
+			assertEquals("lesson-2", list.get(1).getPublicId());
 		}).verifyComplete();
 	}
 
@@ -134,7 +134,7 @@ class LessonServiceTest {
 			return l;
 		});
 		when(lessonMapper.toResponse(any()))
-				.thenReturn(LessonResponse.builder().id(99).teacherAvatarUrl("preset:avatar_1").build());
+				.thenReturn(LessonResponse.builder().publicId("lesson-99").teacherAvatarUrl("preset:avatar_1").build());
 		when(groupHasLessonRepository.findGroupsForLesson(99)).thenReturn(List.of());
 
 		// when
@@ -142,7 +142,7 @@ class LessonServiceTest {
 
 		// then
 		StepVerifier.create(result).assertNext(resp -> {
-			assertEquals(99, resp.getId());
+			assertEquals("lesson-99", resp.getPublicId());
 			assertEquals("preset:avatar_1", resp.getTeacherAvatarUrl());
 			verify(groupHasLessonRepository, times(1)).saveAll(any());
 		}).verifyComplete();
@@ -156,14 +156,14 @@ class LessonServiceTest {
 
 		when(lessonRepository.findById(10)).thenReturn(Optional.of(lesson));
 		when(lessonRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-		when(lessonMapper.toResponse(any())).thenReturn(LessonResponse.builder().id(10).build());
+		when(lessonMapper.toResponse(any())).thenReturn(LessonResponse.builder().publicId("lesson-10").build());
 
 		// when
 		Mono<LessonResponse> result = lessonService.updateLesson(10, Mono.just(request));
 
 		// then
 		StepVerifier.create(result).assertNext(resp -> {
-			assertEquals(10, resp.getId());
+			assertEquals("lesson-10", resp.getPublicId());
 			verify(groupHasLessonRepository, times(1)).deleteByLessonId(10);
 			verify(groupHasLessonRepository, times(1)).saveAll(any());
 			assertEquals("New", lesson.getTitle());
