@@ -27,7 +27,6 @@ export interface ChangePasswordRequest {
 
 export const userService = {
   getCurrentUser: () => fetchApi<UserProfile>("/api/v1/users/me"),
-  getUserById: (publicId: string) => fetchApi<UserProfile>(`/api/v1/users/${publicId}`),
   createTeacher: (payload: CreateUserRequest) =>
     fetchApi<void>("/api/v1/users/teacher", {
       method: "POST",

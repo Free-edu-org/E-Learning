@@ -2,7 +2,7 @@
 
 Widok wynikow lekcji pozwala nauczycielowi przejrzec statystyki i indywidualne wyniki uczniow dla wybranej lekcji.
 
-Route: `/teacher/lessons/:lessonId/stats`
+Route: `/teacher/lessons/:lessonPublicId/stats`
 
 ## Sekcje widoku
 
@@ -14,7 +14,7 @@ Route: `/teacher/lessons/:lessonId/stats`
 
 ## Dane
 
-Endpoint: `GET /api/v1/teacher/lessons/{lessonId}/stats`
+Endpoint: `GET /api/v1/teacher/lessons/{lessonPublicId}/stats`
 
 Odpowiedz:
 ```json
@@ -24,7 +24,7 @@ Odpowiedz:
   "bestScore": 100.0,
   "studentResults": [
     {
-      "userId": 8,
+      "userPublicId": 8,
       "username": "jan_kowalski",
       "completedAt": "2026-01-20T12:00:00",
       "score": 8,

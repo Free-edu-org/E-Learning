@@ -73,7 +73,7 @@ public class AuthService {
 				throw new AuthException(AuthErrorCode.INVALID_CREDENTIALS);
 			}
 
-			String token = jwtService.generateToken(user.getId(),
+			String token = jwtService.generateToken(user.getPublicId(),
 					Optional.ofNullable(user.getTokenVersion()).orElse(0));
 			log.info("User logged in successfully. User ID: {}, Role: {}", user.getId(), user.getRole());
 			return authMapper.toAuthResponse(token, user.getRole());

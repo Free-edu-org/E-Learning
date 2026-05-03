@@ -12,6 +12,6 @@ Powiazania:
 
 Najwazniejsze endpointy:
 - `/api/v1/student/**`
-- `/api/v1/lessons/{lessonId}/tasks`
-- `/api/v1/lessons/{lessonId}/submit`
-- `/api/v1/lessons/{lessonId}/tasks/speak/{taskId}/transcribe`
+- `/api/v1/lessons/{lessonPublicId}/tasks`
+- `/api/v1/lessons/{lessonPublicId}/submit`
+- `/api/v1/lessons/{lessonPublicId}/tasks/speak/{taskPublicId}/transcribe`

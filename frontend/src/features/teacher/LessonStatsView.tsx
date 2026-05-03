@@ -206,7 +206,9 @@ export function LessonStatsView() {
         message: `Nie udało się zresetować wyniku ucznia ${student.username}.`,
       });
     } finally {
-      setresettingUserPublicIds((prev) => prev.filter((id) => id !== student.userPublicId));
+      setresettingUserPublicIds((prev) =>
+        prev.filter((userPublicId) => userPublicId !== student.userPublicId),
+      );
       setresetConfirmStudent(null);
     }
   };

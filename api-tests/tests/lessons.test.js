@@ -213,13 +213,23 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
             expect(response.data.theme).toBe('Updated Theme');
         });
 
-        it('should return 403 or 404 for non-existent lesson (PreAuthorize may reject)', async () => {
+        it('should return 403 for non-existent lesson when teacher security blocks before lookup', async () => {
             setAuthToken(teacherToken);
             const response = await apiClient.put('/lessons/non-existent-lesson', {
                 title: 'Ghost',
                 theme: 'Ghost'
             });
             expect(response.status).toBe(403);
+        });
+
+        it('should return 404 for non-existent lesson when admin reaches lookup', async () => {
+            setAuthToken(adminToken);
+            const response = await apiClient.put('/lessons/non-existent-lesson', {
+                title: 'Ghost',
+                theme: 'Ghost'
+            });
+            expect(response.status).toBe(404);
+            expect(response.data.code).toBe('LESSON_NOT_FOUND');
         });
     });
 
@@ -263,12 +273,21 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
             expect(response.status).toBe(204);
         });
 
-        it('should return 403 or 404 for non-existent lesson', async () => {
+        it('should return 403 for non-existent lesson when teacher security blocks before lookup', async () => {
             setAuthToken(teacherToken);
             const response = await apiClient.patch('/lessons/non-existent-lesson/status', {
                 isActive: true
             });
             expect(response.status).toBe(403);
+        });
+
+        it('should return 404 for non-existent lesson status update when admin reaches lookup', async () => {
+            setAuthToken(adminToken);
+            const response = await apiClient.patch('/lessons/non-existent-lesson/status', {
+                isActive: true
+            });
+            expect(response.status).toBe(404);
+            expect(response.data.code).toBe('LESSON_NOT_FOUND');
         });
     });
 
@@ -289,13 +308,20 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
             expect(response.status).toBe(204);
         });
 
-        it('should return 403 or 404 for deleting non-existent lesson', async () => {
+        it('should return 403 for deleting non-existent lesson when teacher security blocks before lookup', async () => {
             setAuthToken(teacherToken);
             const response = await apiClient.delete('/lessons/non-existent-lesson');
             expect(response.status).toBe(403);
         });
 
-        it('should return 403 or 404 for deleting already deleted lesson', async () => {
+        it('should return 404 for deleting non-existent lesson when admin reaches lookup', async () => {
+            setAuthToken(adminToken);
+            const response = await apiClient.delete('/lessons/non-existent-lesson');
+            expect(response.status).toBe(404);
+            expect(response.data.code).toBe('LESSON_NOT_FOUND');
+        });
+
+        it('should return 403 for deleting already deleted lesson as teacher because ownership no longer exists', async () => {
             setAuthToken(teacherToken);
             let res = await apiClient.post('/lessons', {
                 title: `Double Delete ${uniqueId}`,

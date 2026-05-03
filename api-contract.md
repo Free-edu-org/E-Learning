@@ -134,7 +134,7 @@ Default local development base URL is `http://localhost:8080`
 
 ---
 
-### 3.3. Get User Group by ID
+### 3.3. Get User Group by Public ID
 - **URL**: `/api/v1/user-groups/{groupPublicId}`
 - **Method**: `GET`
 
@@ -385,18 +385,31 @@ Default local development base URL is `http://localhost:8080`
 ---
 
 ### 8.2. Create Choose / Write / Scatter / Speak Task
-- **URL**: `/api/v1/lessons/{lessonPublicId}/tasks/{type}`
+- **URL**: `/api/v1/lessons/{lessonPublicId}/tasks/choose`
+- **URL**: `/api/v1/lessons/{lessonPublicId}/tasks/write`
+- **URL**: `/api/v1/lessons/{lessonPublicId}/tasks/scatter`
+- **URL**: `/api/v1/lessons/{lessonPublicId}/tasks/speak`
 - **Method**: `POST`
 
 ---
 
 ### 8.3. Update / Delete Task
-- **URL**: `/api/v1/lessons/{lessonPublicId}/tasks/{type}/{taskPublicId}`
+- **URL**: `/api/v1/lessons/{lessonPublicId}/tasks/choose/{taskPublicId}`
+- **URL**: `/api/v1/lessons/{lessonPublicId}/tasks/write/{taskPublicId}`
+- **URL**: `/api/v1/lessons/{lessonPublicId}/tasks/scatter/{taskPublicId}`
+- **URL**: `/api/v1/lessons/{lessonPublicId}/tasks/speak/{taskPublicId}`
 - **Method**: `PUT` / `DELETE`
 
 ---
 
-### 8.4. Submit Lesson Answers
+### 8.4. Transcribe Speak Task Audio
+- **URL**: `/api/v1/lessons/{lessonPublicId}/tasks/speak/{taskPublicId}/transcribe`
+- **Method**: `POST`
+- **Request**: multipart form-data with `file`
+
+---
+
+### 8.5. Submit Lesson Answers
 - **URL**: `/api/v1/lessons/{lessonPublicId}/submit`
 - **Method**: `POST`
 
@@ -422,7 +435,7 @@ Default local development base URL is `http://localhost:8080`
 
 ---
 
-### 8.5. Reset User Progress
+### 8.6. Reset User Progress
 - **URL**: `/api/v1/lessons/{lessonPublicId}/users/{userPublicId}/reset`
 - **Method**: `POST`
 

@@ -275,7 +275,7 @@ export function AdminDashboard() {
   const filteredUsers = useMemo(() => {
     const normalizedQuery = userSearch.trim().toLowerCase();
     const selectedTeacherPublicIds = new Set(selectedTeacherFilters.map((t) => t.publicId));
-    const selectedGroupIds = new Set(
+    const selectedGroupPublicIds = new Set(
       selectedGroupFilters.map((g) => g.publicId),
     );
 
@@ -304,21 +304,21 @@ export function AdminDashboard() {
             "groupPublicId" in user
               ? (user as AdminStudentProfile).groupPublicId
               : null;
-          const teacherGroupIds = new Set(
+          const teacherGroupPublicIds = new Set(
             groups
               .filter((g) => selectedTeacherPublicIds.has(g.teacherPublicId ?? ""))
               .map((g) => g.publicId),
           );
           if (
             studentGroupPublicId == null ||
-            !teacherGroupIds.has(studentGroupPublicId)
+            !teacherGroupPublicIds.has(studentGroupPublicId)
           ) {
             return false;
           }
         }
       }
 
-      if (selectedGroupIds.size > 0) {
+      if (selectedGroupPublicIds.size > 0) {
         if (user.role === "TEACHER") {
           const ownsSelectedGroup = selectedGroupFilters.some(
             (group) => group.teacherPublicId === user.publicId,
@@ -329,7 +329,7 @@ export function AdminDashboard() {
         } else {
           if (
             !("groupPublicId" in user) ||
-            !selectedGroupIds.has(user.groupPublicId ?? "")
+            !selectedGroupPublicIds.has(user.groupPublicId ?? "")
           ) {
             return false;
           }

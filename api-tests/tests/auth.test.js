@@ -8,6 +8,11 @@ const {
 
 const SEEDED_STUDENT_PASSWORD_HASH = '$2a$10$EfQqseEyw46zbJW75uREjeFG.SG5XK/OtIKrmxHMr0xyCmgS3N5f.';
 
+function decodeJwtPayload(token) {
+    const payload = token.split('.')[1];
+    return JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+}
+
 describe('Authentication API (/api/v1/auth)', () => {
     const validStudent = {
         email: 'student1@edu.pl',
@@ -34,7 +39,7 @@ describe('Authentication API (/api/v1/auth)', () => {
     });
 
     describe('POST /api/v1/auth/login', () => {
-        it('should authenticate user and return JWT with username (200 OK)', async () => {
+        it('should authenticate user and return JWT with publicId subject (200 OK)', async () => {
             const response = await apiClient.post('/auth/login', {
                 identifier: validStudent.username,
                 password: validStudent.password
@@ -43,6 +48,10 @@ describe('Authentication API (/api/v1/auth)', () => {
             expect(response.status).toBe(200);
             expect(response.data).toHaveProperty('token');
             expect(response.data).toHaveProperty('role', 'STUDENT');
+
+            const payload = decodeJwtPayload(response.data.token);
+            expect(payload.sub).toEqual(expect.any(String));
+            expect(payload.sub).not.toMatch(/^\d+$/);
         });
 
         it('should authenticate user and return JWT with email (200 OK)', async () => {

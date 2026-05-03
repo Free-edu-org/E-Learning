@@ -147,7 +147,7 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
             expect(response.data.code).toBe('TASK_NOT_FOUND');
         });
 
-        it('should return 403 or 404 for non-existent lesson (PreAuthorize may reject first)', async () => {
+        it('should return 403 for non-existent lesson when teacher security blocks before lookup', async () => {
             setAuthToken(teacherToken);
             const response = await apiClient.post(`/lessons/non-existent-lesson/tasks/choose`, {
                 task: 'test',
@@ -155,6 +155,17 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
                 correctAnswer: 0
             });
             expect(response.status).toBe(403);
+        });
+
+        it('should return 404 LESSON_NOT_FOUND for non-existent lesson when admin reaches lookup', async () => {
+            setAuthToken(adminToken);
+            const response = await apiClient.post(`/lessons/non-existent-lesson/tasks/choose`, {
+                task: 'test',
+                possibleAnswers: 'a|b',
+                correctAnswer: 0
+            });
+            expect(response.status).toBe(404);
+            expect(response.data.code).toBe('LESSON_NOT_FOUND');
         });
 
         it('should delete a choose task (204)', async () => {

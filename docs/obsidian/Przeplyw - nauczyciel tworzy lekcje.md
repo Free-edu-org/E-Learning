@@ -11,7 +11,7 @@ sequenceDiagram
   F->>L: POST /api/v1/lessons
   L->>DB: lessons
   T->>F: dodaje zadania
-  F->>Task: POST /api/v1/lessons/{id}/tasks/{type}
+  F->>Task: POST /api/v1/lessons/{lessonPublicId}/tasks/{type}
   Task->>DB: choose/write/scatter/speak_tasks
 ```
 

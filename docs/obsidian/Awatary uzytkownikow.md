@@ -19,8 +19,8 @@ Baza:
 
 | Akcja | Endpoint | Dostep | Uwagi |
 |---|---|---|---|
-| Upload awatara | `POST /api/v1/users/{id}/avatar` | admin albo wlasciciel konta | Multipart `file`, tylko JPEG/PNG, max 2 MB. |
-| Wybor presetu | `PUT /api/v1/users/{id}/avatar/preset` | admin albo wlasciciel konta | Body z `presetName`, np. `avatar_3`. |
+| Upload awatara | `POST /api/v1/users/{publicId}/avatar` | admin albo wlasciciel konta | Multipart `file`, tylko JPEG/PNG, max 2 MB. |
+| Wybor presetu | `PUT /api/v1/users/{publicId}/avatar/preset` | admin albo wlasciciel konta | Body z `presetName`, np. `avatar_3`. |
 | Odczyt pliku | `GET /uploads/avatars/**` | publiczny odczyt pliku | Statyczne pliki uploadowane przez backend. |
 
 Przykladowy preset:

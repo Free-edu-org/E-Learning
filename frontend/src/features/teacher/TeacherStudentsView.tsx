@@ -167,9 +167,9 @@ export function TeacherStudentsView() {
   const [draggingStudentPublicId, setDraggingStudentPublicId] = useState<string | null>(
     null,
   );
-  const [dragOverGroupId, setDragOverGroupId] = useState<string | null>(null);
+  const [dragOverGroupPublicId, setDragOverGroupPublicId] = useState<string | null>(null);
   const [movingStudentPublicId, setMovingStudentPublicId] = useState<string | null>(null);
-  const [expandedGroupIds, setExpandedGroupIds] = useState<Set<string>>(
+  const [expandedGroupPublicIds, setExpandedGroupPublicIds] = useState<Set<string>>(
     () => new Set(),
   );
 
@@ -210,7 +210,7 @@ export function TeacherStudentsView() {
   }, [fetchData]);
 
   useEffect(() => {
-    setExpandedGroupIds(new Set(availableGroups.map((group) => group.publicId)));
+    setExpandedGroupPublicIds(new Set(availableGroups.map((group) => group.publicId)));
   }, [availableGroups]);
 
   const groupsWithStudents = useMemo(
@@ -475,7 +475,7 @@ export function TeacherStudentsView() {
     } finally {
       setMovingStudentPublicId(null);
       setDraggingStudentPublicId(null);
-      setDragOverGroupId(null);
+      setDragOverGroupPublicId(null);
     }
   };
 
@@ -489,7 +489,7 @@ export function TeacherStudentsView() {
   };
 
   const toggleGroupExpanded = (groupPublicId: string) => {
-    setExpandedGroupIds((current) => {
+    setExpandedGroupPublicIds((current) => {
       const next = new Set(current);
       if (next.has(groupPublicId)) {
         next.delete(groupPublicId);
@@ -663,8 +663,8 @@ export function TeacherStudentsView() {
         ) : (
           <Stack spacing={1.25}>
             {filteredGroupsWithStudents.map((group) => {
-              const isDropTarget = dragOverGroupId === group.publicId;
-              const isExpanded = expandedGroupIds.has(group.publicId);
+              const isDropTarget = dragOverGroupPublicId === group.publicId;
+              const isExpanded = expandedGroupPublicIds.has(group.publicId);
               const visibleStudentCount = group.students.length;
               const totalStudentCount =
                 "totalStudentCount" in group
@@ -680,9 +680,9 @@ export function TeacherStudentsView() {
                   onDragOver={(event) => {
                     event.preventDefault();
                     event.dataTransfer.dropEffect = "move";
-                    setDragOverGroupId(group.publicId);
+                    setDragOverGroupPublicId(group.publicId);
                   }}
-                  onDragLeave={() => setDragOverGroupId(null)}
+                  onDragLeave={() => setDragOverGroupPublicId(null)}
                   onDrop={(event) => handleDrop(event, group.publicId)}
                   sx={{
                     ...panelSurfaceSx,
@@ -799,7 +799,7 @@ export function TeacherStudentsView() {
                               }}
                               onDragEnd={() => {
                                 setDraggingStudentPublicId(null);
-                                setDragOverGroupId(null);
+                                setDragOverGroupPublicId(null);
                               }}
                               sx={{
                                 display: "flex",

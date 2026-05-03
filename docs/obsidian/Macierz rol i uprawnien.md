@@ -10,9 +10,9 @@ Macierz laczy widoki, endpointy i reguly ownership. Szczegolowe checki sa w [[Se
 | `/admin` | tak | nie | nie | Chroniony przez `ProtectedRoute(["ADMIN"])`. |
 | `/teacher` | nie | tak | nie | Dashboard nauczyciela. |
 | `/teacher/students` | nie | tak | nie | Uczniowie przypisani do grup nauczyciela. |
-| `/teacher/lessons/:lessonId/stats` | nie | tak | nie | Wyniki lekcji nauczyciela. |
+| `/teacher/lessons/:lessonPublicId/stats` | nie | tak | nie | Wyniki lekcji nauczyciela. |
 | `/student` | nie | nie | tak | Dashboard ucznia. |
-| `/student/lessons/:lessonId` | nie | nie | tak | Rozwiazywanie lekcji. |
+| `/student/lessons/:lessonPublicId` | nie | nie | tak | Rozwiazywanie lekcji. |
 
 ## Operacje domenowe
 
@@ -28,13 +28,13 @@ Macierz laczy widoki, endpointy i reguly ownership. Szczegolowe checki sa w [[Se
 | Usuwa konto | tak | tylko siebie | tylko siebie | Admin albo owner. |
 | Tworzy lekcje | tak | tak | nie | `POST /api/v1/lessons`. |
 | Edytuje lekcje | tak | tylko wlasciciel | nie | `isLessonOwner`. |
-| Zmienia status lekcji | tak | tylko wlasciciel | nie | `PATCH /api/v1/lessons/{id}/status`. |
-| Usuwa lekcje | tak | tylko wlasciciel | nie | `DELETE /api/v1/lessons/{id}`. |
+| Zmienia status lekcji | tak | tylko wlasciciel | nie | `PATCH /api/v1/lessons/{lessonPublicId}/status`. |
+| Usuwa lekcje | tak | tylko wlasciciel | nie | `DELETE /api/v1/lessons/{lessonPublicId}`. |
 | Czyta zadania lekcji | tak | tak | tak | Student musi miec dostep przez grupe i stan lekcji. |
 | Tworzy/edytuje/usuwa zadania | tak | tylko wlasciciel lekcji | nie | `isLessonOwner`. |
-| Wysyla odpowiedzi do lekcji | nie | nie | tak | `POST /api/v1/lessons/{lessonId}/submit`. |
-| Transkrybuje odpowiedz audio | nie | nie | tak | `POST /tasks/speak/{taskId}/transcribe`. |
-| Resetuje postep ucznia | tak | tylko wlasciciel lekcji | nie | `POST /users/{userId}/reset`. |
+| Wysyla odpowiedzi do lekcji | nie | nie | tak | `POST /api/v1/lessons/{lessonPublicId}/submit`. |
+| Transkrybuje odpowiedz audio | nie | nie | tak | `POST /tasks/speak/{taskPublicId}/transcribe`. |
+| Resetuje postep ucznia | tak | tylko wlasciciel lekcji | nie | `POST /users/{userPublicId}/reset`. |
 | Tworzy grupe | tak | tak | nie | `POST /api/v1/user-groups`. |
 | Edytuje grupe | tak | tylko wlasciciel | nie | `isGroupOwner`. |
 | Dodaje/usuwa ucznia z grupy | tak | tylko wlasciciel | nie | `isGroupOwner`. |
