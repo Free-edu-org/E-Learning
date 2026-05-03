@@ -147,7 +147,7 @@ export function TeacherStudentsView() {
     useState<DialogFeedbackState | null>(null);
 
   const [editStudentOpen, setEditStudentOpen] = useState(false);
-  const [editingStudent, setEditingStudent] =
+  const [editingStudent, seteditingStudent] =
     useState<TeacherStudentResponse | null>(null);
   const [editStudentDraft, setEditStudentDraft] = useState({
     username: "",
@@ -164,11 +164,11 @@ export function TeacherStudentsView() {
   const [createGroupFeedback, setCreateGroupFeedback] =
     useState<DialogFeedbackState | null>(null);
 
-  const [draggingStudentId, setDraggingStudentId] = useState<number | null>(
+  const [draggingstudentPublicId, setDraggingstudentPublicId] = useState<number | null>(
     null,
   );
   const [dragOverGroupId, setDragOverGroupId] = useState<string | null>(null);
-  const [movingStudentId, setMovingStudentId] = useState<number | null>(null);
+  const [movingstudentPublicId, setMovingstudentPublicId] = useState<string | null>(null);
   const [expandedGroupIds, setExpandedGroupIds] = useState<Set<string>>(
     () => new Set(),
   );
@@ -236,7 +236,7 @@ export function TeacherStudentsView() {
           group.publicId,
         ].some((value) => value.toLowerCase().includes(query));
         const matchingStudents = group.students.filter((student) =>
-          [student.username, student.email, String(student.id)].some((value) =>
+          [student.username, student.email, String(student.publicId)].some((value) =>
             value.toLowerCase().includes(query),
           ),
         );
@@ -314,7 +314,7 @@ export function TeacherStudentsView() {
   };
 
   const openEditStudentDialog = (student: TeacherStudentResponse) => {
-    setEditingStudent(student);
+    seteditingStudent(student);
     setEditStudentDraft({
       username: student.username,
       email: student.email,
@@ -327,7 +327,7 @@ export function TeacherStudentsView() {
   const closeEditStudentDialog = () => {
     if (editStudentLoading) return;
     setEditStudentOpen(false);
-    setEditingStudent(null);
+    seteditingStudent(null);
   };
 
   const submitEditStudent = async () => {
@@ -350,7 +350,7 @@ export function TeacherStudentsView() {
     setEditStudentFeedback(null);
     setEditStudentLoading(true);
     try {
-      await lessonService.updateTeacherStudent(editingStudent.id, {
+      await lessonService.updateTeacherStudent(editingStudent.publicId, {
         username: editStudentDraft.username.trim(),
         email: editStudentDraft.email.trim(),
         groupPublicId: editStudentDraft.groupPublicId,
@@ -424,27 +424,27 @@ export function TeacherStudentsView() {
   ) => {
     if (
       student.groupPublicId === targetGroupPublicId ||
-      movingStudentId !== null
+      movingstudentPublicId !== null
     ) {
       return;
     }
 
     const previousGroupPublicId = student.groupPublicId;
-    setMovingStudentId(student.id);
+    setMovingstudentPublicId(student.publicId);
     setPageFeedback({
       severity: "info",
       message: "Przenoszenie ucznia do nowej grupy...",
     });
     setStudents((current) =>
         current.map((item) =>
-        item.id === student.id
+        item.publicId === student.publicId
           ? { ...item, groupPublicId: targetGroupPublicId }
           : item,
       ),
     );
 
     try {
-      await lessonService.updateTeacherStudent(student.id, {
+      await lessonService.updateTeacherStudent(student.publicId, {
         username: student.username,
         email: student.email,
         groupPublicId: targetGroupPublicId,
@@ -460,7 +460,7 @@ export function TeacherStudentsView() {
     } catch (error) {
       setStudents((current) =>
         current.map((item) =>
-          item.id === student.id
+          item.publicId === student.publicId
             ? { ...item, groupPublicId: previousGroupPublicId }
             : item,
         ),
@@ -473,17 +473,17 @@ export function TeacherStudentsView() {
         ),
       });
     } finally {
-      setMovingStudentId(null);
-      setDraggingStudentId(null);
+      setMovingstudentPublicId(null);
+      setDraggingstudentPublicId(null);
       setDragOverGroupId(null);
     }
   };
 
   const handleDrop = (event: DragEvent, targetGroupPublicId: string) => {
     event.preventDefault();
-    const rawStudentId = event.dataTransfer.getData("text/plain");
-    const studentId = Number(rawStudentId);
-    const student = students.find((item) => item.id === studentId);
+    const rawstudentPublicId = event.dataTransfer.getData("text/plain");
+    const studentPublicId = Number(rawstudentPublicId);
+    const student = students.find((item) => item.publicId === studentPublicId);
     if (student) {
       moveStudentToGroup(student, targetGroupPublicId);
     }
@@ -785,21 +785,21 @@ export function TeacherStudentsView() {
                     ) : (
                       <Stack divider={<Divider flexItem />}>
                         {group.students.map((student) => {
-                          const isMoving = movingStudentId === student.id;
+                          const isMoving = movingstudentPublicId === student.publicId;
                           return (
                             <Box
-                              key={student.id}
-                              draggable={movingStudentId === null}
+                              key={student.publicId}
+                              draggable={movingstudentPublicId === null}
                               onDragStart={(event) => {
                                 event.dataTransfer.effectAllowed = "move";
                                 event.dataTransfer.setData(
                                   "text/plain",
-                                  String(student.id),
+                                  String(student.publicId),
                                 );
-                                setDraggingStudentId(student.id);
+                                setDraggingstudentPublicId(student.publicId);
                               }}
                               onDragEnd={() => {
-                                setDraggingStudentId(null);
+                                setDraggingstudentPublicId(null);
                                 setDragOverGroupId(null);
                               }}
                               sx={{
@@ -811,11 +811,11 @@ export function TeacherStudentsView() {
                                 py: 1.5,
                                 minHeight: 72,
                                 opacity:
-                                  draggingStudentId === student.id || isMoving
+                                  draggingstudentPublicId === student.publicId || isMoving
                                     ? 0.55
                                     : 1,
                                 cursor:
-                                  movingStudentId === null ? "grab" : "default",
+                                  movingstudentPublicId === null ? "grab" : "default",
                                 "&:hover": { bgcolor: "action.hover" },
                               }}
                             >

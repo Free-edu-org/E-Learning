@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class LessonStatsStudentResult {
 
-	private Integer userId;
+	private String userPublicId;
 	private String username;
 	private Instant completedAt;
 	private Integer score;

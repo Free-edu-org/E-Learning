@@ -90,15 +90,15 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
                 groupPublicIds: []
             });
             expect(response.status).toBe(201);
-            expect(response.data.publicId).toBeDefined();
+            expect(response.data.publicId).toBeTruthy();
             expect(response.data).not.toHaveProperty('id');
             expect(response.data.title).toBe(`CRUD Lesson ${uniqueId}`);
             expect(response.data.theme).toBe('Testing');
             expect(response.data.isActive).toBe(false); // default
-            expect(response.data.teacherId).toBeDefined();
+            expect(response.data.teacherPublicId).toBeDefined();
             expect(response.data.teacherName).toBeDefined();
-            expect(response.data.teacherAvatarUrl).toBeDefined();
-            expect(response.data.createdAt).toBeDefined();
+            expect(response.data).toHaveProperty("teacherAvatarUrl");
+            expect(response.data).toHaveProperty("createdAt");
             expect(Array.isArray(response.data.groups)).toBe(true);
             createdLessonPublicId = response.data.publicId;
             createdLessonPublicIds.push(response.data.publicId);
@@ -161,8 +161,8 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
             expect(Array.isArray(response.data)).toBe(true);
             expect(response.data.length).toBeGreaterThan(0);
             const lesson = response.data.find(l => l.publicId === createdLessonPublicId);
-            expect(lesson).toBeDefined();
-            expect(lesson).toHaveProperty('teacherAvatarUrl');
+            expect(lesson).toBeTruthy();
+            expect(lesson).toHaveProperty("teacherAvatarUrl");
             expect(lesson).not.toHaveProperty('id');
         });
 
@@ -215,7 +215,7 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
 
         it('should return 403 or 404 for non-existent lesson (PreAuthorize may reject)', async () => {
             setAuthToken(teacherToken);
-            const response = await apiClient.put('/lessons/9999999', {
+            const response = await apiClient.put('/lessons/non-existent-lesson', {
                 title: 'Ghost',
                 theme: 'Ghost'
             });
@@ -248,7 +248,7 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
             const response = await apiClient.get('/lessons?status=true');
             expect(response.status).toBe(200);
             const lesson = response.data.find(l => l.publicId === createdLessonPublicId);
-            expect(lesson).toBeDefined();
+            expect(lesson).toBeTruthy();
             expect(lesson.isActive).toBe(true);
             expect(lesson).not.toHaveProperty('id');
         });
@@ -263,7 +263,7 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
 
         it('should return 403 or 404 for non-existent lesson', async () => {
             setAuthToken(teacherToken);
-            const response = await apiClient.patch('/lessons/9999999/status', {
+            const response = await apiClient.patch('/lessons/non-existent-lesson/status', {
                 isActive: true
             });
             expect(response.status).toBe(403);
@@ -289,7 +289,7 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
 
         it('should return 403 or 404 for deleting non-existent lesson', async () => {
             setAuthToken(teacherToken);
-            const response = await apiClient.delete('/lessons/9999999');
+            const response = await apiClient.delete('/lessons/non-existent-lesson');
             expect(response.status).toBe(403);
         });
 

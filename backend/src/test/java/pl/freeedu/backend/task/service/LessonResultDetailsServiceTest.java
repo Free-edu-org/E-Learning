@@ -58,6 +58,8 @@ class LessonResultDetailsServiceTest {
 	private LessonRepository lessonRepository;
 	@Mock
 	private UserRepository userRepository;
+	@Mock
+	private TaskPublicIdLookupService taskPublicIdLookupService;
 
 	private LessonResultDetailsService lessonResultDetailsService;
 
@@ -65,7 +67,7 @@ class LessonResultDetailsServiceTest {
 	void setUp() {
 		lessonResultDetailsService = new LessonResultDetailsService(chooseTaskRepository, writeTaskRepository,
 				scatterTaskRepository, speakTaskRepository, userAnswerRepository, userLessonRepository,
-				lessonRepository, userRepository);
+				lessonRepository, userRepository, taskPublicIdLookupService);
 	}
 
 	@Test
@@ -83,17 +85,22 @@ class LessonResultDetailsServiceTest {
 				.thenReturn(Optional.of(UserLesson.builder().userId(userId).lessonId(lessonId)
 						.status(UserLessonStatus.COMPLETED).score(3).maxScore(4).finishedAt(finishedAt).build()));
 
-		when(chooseTaskRepository.findByLessonId(lessonId))
-				.thenReturn(List.of(ChooseTask.builder().id(1).lessonId(lessonId).section("A").task("Choose task")
+		when(chooseTaskRepository.findByLessonId(lessonId)).thenReturn(
+				List.of(ChooseTask.builder().id(1).publicId("tp1").lessonId(lessonId).section("A").task("Choose task")
 						.hint("Hint choose").possibleAnswers("cat|dog|bird").correctAnswer(1).build()));
-		when(writeTaskRepository.findByLessonId(lessonId)).thenReturn(List.of(WriteTask.builder().id(2)
+		when(writeTaskRepository.findByLessonId(lessonId)).thenReturn(List.of(WriteTask.builder().id(2).publicId("tp2")
 				.lessonId(lessonId).section("A").task("Write task").hint("Hint write").correctAnswer("hello").build()));
-		when(scatterTaskRepository.findByLessonId(lessonId))
-				.thenReturn(List.of(ScatterTask.builder().id(3).lessonId(lessonId).section("B").task("Scatter task")
+		when(scatterTaskRepository.findByLessonId(lessonId)).thenReturn(
+				List.of(ScatterTask.builder().id(3).publicId("tp3").lessonId(lessonId).section("B").task("Scatter task")
 						.hint("Hint scatter").words("I|am|here").correctAnswer("I am here").build()));
 		when(speakTaskRepository.findByLessonId(lessonId))
-				.thenReturn(List.of(SpeakTask.builder().id(4).lessonId(lessonId).section("B").task("Speak task")
-						.hint("Hint speak").expectedText("good morning").build()));
+				.thenReturn(List.of(SpeakTask.builder().id(4).publicId("tp4").lessonId(lessonId).section("B")
+						.task("Speak task").hint("Hint speak").expectedText("good morning").build()));
+
+		when(taskPublicIdLookupService.getPublicId(1, "choose_tasks")).thenReturn("tp1");
+		when(taskPublicIdLookupService.getPublicId(2, "write_tasks")).thenReturn("tp2");
+		when(taskPublicIdLookupService.getPublicId(3, "scatter_tasks")).thenReturn("tp3");
+		when(taskPublicIdLookupService.getPublicId(4, "speak_tasks")).thenReturn("tp4");
 
 		when(userAnswerRepository.findByUserIdAndLessonId(userId, lessonId)).thenReturn(List.of(
 				UserAnswer.builder().lessonId(lessonId).userId(userId).taskId(1).taskType("choose_tasks").answer("0")
@@ -115,8 +122,10 @@ class LessonResultDetailsServiceTest {
 			assertEquals("ania", response.getUsername());
 			assertEquals(75.0, response.getResultPercent());
 			assertEquals(4, response.getTasks().size());
+			assertEquals("tp1", response.getTasks().get(0).getTaskPublicId());
 			assertEquals("cat", response.getTasks().get(0).getUserAnswer());
 			assertEquals("dog", response.getTasks().get(0).getCorrectAnswer());
+			assertEquals("tp3", response.getTasks().get(2).getTaskPublicId());
 			assertEquals("I|am|here", response.getTasks().get(2).getWords());
 			assertEquals("good mourning", response.getTasks().get(3).getUserAnswer());
 		}).verifyComplete();

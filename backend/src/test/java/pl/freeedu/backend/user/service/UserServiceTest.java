@@ -95,15 +95,15 @@ class UserServiceTest {
 	@Test
 	void shouldGetUserById() {
 		// given
-		User user = User.builder().id(1).build();
+		User user = User.builder().publicId("user-pub-1").build();
 		when(userRepository.findById(1)).thenReturn(Optional.of(user));
-		when(userMapper.toUserResponse(user)).thenReturn(UserResponse.builder().id(1).build());
+		when(userMapper.toUserResponse(user)).thenReturn(UserResponse.builder().publicId("user-pub-1").build());
 
 		// when
 		Mono<UserResponse> result = userService.getUser(1);
 
 		// then
-		StepVerifier.create(result).assertNext(r -> assertEquals(1, r.getId())).verifyComplete();
+		StepVerifier.create(result).assertNext(r -> assertEquals("user-pub-1", r.getPublicId())).verifyComplete();
 	}
 
 	@Test
@@ -125,7 +125,7 @@ class UserServiceTest {
 	void shouldUpdateUserSucceed() {
 		// given
 		UpdateUserRequest req = UpdateUserRequest.builder().email("new@e.com").username("new").build();
-		User user = User.builder().id(1).email("old@e.com").username("old").build();
+		User user = User.builder().publicId("user-pub-1").email("old@e.com").username("old").build();
 
 		when(userRepository.findById(1)).thenReturn(Optional.of(user));
 		when(userRepository.save(any())).thenReturn(user);
@@ -145,7 +145,7 @@ class UserServiceTest {
 	void shouldChangePasswordSucceed() {
 		// given
 		ChangePasswordRequest req = ChangePasswordRequest.builder().oldPassword("o").newPassword("n").build();
-		User user = User.builder().id(1).password("ho").tokenVersion(2).build();
+		User user = User.builder().publicId("user-pub-1").password("ho").tokenVersion(2).build();
 
 		when(userRepository.findById(1)).thenReturn(Optional.of(user));
 		when(passwordEncoder.matches("o", "ho")).thenReturn(true);
@@ -165,7 +165,7 @@ class UserServiceTest {
 	void shouldThrowWhenOldPasswordIncorrectInChangePassword() {
 		// given
 		ChangePasswordRequest req = ChangePasswordRequest.builder().oldPassword("o").build();
-		User user = User.builder().id(1).password("ho").build();
+		User user = User.builder().publicId("user-pub-1").password("ho").build();
 
 		when(userRepository.findById(1)).thenReturn(Optional.of(user));
 		when(passwordEncoder.matches("o", "ho")).thenReturn(false);
@@ -182,7 +182,7 @@ class UserServiceTest {
 	@Test
 	void shouldDeleteUser() {
 		// given
-		User user = User.builder().id(1).build();
+		User user = User.builder().publicId("user-pub-1").build();
 		when(userRepository.findById(1)).thenReturn(Optional.of(user));
 
 		// when

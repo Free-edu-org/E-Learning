@@ -10,6 +10,7 @@ import pl.freeedu.backend.user.model.Role;
 import pl.freeedu.backend.lesson.repository.LessonRepository;
 import pl.freeedu.backend.usergroup.repository.UserGroupRepository;
 import pl.freeedu.backend.usergroup.repository.UserInGroupRepository;
+import pl.freeedu.backend.user.repository.UserRepository;
 import reactor.core.publisher.Mono;
 import org.springframework.context.annotation.Lazy;
 import lombok.extern.slf4j.Slf4j;
@@ -21,12 +22,14 @@ public class SecurityService {
 	private final UserGroupRepository userGroupRepository;
 	private final LessonRepository lessonRepository;
 	private final UserInGroupRepository userInGroupRepository;
+	private final UserRepository userRepository;
 
 	public SecurityService(@Lazy UserGroupRepository userGroupRepository, @Lazy LessonRepository lessonRepository,
-			@Lazy UserInGroupRepository userInGroupRepository) {
+			@Lazy UserInGroupRepository userInGroupRepository, @Lazy UserRepository userRepository) {
 		this.userGroupRepository = userGroupRepository;
 		this.lessonRepository = lessonRepository;
 		this.userInGroupRepository = userInGroupRepository;
+		this.userRepository = userRepository;
 	}
 
 	public Mono<Integer> getCurrentUserId() {
@@ -47,6 +50,23 @@ public class SecurityService {
 		if (!result) {
 			log.debug("Ownership check failed: Principal ID: {} is not the owner of target user ID: {}",
 					userDetails.getId(), targetUserId);
+		}
+		return result;
+	}
+
+	public boolean isOwnerByPublicId(Authentication authentication, String publicId) {
+		if (authentication == null || !authentication.isAuthenticated()) {
+			return false;
+		}
+		Object principal = authentication.getPrincipal();
+		if (!(principal instanceof CustomUserDetails userDetails)) {
+			return false;
+		}
+		boolean result = userRepository.findByPublicId(publicId).map(user -> userDetails.getId().equals(user.getId()))
+				.orElse(false);
+		if (!result) {
+			log.debug("Ownership check failed: Principal ID: {} is not the owner of target user public ID: {}",
+					userDetails.getId(), publicId);
 		}
 		return result;
 	}
@@ -106,6 +126,23 @@ public class SecurityService {
 		}
 
 		return userInGroupRepository.isStudentInTeachersGroup(studentId, userDetails.getId());
+	}
+
+	public boolean isTeacherOfStudentByPublicId(Authentication authentication, String studentPublicId) {
+		if (authentication == null || !authentication.isAuthenticated()) {
+			return false;
+		}
+		Object principal = authentication.getPrincipal();
+		if (!(principal instanceof CustomUserDetails userDetails)) {
+			return false;
+		}
+		if (userDetails.getRole() != Role.TEACHER) {
+			return false;
+		}
+
+		return userRepository.findByPublicId(studentPublicId)
+				.map(student -> userInGroupRepository.isStudentInTeachersGroup(student.getId(), userDetails.getId()))
+				.orElse(false);
 	}
 
 	public boolean hasStudentAccessToLesson(Authentication authentication, String lessonPublicId) {

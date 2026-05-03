@@ -23,6 +23,7 @@ import pl.freeedu.backend.teacher.dto.TeacherStatsResponse;
 import pl.freeedu.backend.teacher.dto.TeacherStudentResponse;
 import pl.freeedu.backend.task.dto.LessonResultDetailsResponse;
 import pl.freeedu.backend.teacher.service.TeacherService;
+import pl.freeedu.backend.user.service.UserPublicIdLookupService;
 import pl.freeedu.backend.usergroup.dto.UserGroupResponse;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -34,11 +35,14 @@ public class TeacherDashboardController {
 
 	private final TeacherService teacherService;
 	private final LessonPublicIdLookupService lessonPublicIdLookupService;
+	private final UserPublicIdLookupService userPublicIdLookupService;
 
 	public TeacherDashboardController(TeacherService teacherService,
-			LessonPublicIdLookupService lessonPublicIdLookupService) {
+			LessonPublicIdLookupService lessonPublicIdLookupService,
+			UserPublicIdLookupService userPublicIdLookupService) {
 		this.teacherService = teacherService;
 		this.lessonPublicIdLookupService = lessonPublicIdLookupService;
+		this.userPublicIdLookupService = userPublicIdLookupService;
 	}
 
 	@Operation(summary = "Get private dashboard statistics")
@@ -79,13 +83,13 @@ public class TeacherDashboardController {
 
 	@Operation(summary = "Get detailed lesson result for a student")
 	@ApiResponse(responseCode = "200", description = "Detailed lesson result scoped to current teacher and selected student")
-	@GetMapping("/lessons/{lessonPublicId}/students/{userId}/result")
+	@GetMapping("/lessons/{lessonPublicId}/students/{studentPublicId}/result")
 	@PreAuthorize("hasRole('TEACHER')")
 	@ResponseStatus(HttpStatus.OK)
 	public Mono<LessonResultDetailsResponse> getLessonResultDetails(@PathVariable String lessonPublicId,
-			@PathVariable Integer userId) {
-		return teacherService.getLessonResultDetails(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId),
-				userId);
+			@PathVariable String studentPublicId) {
+		return userPublicIdLookupService.getInternalId(studentPublicId).flatMap(studentId -> teacherService
+				.getLessonResultDetails(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), studentId));
 	}
 
 	@Operation(summary = "Get teacher's students")
@@ -116,11 +120,13 @@ public class TeacherDashboardController {
 			@ApiResponse(responseCode = "403", description = "Forbidden - requires TEACHER role and ownership"),
 			@ApiResponse(responseCode = "404", description = "Group or student not found"),
 			@ApiResponse(responseCode = "409", description = "Conflict - EMAIL_ALREADY_TAKEN or USERNAME_ALREADY_TAKEN")})
-	@PutMapping("/students/{id}")
+	@PutMapping("/students/{studentPublicId}")
 	@PreAuthorize("hasRole('TEACHER')")
 	@ResponseStatus(HttpStatus.OK)
-	public Mono<TeacherStudentResponse> updateStudent(@org.springframework.web.bind.annotation.PathVariable Integer id,
+	public Mono<TeacherStudentResponse> updateStudent(
+			@org.springframework.web.bind.annotation.PathVariable String studentPublicId,
 			@Valid @RequestBody Mono<pl.freeedu.backend.teacher.dto.TeacherUpdateStudentRequest> request) {
-		return teacherService.updateStudent(id, request);
+		return userPublicIdLookupService.getInternalId(studentPublicId)
+				.flatMap(studentId -> teacherService.updateStudent(studentId, request));
 	}
 }

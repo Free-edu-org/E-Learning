@@ -38,18 +38,18 @@ public class TeacherStatsRepository {
 
 	@SuppressWarnings("unchecked")
 	public List<LessonStatsStudentResult> getLessonStudentResults(Integer lessonId, Integer teacherId) {
-		List<Object[]> rows = entityManager.createNativeQuery("SELECT u.id, u.username, MAX(ua.created_at), "
+		List<Object[]> rows = entityManager.createNativeQuery("SELECT u.public_id, u.username, MAX(ua.created_at), "
 				+ "SUM(CASE WHEN ua.is_correct = TRUE THEN 1 ELSE 0 END), " + "COUNT(*), "
 				+ "(SUM(CASE WHEN ua.is_correct = TRUE THEN 1.0 ELSE 0.0 END) * 100.0 / COUNT(*)), u.avatar_url "
 				+ "FROM user_answers ua " + "INNER JOIN users u ON ua.user_id = u.id "
 				+ "INNER JOIN lessons l ON ua.lesson_id = l.id "
 				+ "WHERE ua.lesson_id = :lessonId AND l.teacher_id = :teacherId "
-				+ "GROUP BY u.id, u.username, u.avatar_url "
+				+ "GROUP BY u.public_id, u.username, u.avatar_url "
 				+ "ORDER BY (SUM(CASE WHEN ua.is_correct = TRUE THEN 1.0 ELSE 0.0 END) * 100.0 / COUNT(*)) DESC")
 				.setParameter("lessonId", lessonId).setParameter("teacherId", teacherId).getResultList();
 
 		return rows.stream().map(row -> LessonStatsStudentResult
-				.builder().userId(((Number) row[0]).intValue()).username(
+				.builder().userPublicId((String) row[0]).username(
 						(String) row[1])
 				.completedAt(row[2] != null
 						? (row[2] instanceof java.sql.Timestamp ts

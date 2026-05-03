@@ -6,11 +6,14 @@ import org.springframework.transaction.annotation.Transactional;
 import pl.freeedu.backend.task.model.WriteTask;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface WriteTaskRepository extends JpaRepository<WriteTask, Integer> {
 
 	List<WriteTask> findByLessonId(Integer lessonId);
+
+	Optional<WriteTask> findByPublicId(String publicId);
 
 	@Transactional
 	void deleteByLessonId(Integer lessonId);

@@ -55,7 +55,7 @@ public class UserGroupService {
 						throw new UserGroupException(UserGroupErrorCode.GROUP_NAME_ALREADY_EXISTS);
 					}
 					UserGroup userGroup = userGroupMapper.toUserGroup(request);
-					userGroup.setTeacherId(resolveTeacherId(currentUser, request.getTeacherId()));
+					userGroup.setTeacherId(resolveTeacherId(currentUser, request.getTeacherPublicId()));
 					try {
 						UserGroup saved = userGroupRepository.save(userGroup);
 						log.info("Group created successfully. Group ID: {}, Teacher ID: {}", saved.getId(),
@@ -122,7 +122,8 @@ public class UserGroupService {
 					}
 					group.setName(request.getName());
 					group.setDescription(request.getDescription());
-					group.setTeacherId(resolveTeacherId(currentUser, request.getTeacherId(), group.getTeacherId()));
+					group.setTeacherId(
+							resolveTeacherId(currentUser, request.getTeacherPublicId(), group.getTeacherId()));
 					try {
 						UserGroup saved = userGroupRepository.save(group);
 						log.info("Group ID: {} updated successfully", id);
@@ -206,19 +207,19 @@ public class UserGroupService {
 		return response;
 	}
 
-	private Integer resolveTeacherId(CustomUserDetails currentUser, Integer requestedTeacherId) {
-		return resolveTeacherId(currentUser, requestedTeacherId, null);
+	private Integer resolveTeacherId(CustomUserDetails currentUser, String requestedTeacherPublicId) {
+		return resolveTeacherId(currentUser, requestedTeacherPublicId, null);
 	}
 
-	private Integer resolveTeacherId(CustomUserDetails currentUser, Integer requestedTeacherId,
+	private Integer resolveTeacherId(CustomUserDetails currentUser, String requestedTeacherPublicId,
 			Integer fallbackTeacherId) {
 		if (currentUser.getRole() == Role.TEACHER) {
 			return currentUser.getId();
 		}
-		if (requestedTeacherId == null) {
+		if (requestedTeacherPublicId == null || requestedTeacherPublicId.isBlank()) {
 			return fallbackTeacherId;
 		}
-		User teacher = userRepository.findById(requestedTeacherId)
+		User teacher = userRepository.findByPublicId(requestedTeacherPublicId)
 				.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 		if (teacher.getRole() != Role.TEACHER) {
 			throw new UserException(UserErrorCode.INVALID_TEACHER_ASSIGNMENT);

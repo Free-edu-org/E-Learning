@@ -40,12 +40,13 @@ public class LessonResultDetailsService {
 	private final UserLessonRepository userLessonRepository;
 	private final LessonRepository lessonRepository;
 	private final UserRepository userRepository;
+	private final TaskPublicIdLookupService taskPublicIdLookupService;
 
 	public LessonResultDetailsService(ChooseTaskRepository chooseTaskRepository,
 			WriteTaskRepository writeTaskRepository, ScatterTaskRepository scatterTaskRepository,
 			SpeakTaskRepository speakTaskRepository, UserAnswerRepository userAnswerRepository,
-			UserLessonRepository userLessonRepository, LessonRepository lessonRepository,
-			UserRepository userRepository) {
+			UserLessonRepository userLessonRepository, LessonRepository lessonRepository, UserRepository userRepository,
+			TaskPublicIdLookupService taskPublicIdLookupService) {
 		this.chooseTaskRepository = chooseTaskRepository;
 		this.writeTaskRepository = writeTaskRepository;
 		this.scatterTaskRepository = scatterTaskRepository;
@@ -54,6 +55,7 @@ public class LessonResultDetailsService {
 		this.userLessonRepository = userLessonRepository;
 		this.lessonRepository = lessonRepository;
 		this.userRepository = userRepository;
+		this.taskPublicIdLookupService = taskPublicIdLookupService;
 	}
 
 	public Mono<LessonResultDetailsResponse> getCompletedLessonResult(Integer lessonId, Integer userId) {
@@ -78,12 +80,13 @@ public class LessonResultDetailsService {
 					.stream().collect(Collectors.toMap(answer -> answerKey(answer.getTaskType(), answer.getTaskId()),
 							Function.identity(), (left, right) -> right));
 
-			List<LessonResultTaskDetailDto> taskDetails = buildTaskDefinitions(lessonId).stream()
-					.map(task -> task.toDto(answersByKey.get(answerKey(task.dbTaskType(), task.taskId())))).toList();
+			List<LessonResultTaskDetailDto> taskDetails = buildTaskDefinitions(lessonId).stream().map(task -> task
+					.toDto(answersByKey.get(answerKey(task.dbTaskType(), task.taskId())), taskPublicIdLookupService))
+					.toList();
 
 			log.info("Result details fetched successfully for user ID: {} and lesson ID: {}", userId, lessonId);
 			return LessonResultDetailsResponse.builder().lessonPublicId(lesson.getPublicId())
-					.lessonTitle(lesson.getTitle()).userId(user.getId()).username(user.getUsername())
+					.lessonTitle(lesson.getTitle()).userPublicId(user.getPublicId()).username(user.getUsername())
 					.score(userLesson.getScore()).maxScore(userLesson.getMaxScore())
 					.resultPercent(toPercent(userLesson.getScore(), userLesson.getMaxScore()))
 					.completedAt(userLesson.getFinishedAt()).tasks(taskDetails).build();
@@ -151,7 +154,7 @@ public class LessonResultDetailsService {
 					null, 3);
 		}
 
-		private LessonResultTaskDetailDto toDto(UserAnswer answer) {
+		private LessonResultTaskDetailDto toDto(UserAnswer answer, TaskPublicIdLookupService lookupService) {
 			String mappedUserAnswer = answer != null ? answer.getAnswer() : null;
 			String mappedCorrectAnswer = correctAnswer;
 
@@ -160,7 +163,9 @@ public class LessonResultDetailsService {
 				mappedCorrectAnswer = mapChooseAnswer(correctAnswer, possibleAnswers);
 			}
 
-			return LessonResultTaskDetailDto.builder().taskId(taskId).taskType(taskType).section(section)
+			String taskPublicId = lookupService.getPublicId(taskId, dbTaskType);
+
+			return LessonResultTaskDetailDto.builder().taskPublicId(taskPublicId).taskType(taskType).section(section)
 					.taskText(taskText).hint(hint).userAnswer(mappedUserAnswer).correctAnswer(mappedCorrectAnswer)
 					.isCorrect(answer != null ? Boolean.TRUE.equals(answer.getIsCorrect()) : Boolean.FALSE)
 					.possibleAnswers(possibleAnswers).words(words).build();

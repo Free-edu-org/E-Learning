@@ -9,13 +9,13 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonPublicId}/attachments)', ()
     let adminToken;
     let teacherToken;
     let studentToken;
-    let studentId;
+    let studentPublicId;
     let groupPublicId;
     let lessonPublicId;
-    let attachmentId;
-    let chooseTaskId;
+    let attachmentPublicId;
+    let chooseTaskPublicId;
     let tempLessonPublicId;
-    let tempAttachmentId;
+    let tempAttachmentPublicId;
     const createdAttachmentIds = new Set();
 
     // Minimal valid PDF (1-page blank PDF, 200+ bytes)
@@ -69,7 +69,7 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonPublicId}/attachments)', ()
             section: 'Files'
         });
         expect(res.status).toBe(201);
-        chooseTaskId = res.data.id;
+        chooseTaskPublicId = res.data.publicId;
 
         res = await apiClient.patch(`/lessons/${lessonPublicId}/status`, { isActive: true });
         expect(res.status).toBe(204);
@@ -83,7 +83,7 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonPublicId}/attachments)', ()
             groupPublicId,
         });
         expect(res.status).toBe(201);
-        studentId = res.data.id;
+        studentPublicId = res.data.publicId;
 
         res = await apiClient.post('/auth/login', {
             identifier: `attach_student_${uniqueId}`,
@@ -94,8 +94,8 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonPublicId}/attachments)', ()
 
     afterAll(async () => {
         setAuthToken(teacherToken);
-        if (tempLessonPublicId && tempAttachmentId) {
-            const response = await apiClient.delete(`/lessons/${tempLessonPublicId}/attachments/${tempAttachmentId}`);
+        if (tempLessonPublicId && tempAttachmentPublicId) {
+            const response = await apiClient.delete(`/lessons/${tempLessonPublicId}/attachments/${tempAttachmentPublicId}`);
             expect([204, 404]).toContain(response.status);
         }
         if (tempLessonPublicId) {
@@ -103,12 +103,12 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonPublicId}/attachments)', ()
             expect([204, 404]).toContain(response.status);
         }
 
-        for (const createdAttachmentId of createdAttachmentIds) {
-            const response = await apiClient.delete(`/lessons/${lessonPublicId}/attachments/${createdAttachmentId}`);
+        for (const createdAttachmentPublicId of createdAttachmentIds) {
+            const response = await apiClient.delete(`/lessons/${lessonPublicId}/attachments/${createdAttachmentPublicId}`);
             expect([204, 404]).toContain(response.status);
         }
-        if (chooseTaskId) {
-            const response = await apiClient.delete(`/lessons/${lessonPublicId}/tasks/choose/${chooseTaskId}`);
+        if (chooseTaskPublicId) {
+            const response = await apiClient.delete(`/lessons/${lessonPublicId}/tasks/choose/${chooseTaskPublicId}`);
             expect([204, 404]).toContain(response.status);
         }
         if (lessonPublicId) {
@@ -117,8 +117,8 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonPublicId}/attachments)', ()
         }
 
         setAuthToken(adminToken);
-        if (studentId) {
-            const response = await apiClient.delete(`/users/${studentId}`);
+        if (studentPublicId) {
+            const response = await apiClient.delete(`/users/${studentPublicId}`);
             expect([204, 404]).toContain(response.status);
         }
         if (groupPublicId) {
@@ -142,13 +142,13 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonPublicId}/attachments)', ()
             );
             expect(res.status).toBe(201);
             expect(res.data).toMatchObject({
-                id: expect.any(Number),
+                publicId: expect.any(String),
                 originalFileName: 'notes.pdf',
                 contentType: 'application/pdf',
                 fileSize: expect.any(Number),
             });
-            attachmentId = res.data.id;
-            createdAttachmentIds.add(attachmentId);
+            attachmentPublicId = res.data.publicId;
+            createdAttachmentIds.add(attachmentPublicId);
         });
 
         it('LessonResponse should include attachment metadata', async () => {
@@ -160,7 +160,7 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonPublicId}/attachments)', ()
             expect(lesson).not.toHaveProperty('id');
             expect(Array.isArray(lesson.attachments)).toBe(true);
             expect(lesson.attachments.length).toBeGreaterThan(0);
-            const att = lesson.attachments.find((a) => a.id === attachmentId);
+            const att = lesson.attachments.find((a) => a.publicId === attachmentPublicId);
             expect(att).toBeDefined();
             expect(att.originalFileName).toBe('notes.pdf');
         });
@@ -178,9 +178,6 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonPublicId}/attachments)', ()
         });
 
         it('should return 403 for a different TEACHER (not owner)', async () => {
-            // Login as admin (acting as different teacher is complex; use a role that fails ownership)
-            // We use a second-teacher scenario via admin acting on another lesson
-            // Instead, verify that unauthenticated upload fails with 401
             setAuthToken(null);
             const form = makePdfForm(VALID_PDF, 'notes.pdf');
             const res = await apiClient.post(
@@ -213,9 +210,9 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonPublicId}/attachments)', ()
             expect(res.status).toBe(201);
             expect(res.data.originalFileName).toBe('notes_v2.pdf');
             // New attachment gets a new ID
-            expect(res.data.id).not.toBe(attachmentId);
-            attachmentId = res.data.id;
-            createdAttachmentIds.add(attachmentId);
+            expect(res.data.publicId).not.toBe(attachmentPublicId);
+            attachmentPublicId = res.data.publicId;
+            createdAttachmentIds.add(attachmentPublicId);
         });
     });
 
@@ -226,7 +223,7 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonPublicId}/attachments)', ()
         it('should allow TEACHER owner to download (200)', async () => {
             setAuthToken(teacherToken);
             const res = await apiClient.get(
-                `/lessons/${lessonPublicId}/attachments/${attachmentId}`,
+                `/lessons/${lessonPublicId}/attachments/${attachmentPublicId}`,
                 { responseType: 'arraybuffer' }
             );
             expect(res.status).toBe(200);
@@ -236,7 +233,7 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonPublicId}/attachments)', ()
         it('should allow ADMIN to download (200)', async () => {
             setAuthToken(adminToken);
             const res = await apiClient.get(
-                `/lessons/${lessonPublicId}/attachments/${attachmentId}`,
+                `/lessons/${lessonPublicId}/attachments/${attachmentPublicId}`,
                 { responseType: 'arraybuffer' }
             );
             expect(res.status).toBe(200);
@@ -245,7 +242,7 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonPublicId}/attachments)', ()
         it('should allow STUDENT with lesson access to download (200)', async () => {
             setAuthToken(studentToken);
             const res = await apiClient.get(
-                `/lessons/${lessonPublicId}/attachments/${attachmentId}`,
+                `/lessons/${lessonPublicId}/attachments/${attachmentPublicId}`,
                 { responseType: 'arraybuffer' }
             );
             expect(res.status).toBe(200);
@@ -254,20 +251,20 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonPublicId}/attachments)', ()
         it('should return 401 without auth', async () => {
             setAuthToken(null);
             const res = await apiClient.get(
-                `/lessons/${lessonPublicId}/attachments/${attachmentId}`
+                `/lessons/${lessonPublicId}/attachments/${attachmentPublicId}`
             );
             expect(res.status).toBe(401);
         });
 
         it('should return 404 for non-existent attachment', async () => {
             setAuthToken(teacherToken);
-            const res = await apiClient.get(`/lessons/${lessonPublicId}/attachments/999999`);
+            const res = await apiClient.get(`/lessons/${lessonPublicId}/attachments/non-existent-attachment`);
             expect(res.status).toBe(404);
         });
 
         it('should return 403 for a lesson outside teacher ownership scope', async () => {
             setAuthToken(teacherToken);
-            const res = await apiClient.get(`/lessons/999999/attachments/${attachmentId}`);
+            const res = await apiClient.get(`/lessons/non-existent-lesson/attachments/${attachmentPublicId}`);
             expect(res.status).toBe(403);
         });
     });
@@ -279,7 +276,7 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonPublicId}/attachments)', ()
         it('should return 401 without auth', async () => {
             setAuthToken(null);
             const res = await apiClient.delete(
-                `/lessons/${lessonPublicId}/attachments/${attachmentId}`
+                `/lessons/${lessonPublicId}/attachments/${attachmentPublicId}`
             );
             expect(res.status).toBe(401);
         });
@@ -287,7 +284,7 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonPublicId}/attachments)', ()
         it('should return 403 for STUDENT (no delete permission)', async () => {
             setAuthToken(studentToken);
             const res = await apiClient.delete(
-                `/lessons/${lessonPublicId}/attachments/${attachmentId}`
+                `/lessons/${lessonPublicId}/attachments/${attachmentPublicId}`
             );
             expect(res.status).toBe(403);
         });
@@ -295,10 +292,10 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonPublicId}/attachments)', ()
         it('should allow TEACHER owner to delete attachment (204)', async () => {
             setAuthToken(teacherToken);
             const res = await apiClient.delete(
-                `/lessons/${lessonPublicId}/attachments/${attachmentId}`
+                `/lessons/${lessonPublicId}/attachments/${attachmentPublicId}`
             );
             expect(res.status).toBe(204);
-            createdAttachmentIds.delete(attachmentId);
+            createdAttachmentIds.delete(attachmentPublicId);
         });
 
         it('LessonResponse attachments should be empty after delete', async () => {
@@ -308,14 +305,14 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonPublicId}/attachments)', ()
             expect(lesson).toBeDefined();
             expect(lesson).not.toHaveProperty('id');
             expect(Array.isArray(lesson.attachments)).toBe(true);
-            const stillPresent = lesson.attachments.find((a) => a.id === attachmentId);
+            const stillPresent = lesson.attachments.find((a) => a.publicId === attachmentPublicId);
             expect(stillPresent).toBeUndefined();
         });
 
         it('should return 404 after attachment is deleted', async () => {
             setAuthToken(teacherToken);
             const res = await apiClient.delete(
-                `/lessons/${lessonPublicId}/attachments/${attachmentId}`
+                `/lessons/${lessonPublicId}/attachments/${attachmentPublicId}`
             );
             expect(res.status).toBe(404);
         });
@@ -343,16 +340,16 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonPublicId}/attachments)', ()
                 { headers: form.getHeaders() }
             );
             expect(res.status).toBe(201);
-            tempAttachmentId = res.data.id;
+            tempAttachmentPublicId = res.data.publicId;
         });
 
         it('should allow deleting the lesson after removing its attachment (204)', async () => {
             setAuthToken(teacherToken);
             let res = await apiClient.delete(
-                `/lessons/${tempLessonPublicId}/attachments/${tempAttachmentId}`
+                `/lessons/${tempLessonPublicId}/attachments/${tempAttachmentPublicId}`
             );
             expect(res.status).toBe(204);
-            tempAttachmentId = null;
+            tempAttachmentPublicId = null;
 
             res = await apiClient.delete(`/lessons/${tempLessonPublicId}`);
             expect(res.status).toBe(204);

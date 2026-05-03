@@ -1,4 +1,4 @@
-ï»¿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Alert,
@@ -152,8 +152,8 @@ export function LessonStatsView() {
     severity: "success" | "error";
     message: string;
   } | null>(null);
-  const [resettingUserIds, setResettingUserIds] = useState<number[]>([]);
-  const [resetConfirmStudent, setResetConfirmStudent] =
+  const [resettingUserPublicIds, setresettingUserPublicIds] = useState<string[]>([]);
+  const [resetConfirmStudent, setresetConfirmStudent] =
     useState<LessonStatsStudentResult | null>(null);
 
   useEffect(() => {
@@ -176,7 +176,7 @@ export function LessonStatsView() {
         const lesson = lessons.find((l) => l.publicId === lessonPublicId);
         if (lesson) setLessonTitle(lesson.title);
       })
-      .catch(() => setError("Nie udaÅ‚o siÄ™ wczytaÄ‡ wynikÃ³w lekcji."))
+      .catch(() => setError("Nie uda³o siê wczytaæ wyników lekcji."))
       .finally(() => setLoading(false));
   }, [lessonPublicId]);
 
@@ -186,12 +186,12 @@ export function LessonStatsView() {
     if (!lessonPublicId) return;
 
     setActionFeedback(null);
-    setResettingUserIds((prev) => [...prev, student.userId]);
+    setresettingUserPublicIds((prev) => [...prev, student.userPublicId]);
 
     try {
       await lessonService.resetStudentLessonProgress(
         lessonPublicId,
-        student.userId,
+        student.userPublicId,
       );
       const refreshedStats =
         await lessonService.getLessonStats(lessonPublicId);
@@ -203,11 +203,11 @@ export function LessonStatsView() {
     } catch {
       setActionFeedback({
         severity: "error",
-        message: `Nie udaÅ‚o siÄ™ zresetowaÄ‡ wyniku ucznia ${student.username}.`,
+        message: `Nie uda³o siê zresetowaæ wyniku ucznia ${student.username}.`,
       });
     } finally {
-      setResettingUserIds((prev) => prev.filter((id) => id !== student.userId));
-      setResetConfirmStudent(null);
+      setresettingUserPublicIds((prev) => prev.filter((id) => id !== student.userPublicId));
+      setresetConfirmStudent(null);
     }
   };
 
@@ -264,7 +264,7 @@ export function LessonStatsView() {
             onClick={() => navigate("/teacher")}
             sx={{ textTransform: "none", fontWeight: 600, mt: 0.25 }}
           >
-            PowrÃ³t
+            Powrót
           </Button>
           <Box sx={{ minWidth: 0 }}>
             <Typography
@@ -318,7 +318,7 @@ export function LessonStatsView() {
               }}
             >
               <StatCard
-                label="Åšredni wynik"
+                label="Œredni wynik"
                 value={formatPercent(stats.avgScore)}
                 icon={
                   <TrendingUpIcon
@@ -327,7 +327,7 @@ export function LessonStatsView() {
                 }
               />
               <StatCard
-                label="Uczniowie, ktÃ³rzy ukoÅ„czyli"
+                label="Uczniowie, którzy ukoñczyli"
                 value={String(stats.studentsCompleted)}
                 icon={
                   <Box
@@ -368,7 +368,7 @@ export function LessonStatsView() {
                   }}
                 >
                   <Typography variant="subtitle1" fontWeight={700} mb={0.5}>
-                    Wyniki uczniÃ³w
+                    Wyniki uczniów
                   </Typography>
                   <Typography
                     variant="caption"
@@ -376,7 +376,7 @@ export function LessonStatsView() {
                     display="block"
                     mb={2}
                   >
-                    PorÃ³wnanie wynikÃ³w procentowych
+                    Porównanie wyników procentowych
                   </Typography>
                   <ResponsiveContainer width="100%" height={220}>
                     <BarChart data={studentChartData} margin={{ bottom: 40 }}>
@@ -409,7 +409,7 @@ export function LessonStatsView() {
                   }}
                 >
                   <Typography variant="subtitle1" fontWeight={700} mb={0.5}>
-                    RozkÅ‚ad wynikÃ³w
+                    Rozk³ad wyników
                   </Typography>
                   <Typography
                     variant="caption"
@@ -417,14 +417,14 @@ export function LessonStatsView() {
                     display="block"
                     mb={2}
                   >
-                    Liczba uczniÃ³w w przedziaÅ‚ach procentowych
+                    Liczba uczniów w przedzia³ach procentowych
                   </Typography>
                   <ResponsiveContainer width="100%" height={220}>
                     <BarChart data={distributionData} margin={{ bottom: 10 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} />
                       <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                       <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                      <Tooltip formatter={(v) => [v, "UczniÃ³w"]} />
+                      <Tooltip formatter={(v) => [v, "Uczniów"]} />
                       <Bar
                         dataKey="value"
                         fill="#10b981"
@@ -443,19 +443,19 @@ export function LessonStatsView() {
                 fontWeight={700}
                 sx={{ px: 3, py: 2 }}
               >
-                SzczegÃ³Å‚owe wyniki
+                Szczegó³owe wyniki
               </Typography>
               <Divider />
 
               {stats.studentResults.length === 0 ? (
                 <Box sx={{ px: 3, py: 4, textAlign: "center" }}>
                   <Typography variant="body2" color="text.secondary">
-                    Brak wynikÃ³w - Å¼aden uczeÅ„ nie ukoÅ„czyÅ‚ jeszcze tej lekcji.
+                    Brak wyników - ¿aden uczeñ nie ukoñczy³ jeszcze tej lekcji.
                   </Typography>
                 </Box>
               ) : (
                 stats.studentResults.map((student, idx) => (
-                  <Box key={student.userId}>
+                  <Box key={student.userPublicId}>
                     <Box
                       sx={{
                         display: "flex",
@@ -480,7 +480,7 @@ export function LessonStatsView() {
                           {student.username}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          UkoÅ„czono: {formatDate(student.completedAt)}
+                          Ukoñczono: {formatDate(student.completedAt)}
                         </Typography>
                       </Box>
 
@@ -530,10 +530,10 @@ export function LessonStatsView() {
                             fontSize: "0.8rem",
                             borderRadius: 2,
                           }}
-                          disabled={resettingUserIds.includes(student.userId)}
-                          onClick={() => setResetConfirmStudent(student)}
+                          disabled={resettingUserPublicIds.includes(student.userPublicId)}
+                          onClick={() => setresetConfirmStudent(student)}
                         >
-                          {resettingUserIds.includes(student.userId)
+                          {resettingUserPublicIds.includes(student.userPublicId)
                             ? "Resetowanie..."
                             : "Resetuj wynik"}
                         </Button>
@@ -556,11 +556,11 @@ export function LessonStatsView() {
                           }}
                           onClick={() =>
                             navigate(
-                              `/teacher/lessons/${lessonPublicId}/students/${student.userId}/result`,
+                              `/teacher/lessons/${lessonPublicId}/students/${student.userPublicId}/result`,
                             )
                           }
                         >
-                          SzczegÃ³Å‚y
+                          Szczegó³y
                         </Button>
                       </Box>
                     </Box>
@@ -577,11 +577,11 @@ export function LessonStatsView() {
           onClose={() => {
             if (
               resetConfirmStudent &&
-              resettingUserIds.includes(resetConfirmStudent.userId)
+              resettingUserPublicIds.includes(resetConfirmStudent.userPublicId)
             ) {
               return;
             }
-            setResetConfirmStudent(null);
+            setresetConfirmStudent(null);
           }}
           maxWidth="xs"
         >
@@ -590,23 +590,23 @@ export function LessonStatsView() {
             title="Resetuj wynik"
             subtitle={
               resetConfirmStudent
-                ? `ZresetowaÄ‡ wynik ucznia "${resetConfirmStudent.username}"?`
+                ? `Zresetowaæ wynik ucznia "${resetConfirmStudent.username}"?`
                 : undefined
             }
           />
           <AppDialogBody>
             <Typography variant="body2" color="text.secondary">
-              Ta operacja usunie bieÅ¼Ä…cy wynik i pozwoli uczniowi rozpoczÄ…Ä‡
-              lekcjÄ™ od nowa.
+              Ta operacja usunie bie¿¹cy wynik i pozwoli uczniowi rozpocz¹æ
+              lekcjê od nowa.
             </Typography>
           </AppDialogBody>
           <AppDialogFooter>
             <FormActions>
               <Button
-                onClick={() => setResetConfirmStudent(null)}
+                onClick={() => setresetConfirmStudent(null)}
                 disabled={
                   resetConfirmStudent
-                    ? resettingUserIds.includes(resetConfirmStudent.userId)
+                    ? resettingUserPublicIds.includes(resetConfirmStudent.userPublicId)
                     : false
                 }
                 sx={{ ...panelFooterButtonSx, color: "text.secondary" }}
@@ -619,7 +619,7 @@ export function LessonStatsView() {
                 startIcon={<ReplayIcon />}
                 disabled={
                   !resetConfirmStudent ||
-                  resettingUserIds.includes(resetConfirmStudent.userId)
+                  resettingUserPublicIds.includes(resetConfirmStudent.userPublicId)
                 }
                 onClick={() => {
                   if (!resetConfirmStudent) return;
@@ -628,9 +628,9 @@ export function LessonStatsView() {
                 sx={panelFooterButtonSx}
               >
                 {resetConfirmStudent &&
-                resettingUserIds.includes(resetConfirmStudent.userId)
+                resettingUserPublicIds.includes(resetConfirmStudent.userPublicId)
                   ? "Resetowanie..."
-                  : "PotwierdÅº reset"}
+                  : "PotwierdŸ reset"}
               </Button>
             </FormActions>
           </AppDialogFooter>

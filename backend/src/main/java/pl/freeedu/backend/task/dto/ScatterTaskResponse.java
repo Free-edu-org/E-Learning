@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class ScatterTaskResponse {
 
-	private Integer id;
+	private String publicId;
 	private String lessonPublicId;
 	private String task;
 	private String words;

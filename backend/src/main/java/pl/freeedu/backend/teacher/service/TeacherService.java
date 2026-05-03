@@ -13,7 +13,6 @@ import pl.freeedu.backend.teacher.dto.TeacherStudentResponse;
 import pl.freeedu.backend.teacher.repository.TeacherStatsRepository;
 import pl.freeedu.backend.user.model.Role;
 import pl.freeedu.backend.user.repository.UserRepository;
-import pl.freeedu.backend.user.service.UserMapper;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -21,7 +20,6 @@ import pl.freeedu.backend.usergroup.dto.UserGroupResponse;
 import pl.freeedu.backend.usergroup.service.UserGroupService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import pl.freeedu.backend.lesson.service.LessonAttachmentService;
-import pl.freeedu.backend.usergroup.repository.UserGroupRepository;
 import pl.freeedu.backend.usergroup.repository.UserInGroupRepository;
 import pl.freeedu.backend.teacher.dto.TeacherCreateStudentRequest;
 import pl.freeedu.backend.teacher.dto.LessonStatsResponse;
@@ -54,9 +52,7 @@ public class TeacherService {
 	private final SecurityService securityService;
 	private final UserGroupService userGroupService;
 	private final UserRepository userRepository;
-	private final UserMapper userMapper;
 	private final PasswordEncoder passwordEncoder;
-	private final UserGroupRepository userGroupRepository;
 	private final UserInGroupRepository userInGroupRepository;
 	private final TransactionTemplate transactionTemplate;
 	private final LessonResultDetailsService lessonResultDetailsService;
@@ -66,9 +62,9 @@ public class TeacherService {
 	public TeacherService(TeacherStatsRepository teacherStatsRepository, LessonRepository lessonRepository,
 			GroupHasLessonRepository groupHasLessonRepository, LessonMapper lessonMapper,
 			SecurityService securityService, UserGroupService userGroupService, UserRepository userRepository,
-			UserMapper userMapper, PasswordEncoder passwordEncoder, UserGroupRepository userGroupRepository,
-			UserInGroupRepository userInGroupRepository, TransactionTemplate transactionTemplate,
-			LessonResultDetailsService lessonResultDetailsService, LessonAttachmentService lessonAttachmentService,
+			PasswordEncoder passwordEncoder, UserInGroupRepository userInGroupRepository,
+			TransactionTemplate transactionTemplate, LessonResultDetailsService lessonResultDetailsService,
+			LessonAttachmentService lessonAttachmentService,
 			UserGroupPublicIdLookupService userGroupPublicIdLookupService) {
 		this.teacherStatsRepository = teacherStatsRepository;
 		this.lessonRepository = lessonRepository;
@@ -77,9 +73,7 @@ public class TeacherService {
 		this.securityService = securityService;
 		this.userGroupService = userGroupService;
 		this.userRepository = userRepository;
-		this.userMapper = userMapper;
 		this.passwordEncoder = passwordEncoder;
-		this.userGroupRepository = userGroupRepository;
 		this.userInGroupRepository = userInGroupRepository;
 		this.transactionTemplate = transactionTemplate;
 		this.lessonResultDetailsService = lessonResultDetailsService;
@@ -123,9 +117,10 @@ public class TeacherService {
 	public Flux<TeacherStudentResponse> getMyStudents() {
 		return securityService.getCurrentUserId().flatMapMany(teacherId -> Mono.fromCallable(() -> {
 			return userRepository.findStudentsWithGroupByTeacherId(teacherId, Role.STUDENT).stream()
-					.map(proj -> TeacherStudentResponse.builder().id(proj.getId()).username(proj.getUsername())
-							.email(proj.getEmail()).role(proj.getRole().name()).createdAt(proj.getCreatedAt())
-							.groupPublicId(proj.getGroupPublicId()).avatarUrl(proj.getAvatarUrl()).build())
+					.map(proj -> TeacherStudentResponse.builder().publicId(proj.getPublicId())
+							.username(proj.getUsername()).email(proj.getEmail()).role(proj.getRole().name())
+							.createdAt(proj.getCreatedAt()).groupPublicId(proj.getGroupPublicId())
+							.avatarUrl(proj.getAvatarUrl()).build())
 					.toList();
 		}).subscribeOn(Schedulers.boundedElastic()).flatMapMany(Flux::fromIterable));
 	}
@@ -186,7 +181,7 @@ public class TeacherService {
 						User savedStudent = userRepository.save(student);
 						userInGroupRepository.save(
 								UserInGroup.builder().userId(savedStudent.getId()).groupId(group.getId()).build());
-						return TeacherStudentResponse.builder().id(savedStudent.getId())
+						return TeacherStudentResponse.builder().publicId(savedStudent.getPublicId())
 								.username(savedStudent.getUsername()).email(savedStudent.getEmail())
 								.role(savedStudent.getRole().name()).createdAt(savedStudent.getCreatedAt())
 								.groupPublicId(group.getPublicId()).avatarUrl(savedStudent.getAvatarUrl()).build();
@@ -210,7 +205,7 @@ public class TeacherService {
 
 					// Teacher ownership check
 					boolean isStudentsTeacher = userRepository.findStudentsWithGroupByTeacherId(teacherId, Role.STUDENT)
-							.stream().anyMatch(u -> u.getId().equals(studentId));
+							.stream().anyMatch(u -> u.getPublicId().equals(student.getPublicId()));
 					if (!isStudentsTeacher) {
 						throw new org.springframework.security.access.AccessDeniedException(
 								"Missing ownership over student");
@@ -244,7 +239,7 @@ public class TeacherService {
 						membership.setGroupId(group.getId());
 						userInGroupRepository.save(membership);
 
-						return TeacherStudentResponse.builder().id(savedStudent.getId())
+						return TeacherStudentResponse.builder().publicId(savedStudent.getPublicId())
 								.username(savedStudent.getUsername()).email(savedStudent.getEmail())
 								.role(savedStudent.getRole().name()).createdAt(savedStudent.getCreatedAt())
 								.groupPublicId(group.getPublicId()).avatarUrl(savedStudent.getAvatarUrl()).build();

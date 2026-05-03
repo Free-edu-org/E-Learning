@@ -10,8 +10,8 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
     let adminToken;
     let teacherToken;
     let studentToken;
-    let createdTeacherId;
-    let createdStudentId;
+    let createdTeacherPublicId;
+    let createdStudentPublicId;
     let seedGroupPublicId;
 
     beforeAll(async () => {
@@ -33,13 +33,13 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
     afterAll(async () => {
         setAuthToken(adminToken);
 
-        if (createdStudentId) {
-            const response = await apiClient.delete(`/users/${createdStudentId}`);
+        if (createdStudentPublicId) {
+            const response = await apiClient.delete(`/users/${createdStudentPublicId}`);
             expect([204, 404]).toContain(response.status);
         }
 
-        if (createdTeacherId) {
-            const response = await apiClient.delete(`/users/${createdTeacherId}`);
+        if (createdTeacherPublicId) {
+            const response = await apiClient.delete(`/users/${createdTeacherPublicId}`);
             expect([204, 404]).toContain(response.status);
         }
 
@@ -122,7 +122,7 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
 
             expect(response.status).toBe(201);
             expect(response.data.role).toBe('STUDENT');
-            createdStudentId = response.data.id;
+            createdStudentPublicId = response.data.publicId;
 
             // Verify student can login
             setAuthToken(null);
@@ -136,8 +136,8 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
         it('should create student WITH groupPublicId for ADMIN (201)', async () => {
             setAuthToken(adminToken);
             // First delete the student created above to reuse the slot
-            if (createdStudentId) {
-                await apiClient.delete(`/users/${createdStudentId}`);
+            if (createdStudentPublicId) {
+                await apiClient.delete(`/users/${createdStudentPublicId}`);
             }
 
             const response = await apiClient.post('/admin/students', {
@@ -149,7 +149,7 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
 
             expect(response.status).toBe(201);
             expect(response.data.role).toBe('STUDENT');
-            createdStudentId = response.data.id;
+            createdStudentPublicId = response.data.publicId;
         });
 
         it('should return 404 for non-existent groupPublicId', async () => {
@@ -201,7 +201,7 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
     describe('PUT /api/v1/admin/students/{id}', () => {
         it('should return 401 when unauthenticated', async () => {
             setAuthToken(null);
-            const response = await apiClient.put(`/admin/students/${createdStudentId}`, {
+            const response = await apiClient.put(`/admin/students/${createdStudentPublicId}`, {
                 email: `unauth.upd.${uniqueId}@example.com`,
                 username: `unauth_upd_${uniqueId}`
             });
@@ -210,7 +210,7 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
 
         it('should return 403 for TEACHER', async () => {
             setAuthToken(teacherToken);
-            const response = await apiClient.put(`/admin/students/${createdStudentId}`, {
+            const response = await apiClient.put(`/admin/students/${createdStudentPublicId}`, {
                 email: `teacher.upd.${uniqueId}@example.com`,
                 username: `teacher_upd_${uniqueId}`
             });
@@ -220,14 +220,14 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
         it('should update student with groupPublicId for ADMIN (200)', async () => {
             const updateId = freshId();
             setAuthToken(adminToken);
-            const response = await apiClient.put(`/admin/students/${createdStudentId}`, {
+            const response = await apiClient.put(`/admin/students/${createdStudentPublicId}`, {
                 email: `admin.student.updated.${updateId}@example.com`,
                 username: `admin_student_updated_${updateId}`,
                 groupPublicId: seedGroupPublicId
             });
 
             expect(response.status).toBe(200);
-            expect(response.data.id).toBe(createdStudentId);
+            expect(response.data.publicId).toBe(createdStudentPublicId);
             expect(response.data.groupPublicId).toBe(seedGroupPublicId);
             expect(response.data.groupName).toBeTruthy();
             expect(response.data).not.toHaveProperty('teacherId');
@@ -237,14 +237,14 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
         it('should unassign student from group when groupPublicId is null (200)', async () => {
             const updateId = freshId();
             setAuthToken(adminToken);
-            const response = await apiClient.put(`/admin/students/${createdStudentId}`, {
+            const response = await apiClient.put(`/admin/students/${createdStudentPublicId}`, {
                 email: `admin.student.updated.${updateId}@example.com`,
                 username: `admin_student_updated_${updateId}`,
                 groupPublicId: null
             });
 
             expect(response.status).toBe(200);
-            expect(response.data.id).toBe(createdStudentId);
+            expect(response.data.publicId).toBe(createdStudentPublicId);
             expect(response.data.groupPublicId).toBeNull();
             expect(response.data.groupName).toBeNull();
         });
@@ -262,7 +262,7 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
         it('should return 404 for non-existent groupPublicId', async () => {
             const updateId = freshId();
             setAuthToken(adminToken);
-            const response = await apiClient.put(`/admin/students/${createdStudentId}`, {
+            const response = await apiClient.put(`/admin/students/${createdStudentPublicId}`, {
                 email: `admin.student.updated.${updateId}@example.com`,
                 username: `admin_student_updated_${updateId}`,
                 groupPublicId: 'missing-group-public-id'
@@ -273,7 +273,7 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
 
         it('should return 400 for VALIDATION_FAILED', async () => {
             setAuthToken(adminToken);
-            const response = await apiClient.put(`/admin/students/${createdStudentId}`, {
+            const response = await apiClient.put(`/admin/students/${createdStudentPublicId}`, {
                 email: 'invalid',
                 username: ''
             });
@@ -300,7 +300,7 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
             });
             setAuthToken(response.data.token);
             response = await apiClient.get('/users/me');
-            createdTeacherId = response.data.id;
+            createdTeacherPublicId = response.data.publicId;
         });
 
         it('should return 401 for teachers list when unauthenticated', async () => {
@@ -320,7 +320,7 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
             const response = await apiClient.get('/admin/teachers');
             expect(response.status).toBe(200);
             expect(Array.isArray(response.data)).toBe(true);
-            expect(response.data.some((user) => user.id === createdTeacherId)).toBe(true);
+            expect(response.data.some((user) => user.publicId === createdTeacherPublicId)).toBe(true);
             response.data.forEach((user) => {
                 expect(user.role).toBe('TEACHER');
             });
@@ -343,7 +343,7 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
             const response = await apiClient.get('/admin/students');
             expect(response.status).toBe(200);
             expect(Array.isArray(response.data)).toBe(true);
-            expect(response.data.some((user) => user.id === createdStudentId)).toBe(true);
+            expect(response.data.some((user) => user.publicId === createdStudentPublicId)).toBe(true);
             response.data.forEach((user) => {
                 expect(user.role).toBe('STUDENT');
                 expect(user).toHaveProperty('groupPublicId');

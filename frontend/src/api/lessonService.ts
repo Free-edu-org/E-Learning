@@ -6,12 +6,12 @@ export interface Group {
   name: string;
   description?: string;
   studentCount?: number;
-  teacherId?: number | null;
+  teacherPublicId?: string | null;
   createdAt?: string;
 }
 
 export interface LessonAttachment {
-  id: number;
+  publicId: string;
   originalFileName: string;
   contentType: string;
   fileSize: number;
@@ -23,7 +23,7 @@ export interface Lesson {
   title: string;
   theme: string;
   isActive: boolean;
-  teacherId?: number;
+  teacherPublicId?: string;
   teacherName?: string;
   teacherAvatarUrl?: string | null;
   createdAt: string;
@@ -39,7 +39,7 @@ export interface TeacherStats {
 }
 
 export interface TeacherStudentResponse {
-  id: number;
+  publicId: string;
   username: string;
   email: string;
   role: string;
@@ -49,7 +49,7 @@ export interface TeacherStudentResponse {
 }
 
 export interface LessonStatsStudentResult {
-  userId: number;
+  userPublicId: string;
   username: string;
   avatarUrl?: string | null;
   completedAt: string | null;
@@ -98,8 +98,8 @@ export const lessonService = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
-  updateTeacherStudent: (id: number, payload: UpdateTeacherStudentRequest) =>
-    fetchApi<TeacherStudentResponse>(`/api/v1/teacher/students/${id}`, {
+  updateTeacherStudent: (publicId: string, payload: UpdateTeacherStudentRequest) =>
+    fetchApi<TeacherStudentResponse>(`/api/v1/teacher/students/${publicId}`, {
       method: "PUT",
       body: JSON.stringify(payload),
     }),
@@ -126,12 +126,12 @@ export const lessonService = {
     fetchApi<LessonStatsResponse>(
       `/api/v1/teacher/lessons/${lessonPublicId}/stats`,
     ),
-  getLessonResultDetails: (lessonPublicId: string, userId: number) =>
+  getLessonResultDetails: (lessonPublicId: string, userPublicId: string) =>
     fetchApi<LessonResultDetailsResponse>(
-      `/api/v1/teacher/lessons/${lessonPublicId}/students/${userId}/result`,
+      `/api/v1/teacher/lessons/${lessonPublicId}/students/${userPublicId}/result`,
     ),
-  resetStudentLessonProgress: (lessonPublicId: string, userId: number) =>
-    fetchApi<void>(`/api/v1/lessons/${lessonPublicId}/users/${userId}/reset`, {
+  resetStudentLessonProgress: (lessonPublicId: string, userPublicId: string) =>
+    fetchApi<void>(`/api/v1/lessons/${lessonPublicId}/users/${userPublicId}/reset`, {
       method: "POST",
     }),
   uploadAttachment: (lessonPublicId: string, file: File) => {
@@ -145,11 +145,11 @@ export const lessonService = {
       },
     );
   },
-  downloadAttachment: (lessonPublicId: string, attachmentId: number) =>
+  downloadAttachment: (lessonPublicId: string, attachmentId: string) =>
     fetchApiBlob(
       `/api/v1/lessons/${lessonPublicId}/attachments/${attachmentId}`,
     ),
-  deleteAttachment: (lessonPublicId: string, attachmentId: number) =>
+  deleteAttachment: (lessonPublicId: string, attachmentId: string) =>
     fetchApi<void>(
       `/api/v1/lessons/${lessonPublicId}/attachments/${attachmentId}`,
       {

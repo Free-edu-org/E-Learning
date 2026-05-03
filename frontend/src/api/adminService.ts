@@ -36,8 +36,8 @@ export const adminService = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
-  updateStudent: (id: number, payload: AdminUpdateStudentRequest) =>
-    fetchApi<AdminStudentProfile>(`/api/v1/admin/students/${id}`, {
+  updateStudent: (publicId: string, payload: AdminUpdateStudentRequest) =>
+    fetchApi<AdminStudentProfile>(`/api/v1/admin/students/${publicId}`, {
       method: "PUT",
       body: JSON.stringify(payload),
     }),

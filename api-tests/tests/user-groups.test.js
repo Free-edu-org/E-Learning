@@ -18,7 +18,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
     let adminToken;
     let studentToken;
     const createdGroupPublicIds = new Set();
-    const createdUserIds = new Set();
+    const createdUserPublicIds = new Set();
 
     beforeAll(async () => {
         let res = await apiClient.post('/auth/login', {
@@ -47,9 +47,9 @@ describe('User Groups API (/api/v1/user-groups)', () => {
 
         setAuthToken(response.data.token);
         response = await apiClient.get('/users/me');
-        createdUserIds.add(response.data.id);
+        createdUserPublicIds.add(response.data.publicId);
         return {
-            id: response.data.id,
+            publicId: response.data.publicId,
             token: response.data.token
         };
     }
@@ -62,7 +62,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
             expect([204, 404]).toContain(response.status);
         }
 
-        for (const userId of createdUserIds) {
+        for (const userId of createdUserPublicIds) {
             const response = await apiClient.delete(`/users/${userId}`);
             expect([204, 404]).toContain(response.status);
         }
@@ -246,7 +246,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
 
         it('should return 404 for non-existent group (404 USER_GROUP_NOT_FOUND)', async () => {
             setAuthToken(adminToken);
-            const response = await apiClient.get('/user-groups/9999999');
+            const response = await apiClient.get('/user-groups/non-existent-group');
 
             expect(response.status).toBe(404);
             expect(response.data.code).toBe('USER_GROUP_NOT_FOUND');
@@ -323,7 +323,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
 
         it('should return 404 for non-existent group (404 USER_GROUP_NOT_FOUND)', async () => {
             setAuthToken(adminToken);
-            const response = await apiClient.put('/user-groups/9999999', {
+            const response = await apiClient.put('/user-groups/non-existent-group', {
                 name: `Ghost ${uniqueId}`,
                 description: 'Does not exist'
             });
@@ -379,9 +379,9 @@ describe('User Groups API (/api/v1/user-groups)', () => {
 
     describe('POST /api/v1/user-groups/{groupPublicId}/members/{userId} (Add Member)', () => {
         let testGroupPublicId;
-        let newStudentId;
+        let newStudentPublicId;
         let newStudentToken;
-        let adminUserId;
+        let adminUserPublicId;
 
         beforeAll(async () => {
             // Create a fresh group for member tests
@@ -401,17 +401,17 @@ describe('User Groups API (/api/v1/user-groups)', () => {
             };
             const student = await trackStudent(studentData);
             newStudentToken = student.token;
-            newStudentId = student.id;
+            newStudentPublicId = student.publicId;
 
             // Get admin user ID for INVALID_ROLE_FOR_GROUP test
             setAuthToken(adminToken);
             const adminMeRes = await apiClient.get('/users/me');
-            adminUserId = adminMeRes.data.id;
+            adminUserPublicId = adminMeRes.data.publicId;
         });
 
         it('should add a STUDENT to a group as ADMIN (204 No Content)', async () => {
             setAuthToken(adminToken);
-            const response = await apiClient.post(`/user-groups/${testGroupPublicId}/members/${newStudentId}`);
+            const response = await apiClient.post(`/user-groups/${testGroupPublicId}/members/${newStudentPublicId}`);
 
             expect(response.status).toBe(204);
         });
@@ -428,7 +428,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
             setAuthToken(adminToken);
 
             // Try adding same student to same group again
-            const response = await apiClient.post(`/user-groups/${testGroupPublicId}/members/${newStudentId}`);
+            const response = await apiClient.post(`/user-groups/${testGroupPublicId}/members/${newStudentPublicId}`);
             expect(response.status).toBe(409);
             expect(response.data.code).toBe('STUDENT_ALREADY_IN_GROUP');
         });
@@ -444,14 +444,14 @@ describe('User Groups API (/api/v1/user-groups)', () => {
             const anotherGroupPublicId = anotherGroupRes.data.publicId;
             createdGroupPublicIds.add(anotherGroupPublicId);
 
-            const response = await apiClient.post(`/user-groups/${anotherGroupPublicId}/members/${newStudentId}`);
+            const response = await apiClient.post(`/user-groups/${anotherGroupPublicId}/members/${newStudentPublicId}`);
             expect(response.status).toBe(409);
             expect(response.data.code).toBe('STUDENT_ALREADY_IN_GROUP');
         });
 
         it('should fail when adding ADMIN user to group (400 INVALID_ROLE_FOR_GROUP)', async () => {
             setAuthToken(adminToken);
-            const response = await apiClient.post(`/user-groups/${testGroupPublicId}/members/${adminUserId}`);
+            const response = await apiClient.post(`/user-groups/${testGroupPublicId}/members/${adminUserPublicId}`);
 
             expect(response.status).toBe(400);
             expect(response.data.code).toBe('INVALID_ROLE_FOR_GROUP');
@@ -459,7 +459,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
 
         it('should fail for non-existent group (404 USER_GROUP_NOT_FOUND)', async () => {
             setAuthToken(adminToken);
-            const response = await apiClient.post(`/user-groups/9999999/members/${newStudentId}`);
+            const response = await apiClient.post(`/user-groups/non-existent-group/members/${newStudentPublicId}`);
 
             expect(response.status).toBe(404);
             expect(response.data.code).toBe('USER_GROUP_NOT_FOUND');
@@ -467,7 +467,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
 
         it('should fail for non-existent user (404 USER_NOT_FOUND)', async () => {
             setAuthToken(adminToken);
-            const response = await apiClient.post(`/user-groups/${testGroupPublicId}/members/9999999`);
+            const response = await apiClient.post(`/user-groups/${testGroupPublicId}/members/non-existent-user`);
 
             expect(response.status).toBe(404);
             expect(response.data.code).toBe('USER_NOT_FOUND');
@@ -475,14 +475,14 @@ describe('User Groups API (/api/v1/user-groups)', () => {
 
         it('should deny unauthenticated user (401 Unauthorized)', async () => {
             setAuthToken(null);
-            const response = await apiClient.post(`/user-groups/${testGroupPublicId}/members/${newStudentId}`);
+            const response = await apiClient.post(`/user-groups/${testGroupPublicId}/members/${newStudentPublicId}`);
 
             expect(response.status).toBe(401);
         });
 
         it('should deny STUDENT role (403 Forbidden)', async () => {
             setAuthToken(studentToken);
-            const response = await apiClient.post(`/user-groups/${testGroupPublicId}/members/${newStudentId}`);
+            const response = await apiClient.post(`/user-groups/${testGroupPublicId}/members/${newStudentPublicId}`);
 
             expect(response.status).toBe(403);
         });
@@ -492,7 +492,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
 
     describe('DELETE /api/v1/user-groups/{groupPublicId}/members/{userId} (Remove Member)', () => {
         let testGroupPublicId;
-        let removableStudentId;
+        let removableStudentPublicId;
 
         beforeAll(async () => {
             setAuthToken(adminToken);
@@ -512,29 +512,29 @@ describe('User Groups API (/api/v1/user-groups)', () => {
                 password: 'password123'
             };
             const student = await trackStudent(studentData);
-            removableStudentId = student.id;
+            removableStudentPublicId = student.publicId;
 
             setAuthToken(adminToken);
-            await apiClient.post(`/user-groups/${testGroupPublicId}/members/${removableStudentId}`);
+            await apiClient.post(`/user-groups/${testGroupPublicId}/members/${removableStudentPublicId}`);
         });
 
         it('should deny unauthenticated user (401 Unauthorized)', async () => {
             setAuthToken(null);
-            const response = await apiClient.delete(`/user-groups/${testGroupPublicId}/members/${removableStudentId}`);
+            const response = await apiClient.delete(`/user-groups/${testGroupPublicId}/members/${removableStudentPublicId}`);
 
             expect(response.status).toBe(401);
         });
 
         it('should deny STUDENT role (403 Forbidden)', async () => {
             setAuthToken(studentToken);
-            const response = await apiClient.delete(`/user-groups/${testGroupPublicId}/members/${removableStudentId}`);
+            const response = await apiClient.delete(`/user-groups/${testGroupPublicId}/members/${removableStudentPublicId}`);
 
             expect(response.status).toBe(403);
         });
 
         it('should fail for non-existent group (404 USER_GROUP_NOT_FOUND)', async () => {
             setAuthToken(adminToken);
-            const response = await apiClient.delete(`/user-groups/9999999/members/${removableStudentId}`);
+            const response = await apiClient.delete(`/user-groups/non-existent-group/members/${removableStudentPublicId}`);
 
             expect(response.status).toBe(404);
             expect(response.data.code).toBe('USER_GROUP_NOT_FOUND');
@@ -544,7 +544,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
             setAuthToken(adminToken);
             // Use admin user ID — not a member of any group
             const adminMeRes = await apiClient.get('/users/me');
-            const response = await apiClient.delete(`/user-groups/${testGroupPublicId}/members/${adminMeRes.data.id}`);
+            const response = await apiClient.delete(`/user-groups/${testGroupPublicId}/members/${adminMeRes.data.publicId}`);
 
             expect(response.status).toBe(404);
             expect(response.data.code).toBe('MEMBER_NOT_IN_GROUP');
@@ -552,7 +552,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
 
         it('should remove member from group as ADMIN (204 No Content)', async () => {
             setAuthToken(adminToken);
-            const response = await apiClient.delete(`/user-groups/${testGroupPublicId}/members/${removableStudentId}`);
+            const response = await apiClient.delete(`/user-groups/${testGroupPublicId}/members/${removableStudentPublicId}`);
 
             expect(response.status).toBe(204);
         });
@@ -567,7 +567,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
 
         it('should fail when removing already removed member (404 MEMBER_NOT_IN_GROUP)', async () => {
             setAuthToken(adminToken);
-            const response = await apiClient.delete(`/user-groups/${testGroupPublicId}/members/${removableStudentId}`);
+            const response = await apiClient.delete(`/user-groups/${testGroupPublicId}/members/${removableStudentPublicId}`);
 
             expect(response.status).toBe(404);
             expect(response.data.code).toBe('MEMBER_NOT_IN_GROUP');
@@ -575,7 +575,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
 
         it('should allow re-adding student after removal (204 No Content)', async () => {
             setAuthToken(adminToken);
-            const response = await apiClient.post(`/user-groups/${testGroupPublicId}/members/${removableStudentId}`);
+            const response = await apiClient.post(`/user-groups/${testGroupPublicId}/members/${removableStudentPublicId}`);
 
             expect(response.status).toBe(204);
         });
@@ -585,7 +585,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
 
     describe('DELETE /api/v1/user-groups/{groupPublicId} (Delete)', () => {
         let groupToDeletePublicId;
-        let memberStudentId;
+        let memberStudentPublicId;
 
         beforeAll(async () => {
             setAuthToken(adminToken);
@@ -605,10 +605,10 @@ describe('User Groups API (/api/v1/user-groups)', () => {
                 password: 'password123'
             };
             const student = await trackStudent(studentData);
-            memberStudentId = student.id;
+            memberStudentPublicId = student.publicId;
 
             setAuthToken(adminToken);
-            await apiClient.post(`/user-groups/${groupToDeletePublicId}/members/${memberStudentId}`);
+            await apiClient.post(`/user-groups/${groupToDeletePublicId}/members/${memberStudentPublicId}`);
         });
 
         it('should deny unauthenticated user (401 Unauthorized)', async () => {
@@ -642,10 +642,10 @@ describe('User Groups API (/api/v1/user-groups)', () => {
 
         it('should not delete the member user account after group deletion', async () => {
             setAuthToken(adminToken);
-            const response = await apiClient.get(`/users/${memberStudentId}`);
+            const response = await apiClient.get(`/users/${memberStudentPublicId}`);
 
             expect(response.status).toBe(200);
-            expect(response.data.id).toBe(memberStudentId);
+            expect(response.data.publicId).toBe(memberStudentPublicId);
         });
 
         it('should allow student to join another group after their group was deleted', async () => {
@@ -656,7 +656,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
             });
             createdGroupPublicIds.add(groupRes.data.publicId);
 
-            const response = await apiClient.post(`/user-groups/${groupRes.data.publicId}/members/${memberStudentId}`);
+            const response = await apiClient.post(`/user-groups/${groupRes.data.publicId}/members/${memberStudentPublicId}`);
             expect(response.status).toBe(204);
         });
 
@@ -670,7 +670,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
 
         it('should return 404 for non-existent group ID (404 USER_GROUP_NOT_FOUND)', async () => {
             setAuthToken(adminToken);
-            const response = await apiClient.delete('/user-groups/9999999');
+            const response = await apiClient.delete('/user-groups/non-existent-group');
 
             expect(response.status).toBe(404);
             expect(response.data.code).toBe('USER_GROUP_NOT_FOUND');
@@ -732,7 +732,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
 
         it('should return proper ProblemDetail structure on error', async () => {
             setAuthToken(adminToken);
-            const response = await apiClient.get('/user-groups/9999999');
+            const response = await apiClient.get('/user-groups/non-existent-group');
 
             expect(response.status).toBe(404);
             // Note: backend ProblemDetail does not include 'type' field
@@ -744,7 +744,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
 
         it('should not expose stack traces or internal details on error', async () => {
             setAuthToken(adminToken);
-            const response = await apiClient.get('/user-groups/9999999');
+            const response = await apiClient.get('/user-groups/non-existent-group');
 
             expect(response.data).not.toHaveProperty('stackTrace');
             expect(response.data).not.toHaveProperty('exception');
@@ -757,8 +757,8 @@ describe('User Groups API (/api/v1/user-groups)', () => {
     describe('Additional Coverage', () => {
         let emptyGroupId;
         let multiGroupId;
-        let studentAId;
-        let studentBId;
+        let studentAPublicId;
+        let studentBPublicId;
 
         beforeAll(async () => {
             setAuthToken(adminToken);
@@ -791,10 +791,10 @@ describe('User Groups API (/api/v1/user-groups)', () => {
                 password: 'password123'
             };
             let student = await trackStudent(studentAData);
-            studentAId = student.id;
+            studentAPublicId = student.publicId;
 
             student = await trackStudent(studentBData);
-            studentBId = student.id;
+            studentBPublicId = student.publicId;
 
             setAuthToken(adminToken);
         });
@@ -815,8 +815,8 @@ describe('User Groups API (/api/v1/user-groups)', () => {
 
         it('should correctly count multiple students in a group', async () => {
             setAuthToken(adminToken);
-            await apiClient.post(`/user-groups/${multiGroupId}/members/${studentAId}`);
-            await apiClient.post(`/user-groups/${multiGroupId}/members/${studentBId}`);
+            await apiClient.post(`/user-groups/${multiGroupId}/members/${studentAPublicId}`);
+            await apiClient.post(`/user-groups/${multiGroupId}/members/${studentBPublicId}`);
 
             const response = await apiClient.get(`/user-groups/${multiGroupId}`);
             expect(response.status).toBe(200);
@@ -847,15 +847,15 @@ describe('User Groups API (/api/v1/user-groups)', () => {
 
         it('should return 404 when removing member with non-existent userId', async () => {
             setAuthToken(adminToken);
-            const response = await apiClient.delete(`/user-groups/${multiGroupId}/members/9999999`);
+            const response = await apiClient.delete(`/user-groups/${multiGroupId}/members/non-existent-user`);
 
             expect(response.status).toBe(404);
-            expect(response.data.code).toBe('MEMBER_NOT_IN_GROUP');
+            expect(response.data.code).toBe('USER_NOT_FOUND');
         });
 
         it('should return 404 when adding member to a deleted group', async () => {
             setAuthToken(adminToken);
-            const response = await apiClient.post(`/user-groups/${emptyGroupId}/members/${studentAId}`);
+            const response = await apiClient.post(`/user-groups/${emptyGroupId}/members/${studentAPublicId}`);
 
             expect(response.status).toBe(404);
             expect(response.data.code).toBe('USER_GROUP_NOT_FOUND');

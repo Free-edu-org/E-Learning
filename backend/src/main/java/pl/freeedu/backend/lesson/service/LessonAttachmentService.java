@@ -131,21 +131,23 @@ public class LessonAttachmentService {
 		});
 	}
 
-	public Mono<ResponseEntity<Resource>> downloadAttachment(Integer lessonId, Integer attachmentId) {
+	public Mono<ResponseEntity<Resource>> downloadAttachment(Integer lessonId, String attachmentPublicId) {
 		return Mono.fromCallable(() -> {
-			log.info("Downloading attachment ID: {} for lesson ID: {}", attachmentId, lessonId);
+			log.info("Downloading attachment publicId: {} for lesson ID: {}", attachmentPublicId, lessonId);
 			lessonRepository.findById(lessonId).orElseThrow(() -> {
 				log.warn("Download failed: Lesson with ID: {} not found", lessonId);
 				return new LessonException(LessonErrorCode.LESSON_NOT_FOUND);
 			});
 
-			LessonAttachment attachment = lessonAttachmentRepository.findById(attachmentId).orElseThrow(() -> {
-				log.warn("Download failed: Attachment with ID: {} not found", attachmentId);
-				return new LessonException(LessonErrorCode.ATTACHMENT_NOT_FOUND);
-			});
+			LessonAttachment attachment = lessonAttachmentRepository.findByPublicId(attachmentPublicId)
+					.orElseThrow(() -> {
+						log.warn("Download failed: Attachment with publicId: {} not found", attachmentPublicId);
+						return new LessonException(LessonErrorCode.ATTACHMENT_NOT_FOUND);
+					});
 
 			if (!lessonId.equals(attachment.getLessonId())) {
-				log.warn("Download failed: Attachment ID: {} does not belong to lesson ID: {}", attachmentId, lessonId);
+				log.warn("Download failed: Attachment publicId: {} does not belong to lesson ID: {}",
+						attachmentPublicId, lessonId);
 				throw new LessonException(LessonErrorCode.ATTACHMENT_NOT_FOUND);
 			}
 
@@ -161,26 +163,28 @@ public class LessonAttachmentService {
 			headers.setContentDisposition(
 					ContentDisposition.attachment().filename(attachment.getOriginalFileName()).build());
 
-			log.debug("Attachment ID: {} download successful", attachmentId);
+			log.debug("Attachment publicId: {} download successful", attachmentPublicId);
 			return ResponseEntity.<Resource>ok().headers(headers).body(resource);
 		}).subscribeOn(Schedulers.boundedElastic());
 	}
 
-	public Mono<Void> deleteAttachment(Integer lessonId, Integer attachmentId) {
+	public Mono<Void> deleteAttachment(Integer lessonId, String attachmentPublicId) {
 		return Mono.fromCallable(() -> {
-			log.info("Deleting attachment ID: {} for lesson ID: {}", attachmentId, lessonId);
+			log.info("Deleting attachment publicId: {} for lesson ID: {}", attachmentPublicId, lessonId);
 			lessonRepository.findById(lessonId).orElseThrow(() -> {
 				log.warn("Delete failed: Lesson with ID: {} not found", lessonId);
 				return new LessonException(LessonErrorCode.LESSON_NOT_FOUND);
 			});
 
-			LessonAttachment attachment = lessonAttachmentRepository.findById(attachmentId).orElseThrow(() -> {
-				log.warn("Delete failed: Attachment with ID: {} not found", attachmentId);
-				return new LessonException(LessonErrorCode.ATTACHMENT_NOT_FOUND);
-			});
+			LessonAttachment attachment = lessonAttachmentRepository.findByPublicId(attachmentPublicId)
+					.orElseThrow(() -> {
+						log.warn("Delete failed: Attachment with publicId: {} not found", attachmentPublicId);
+						return new LessonException(LessonErrorCode.ATTACHMENT_NOT_FOUND);
+					});
 
 			if (!lessonId.equals(attachment.getLessonId())) {
-				log.warn("Delete failed: Attachment ID: {} does not belong to lesson ID: {}", attachmentId, lessonId);
+				log.warn("Delete failed: Attachment publicId: {} does not belong to lesson ID: {}", attachmentPublicId,
+						lessonId);
 				throw new LessonException(LessonErrorCode.ATTACHMENT_NOT_FOUND);
 			}
 
@@ -189,11 +193,11 @@ public class LessonAttachmentService {
 				log.debug("Deleting attachment file from disk: {}", path);
 				Files.deleteIfExists(path);
 			} catch (IOException e) {
-				log.warn("Failed to delete attachment file from disk for attachment ID: {}. Error: {}", attachmentId,
-						e.getMessage());
+				log.warn("Failed to delete attachment file from disk for attachment publicId: {}. Error: {}",
+						attachmentPublicId, e.getMessage());
 			}
 			lessonAttachmentRepository.delete(attachment);
-			log.info("Attachment ID: {} deleted successfully", attachmentId);
+			log.info("Attachment publicId: {} deleted successfully", attachmentPublicId);
 			return (Void) null;
 		}).subscribeOn(Schedulers.boundedElastic()).then();
 	}
@@ -224,7 +228,7 @@ public class LessonAttachmentService {
 	}
 
 	private LessonAttachmentResponse toResponse(LessonAttachment attachment) {
-		return LessonAttachmentResponse.builder().id(attachment.getId())
+		return LessonAttachmentResponse.builder().publicId(attachment.getPublicId())
 				.originalFileName(attachment.getOriginalFileName()).contentType(attachment.getContentType())
 				.fileSize(attachment.getFileSize()).createdAt(attachment.getCreatedAt()).build();
 	}

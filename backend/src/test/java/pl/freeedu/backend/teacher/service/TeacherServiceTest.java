@@ -160,7 +160,7 @@ class TeacherServiceTest {
 
 		// then
 		StepVerifier.create(result).assertNext(resp -> {
-			assertEquals(1, resp.getId());
+			assertEquals("pub-1", resp.getPublicId());
 			assertEquals("s", resp.getUsername());
 			assertEquals("group-public-id", resp.getGroupPublicId());
 			verify(userInGroupRepository).save(any());
@@ -202,7 +202,7 @@ class TeacherServiceTest {
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
 		when(userRepository.findById(1)).thenReturn(Optional.of(student));
 		TeacherStudentProjection proj = mock(TeacherStudentProjection.class);
-		when(proj.getId()).thenReturn(1);
+		when(proj.getPublicId()).thenReturn("pub-1");
 		when(userRepository.findStudentsWithGroupByTeacherId(10, Role.STUDENT)).thenReturn(List.of(proj));
 
 		when(userGroupPublicIdLookupService.getRequiredGroup("group-public-id")).thenReturn(group);
@@ -260,7 +260,7 @@ class TeacherServiceTest {
 		// given
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
 		TeacherStudentProjection proj = mock(TeacherStudentProjection.class);
-		when(proj.getId()).thenReturn(1);
+		when(proj.getPublicId()).thenReturn("pub-1");
 		when(proj.getUsername()).thenReturn("s1");
 		when(proj.getEmail()).thenReturn("s1@e.com");
 		when(proj.getRole()).thenReturn(Role.STUDENT);
@@ -274,7 +274,7 @@ class TeacherServiceTest {
 
 		// then
 		StepVerifier.create(students).assertNext(s -> {
-			assertEquals(1, s.getId());
+			assertEquals("pub-1", s.getPublicId());
 			assertEquals("s1", s.getUsername());
 			assertEquals("group-public-id", s.getGroupPublicId());
 			assertEquals("preset:avatar_3", s.getAvatarUrl());
@@ -287,7 +287,7 @@ class TeacherServiceTest {
 		User teacher = User.builder().id(10).build();
 		Lesson lesson = Lesson.builder().id(3).teacher(teacher).build();
 		LessonResultDetailsResponse details = LessonResultDetailsResponse.builder().lessonPublicId("lesson-3")
-				.userId(21).build();
+				.userPublicId("21").build();
 
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
 		when(lessonRepository.findById(3)).thenReturn(Optional.of(lesson));
@@ -300,7 +300,7 @@ class TeacherServiceTest {
 		// then
 		StepVerifier.create(result).assertNext(response -> {
 			assertEquals("lesson-3", response.getLessonPublicId());
-			assertEquals(21, response.getUserId());
+			assertEquals("21", response.getUserPublicId());
 		}).verifyComplete();
 	}
 

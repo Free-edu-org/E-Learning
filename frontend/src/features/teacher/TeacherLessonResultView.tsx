@@ -14,15 +14,15 @@ import { LessonResultDetailsPanel } from "@/components/results/LessonResultDetai
 import { getErrorMessage } from "@/utils/dashboardUtils";
 
 export function TeacherLessonResultView() {
-  const { lessonPublicId, userId } = useParams<{
+  const { lessonPublicId, userPublicId } = useParams<{
     lessonPublicId: string;
-    userId: string;
+    userPublicId: string;
   }>();
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const numericUserId = Number(userId);
+  
   const routeError =
-    !lessonPublicId || Number.isNaN(numericUserId)
+    !lessonPublicId || !userPublicId
       ? "Nieprawidlowy identyfikator wyniku."
       : null;
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -47,7 +47,7 @@ export function TeacherLessonResultView() {
     }
 
     lessonService
-      .getLessonResultDetails(lessonPublicId!, numericUserId)
+      .getLessonResultDetails(lessonPublicId!, userPublicId!)
       .then(setResult)
       .catch((err: unknown) =>
         setError(
@@ -58,7 +58,7 @@ export function TeacherLessonResultView() {
         ),
       )
       .finally(() => setLoading(false));
-  }, [lessonPublicId, numericUserId, routeError]);
+  }, [lessonPublicId, userPublicId, routeError]);
 
   return (
     <Box

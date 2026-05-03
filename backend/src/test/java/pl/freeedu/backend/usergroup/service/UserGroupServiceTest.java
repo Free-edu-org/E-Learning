@@ -50,7 +50,7 @@ class UserGroupServiceTest {
 	@Test
 	void shouldCreateGroupSucceed() {
 		// given
-		UserGroupRequest req = new UserGroupRequest("G1", "D1", 10);
+		UserGroupRequest req = new UserGroupRequest("G1", "D1", "teacher-public-id");
 		CustomUserDetails admin = new CustomUserDetails(1, "a", "p", Role.ADMIN);
 		User teacher = User.builder().id(10).role(Role.TEACHER).build();
 

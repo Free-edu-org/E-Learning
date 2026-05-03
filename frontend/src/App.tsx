@@ -116,7 +116,7 @@ function App() {
                     element={<LessonStatsView />}
                   />
                   <Route
-                    path="/teacher/lessons/:lessonPublicId/students/:userId/result"
+                    path="/teacher/lessons/:lessonPublicId/students/:userPublicId/result"
                     element={<TeacherLessonResultView />}
                   />
                 </Route>

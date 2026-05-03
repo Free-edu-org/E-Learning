@@ -33,7 +33,7 @@ export interface StudentLesson {
   title: string;
   theme: string;
   isActive: boolean;
-  teacherId: number;
+  teacherPublicId: number;
   teacherName: string;
   teacherAvatarUrl?: string | null;
   createdAt: string;
@@ -84,7 +84,7 @@ export interface LessonResultTaskDetail {
 export interface LessonResultDetailsResponse {
   lessonPublicId: string;
   lessonTitle: string;
-  userId: number;
+  userPublicId: number;
   username: string;
   score: number;
   maxScore: number;

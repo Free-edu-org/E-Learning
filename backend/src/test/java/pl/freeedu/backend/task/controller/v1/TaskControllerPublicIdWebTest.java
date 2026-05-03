@@ -45,13 +45,15 @@ class TaskControllerPublicIdWebTest {
 
 	@Autowired
 	private LessonPublicIdLookupService lessonPublicIdLookupService;
+	@Autowired
+	private pl.freeedu.backend.user.service.UserPublicIdLookupService userPublicIdLookupService;
 
 	@Autowired
 	private SecurityService securityService;
 
 	@BeforeEach
 	void setUp() {
-		org.mockito.Mockito.reset(taskService, lessonPublicIdLookupService, securityService);
+		org.mockito.Mockito.reset(taskService, lessonPublicIdLookupService, securityService, userPublicIdLookupService);
 	}
 
 	@Test
@@ -168,15 +170,20 @@ class TaskControllerPublicIdWebTest {
 			return mock(LessonPublicIdLookupService.class);
 		}
 
+		@Bean
+		pl.freeedu.backend.user.service.UserPublicIdLookupService userPublicIdLookupService() {
+			return mock(pl.freeedu.backend.user.service.UserPublicIdLookupService.class);
+		}
+
 		@Bean(name = "securityService")
 		SecurityService securityService() {
 			return mock(SecurityService.class);
 		}
 
 		@Bean
-		TaskController taskController(TaskService taskService,
-				LessonPublicIdLookupService lessonPublicIdLookupService) {
-			return new TaskController(taskService, lessonPublicIdLookupService);
+		TaskController taskController(TaskService taskService, LessonPublicIdLookupService lessonPublicIdLookupService,
+				pl.freeedu.backend.user.service.UserPublicIdLookupService userPublicIdLookupService) {
+			return new TaskController(taskService, lessonPublicIdLookupService, userPublicIdLookupService);
 		}
 
 		@Bean

@@ -218,8 +218,8 @@ class StudentServiceTest {
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
 		when(lessonRepository.findById(5)).thenReturn(Optional.of(Lesson.builder().id(5).build()));
 		when(userInGroupRepository.hasAccessToLesson(10, 5)).thenReturn(true);
-		when(lessonResultDetailsService.getCompletedLessonResult(5, 10)).thenReturn(
-				Mono.just(LessonResultDetailsResponse.builder().lessonPublicId("lesson-5").userId(10).build()));
+		when(lessonResultDetailsService.getCompletedLessonResult(5, 10)).thenReturn(Mono.just(
+				LessonResultDetailsResponse.builder().lessonPublicId("lesson-5").userPublicId("student-10").build()));
 
 		// when
 		Mono<LessonResultDetailsResponse> result = studentService.getLessonResultDetails(5);
@@ -227,7 +227,7 @@ class StudentServiceTest {
 		// then
 		StepVerifier.create(result).assertNext(response -> {
 			assertEquals("lesson-5", response.getLessonPublicId());
-			assertEquals(10, response.getUserId());
+			assertEquals("student-10", response.getUserPublicId());
 		}).verifyComplete();
 	}
 

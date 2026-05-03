@@ -14,7 +14,7 @@ import pl.freeedu.backend.user.model.Role;
 @AllArgsConstructor
 public class AdminStudentResponse {
 
-	private Integer id;
+	private String publicId;
 
 	private String email;
 

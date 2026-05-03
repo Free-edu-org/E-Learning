@@ -19,6 +19,9 @@ import pl.freeedu.backend.task.repository.ScatterTaskRepository;
 import pl.freeedu.backend.task.repository.SpeakTaskRepository;
 import pl.freeedu.backend.task.repository.WriteTaskRepository;
 import pl.freeedu.backend.user.model.User;
+import pl.freeedu.backend.user.repository.UserRepository;
+import pl.freeedu.backend.user.exception.UserException;
+import pl.freeedu.backend.user.exception.UserErrorCode;
 import pl.freeedu.backend.usergroup.service.UserGroupPublicIdLookupService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -45,12 +48,13 @@ public class LessonService {
 	private final ScatterTaskRepository scatterTaskRepository;
 	private final SpeakTaskRepository speakTaskRepository;
 	private final UserGroupPublicIdLookupService userGroupPublicIdLookupService;
+	private final UserRepository userRepository;
 
 	public LessonService(LessonRepository lessonRepository, GroupHasLessonRepository groupHasLessonRepository,
 			LessonMapper lessonMapper, SecurityService securityService, LessonAttachmentService lessonAttachmentService,
 			ChooseTaskRepository chooseTaskRepository, WriteTaskRepository writeTaskRepository,
-			ScatterTaskRepository scatterTaskRepository, SpeakTaskRepository speakTaskRepository,
-			UserGroupPublicIdLookupService userGroupPublicIdLookupService) {
+			SpeakTaskRepository speakTaskRepository, ScatterTaskRepository scatterTaskRepository,
+			UserGroupPublicIdLookupService userGroupPublicIdLookupService, UserRepository userRepository) {
 		this.lessonRepository = lessonRepository;
 		this.groupHasLessonRepository = groupHasLessonRepository;
 		this.lessonMapper = lessonMapper;
@@ -61,6 +65,7 @@ public class LessonService {
 		this.scatterTaskRepository = scatterTaskRepository;
 		this.speakTaskRepository = speakTaskRepository;
 		this.userGroupPublicIdLookupService = userGroupPublicIdLookupService;
+		this.userRepository = userRepository;
 	}
 
 	public Flux<LessonResponse> getLessons(String search, Integer groupId, Boolean status, String sort) {
@@ -118,9 +123,10 @@ public class LessonService {
 		return requestMono
 				.flatMap(request -> securityService.getCurrentUserId().flatMap(teacherId -> Mono.fromCallable(() -> {
 					log.info("Creating new lesson. Teacher ID: {}", teacherId);
-					User teacherRef = User.builder().id(teacherId).build();
+					User teacher = userRepository.findById(teacherId)
+							.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 					Lesson lesson = Lesson.builder().title(request.getTitle()).theme(request.getTheme())
-							.teacher(teacherRef).isActive(Boolean.FALSE).build();
+							.teacher(teacher).isActive(Boolean.FALSE).build();
 					Lesson saved = lessonRepository.save(lesson);
 
 					if (request.getGroupPublicIds() != null && !request.getGroupPublicIds().isEmpty()) {

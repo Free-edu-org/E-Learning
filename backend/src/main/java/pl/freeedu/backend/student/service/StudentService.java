@@ -125,7 +125,7 @@ public class StudentService {
 
 			studentLessons.add(StudentLessonResponse.builder().publicId(lessonResponse.getPublicId())
 					.title(lessonResponse.getTitle()).theme(lessonResponse.getTheme())
-					.isActive(lessonResponse.getIsActive()).teacherId(lessonResponse.getTeacherId())
+					.isActive(lessonResponse.getIsActive()).teacherPublicId(lessonResponse.getTeacherPublicId())
 					.teacherName(lessonResponse.getTeacherName()).teacherAvatarUrl(lessonResponse.getTeacherAvatarUrl())
 					.createdAt(lessonResponse.getCreatedAt()).groups(lessonResponse.getGroups())
 					.status(userLesson != null ? userLesson.getStatus().name() : "NOT_STARTED").score(score)

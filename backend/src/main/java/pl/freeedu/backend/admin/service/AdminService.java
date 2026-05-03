@@ -105,9 +105,9 @@ public class AdminService {
 							.save(UserInGroup.builder().userId(savedStudent.getId()).groupId(group.getId()).build());
 				}
 				log.info("Student account created successfully by admin. Student ID: {}", savedStudent.getId());
-				return AdminStudentResponse.builder().id(savedStudent.getId()).email(savedStudent.getEmail())
-						.username(savedStudent.getUsername()).role(savedStudent.getRole())
-						.groupPublicId(group != null ? group.getPublicId() : null)
+				return AdminStudentResponse.builder().publicId(savedStudent.getPublicId())
+						.email(savedStudent.getEmail()).username(savedStudent.getUsername())
+						.role(savedStudent.getRole()).groupPublicId(group != null ? group.getPublicId() : null)
 						.groupName(group != null ? group.getName() : null).createdAt(savedStudent.getCreatedAt())
 						.avatarUrl(savedStudent.getAvatarUrl()).build();
 			} catch (DataIntegrityViolationException ex) {
@@ -178,7 +178,7 @@ public class AdminService {
 			}
 
 			log.info("Student ID: {} updated successfully by admin", id);
-			return AdminStudentResponse.builder().id(savedStudent.getId()).email(savedStudent.getEmail())
+			return AdminStudentResponse.builder().publicId(savedStudent.getPublicId()).email(savedStudent.getEmail())
 					.username(savedStudent.getUsername()).role(savedStudent.getRole())
 					.groupPublicId(group != null ? group.getPublicId() : null).groupName(finalGroupName)
 					.createdAt(savedStudent.getCreatedAt()).avatarUrl(savedStudent.getAvatarUrl()).build();
@@ -197,7 +197,7 @@ public class AdminService {
 		Integer groupId = membershipMap.get(student.getId());
 		UserGroup group = groupId != null ? groupMap.get(groupId) : null;
 
-		return AdminStudentResponse.builder().id(student.getId()).email(student.getEmail())
+		return AdminStudentResponse.builder().publicId(student.getPublicId()).email(student.getEmail())
 				.username(student.getUsername()).role(student.getRole())
 				.groupPublicId(group != null ? group.getPublicId() : null)
 				.groupName(group != null ? group.getName() : null).createdAt(student.getCreatedAt())

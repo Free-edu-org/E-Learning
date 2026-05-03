@@ -50,6 +50,8 @@ class TaskServiceTest {
 	private UserInGroupRepository userInGroupRepository;
 	@Mock
 	private SttClient sttClient;
+	@Mock
+	private TaskPublicIdLookupService taskPublicIdLookupService;
 
 	private TaskService taskService;
 
@@ -57,7 +59,7 @@ class TaskServiceTest {
 	void setUp() {
 		taskService = new TaskService(chooseTaskRepository, writeTaskRepository, scatterTaskRepository,
 				speakTaskRepository, userAnswerRepository, userLessonRepository, lessonRepository, securityService,
-				userInGroupRepository, sttClient, 0.85);
+				userInGroupRepository, sttClient, taskPublicIdLookupService, 0.85);
 	}
 
 	@Test
@@ -201,7 +203,8 @@ class TaskServiceTest {
 		when(securityService.getCurrentUser()).thenReturn(Mono.just(teacher));
 		when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
 
-		ChooseTask chooseTask = ChooseTask.builder().id(1).lessonId(lessonId).correctAnswer(1).build();
+		ChooseTask chooseTask = ChooseTask.builder().id(1).publicId("task-1").lessonId(lessonId).correctAnswer(1)
+				.build();
 		when(chooseTaskRepository.findByLessonId(lessonId)).thenReturn(List.of(chooseTask));
 		when(writeTaskRepository.findByLessonId(lessonId)).thenReturn(List.of());
 		when(scatterTaskRepository.findByLessonId(lessonId)).thenReturn(List.of());
@@ -225,7 +228,11 @@ class TaskServiceTest {
 		Lesson lesson = Lesson.builder().id(1).publicId("lesson-1").build();
 
 		when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
-		when(chooseTaskRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+		when(chooseTaskRepository.save(any())).thenAnswer(inv -> {
+			ChooseTask t = inv.getArgument(0);
+			t.setPublicId("task-1");
+			return t;
+		});
 
 		// when
 		Mono<ChooseTaskResponse> result = taskService.createChooseTask(lessonId, Mono.just(request));
@@ -233,6 +240,7 @@ class TaskServiceTest {
 		// then
 		StepVerifier.create(result).assertNext(resp -> {
 			assertEquals("T", resp.getTask());
+			assertEquals("task-1", resp.getPublicId());
 			verify(chooseTaskRepository).save(any());
 		}).verifyComplete();
 	}
@@ -241,17 +249,17 @@ class TaskServiceTest {
 	void shouldUpdateChooseTask() {
 		// given
 		Integer lessonId = 1;
-		Integer taskId = 10;
+		String taskPublicId = "task-10";
 		ChooseTaskRequest request = ChooseTaskRequest.builder().task("New").build();
-		ChooseTask task = ChooseTask.builder().id(taskId).lessonId(lessonId).build();
+		ChooseTask task = ChooseTask.builder().id(10).publicId(taskPublicId).lessonId(lessonId).build();
 
-		when(chooseTaskRepository.findById(taskId)).thenReturn(Optional.of(task));
+		when(chooseTaskRepository.findByPublicId(taskPublicId)).thenReturn(Optional.of(task));
 		when(lessonRepository.findById(lessonId))
 				.thenReturn(Optional.of(Lesson.builder().id(lessonId).publicId("lesson-1").build()));
 		when(chooseTaskRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
 		// when
-		Mono<ChooseTaskResponse> result = taskService.updateChooseTask(lessonId, taskId, Mono.just(request));
+		Mono<ChooseTaskResponse> result = taskService.updateChooseTask(lessonId, taskPublicId, Mono.just(request));
 
 		// then
 		StepVerifier.create(result).assertNext(resp -> {
@@ -263,13 +271,13 @@ class TaskServiceTest {
 	void shouldReturnErrorWhenTaskIdMismatchInUpdateChooseTask() {
 		// given
 		Integer lessonId = 1;
-		Integer taskId = 10;
-		ChooseTask task = ChooseTask.builder().id(taskId).lessonId(2).build();
+		String taskPublicId = "task-10";
+		ChooseTask task = ChooseTask.builder().id(10).publicId(taskPublicId).lessonId(2).build();
 
-		when(chooseTaskRepository.findById(taskId)).thenReturn(Optional.of(task));
+		when(chooseTaskRepository.findByPublicId(taskPublicId)).thenReturn(Optional.of(task));
 
 		// when
-		Mono<ChooseTaskResponse> result = taskService.updateChooseTask(lessonId, taskId,
+		Mono<ChooseTaskResponse> result = taskService.updateChooseTask(lessonId, taskPublicId,
 				Mono.just(ChooseTaskRequest.builder().build()));
 
 		// then
@@ -280,17 +288,17 @@ class TaskServiceTest {
 	void shouldDeleteChooseTask() {
 		// given
 		Integer lessonId = 1;
-		Integer taskId = 10;
-		ChooseTask task = ChooseTask.builder().id(taskId).lessonId(lessonId).build();
+		String taskPublicId = "task-10";
+		ChooseTask task = ChooseTask.builder().id(10).publicId(taskPublicId).lessonId(lessonId).build();
 
-		when(chooseTaskRepository.findById(taskId)).thenReturn(Optional.of(task));
+		when(chooseTaskRepository.findByPublicId(taskPublicId)).thenReturn(Optional.of(task));
 
 		// when
-		Mono<Void> result = taskService.deleteChooseTask(lessonId, taskId);
+		Mono<Void> result = taskService.deleteChooseTask(lessonId, taskPublicId);
 
 		// then
 		StepVerifier.create(result).verifyComplete();
-		verify(chooseTaskRepository).deleteById(taskId);
+		verify(chooseTaskRepository).delete(task);
 	}
 
 	// Tests for Write, Scatter, Speak types... (similar logic, covering branches)
@@ -345,19 +353,21 @@ class TaskServiceTest {
 	void shouldTranscribeSpeakTask() {
 		// given
 		Integer lessonId = 1;
-		Integer taskId = 10;
+		String taskPublicId = "task-10";
 		Lesson lesson = Lesson.builder().id(lessonId).isActive(true).build();
-		SpeakTask task = SpeakTask.builder().id(taskId).lessonId(lessonId).expectedText("Hello").build();
+		SpeakTask task = SpeakTask.builder().id(10).publicId(taskPublicId).lessonId(lessonId).expectedText("Hello")
+				.build();
 		FilePart audio = mock(FilePart.class);
 
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(1));
 		when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
 		when(userInGroupRepository.hasAccessToLesson(1, lessonId)).thenReturn(true);
-		when(speakTaskRepository.findById(taskId)).thenReturn(Optional.of(task));
+		when(speakTaskRepository.findByPublicId(taskPublicId)).thenReturn(Optional.of(task));
 		when(sttClient.transcribe(audio)).thenReturn(Mono.just(new SttTranscriptionResponse("Hello", "en", 1.0)));
 
 		// when
-		Mono<SpeakTranscriptionResponse> result = taskService.transcribeSpeakTask(lessonId, taskId, Mono.just(audio));
+		Mono<SpeakTranscriptionResponse> result = taskService.transcribeSpeakTask(lessonId, taskPublicId,
+				Mono.just(audio));
 
 		// then
 		StepVerifier.create(result).assertNext(resp -> {
@@ -370,17 +380,17 @@ class TaskServiceTest {
 	void shouldReturnErrorWhenAudioMissingInTranscribe() {
 		// given
 		Integer lessonId = 1;
-		Integer taskId = 10;
+		String taskPublicId = "task-10";
 		Lesson lesson = Lesson.builder().id(lessonId).isActive(true).build();
-		SpeakTask task = SpeakTask.builder().id(taskId).lessonId(lessonId).build();
+		SpeakTask task = SpeakTask.builder().id(10).publicId(taskPublicId).lessonId(lessonId).build();
 
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(1));
 		when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
 		when(userInGroupRepository.hasAccessToLesson(1, lessonId)).thenReturn(true);
-		when(speakTaskRepository.findById(taskId)).thenReturn(Optional.of(task));
+		when(speakTaskRepository.findByPublicId(taskPublicId)).thenReturn(Optional.of(task));
 
 		// when
-		Mono<SpeakTranscriptionResponse> result = taskService.transcribeSpeakTask(lessonId, taskId, Mono.empty());
+		Mono<SpeakTranscriptionResponse> result = taskService.transcribeSpeakTask(lessonId, taskPublicId, Mono.empty());
 
 		// then
 		StepVerifier.create(result).expectErrorSatisfies(error -> {
@@ -398,9 +408,10 @@ class TaskServiceTest {
 				.status(UserLessonStatus.IN_PROGRESS).build();
 
 		SubmitRequest request = SubmitRequest.builder()
-				.answers(List.of(new AnswerItemRequest(1, "choose", "1"), new AnswerItemRequest(2, "write", "correct"),
-						new AnswerItemRequest(3, "scatter", "word1 word2"),
-						new AnswerItemRequest(4, "speak", "expected")))
+				.answers(List.of(new AnswerItemRequest("tp1", "choose", "1"),
+						new AnswerItemRequest("tp2", "write", "correct"),
+						new AnswerItemRequest("tp3", "scatter", "word1 word2"),
+						new AnswerItemRequest("tp4", "speak", "expected")))
 				.build();
 
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(userId));
@@ -408,13 +419,18 @@ class TaskServiceTest {
 		when(userInGroupRepository.hasAccessToLesson(userId, lessonId)).thenReturn(true);
 		when(userLessonRepository.findByUserIdAndLessonId(userId, lessonId)).thenReturn(Optional.of(userLesson));
 
-		when(chooseTaskRepository.findById(1))
+		when(taskPublicIdLookupService.getInternalId("tp1", "choose")).thenReturn(1);
+		when(taskPublicIdLookupService.getInternalId("tp2", "write")).thenReturn(2);
+		when(taskPublicIdLookupService.getInternalId("tp3", "scatter")).thenReturn(3);
+		when(taskPublicIdLookupService.getInternalId("tp4", "speak")).thenReturn(4);
+
+		when(chooseTaskRepository.findByPublicId("tp1"))
 				.thenReturn(Optional.of(ChooseTask.builder().id(1).lessonId(lessonId).correctAnswer(1).build()));
-		when(writeTaskRepository.findById(2))
+		when(writeTaskRepository.findByPublicId("tp2"))
 				.thenReturn(Optional.of(WriteTask.builder().id(2).lessonId(lessonId).correctAnswer("correct").build()));
-		when(scatterTaskRepository.findById(3)).thenReturn(
+		when(scatterTaskRepository.findByPublicId("tp3")).thenReturn(
 				Optional.of(ScatterTask.builder().id(3).lessonId(lessonId).correctAnswer("word1 word2").build()));
-		when(speakTaskRepository.findById(4))
+		when(speakTaskRepository.findByPublicId("tp4"))
 				.thenReturn(Optional.of(SpeakTask.builder().id(4).lessonId(lessonId).expectedText("expected").build()));
 
 		// when
@@ -435,7 +451,7 @@ class TaskServiceTest {
 		Integer userId = 10;
 		Lesson lesson = Lesson.builder().id(lessonId).isActive(true).build();
 		UserLesson userLesson = UserLesson.builder().status(UserLessonStatus.IN_PROGRESS).build();
-		SubmitRequest request = SubmitRequest.builder().answers(List.of(new AnswerItemRequest(1, "invalid", "ans")))
+		SubmitRequest request = SubmitRequest.builder().answers(List.of(new AnswerItemRequest("tp1", "invalid", "ans")))
 				.build();
 
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(userId));

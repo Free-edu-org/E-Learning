@@ -51,8 +51,9 @@ class StudentDashboardControllerPublicIdWebTest {
 	void shouldReturnLessonResultByPublicIdWhenStudentHasAccess() {
 		// given
 		when(lessonPublicIdLookupService.getRequiredInternalId("lesson-public-id")).thenReturn(17);
-		when(studentService.getLessonResultDetails(17)).thenReturn(Mono.just(LessonResultDetailsResponse.builder()
-				.lessonPublicId("lesson-public-id").lessonTitle("Lesson").userId(10).tasks(List.of()).build()));
+		when(studentService.getLessonResultDetails(17))
+				.thenReturn(Mono.just(LessonResultDetailsResponse.builder().lessonPublicId("lesson-public-id")
+						.lessonTitle("Lesson").userPublicId("student-public-id").tasks(List.of()).build()));
 
 		// when
 		WebTestClient.ResponseSpec result = webTestClient.mutateWith(mockUser("student").roles("STUDENT")).get()

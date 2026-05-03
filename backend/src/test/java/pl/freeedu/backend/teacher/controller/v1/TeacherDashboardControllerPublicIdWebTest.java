@@ -42,10 +42,12 @@ class TeacherDashboardControllerPublicIdWebTest {
 
 	@Autowired
 	private LessonPublicIdLookupService lessonPublicIdLookupService;
+	@Autowired
+	private pl.freeedu.backend.user.service.UserPublicIdLookupService userPublicIdLookupService;
 
 	@BeforeEach
 	void setUp() {
-		org.mockito.Mockito.reset(teacherService, lessonPublicIdLookupService);
+		org.mockito.Mockito.reset(teacherService, lessonPublicIdLookupService, userPublicIdLookupService);
 	}
 
 	@Test
@@ -70,7 +72,7 @@ class TeacherDashboardControllerPublicIdWebTest {
 		// given
 		when(lessonPublicIdLookupService.getRequiredInternalId("lesson-public-id")).thenReturn(21);
 		when(teacherService.getLessonResultDetails(21, 77)).thenReturn(Mono.just(LessonResultDetailsResponse.builder()
-				.lessonPublicId("lesson-public-id").lessonTitle("Lesson").userId(77).tasks(List.of()).build()));
+				.lessonPublicId("lesson-public-id").lessonTitle("Lesson").userPublicId("77").tasks(List.of()).build()));
 
 		// when
 		WebTestClient.ResponseSpec result = webTestClient.mutateWith(mockUser("teacher").roles("TEACHER")).get()
@@ -126,6 +128,11 @@ class TeacherDashboardControllerPublicIdWebTest {
 			return mock(LessonPublicIdLookupService.class);
 		}
 
+		@Bean
+		pl.freeedu.backend.user.service.UserPublicIdLookupService userPublicIdLookupService() {
+			return mock(pl.freeedu.backend.user.service.UserPublicIdLookupService.class);
+		}
+
 		@Bean(name = "securityService")
 		SecurityService securityService() {
 			return mock(SecurityService.class);
@@ -133,8 +140,10 @@ class TeacherDashboardControllerPublicIdWebTest {
 
 		@Bean
 		TeacherDashboardController teacherDashboardController(TeacherService teacherService,
-				LessonPublicIdLookupService lessonPublicIdLookupService) {
-			return new TeacherDashboardController(teacherService, lessonPublicIdLookupService);
+				LessonPublicIdLookupService lessonPublicIdLookupService,
+				pl.freeedu.backend.user.service.UserPublicIdLookupService userPublicIdLookupService) {
+			return new TeacherDashboardController(teacherService, lessonPublicIdLookupService,
+					userPublicIdLookupService);
 		}
 
 		@Bean

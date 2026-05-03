@@ -10,12 +10,13 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
     let teacherToken;
     let studentToken;
     let secondTeacherToken;
-    let secondTeacherId;
+    let secondTeacherPublicId;
+    let studentPublicId;
     let lessonPublicId;
-    let chooseTaskId;
-    let writeTaskId;
-    let scatterTaskId;
-    let speakTaskId;
+    let chooseTaskPublicId;
+    let writeTaskPublicId;
+    let scatterTaskPublicId;
+    let speakTaskPublicId;
     const createdTasks = [];
 
     beforeAll(async () => {
@@ -27,6 +28,9 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
 
         res = await apiClient.post('/auth/login', studentCreds);
         studentToken = res.data.token;
+        setAuthToken(studentToken);
+        res = await apiClient.get('/users/me');
+        studentPublicId = res.data.publicId;
 
         // Create a second teacher
         const secondTeacher = {
@@ -44,7 +48,7 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
 
         setAuthToken(secondTeacherToken);
         res = await apiClient.get('/users/me');
-        secondTeacherId = res.data.id;
+        secondTeacherPublicId = res.data.publicId;
 
         // Create lesson as teacher
         setAuthToken(teacherToken);
@@ -59,10 +63,10 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
     afterAll(async () => {
         for (const task of createdTasks.reverse()) {
             setAuthToken(adminToken);
-            let response = await apiClient.delete(`/lessons/${lessonPublicId}/tasks/${task.type}/${task.id}`);
+            let response = await apiClient.delete(`/lessons/${lessonPublicId}/tasks/${task.type}/${task.publicId}`);
             if (response.status === 403) {
                 setAuthToken(teacherToken);
-                response = await apiClient.delete(`/lessons/${lessonPublicId}/tasks/${task.type}/${task.id}`);
+                response = await apiClient.delete(`/lessons/${lessonPublicId}/tasks/${task.type}/${task.publicId}`);
             }
             expect([204, 404]).toContain(response.status);
         }
@@ -73,9 +77,9 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
             expect([204, 404]).toContain(response.status);
         }
 
-        if (secondTeacherId) {
+        if (secondTeacherPublicId) {
             setAuthToken(adminToken);
-            const response = await apiClient.delete(`/users/${secondTeacherId}`);
+            const response = await apiClient.delete(`/users/${secondTeacherPublicId}`);
             expect([204, 404]).toContain(response.status);
         }
 
@@ -96,19 +100,20 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
                 section: 'Math'
             });
             expect(response.status).toBe(201);
-            expect(response.data.id).toBeDefined();
+            expect(response.data.publicId).toBeDefined();
             expect(response.data.lessonPublicId).toBe(lessonPublicId);
             expect(response.data).not.toHaveProperty('lessonId');
+            expect(response.data).not.toHaveProperty('id');
             expect(response.data.task).toBe('What is 2+2?');
             expect(response.data.possibleAnswers).toBe('3|4|5|6');
             expect(response.data.correctAnswer).toBe(1);
-            chooseTaskId = response.data.id;
-            createdTasks.push({ type: 'choose', id: response.data.id });
+            chooseTaskPublicId = response.data.publicId;
+            createdTasks.push({ type: 'choose', publicId: response.data.publicId });
         });
 
         it('should update a choose task (200)', async () => {
             setAuthToken(teacherToken);
-            const response = await apiClient.put(`/lessons/${lessonPublicId}/tasks/choose/${chooseTaskId}`, {
+            const response = await apiClient.put(`/lessons/${lessonPublicId}/tasks/choose/${chooseTaskPublicId}`, {
                 task: 'What is 3+3?',
                 possibleAnswers: '5|6|7|8',
                 correctAnswer: 1,
@@ -133,7 +138,7 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
 
         it('should return 404 TASK_NOT_FOUND for non-existent task update', async () => {
             setAuthToken(teacherToken);
-            const response = await apiClient.put(`/lessons/${lessonPublicId}/tasks/choose/9999999`, {
+            const response = await apiClient.put(`/lessons/${lessonPublicId}/tasks/choose/non-existent-task`, {
                 task: 'test',
                 possibleAnswers: 'a|b',
                 correctAnswer: 0
@@ -144,7 +149,7 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
 
         it('should return 403 or 404 for non-existent lesson (PreAuthorize may reject first)', async () => {
             setAuthToken(teacherToken);
-            const response = await apiClient.post(`/lessons/9999999/tasks/choose`, {
+            const response = await apiClient.post(`/lessons/non-existent-lesson/tasks/choose`, {
                 task: 'test',
                 possibleAnswers: 'a|b',
                 correctAnswer: 0
@@ -160,15 +165,15 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
                 possibleAnswers: 'a|b',
                 correctAnswer: 0
             });
-            const deletableId = res.data.id;
+            const deletablePublicId = res.data.publicId;
 
-            const response = await apiClient.delete(`/lessons/${lessonPublicId}/tasks/choose/${deletableId}`);
+            const response = await apiClient.delete(`/lessons/${lessonPublicId}/tasks/choose/${deletablePublicId}`);
             expect(response.status).toBe(204);
         });
 
         it('should return 404 TASK_NOT_FOUND for deleting non-existent task', async () => {
             setAuthToken(teacherToken);
-            const response = await apiClient.delete(`/lessons/${lessonPublicId}/tasks/choose/9999999`);
+            const response = await apiClient.delete(`/lessons/${lessonPublicId}/tasks/choose/non-existent-task`);
             expect(response.status).toBe(404);
             expect(response.data.code).toBe('TASK_NOT_FOUND');
         });
@@ -187,18 +192,18 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
                 section: 'Grammar'
             });
             expect(response.status).toBe(201);
-            expect(response.data.id).toBeDefined();
+            expect(response.data.publicId).toBeDefined();
             expect(response.data.lessonPublicId).toBe(lessonPublicId);
             expect(response.data).not.toHaveProperty('lessonId');
             expect(response.data.task).toBe('Write the past tense of go');
             expect(response.data.correctAnswer).toBe('went');
-            writeTaskId = response.data.id;
-            createdTasks.push({ type: 'write', id: response.data.id });
+            writeTaskPublicId = response.data.publicId;
+            createdTasks.push({ type: 'write', publicId: response.data.publicId });
         });
 
         it('should update a write task (200)', async () => {
             setAuthToken(teacherToken);
-            const response = await apiClient.put(`/lessons/${lessonPublicId}/tasks/write/${writeTaskId}`, {
+            const response = await apiClient.put(`/lessons/${lessonPublicId}/tasks/write/${writeTaskPublicId}`, {
                 task: 'Write the past tense of run',
                 correctAnswer: 'ran',
                 hint: 'Also irregular'
@@ -235,13 +240,13 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
             expect(response.data).not.toHaveProperty('lessonId');
             expect(response.data.words).toBe('is|cat|the|big');
             expect(response.data.correctAnswer).toBe('the cat is big');
-            scatterTaskId = response.data.id;
-            createdTasks.push({ type: 'scatter', id: response.data.id });
+            scatterTaskPublicId = response.data.publicId;
+            createdTasks.push({ type: 'scatter', publicId: response.data.publicId });
         });
 
         it('should update a scatter task (200)', async () => {
             setAuthToken(teacherToken);
-            const response = await apiClient.put(`/lessons/${lessonPublicId}/tasks/scatter/${scatterTaskId}`, {
+            const response = await apiClient.put(`/lessons/${lessonPublicId}/tasks/scatter/${scatterTaskPublicId}`, {
                 task: 'Arrange updated',
                 words: 'is|dog|the|small',
                 correctAnswer: 'the dog is small'
@@ -278,13 +283,13 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
             expect(response.data).not.toHaveProperty('lessonId');
             expect(response.data.task).toBe('Say hello in English');
             expect(response.data.expectedText).toBe('Hello');
-            speakTaskId = response.data.id;
-            createdTasks.push({ type: 'speak', id: response.data.id });
+            speakTaskPublicId = response.data.publicId;
+            createdTasks.push({ type: 'speak', publicId: response.data.publicId });
         });
 
         it('should update a speak task (200)', async () => {
             setAuthToken(teacherToken);
-            const response = await apiClient.put(`/lessons/${lessonPublicId}/tasks/speak/${speakTaskId}`, {
+            const response = await apiClient.put(`/lessons/${lessonPublicId}/tasks/speak/${speakTaskPublicId}`, {
                 task: 'Say goodbye in English',
                 expectedText: 'Goodbye',
                 hint: 'Farewell'
@@ -341,7 +346,7 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
 
         it('should return 404 for non-existent lesson', async () => {
             setAuthToken(teacherToken);
-            const response = await apiClient.get(`/lessons/9999999/tasks`);
+            const response = await apiClient.get(`/lessons/non-existent-lesson/tasks`);
             expect(response.status).toBe(404);
             expect(response.data.code).toBe('LESSON_NOT_FOUND');
         });
@@ -388,7 +393,7 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
 
         it('should return 403 for non-owner TEACHER updating task', async () => {
             setAuthToken(secondTeacherToken);
-            const response = await apiClient.put(`/lessons/${lessonPublicId}/tasks/choose/${chooseTaskId}`, {
+            const response = await apiClient.put(`/lessons/${lessonPublicId}/tasks/choose/${chooseTaskPublicId}`, {
                 task: 'Tampered',
                 possibleAnswers: 'a|b',
                 correctAnswer: 0
@@ -398,7 +403,7 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
 
         it('should return 403 for non-owner TEACHER deleting task', async () => {
             setAuthToken(secondTeacherToken);
-            const response = await apiClient.delete(`/lessons/${lessonPublicId}/tasks/choose/${chooseTaskId}`);
+            const response = await apiClient.delete(`/lessons/${lessonPublicId}/tasks/choose/${chooseTaskPublicId}`);
             expect(response.status).toBe(403);
         });
 
@@ -410,7 +415,7 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
             });
             expect(response.status).toBe(201);
             expect(response.data.task).toBe('Admin created task');
-            createdTasks.push({ type: 'write', id: response.data.id });
+            createdTasks.push({ type: 'write', publicId: response.data.publicId });
         });
     });
 
@@ -420,26 +425,25 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
     describe('Reset User Progress', () => {
         it('should return 204 when teacher resets progress', async () => {
             setAuthToken(teacherToken);
-            // Use a known user id (1 is typically seed data)
-            const response = await apiClient.post(`/lessons/${lessonPublicId}/users/1/reset`);
+            const response = await apiClient.post(`/lessons/${lessonPublicId}/users/${studentPublicId}/reset`);
             expect(response.status).toBe(204);
         });
 
         it('should return 401 without token', async () => {
             setAuthToken(null);
-            const response = await apiClient.post(`/lessons/${lessonPublicId}/users/1/reset`);
+            const response = await apiClient.post(`/lessons/${lessonPublicId}/users/${studentPublicId}/reset`);
             expect(response.status).toBe(401);
         });
 
         it('should return 403 for STUDENT resetting progress', async () => {
             setAuthToken(studentToken);
-            const response = await apiClient.post(`/lessons/${lessonPublicId}/users/1/reset`);
+            const response = await apiClient.post(`/lessons/${lessonPublicId}/users/${studentPublicId}/reset`);
             expect(response.status).toBe(403);
         });
 
         it('should return 403 for non-owner TEACHER resetting progress', async () => {
             setAuthToken(secondTeacherToken);
-            const response = await apiClient.post(`/lessons/${lessonPublicId}/users/1/reset`);
+            const response = await apiClient.post(`/lessons/${lessonPublicId}/users/${studentPublicId}/reset`);
             expect(response.status).toBe(403);
         });
     });

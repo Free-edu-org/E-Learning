@@ -117,7 +117,7 @@ interface UserDraft {
 interface GroupDraft {
   name: string;
   description: string;
-  teacherId: number | "";
+  teacherPublicId: number | "";
 }
 
 interface DeleteDialogState {
@@ -130,7 +130,7 @@ interface DeleteDialogState {
 interface MembershipDialogState {
   groupPublicId: string;
   groupName: string;
-  teacherId?: number | null;
+  teacherPublicId?: number | null;
 }
 
 interface DialogFeedbackState {
@@ -147,7 +147,7 @@ const emptyUserDraft: UserDraft = {
 const emptyGroupDraft: GroupDraft = {
   name: "",
   description: "",
-  teacherId: "",
+  teacherPublicId: "",
 };
 
 const validationFieldLabels: Record<string, string> = {
@@ -256,7 +256,7 @@ export function AdminDashboard() {
 
   const [membershipDialog, setMembershipDialog] =
     useState<MembershipDialogState | null>(null);
-  const [membershipStudentId, setMembershipStudentId] = useState<number | "">(
+  const [membershipstudentPublicId, setMembershipstudentPublicId] = useState<string | "">(
     "",
   );
   const [membershipLoading, setMembershipLoading] = useState(false);
@@ -274,7 +274,7 @@ export function AdminDashboard() {
 
   const filteredUsers = useMemo(() => {
     const normalizedQuery = userSearch.trim().toLowerCase();
-    const selectedTeacherIds = new Set(selectedTeacherFilters.map((t) => t.id));
+    const selectedteacherPublicIds = new Set(selectedTeacherFilters.map((t) => t.publicId));
     const selectedGroupIds = new Set(
       selectedGroupFilters.map((g) => g.publicId),
     );
@@ -293,9 +293,9 @@ export function AdminDashboard() {
         return false;
       }
 
-      if (selectedTeacherIds.size > 0) {
+      if (selectedteacherPublicIds.size > 0) {
         if (user.role === "TEACHER") {
-          if (!selectedTeacherIds.has(user.id)) {
+          if (!selectedteacherPublicIds.has(user.publicId)) {
             return false;
           }
         } else {
@@ -306,7 +306,7 @@ export function AdminDashboard() {
               : null;
           const teacherGroupIds = new Set(
             groups
-              .filter((g) => selectedTeacherIds.has(g.teacherId ?? -1))
+              .filter((g) => selectedteacherPublicIds.has(g.teacherPublicId ?? -1))
               .map((g) => g.publicId),
           );
           if (
@@ -321,7 +321,7 @@ export function AdminDashboard() {
       if (selectedGroupIds.size > 0) {
         if (user.role === "TEACHER") {
           const ownsSelectedGroup = selectedGroupFilters.some(
-            (group) => group.teacherId === user.id,
+            (group) => group.teacherPublicId === user.publicId,
           );
           if (!ownsSelectedGroup) {
             return false;
@@ -343,7 +343,7 @@ export function AdminDashboard() {
       return (
         user.username.toLowerCase().includes(normalizedQuery) ||
         user.email.toLowerCase().includes(normalizedQuery) ||
-        String(user.id).includes(normalizedQuery)
+        String(user.publicId).includes(normalizedQuery)
       );
     });
   }, [
@@ -358,11 +358,11 @@ export function AdminDashboard() {
 
   const filteredGroups = useMemo(() => {
     const normalizedQuery = groupSearch.trim().toLowerCase();
-    const selectedTeacherIds = new Set(selectedTeacherFilters.map((t) => t.id));
+    const selectedteacherPublicIds = new Set(selectedTeacherFilters.map((t) => t.publicId));
     return groups.filter((group) => {
       if (
-        selectedTeacherIds.size > 0 &&
-        !selectedTeacherIds.has(group.teacherId ?? -1)
+        selectedteacherPublicIds.size > 0 &&
+        !selectedteacherPublicIds.has(group.teacherPublicId ?? -1)
       ) {
         return false;
       }
@@ -406,12 +406,12 @@ export function AdminDashboard() {
   }, [membershipDialog, students]);
 
   const teacherNameById = useMemo(
-    () => new Map(teachers.map((teacher) => [teacher.id, teacher.username])),
+    () => new Map(teachers.map((teacher) => [teacher.publicId, teacher.username])),
     [teachers],
   );
 
   const teacherAvatarById = useMemo(
-    () => new Map(teachers.map((teacher) => [teacher.id, teacher.avatarUrl])),
+    () => new Map(teachers.map((teacher) => [teacher.publicId, teacher.avatarUrl])),
     [teachers],
   );
 
@@ -426,11 +426,11 @@ export function AdminDashboard() {
       return groups;
     }
 
-    const selectedTeacherIds = new Set(
-      selectedTeacherFilters.map((teacher) => teacher.id),
+    const selectedteacherPublicIds = new Set(
+      selectedTeacherFilters.map((teacher) => teacher.publicId),
     );
     return groups.filter((group) =>
-      selectedTeacherIds.has(group.teacherId ?? -1),
+      selectedteacherPublicIds.has(group.teacherPublicId ?? -1),
     );
   }, [groups, selectedTeacherFilters]);
 
@@ -592,13 +592,13 @@ export function AdminDashboard() {
             groupPublicId:
               userDraft.groupPublicId === "" ? null : userDraft.groupPublicId,
           };
-          updated = await adminService.updateStudent(selectedUser.id, payload);
+          updated = await adminService.updateStudent(selectedUser.publicId, payload);
         } else {
           const payload: UpdateUserRequest = {
             username: userDraft.username,
             email: userDraft.email,
           };
-          updated = await userService.updateUser(selectedUser.id, payload);
+          updated = await userService.updateUser(selectedUser.publicId, payload);
         }
 
         setSelectedUser(updated);
@@ -625,7 +625,7 @@ export function AdminDashboard() {
     setSelectedGroup(null);
     setGroupDraft({
       ...emptyGroupDraft,
-      teacherId: teachers.length === 1 ? teachers[0].id : "",
+      teacherPublicId: teachers.length === 1 ? teachers[0].publicId : "",
     });
     setGroupDialogFeedback(null);
     setGroupDialogOpen(true);
@@ -637,7 +637,7 @@ export function AdminDashboard() {
     setGroupDraft({
       name: group.name,
       description: group.description,
-      teacherId: group.teacherId ?? "",
+      teacherPublicId: group.teacherPublicId ?? "",
     });
     setGroupDialogFeedback(null);
     setGroupDialogOpen(true);
@@ -664,7 +664,7 @@ export function AdminDashboard() {
       const payload = {
         name: groupDraft.name,
         description: groupDraft.description,
-        teacherId: groupDraft.teacherId === "" ? null : groupDraft.teacherId,
+        teacherPublicId: groupDraft.teacherPublicId === "" ? null : groupDraft.teacherPublicId,
       };
 
       if (groupDialogMode === "create") {
@@ -718,8 +718,8 @@ export function AdminDashboard() {
     setDeleteLoading(true);
     try {
       if (deleteDialog.type === "user") {
-        await userService.deleteUser(deleteDialog.id as number);
-        if (selectedUser?.id === deleteDialog.id) {
+        await userService.deleteUser(deleteDialog.publicId as number);
+        if (selectedUser?.publicId === deleteDialog.publicId) {
           setSelectedUser(null);
         }
         await Promise.all([loadUsers(), loadAdminStats()]);
@@ -728,7 +728,7 @@ export function AdminDashboard() {
           message: "Konto zostało usunięte.",
         });
       } else {
-        await userGroupService.deleteGroup(String(deleteDialog.id));
+        await userGroupService.deleteGroup(String(deleteDialog.publicId));
         await Promise.all([loadGroups(), loadAdminStats()]);
         setDeleteDialogFeedback({
           severity: "success",
@@ -754,9 +754,9 @@ export function AdminDashboard() {
     setMembershipDialog({
       groupPublicId: group.publicId,
       groupName: group.name,
-      teacherId: group.teacherId,
+      teacherPublicId: group.teacherPublicId,
     });
-    setMembershipStudentId("");
+    setMembershipstudentPublicId("");
   };
 
   const closeMembershipDialog = () => {
@@ -764,7 +764,7 @@ export function AdminDashboard() {
       return;
     }
     setMembershipDialog(null);
-    setMembershipStudentId("");
+    setMembershipstudentPublicId("");
     setMembershipDialogFeedback(null);
   };
 
@@ -772,7 +772,7 @@ export function AdminDashboard() {
     if (!membershipDialog || membershipLoading) {
       return;
     }
-    if (membershipStudentId === "") {
+    if (membershipstudentPublicId === "") {
       setMembershipDialogFeedback({
         severity: "error",
         message: "Wybierz ucznia z listy.",
@@ -785,14 +785,14 @@ export function AdminDashboard() {
     try {
       await userGroupService.addStudentToGroup(
         membershipDialog.groupPublicId,
-        membershipStudentId,
+        membershipstudentPublicId,
       );
       setMembershipDialogFeedback({
         severity: "success",
         message: "Uczeń został dodany do grupy.",
       });
       await Promise.all([loadGroups(), loadUsers()]);
-      setMembershipStudentId("");
+      setMembershipstudentPublicId("");
     } catch (error) {
       setMembershipDialogFeedback({
         severity: "error",
@@ -803,7 +803,7 @@ export function AdminDashboard() {
     }
   };
 
-  const removeMembershipStudent = async (studentId: number) => {
+  const removeMembershipStudent = async (studentPublicId: number) => {
     if (!membershipDialog || membershipLoading) {
       return;
     }
@@ -813,7 +813,7 @@ export function AdminDashboard() {
     try {
       await userGroupService.removeStudentFromGroup(
         membershipDialog.groupPublicId,
-        studentId,
+        studentPublicId,
       );
       setMembershipDialogFeedback({
         severity: "success",
@@ -1035,7 +1035,7 @@ export function AdminDashboard() {
                     onChange={(_, value) => setSelectedTeacherFilters(value)}
                     getOptionLabel={(option) => option.username}
                     isOptionEqualToValue={(option, value) =>
-                      option.id === value.id
+                      option.publicId === value.publicId
                     }
                     disableCloseOnSelect
                     limitTags={1}
@@ -1228,7 +1228,7 @@ export function AdminDashboard() {
                   <Stack spacing={1.25}>
                     {filteredUsers.map((user) => (
                       <Paper
-                        key={`${user.role}-${user.id}`}
+                        key={`${user.role}-${user.publicId}`}
                         elevation={0}
                         sx={panelListRowSx}
                       >
@@ -1337,7 +1337,7 @@ export function AdminDashboard() {
                               onClick={() =>
                                 openDeleteDialog({
                                   type: "user",
-                                  id: user.id,
+                                  id: user.publicId,
                                   label: user.username,
                                   detail:
                                     user.role === "STUDENT" &&
@@ -1360,7 +1360,7 @@ export function AdminDashboard() {
                   <Grid container spacing={2}>
                     {filteredUsers.map((user) => (
                       <Grid
-                        key={`${user.role}-${user.id}`}
+                        key={`${user.role}-${user.publicId}`}
                         size={{ xs: 12, md: 6, xl: 4 }}
                       >
                         <Card
@@ -1512,7 +1512,7 @@ export function AdminDashboard() {
                                 onClick={() =>
                                   openDeleteDialog({
                                     type: "user",
-                                    id: user.id,
+                                    id: user.publicId,
                                     label: user.username,
                                     detail:
                                       user.role === "STUDENT" &&
@@ -1608,7 +1608,7 @@ export function AdminDashboard() {
                     onChange={(_, value) => setSelectedTeacherFilters(value)}
                     getOptionLabel={(option) => option.username}
                     isOptionEqualToValue={(option, value) =>
-                      option.id === value.id
+                      option.publicId === value.publicId
                     }
                     disableCloseOnSelect
                     limitTags={1}
@@ -1762,10 +1762,10 @@ export function AdminDashboard() {
                                 >
                                   <UserAvatar
                                     avatarUrl={teacherAvatarById.get(
-                                      group.teacherId ?? -1,
+                                      group.teacherPublicId ?? -1,
                                     )}
                                     username={teacherNameById.get(
-                                      group.teacherId ?? -1,
+                                      group.teacherPublicId ?? -1,
                                     )}
                                     size={20}
                                   />
@@ -1777,7 +1777,7 @@ export function AdminDashboard() {
                                     }}
                                   >
                                     {teacherNameById.get(
-                                      group.teacherId ?? -1,
+                                      group.teacherPublicId ?? -1,
                                     ) ?? "Brak danych"}
                                   </Box>
                                 </Stack>
@@ -1902,10 +1902,10 @@ export function AdminDashboard() {
                                     >
                                       <UserAvatar
                                         avatarUrl={teacherAvatarById.get(
-                                          group.teacherId ?? -1,
+                                          group.teacherPublicId ?? -1,
                                         )}
                                         username={teacherNameById.get(
-                                          group.teacherId ?? -1,
+                                          group.teacherPublicId ?? -1,
                                         )}
                                         size={18}
                                       />
@@ -1917,7 +1917,7 @@ export function AdminDashboard() {
                                         }}
                                       >
                                         {teacherNameById.get(
-                                          group.teacherId ?? -1,
+                                          group.teacherPublicId ?? -1,
                                         ) ?? "Brak danych"}
                                       </Box>
                                     </Stack>
@@ -2246,11 +2246,11 @@ export function AdminDashboard() {
                   <TextField
                     select
                     label="Właściciel grupy"
-                    value={groupDraft.teacherId}
+                    value={groupDraft.teacherPublicId}
                     onChange={(event) =>
                       setGroupDraft((current) => ({
                         ...current,
-                        teacherId:
+                        teacherPublicId:
                           event.target.value === ""
                             ? ""
                             : Number(event.target.value),
@@ -2262,8 +2262,8 @@ export function AdminDashboard() {
                     <MenuItem value="">Bez właściciela</MenuItem>
                     {teachers.map((teacher) => (
                       <MenuItem
-                        key={teacher.id}
-                        value={teacher.id}
+                        key={teacher.publicId}
+                        value={teacher.publicId}
                         sx={{ py: 1 }}
                       >
                         <Stack
@@ -2421,10 +2421,10 @@ export function AdminDashboard() {
                     >
                       <UserAvatar
                         avatarUrl={teacherAvatarById.get(
-                          membershipDialog?.teacherId ?? -1,
+                          membershipDialog?.teacherPublicId ?? -1,
                         )}
                         username={teacherNameById.get(
-                          membershipDialog?.teacherId ?? -1,
+                          membershipDialog?.teacherPublicId ?? -1,
                         )}
                         size={18}
                       />
@@ -2433,7 +2433,7 @@ export function AdminDashboard() {
                         sx={{ fontWeight: 700, color: "text.primary" }}
                       >
                         {teacherNameById.get(
-                          membershipDialog?.teacherId ?? -1,
+                          membershipDialog?.teacherPublicId ?? -1,
                         ) ?? "Brak danych"}
                       </Box>
                     </Stack>
@@ -2453,7 +2453,7 @@ export function AdminDashboard() {
                   <Stack spacing={1}>
                     {currentMembershipStudents.map((student) => (
                       <Paper
-                        key={student.id}
+                        key={student.publicId}
                         elevation={0}
                         sx={{
                           ...panelSurfaceSx,
@@ -2499,7 +2499,7 @@ export function AdminDashboard() {
                             size="small"
                             color="error"
                             startIcon={<DeleteIcon fontSize="small" />}
-                            onClick={() => removeMembershipStudent(student.id)}
+                            onClick={() => removeMembershipStudent(student.publicId)}
                             disabled={membershipLoading}
                             sx={panelDeleteButtonSx}
                           >
@@ -2524,17 +2524,17 @@ export function AdminDashboard() {
                   )}
                   value={
                     availableMembershipStudents.find(
-                      (student) => student.id === membershipStudentId,
+                      (student) => student.publicId === membershipstudentPublicId,
                     ) ?? null
                   }
                   onChange={(_, value) =>
-                    setMembershipStudentId(value?.id ?? "")
+                    setMembershipstudentPublicId(value?.publicId ?? "")
                   }
                   getOptionLabel={(option) =>
                     `${option.username} (${option.email})`
                   }
                   isOptionEqualToValue={(option, value) =>
-                    option.id === value.id
+                    option.publicId === value.publicId
                   }
                   noOptionsText="Brak wolnych uczniów dla tego nauczyciela"
                   renderInput={(params) => (

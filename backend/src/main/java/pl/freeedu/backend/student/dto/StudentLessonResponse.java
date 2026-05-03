@@ -20,7 +20,7 @@ public class StudentLessonResponse {
 	private String title;
 	private String theme;
 	private Boolean isActive;
-	private Integer teacherId;
+	private String teacherPublicId;
 	private String teacherName;
 	private String teacherAvatarUrl;
 	private LocalDateTime createdAt;

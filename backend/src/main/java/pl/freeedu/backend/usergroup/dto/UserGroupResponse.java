@@ -23,5 +23,5 @@ public class UserGroupResponse {
 
 	private LocalDateTime createdAt;
 
-	private Integer teacherId;
+	private String teacherPublicId;
 }

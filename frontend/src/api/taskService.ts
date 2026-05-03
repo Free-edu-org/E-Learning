@@ -33,7 +33,7 @@ export interface CreateSpeakTaskRequest {
 }
 
 export interface TaskResponse {
-  id: number;
+  publicId: string;
   lessonPublicId: string;
   task: string;
   hint?: string;
@@ -121,7 +121,7 @@ export const taskService = {
 
   updateChooseTask: (
     lessonPublicId: string,
-    taskId: number,
+    taskId: string,
     payload: CreateChooseTaskRequest,
   ) =>
     fetchApi<ChooseTaskResponse>(
@@ -130,7 +130,7 @@ export const taskService = {
     ),
   updateWriteTask: (
     lessonPublicId: string,
-    taskId: number,
+    taskId: string,
     payload: CreateWriteTaskRequest,
   ) =>
     fetchApi<WriteTaskResponse>(
@@ -139,7 +139,7 @@ export const taskService = {
     ),
   updateScatterTask: (
     lessonPublicId: string,
-    taskId: number,
+    taskId: string,
     payload: CreateScatterTaskRequest,
   ) =>
     fetchApi<ScatterTaskResponse>(
@@ -148,7 +148,7 @@ export const taskService = {
     ),
   updateSpeakTask: (
     lessonPublicId: string,
-    taskId: number,
+    taskId: string,
     payload: CreateSpeakTaskRequest,
   ) =>
     fetchApi<SpeakTaskResponse>(
@@ -156,7 +156,7 @@ export const taskService = {
       { method: "PUT", body: JSON.stringify(payload) },
     ),
 
-  deleteTask: (lessonPublicId: string, type: TaskType, taskId: number) =>
+  deleteTask: (lessonPublicId: string, type: TaskType, taskId: string) =>
     fetchApi<void>(
       `/api/v1/lessons/${lessonPublicId}/tasks/${type}/${taskId}`,
       {
@@ -165,7 +165,7 @@ export const taskService = {
     ),
   transcribeSpeakTask: (
     lessonPublicId: string,
-    taskId: number,
+    taskId: string,
     audio: Blob,
   ) => {
     const formData = new FormData();

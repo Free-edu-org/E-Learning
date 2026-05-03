@@ -8,8 +8,8 @@ describe('Teacher Lesson Stats API (GET /api/v1/teacher/lessons/{lessonPublicId}
 
     let adminToken, teacherToken, studentToken;
     let isolatedGroupId, isolatedLessonPublicId;
-    let isolatedStudentId, isolatedStudentToken;
-    let chooseTaskId;
+    let isolatedStudentPublicId, isolatedStudentToken;
+    let chooseTaskPublicId;
 
     // ─── Setup: isolated lesson with one student who completes it ──────
     beforeAll(async () => {
@@ -49,7 +49,7 @@ describe('Teacher Lesson Stats API (GET /api/v1/teacher/lessons/{lessonPublicId}
             section: 'Math'
         });
         expect(res.status).toBe(201);
-        chooseTaskId = res.data.id;
+        chooseTaskPublicId = res.data.publicId;
 
         res = await apiClient.patch(`/lessons/${isolatedLessonPublicId}/status`, { isActive: true });
         expect(res.status).toBe(204);
@@ -72,11 +72,11 @@ describe('Teacher Lesson Stats API (GET /api/v1/teacher/lessons/{lessonPublicId}
 
         setAuthToken(isolatedStudentToken);
         res = await apiClient.get('/users/me');
-        isolatedStudentId = res.data.id;
+        isolatedStudentPublicId = res.data.publicId;
 
         // Add student to group
         setAuthToken(adminToken);
-        res = await apiClient.post(`/user-groups/${isolatedGroupId}/members/${isolatedStudentId}`);
+        res = await apiClient.post(`/user-groups/${isolatedGroupId}/members/${isolatedStudentPublicId}`);
         expect(res.status).toBe(204);
 
         // Student starts and submits the lesson
@@ -87,7 +87,7 @@ describe('Teacher Lesson Stats API (GET /api/v1/teacher/lessons/{lessonPublicId}
         expect(res.data).not.toHaveProperty('lessonId');
 
         res = await apiClient.post(`/lessons/${isolatedLessonPublicId}/submit`, {
-            answers: [{ taskId: chooseTaskId, taskType: 'choose', answer: '1' }]
+            answers: [{ taskPublicId: chooseTaskPublicId, taskType: 'choose', answer: '1' }]
         });
         expect(res.status).toBe(200);
     });
@@ -95,11 +95,11 @@ describe('Teacher Lesson Stats API (GET /api/v1/teacher/lessons/{lessonPublicId}
     // ─── Cleanup ─────────────────────────────────────────────────────
     afterAll(async () => {
         setAuthToken(teacherToken);
-        if (isolatedLessonPublicId && isolatedStudentId) {
-            await apiClient.post(`/lessons/${isolatedLessonPublicId}/users/${isolatedStudentId}/reset`);
+        if (isolatedLessonPublicId && isolatedStudentPublicId) {
+            await apiClient.post(`/lessons/${isolatedLessonPublicId}/users/${isolatedStudentPublicId}/reset`);
         }
-        if (chooseTaskId) {
-            await apiClient.delete(`/lessons/${isolatedLessonPublicId}/tasks/choose/${chooseTaskId}`);
+        if (chooseTaskPublicId) {
+            await apiClient.delete(`/lessons/${isolatedLessonPublicId}/tasks/choose/${chooseTaskPublicId}`);
         }
         if (isolatedLessonPublicId) {
             const r = await apiClient.delete(`/lessons/${isolatedLessonPublicId}`);
@@ -111,8 +111,8 @@ describe('Teacher Lesson Stats API (GET /api/v1/teacher/lessons/{lessonPublicId}
             const r = await apiClient.delete(`/user-groups/${isolatedGroupId}`);
             expect([204, 404]).toContain(r.status);
         }
-        if (isolatedStudentId) {
-            const r = await apiClient.delete(`/users/${isolatedStudentId}`);
+        if (isolatedStudentPublicId) {
+            const r = await apiClient.delete(`/users/${isolatedStudentPublicId}`);
             expect([204, 404]).toContain(r.status);
         }
 
@@ -155,11 +155,11 @@ describe('Teacher Lesson Stats API (GET /api/v1/teacher/lessons/{lessonPublicId}
                 password: otherTeacherData.password
             });
             const otherTeacherToken = res.data.token;
-            const otherTeacherId = (await (async () => {
+            const otherTeacherPublicId = (await (async () => {
                 setAuthToken(otherTeacherToken);
                 const r = await apiClient.get('/users/me');
                 return r.data;
-            })()).id;
+            })()).publicId;
 
             try {
                 setAuthToken(otherTeacherToken);
@@ -167,7 +167,7 @@ describe('Teacher Lesson Stats API (GET /api/v1/teacher/lessons/{lessonPublicId}
                 expect(response.status).toBe(403);
             } finally {
                 setAuthToken(adminToken);
-                await apiClient.delete(`/users/${otherTeacherId}`);
+                await apiClient.delete(`/users/${otherTeacherPublicId}`);
             }
         });
     });
@@ -212,7 +212,7 @@ describe('Teacher Lesson Stats API (GET /api/v1/teacher/lessons/{lessonPublicId}
         it('each studentResult should have required fields', () => {
             expect(stats.studentResults.length).toBeGreaterThanOrEqual(1);
             const result = stats.studentResults[0];
-            expect(result).toHaveProperty('userId');
+            expect(result).toHaveProperty('userPublicId');
             expect(result).toHaveProperty('username');
             expect(result).toHaveProperty('completedAt');
             expect(result).toHaveProperty('score');
@@ -259,12 +259,12 @@ describe('Teacher Lesson Stats API (GET /api/v1/teacher/lessons/{lessonPublicId}
 
         it('should count the isolated student who completed the lesson', () => {
             expect(stats.studentsCompleted).toBeGreaterThanOrEqual(1);
-            const found = stats.studentResults.find((r) => r.userId === isolatedStudentId);
+            const found = stats.studentResults.find((r) => r.userPublicId === isolatedStudentPublicId);
             expect(found).toBeDefined();
         });
 
         it('isolated student should have correct score (1/1 = 100%)', () => {
-            const found = stats.studentResults.find((r) => r.userId === isolatedStudentId);
+            const found = stats.studentResults.find((r) => r.userPublicId === isolatedStudentPublicId);
             expect(found.score).toBe(1);
             expect(found.maxScore).toBe(1);
             expect(found.resultPercent).toBe(100);

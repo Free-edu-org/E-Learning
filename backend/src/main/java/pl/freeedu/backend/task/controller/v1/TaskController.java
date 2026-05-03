@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import pl.freeedu.backend.lesson.service.LessonPublicIdLookupService;
 import pl.freeedu.backend.task.dto.*;
 import pl.freeedu.backend.task.service.TaskService;
+import pl.freeedu.backend.user.service.UserPublicIdLookupService;
 import reactor.core.publisher.Mono;
 
 @RestController
@@ -25,10 +26,13 @@ public class TaskController {
 
 	private final TaskService taskService;
 	private final LessonPublicIdLookupService lessonPublicIdLookupService;
+	private final UserPublicIdLookupService userPublicIdLookupService;
 
-	public TaskController(TaskService taskService, LessonPublicIdLookupService lessonPublicIdLookupService) {
+	public TaskController(TaskService taskService, LessonPublicIdLookupService lessonPublicIdLookupService,
+			UserPublicIdLookupService userPublicIdLookupService) {
 		this.taskService = taskService;
 		this.lessonPublicIdLookupService = lessonPublicIdLookupService;
+		this.userPublicIdLookupService = userPublicIdLookupService;
 	}
 
 	// --- Get all tasks for a lesson ---
@@ -62,7 +66,7 @@ public class TaskController {
 			@ApiResponse(responseCode = "404", description = "Task not found in the lesson", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PutMapping("/tasks/choose/{taskId}")
 	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
-	public Mono<ChooseTaskResponse> updateChooseTask(@PathVariable String lessonPublicId, @PathVariable Integer taskId,
+	public Mono<ChooseTaskResponse> updateChooseTask(@PathVariable String lessonPublicId, @PathVariable String taskId,
 			@Valid @RequestBody Mono<ChooseTaskRequest> request) {
 		return taskService.updateChooseTask(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), taskId,
 				request);
@@ -74,7 +78,7 @@ public class TaskController {
 	@DeleteMapping("/tasks/choose/{taskId}")
 	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public Mono<Void> deleteChooseTask(@PathVariable String lessonPublicId, @PathVariable Integer taskId) {
+	public Mono<Void> deleteChooseTask(@PathVariable String lessonPublicId, @PathVariable String taskId) {
 		return taskService.deleteChooseTask(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), taskId);
 	}
 
@@ -97,7 +101,7 @@ public class TaskController {
 			@ApiResponse(responseCode = "404", description = "Task not found in the lesson", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PutMapping("/tasks/write/{taskId}")
 	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
-	public Mono<WriteTaskResponse> updateWriteTask(@PathVariable String lessonPublicId, @PathVariable Integer taskId,
+	public Mono<WriteTaskResponse> updateWriteTask(@PathVariable String lessonPublicId, @PathVariable String taskId,
 			@Valid @RequestBody Mono<WriteTaskRequest> request) {
 		return taskService.updateWriteTask(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), taskId,
 				request);
@@ -109,7 +113,7 @@ public class TaskController {
 	@DeleteMapping("/tasks/write/{taskId}")
 	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public Mono<Void> deleteWriteTask(@PathVariable String lessonPublicId, @PathVariable Integer taskId) {
+	public Mono<Void> deleteWriteTask(@PathVariable String lessonPublicId, @PathVariable String taskId) {
 		return taskService.deleteWriteTask(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), taskId);
 	}
 
@@ -133,8 +137,8 @@ public class TaskController {
 			@ApiResponse(responseCode = "404", description = "Task not found in the lesson", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PutMapping("/tasks/scatter/{taskId}")
 	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
-	public Mono<ScatterTaskResponse> updateScatterTask(@PathVariable String lessonPublicId,
-			@PathVariable Integer taskId, @Valid @RequestBody Mono<ScatterTaskRequest> request) {
+	public Mono<ScatterTaskResponse> updateScatterTask(@PathVariable String lessonPublicId, @PathVariable String taskId,
+			@Valid @RequestBody Mono<ScatterTaskRequest> request) {
 		return taskService.updateScatterTask(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), taskId,
 				request);
 	}
@@ -145,7 +149,7 @@ public class TaskController {
 	@DeleteMapping("/tasks/scatter/{taskId}")
 	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public Mono<Void> deleteScatterTask(@PathVariable String lessonPublicId, @PathVariable Integer taskId) {
+	public Mono<Void> deleteScatterTask(@PathVariable String lessonPublicId, @PathVariable String taskId) {
 		return taskService.deleteScatterTask(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), taskId);
 	}
 
@@ -168,7 +172,7 @@ public class TaskController {
 			@ApiResponse(responseCode = "404", description = "Task not found in the lesson", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PutMapping("/tasks/speak/{taskId}")
 	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
-	public Mono<SpeakTaskResponse> updateSpeakTask(@PathVariable String lessonPublicId, @PathVariable Integer taskId,
+	public Mono<SpeakTaskResponse> updateSpeakTask(@PathVariable String lessonPublicId, @PathVariable String taskId,
 			@Valid @RequestBody Mono<SpeakTaskRequest> request) {
 		return taskService.updateSpeakTask(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), taskId,
 				request);
@@ -180,7 +184,7 @@ public class TaskController {
 	@DeleteMapping("/tasks/speak/{taskId}")
 	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public Mono<Void> deleteSpeakTask(@PathVariable String lessonPublicId, @PathVariable Integer taskId) {
+	public Mono<Void> deleteSpeakTask(@PathVariable String lessonPublicId, @PathVariable String taskId) {
 		return taskService.deleteSpeakTask(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), taskId);
 	}
 
@@ -193,7 +197,7 @@ public class TaskController {
 	@PostMapping(value = "/tasks/speak/{taskId}/transcribe", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	@PreAuthorize("hasRole('STUDENT')")
 	public Mono<SpeakTranscriptionResponse> transcribeSpeakTask(@PathVariable String lessonPublicId,
-			@PathVariable Integer taskId, @RequestPart("file") Mono<FilePart> audio) {
+			@PathVariable String taskId, @RequestPart("file") Mono<FilePart> audio) {
 		return taskService.transcribeSpeakTask(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId),
 				taskId, audio);
 	}
@@ -217,10 +221,11 @@ public class TaskController {
 	@Operation(summary = "Reset student progress for a lesson")
 	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Progress reset successfully"),
 			@ApiResponse(responseCode = "404", description = "Lesson not found", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
-	@PostMapping("/users/{userId}/reset")
+	@PostMapping("/users/{userPublicId}/reset")
 	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public Mono<Void> resetProgress(@PathVariable String lessonPublicId, @PathVariable Integer userId) {
-		return taskService.resetUserProgress(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), userId);
+	public Mono<Void> resetProgress(@PathVariable String lessonPublicId, @PathVariable String userPublicId) {
+		return userPublicIdLookupService.getInternalId(userPublicId).flatMap(userId -> taskService
+				.resetUserProgress(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), userId));
 	}
 }

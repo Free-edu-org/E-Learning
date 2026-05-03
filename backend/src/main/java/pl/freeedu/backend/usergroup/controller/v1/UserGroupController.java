@@ -8,6 +8,7 @@ import pl.freeedu.backend.usergroup.dto.UserGroupRequest;
 import pl.freeedu.backend.usergroup.dto.UserGroupResponse;
 import pl.freeedu.backend.usergroup.service.UserGroupPublicIdLookupService;
 import pl.freeedu.backend.usergroup.service.UserGroupService;
+import pl.freeedu.backend.user.service.UserPublicIdLookupService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -26,11 +27,14 @@ public class UserGroupController {
 
 	private final UserGroupService userGroupService;
 	private final UserGroupPublicIdLookupService userGroupPublicIdLookupService;
+	private final UserPublicIdLookupService userPublicIdLookupService;
 
 	public UserGroupController(UserGroupService userGroupService,
-			UserGroupPublicIdLookupService userGroupPublicIdLookupService) {
+			UserGroupPublicIdLookupService userGroupPublicIdLookupService,
+			UserPublicIdLookupService userPublicIdLookupService) {
 		this.userGroupService = userGroupService;
 		this.userGroupPublicIdLookupService = userGroupPublicIdLookupService;
+		this.userPublicIdLookupService = userPublicIdLookupService;
 	}
 
 	@Operation(summary = "Create a new user group")
@@ -90,21 +94,22 @@ public class UserGroupController {
 			@ApiResponse(responseCode = "400", description = "Invalid role for group member"),
 			@ApiResponse(responseCode = "404", description = "Group or user not found"),
 			@ApiResponse(responseCode = "409", description = "Student already assigned to a group")})
-	@PostMapping("/{groupPublicId}/members/{userId}")
+	@PostMapping("/{groupPublicId}/members/{userPublicId}")
 	@PreAuthorize("hasRole('ADMIN') or (hasRole('TEACHER') and @securityService.isGroupOwner(authentication, #groupPublicId))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public Mono<Void> addMember(@PathVariable String groupPublicId, @PathVariable Integer userId) {
-		return userGroupService.addMember(userGroupPublicIdLookupService.getRequiredInternalId(groupPublicId), userId);
+	public Mono<Void> addMember(@PathVariable String groupPublicId, @PathVariable String userPublicId) {
+		return userPublicIdLookupService.getInternalId(userPublicId).flatMap(userId -> userGroupService
+				.addMember(userGroupPublicIdLookupService.getRequiredInternalId(groupPublicId), userId));
 	}
 
 	@Operation(summary = "Remove a member from a group")
 	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Member removed from group"),
 			@ApiResponse(responseCode = "404", description = "Group or membership not found")})
-	@DeleteMapping("/{groupPublicId}/members/{userId}")
+	@DeleteMapping("/{groupPublicId}/members/{userPublicId}")
 	@PreAuthorize("hasRole('ADMIN') or (hasRole('TEACHER') and @securityService.isGroupOwner(authentication, #groupPublicId))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public Mono<Void> removeMember(@PathVariable String groupPublicId, @PathVariable Integer userId) {
-		return userGroupService.removeMember(userGroupPublicIdLookupService.getRequiredInternalId(groupPublicId),
-				userId);
+	public Mono<Void> removeMember(@PathVariable String groupPublicId, @PathVariable String userPublicId) {
+		return userPublicIdLookupService.getInternalId(userPublicId).flatMap(userId -> userGroupService
+				.removeMember(userGroupPublicIdLookupService.getRequiredInternalId(groupPublicId), userId));
 	}
 }

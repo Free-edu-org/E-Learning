@@ -90,22 +90,22 @@ class AdminServiceTest {
 	@Test
 	void shouldGetTeachers() {
 		// given
-		User teacher = User.builder().id(1).username("T1").role(Role.TEACHER).build();
+		User teacher = User.builder().publicId("pub-" + 1).username("T1").role(Role.TEACHER).build();
 		when(userRepository.findByRoleOrderByCreatedAtDesc(Role.TEACHER)).thenReturn(List.of(teacher));
-		when(userMapper.toUserResponse(teacher)).thenReturn(UserResponse.builder().id(1).build());
+		when(userMapper.toUserResponse(teacher)).thenReturn(UserResponse.builder().publicId("pub-" + 1).build());
 
 		// when
 		Flux<UserResponse> result = adminService.getTeachers();
 
 		// then
-		StepVerifier.create(result).assertNext(resp -> assertEquals(1, resp.getId())).verifyComplete();
+		StepVerifier.create(result).assertNext(resp -> assertEquals("pub-1", resp.getPublicId())).verifyComplete();
 	}
 
 	@Test
 	void shouldGetStudentsWithGroupInfo() {
 		// given
-		User student = User.builder().id(1).username("S1").role(Role.STUDENT).build();
-		UserGroup group = UserGroup.builder().id(10).publicId("group-public-id").name("G1").build();
+		User student = User.builder().publicId("pub-" + 1).username("S1").role(Role.STUDENT).build();
+		UserGroup group = UserGroup.builder().publicId("pub-" + 10).publicId("group-public-id").name("G1").build();
 
 		when(userGroupRepository.findAll()).thenReturn(List.of(group));
 		when(userInGroupRepository.findAllMemberships())
@@ -127,7 +127,7 @@ class AdminServiceTest {
 
 		// then
 		StepVerifier.create(result).assertNext(resp -> {
-			assertEquals(1, resp.getId());
+			assertEquals("pub-1", resp.getPublicId());
 			assertEquals("G1", resp.getGroupName());
 			assertEquals("group-public-id", resp.getGroupPublicId());
 		}).verifyComplete();
@@ -138,7 +138,7 @@ class AdminServiceTest {
 		// given
 		AdminCreateStudentRequest req = AdminCreateStudentRequest.builder().email("s@e.com").username("s1")
 				.password("p").groupPublicId("group-public-id").build();
-		UserGroup group = UserGroup.builder().id(10).publicId("group-public-id").name("G1").build();
+		UserGroup group = UserGroup.builder().publicId("pub-" + 10).publicId("group-public-id").name("G1").build();
 
 		when(userRepository.existsByEmail(req.getEmail())).thenReturn(false);
 		when(userRepository.existsByUsername(req.getUsername())).thenReturn(false);
@@ -155,7 +155,7 @@ class AdminServiceTest {
 
 		// then
 		StepVerifier.create(result).assertNext(resp -> {
-			assertEquals(1, resp.getId());
+			assertEquals("pub-1", resp.getPublicId());
 			assertEquals("group-public-id", resp.getGroupPublicId());
 			verify(userInGroupRepository).save(any());
 		}).verifyComplete();
@@ -199,8 +199,10 @@ class AdminServiceTest {
 		// given
 		AdminUpdateStudentRequest req = AdminUpdateStudentRequest.builder().email("new@e.com").username("new")
 				.groupPublicId("new-group-public-id").build();
-		User student = User.builder().id(1).email("old@e.com").username("old").role(Role.STUDENT).build();
-		UserGroup newGroup = UserGroup.builder().id(11).publicId("new-group-public-id").name("NG").build();
+		User student = User.builder().publicId("pub-" + 1).email("old@e.com").username("old").role(Role.STUDENT)
+				.build();
+		UserGroup newGroup = UserGroup.builder().publicId("pub-" + 11).publicId("new-group-public-id").name("NG")
+				.build();
 
 		when(userRepository.findById(1)).thenReturn(Optional.of(student));
 		when(userRepository.existsByEmail("new@e.com")).thenReturn(false);
@@ -225,7 +227,8 @@ class AdminServiceTest {
 		// given
 		AdminUpdateStudentRequest req = AdminUpdateStudentRequest.builder().email("old@e.com").username("old")
 				.groupPublicId(null).build();
-		User student = User.builder().id(1).email("old@e.com").username("old").role(Role.STUDENT).build();
+		User student = User.builder().publicId("pub-" + 1).email("old@e.com").username("old").role(Role.STUDENT)
+				.build();
 		UserInGroup membership = UserInGroup.builder().userId(1).groupId(10).build();
 
 		when(userRepository.findById(1)).thenReturn(Optional.of(student));
@@ -259,7 +262,8 @@ class AdminServiceTest {
 		// given
 		AdminUpdateStudentRequest req = AdminUpdateStudentRequest.builder().username("taken").email("old@e.com")
 				.build();
-		User student = User.builder().id(1).email("old@e.com").username("old").role(Role.STUDENT).build();
+		User student = User.builder().publicId("pub-" + 1).email("old@e.com").username("old").role(Role.STUDENT)
+				.build();
 
 		when(userRepository.findById(1)).thenReturn(Optional.of(student));
 		when(userRepository.existsByUsername("taken")).thenReturn(true);
@@ -276,7 +280,7 @@ class AdminServiceTest {
 	@Test
 	void shouldRejectUpdateNonStudent() {
 		// given
-		User admin = User.builder().id(1).role(Role.ADMIN).build();
+		User admin = User.builder().publicId("pub-" + 1).role(Role.ADMIN).build();
 		when(userRepository.findById(1)).thenReturn(Optional.of(admin));
 
 		// when
