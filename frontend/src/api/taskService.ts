@@ -121,57 +121,57 @@ export const taskService = {
 
   updateChooseTask: (
     lessonPublicId: string,
-    taskId: string,
+    taskPublicId: string,
     payload: CreateChooseTaskRequest,
   ) =>
     fetchApi<ChooseTaskResponse>(
-      `/api/v1/lessons/${lessonPublicId}/tasks/choose/${taskId}`,
+      `/api/v1/lessons/${lessonPublicId}/tasks/choose/${taskPublicId}`,
       { method: "PUT", body: JSON.stringify(payload) },
     ),
   updateWriteTask: (
     lessonPublicId: string,
-    taskId: string,
+    taskPublicId: string,
     payload: CreateWriteTaskRequest,
   ) =>
     fetchApi<WriteTaskResponse>(
-      `/api/v1/lessons/${lessonPublicId}/tasks/write/${taskId}`,
+      `/api/v1/lessons/${lessonPublicId}/tasks/write/${taskPublicId}`,
       { method: "PUT", body: JSON.stringify(payload) },
     ),
   updateScatterTask: (
     lessonPublicId: string,
-    taskId: string,
+    taskPublicId: string,
     payload: CreateScatterTaskRequest,
   ) =>
     fetchApi<ScatterTaskResponse>(
-      `/api/v1/lessons/${lessonPublicId}/tasks/scatter/${taskId}`,
+      `/api/v1/lessons/${lessonPublicId}/tasks/scatter/${taskPublicId}`,
       { method: "PUT", body: JSON.stringify(payload) },
     ),
   updateSpeakTask: (
     lessonPublicId: string,
-    taskId: string,
+    taskPublicId: string,
     payload: CreateSpeakTaskRequest,
   ) =>
     fetchApi<SpeakTaskResponse>(
-      `/api/v1/lessons/${lessonPublicId}/tasks/speak/${taskId}`,
+      `/api/v1/lessons/${lessonPublicId}/tasks/speak/${taskPublicId}`,
       { method: "PUT", body: JSON.stringify(payload) },
     ),
 
-  deleteTask: (lessonPublicId: string, type: TaskType, taskId: string) =>
+  deleteTask: (lessonPublicId: string, type: TaskType, taskPublicId: string) =>
     fetchApi<void>(
-      `/api/v1/lessons/${lessonPublicId}/tasks/${type}/${taskId}`,
+      `/api/v1/lessons/${lessonPublicId}/tasks/${type}/${taskPublicId}`,
       {
       method: "DELETE",
       },
     ),
   transcribeSpeakTask: (
     lessonPublicId: string,
-    taskId: string,
+    taskPublicId: string,
     audio: Blob,
   ) => {
     const formData = new FormData();
     formData.append("file", audio, "answer.webm");
     return fetchApi<SpeakTranscriptionResponse>(
-      `/api/v1/lessons/${lessonPublicId}/tasks/speak/${taskId}/transcribe`,
+      `/api/v1/lessons/${lessonPublicId}/tasks/speak/${taskPublicId}/transcribe`,
       {
         method: "POST",
         body: formData,

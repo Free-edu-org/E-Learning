@@ -57,7 +57,7 @@ public class UserGroupController {
 		return userGroupService.getVisibleGroups();
 	}
 
-	@Operation(summary = "Get user group by id")
+	@Operation(summary = "Get user group by publicId")
 	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "User group found"),
 			@ApiResponse(responseCode = "404", description = "User group not found")})
 	@GetMapping("/{groupPublicId}")

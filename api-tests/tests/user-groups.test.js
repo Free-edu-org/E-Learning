@@ -377,7 +377,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
 
     // ─── 3.6 ADD MEMBER TO GROUP ──────────────────────────────────────
 
-    describe('POST /api/v1/user-groups/{groupPublicId}/members/{userId} (Add Member)', () => {
+    describe('POST /api/v1/user-groups/{groupPublicId}/members/{userPublicId} (Add Member)', () => {
         let testGroupPublicId;
         let newStudentPublicId;
         let newStudentToken;
@@ -490,7 +490,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
 
     // ─── 3.7 REMOVE MEMBER FROM GROUP ─────────────────────────────────
 
-    describe('DELETE /api/v1/user-groups/{groupPublicId}/members/{userId} (Remove Member)', () => {
+    describe('DELETE /api/v1/user-groups/{groupPublicId}/members/{userPublicId} (Remove Member)', () => {
         let testGroupPublicId;
         let removableStudentPublicId;
 
@@ -845,7 +845,7 @@ describe('User Groups API (/api/v1/user-groups)', () => {
             expect(response.data.code).toBe('VALIDATION_FAILED');
         });
 
-        it('should return 404 when removing member with non-existent userId', async () => {
+        it('should return 404 when removing member with non-existent userPublicId', async () => {
             setAuthToken(adminToken);
             const response = await apiClient.delete(`/user-groups/${multiGroupId}/members/non-existent-user`);
 

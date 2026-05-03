@@ -73,7 +73,7 @@ function buildDraftFromLesson(
   return {
     title: lesson.title,
     theme: lesson.theme,
-    groupIds: lesson.groups,
+    groups: lesson.groups,
     tasks,
   };
 }
@@ -108,7 +108,7 @@ export function TeacherLessonEditView() {
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
   const [attachmentUploading, setAttachmentUploading] = useState(false);
   const [deletingAttachmentId, setDeletingAttachmentId] = useState<
-    number | null
+    string | null
   >(null);
   const [attachmentFeedback, setAttachmentFeedback] = useState<string | null>(
     null,
@@ -285,7 +285,7 @@ export function TeacherLessonEditView() {
     setFieldErrors({});
 
     try {
-      const groupPublicIds = draft.groupIds.map((group) => group.publicId);
+      const groupPublicIds = draft.groups.map((group) => group.publicId);
 
       await lessonService.updateLesson(lesson.publicId, {
         title: draft.title,
@@ -321,7 +321,7 @@ export function TeacherLessonEditView() {
               taskService.deleteTask(
                 lesson.publicId,
                 task.type,
-                parsed.backendId,
+                parsed.taskPublicId,
               ),
             );
           }
@@ -331,7 +331,7 @@ export function TeacherLessonEditView() {
           const parsed = parseBackendDraftId(task.id);
           if (parsed) {
             taskOperations.push(
-              updateLessonTask(lesson.publicId, parsed.backendId, task),
+              updateLessonTask(lesson.publicId, parsed.taskPublicId, task),
             );
           }
         }
@@ -372,7 +372,7 @@ export function TeacherLessonEditView() {
         ...lesson,
         title: draft.title,
         theme: draft.theme,
-        groups: draft.groupIds,
+        groups: draft.groups,
       };
 
       setLesson(refreshedLesson);
@@ -439,11 +439,11 @@ export function TeacherLessonEditView() {
 
   const handleDeleteAttachment = async (att: LessonAttachment) => {
     if (!lesson || deletingAttachmentId !== null) return;
-    setDeletingAttachmentId(att.id);
+    setDeletingAttachmentId(att.publicId);
     setAttachmentFeedback(null);
     try {
-      await lessonService.deleteAttachment(lesson.publicId, att.id);
-      setAttachments((prev) => prev.filter((a) => a.id !== att.id));
+      await lessonService.deleteAttachment(lesson.publicId, att.publicId);
+      setAttachments((prev) => prev.filter((a) => a.publicId !== att.publicId));
       setAttachmentFeedback("Załącznik został usunięty.");
     } catch {
       setAttachmentFeedback("Nie udało się usunąć załącznika.");
@@ -457,7 +457,7 @@ export function TeacherLessonEditView() {
     try {
       const blob = await lessonService.downloadAttachment(
         lesson.publicId,
-        att.id,
+        att.publicId,
       );
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -658,11 +658,11 @@ export function TeacherLessonEditView() {
                   multiple
                   size="small"
                   options={availableGroups}
-                  value={draft.groupIds}
+                  value={draft.groups}
                   onChange={(_, value) =>
                     setDraft((current) => ({
                       ...current,
-                      groupIds: value,
+                      groups: value,
                     }))
                   }
                   getOptionLabel={(option) => option.name}
@@ -689,7 +689,7 @@ export function TeacherLessonEditView() {
                     <TextField
                       {...params}
                       placeholder={
-                        draft.groupIds.length === 0
+                        draft.groups.length === 0
                           ? "Wybierz grupy..."
                           : undefined
                       }
@@ -724,10 +724,11 @@ export function TeacherLessonEditView() {
                   ) : (
                     <Stack spacing={0.75}>
                       {attachments.map((att) => {
-                        const isDeleting = deletingAttachmentId === att.id;
+                        const isDeleting =
+                          deletingAttachmentId === att.publicId;
                         return (
                           <Box
-                            key={att.id}
+                            key={att.publicId}
                             sx={{
                               display: "flex",
                               alignItems: "center",
@@ -913,7 +914,7 @@ export function TeacherLessonEditView() {
                       >
                         <GroupsIcon fontSize="small" color="primary" />
                         <Typography variant="body2">
-                          Grup: {draft.groupIds.length}
+                          Grup: {draft.groups.length}
                         </Typography>
                       </Box>
                       <Box

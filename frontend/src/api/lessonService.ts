@@ -126,9 +126,9 @@ export const lessonService = {
     fetchApi<LessonStatsResponse>(
       `/api/v1/teacher/lessons/${lessonPublicId}/stats`,
     ),
-  getLessonResultDetails: (lessonPublicId: string, userPublicId: string) =>
+  getLessonResultDetails: (lessonPublicId: string, studentPublicId: string) =>
     fetchApi<LessonResultDetailsResponse>(
-      `/api/v1/teacher/lessons/${lessonPublicId}/students/${userPublicId}/result`,
+      `/api/v1/teacher/lessons/${lessonPublicId}/students/${studentPublicId}/result`,
     ),
   resetStudentLessonProgress: (lessonPublicId: string, userPublicId: string) =>
     fetchApi<void>(`/api/v1/lessons/${lessonPublicId}/users/${userPublicId}/reset`, {
@@ -145,13 +145,13 @@ export const lessonService = {
       },
     );
   },
-  downloadAttachment: (lessonPublicId: string, attachmentId: string) =>
+  downloadAttachment: (lessonPublicId: string, attachmentPublicId: string) =>
     fetchApiBlob(
-      `/api/v1/lessons/${lessonPublicId}/attachments/${attachmentId}`,
+      `/api/v1/lessons/${lessonPublicId}/attachments/${attachmentPublicId}`,
     ),
-  deleteAttachment: (lessonPublicId: string, attachmentId: string) =>
+  deleteAttachment: (lessonPublicId: string, attachmentPublicId: string) =>
     fetchApi<void>(
-      `/api/v1/lessons/${lessonPublicId}/attachments/${attachmentId}`,
+      `/api/v1/lessons/${lessonPublicId}/attachments/${attachmentPublicId}`,
       {
       method: "DELETE",
       },

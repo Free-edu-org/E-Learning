@@ -224,7 +224,7 @@ function formatBytes(bytes: number): string {
 
 interface AttachmentDialogProps {
   lesson: StudentLesson | null;
-  downloadingAttachmentId: number | null;
+  downloadingAttachmentId: string | null;
   downloadError: string | null;
   onClose: () => void;
   onDownload: (
@@ -276,10 +276,10 @@ function AttachmentDialog({
 
         <Stack spacing={1}>
           {lesson.attachments.map((att) => {
-            const isDownloading = downloadingAttachmentId === att.id;
+            const isDownloading = downloadingAttachmentId === att.publicId;
             return (
               <Box
-                key={att.id}
+                key={att.publicId}
                 sx={{
                   display: "flex",
                   alignItems: "center",
@@ -389,7 +389,7 @@ export function StudentDashboard() {
   const [lessonFilter, setLessonFilter] = useState<LessonFilter>("ALL");
   const [lessonSort, setLessonSort] = useState<LessonSort>("status");
   const [downloadingAttachmentId, setDownloadingAttachmentId] = useState<
-    number | null
+    string | null
   >(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
 
@@ -397,12 +397,12 @@ export function StudentDashboard() {
     lessonPublicId: string,
     attachment: StudentLessonAttachment,
   ) => {
-    setDownloadingAttachmentId(attachment.id);
+    setDownloadingAttachmentId(attachment.publicId);
     setDownloadError(null);
     try {
       const blob = await lessonService.downloadAttachment(
         lessonPublicId,
-        attachment.id,
+        attachment.publicId,
       );
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");

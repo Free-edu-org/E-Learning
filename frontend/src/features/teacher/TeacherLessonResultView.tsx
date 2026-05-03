@@ -14,15 +14,15 @@ import { LessonResultDetailsPanel } from "@/components/results/LessonResultDetai
 import { getErrorMessage } from "@/utils/dashboardUtils";
 
 export function TeacherLessonResultView() {
-  const { lessonPublicId, userPublicId } = useParams<{
+  const { lessonPublicId, studentPublicId } = useParams<{
     lessonPublicId: string;
-    userPublicId: string;
+    studentPublicId: string;
   }>();
   const navigate = useNavigate();
   const { logout } = useAuth();
   
   const routeError =
-    !lessonPublicId || !userPublicId
+    !lessonPublicId || !studentPublicId
       ? "Nieprawidlowy identyfikator wyniku."
       : null;
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -47,7 +47,7 @@ export function TeacherLessonResultView() {
     }
 
     lessonService
-      .getLessonResultDetails(lessonPublicId!, userPublicId!)
+      .getLessonResultDetails(lessonPublicId!, studentPublicId!)
       .then(setResult)
       .catch((err: unknown) =>
         setError(
@@ -58,7 +58,7 @@ export function TeacherLessonResultView() {
         ),
       )
       .finally(() => setLoading(false));
-  }, [lessonPublicId, userPublicId, routeError]);
+  }, [lessonPublicId, studentPublicId, routeError]);
 
   return (
     <Box

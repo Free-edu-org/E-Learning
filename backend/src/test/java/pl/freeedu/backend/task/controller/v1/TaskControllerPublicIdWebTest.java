@@ -85,7 +85,7 @@ class TaskControllerPublicIdWebTest {
 		// when
 		WebTestClient.ResponseSpec result = webTestClient.mutateWith(mockUser("student").roles("STUDENT")).post()
 				.uri("/api/v1/lessons/lesson-public-id/submit").contentType(MediaType.APPLICATION_JSON).bodyValue("""
-						{"answers":[{"taskId":1,"taskType":"choose","answer":"1"}]}
+						{"answers":[{"taskPublicId":"task-public-id","taskType":"choose","answer":"1"}]}
 						""").exchange();
 
 		// then

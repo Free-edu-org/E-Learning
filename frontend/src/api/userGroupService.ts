@@ -5,14 +5,14 @@ export interface UserGroup {
   name: string;
   description: string;
   studentCount: number;
-  teacherPublicId?: number | null;
+  teacherPublicId?: string | null;
   createdAt: string;
 }
 
 export interface UserGroupRequest {
   name: string;
   description: string;
-  teacherPublicId?: number | null;
+  teacherPublicId?: string | null;
 }
 
 export const userGroupService = {
@@ -31,11 +31,11 @@ export const userGroupService = {
     fetchApi<void>(`/api/v1/user-groups/${publicId}`, {
       method: "DELETE",
     }),
-  addStudentToGroup: (groupPublicId: string, userPublicId: number) =>
+  addStudentToGroup: (groupPublicId: string, userPublicId: string) =>
     fetchApi<void>(`/api/v1/user-groups/${groupPublicId}/members/${userPublicId}`, {
       method: "POST",
     }),
-  removeStudentFromGroup: (groupPublicId: string, userPublicId: number) =>
+  removeStudentFromGroup: (groupPublicId: string, userPublicId: string) =>
     fetchApi<void>(`/api/v1/user-groups/${groupPublicId}/members/${userPublicId}`, {
       method: "DELETE",
     }),

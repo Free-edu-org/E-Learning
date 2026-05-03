@@ -444,7 +444,7 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
         });
     });
 
-    describe('GET /lessons/{lessonPublicId}/attachments/{attachmentId} — student download access', () => {
+    describe('GET /lessons/{lessonPublicId}/attachments/{attachmentPublicId} - student download access', () => {
         it('student with lesson access should download attachment (200)', async () => {
             setAuthToken(attachmentStudentToken);
             const response = await apiClient.get(

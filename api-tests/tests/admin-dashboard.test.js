@@ -198,7 +198,7 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
         });
     });
 
-    describe('PUT /api/v1/admin/students/{id}', () => {
+    describe('PUT /api/v1/admin/students/{studentPublicId}', () => {
         it('should return 401 when unauthenticated', async () => {
             setAuthToken(null);
             const response = await apiClient.put(`/admin/students/${createdStudentPublicId}`, {

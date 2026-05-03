@@ -117,12 +117,12 @@ interface UserDraft {
 interface GroupDraft {
   name: string;
   description: string;
-  teacherPublicId: number | "";
+  teacherPublicId: string | "";
 }
 
 interface DeleteDialogState {
   type: "user" | "group";
-  id: number | string;
+  publicId: string;
   label: string;
   detail?: string | null;
 }
@@ -130,7 +130,7 @@ interface DeleteDialogState {
 interface MembershipDialogState {
   groupPublicId: string;
   groupName: string;
-  teacherPublicId?: number | null;
+  teacherPublicId?: string | null;
 }
 
 interface DialogFeedbackState {
@@ -256,7 +256,7 @@ export function AdminDashboard() {
 
   const [membershipDialog, setMembershipDialog] =
     useState<MembershipDialogState | null>(null);
-  const [membershipstudentPublicId, setMembershipstudentPublicId] = useState<string | "">(
+  const [membershipStudentPublicId, setMembershipStudentPublicId] = useState<string | "">(
     "",
   );
   const [membershipLoading, setMembershipLoading] = useState(false);
@@ -274,7 +274,7 @@ export function AdminDashboard() {
 
   const filteredUsers = useMemo(() => {
     const normalizedQuery = userSearch.trim().toLowerCase();
-    const selectedteacherPublicIds = new Set(selectedTeacherFilters.map((t) => t.publicId));
+    const selectedTeacherPublicIds = new Set(selectedTeacherFilters.map((t) => t.publicId));
     const selectedGroupIds = new Set(
       selectedGroupFilters.map((g) => g.publicId),
     );
@@ -293,9 +293,9 @@ export function AdminDashboard() {
         return false;
       }
 
-      if (selectedteacherPublicIds.size > 0) {
+      if (selectedTeacherPublicIds.size > 0) {
         if (user.role === "TEACHER") {
-          if (!selectedteacherPublicIds.has(user.publicId)) {
+          if (!selectedTeacherPublicIds.has(user.publicId)) {
             return false;
           }
         } else {
@@ -306,7 +306,7 @@ export function AdminDashboard() {
               : null;
           const teacherGroupIds = new Set(
             groups
-              .filter((g) => selectedteacherPublicIds.has(g.teacherPublicId ?? -1))
+              .filter((g) => selectedTeacherPublicIds.has(g.teacherPublicId ?? ""))
               .map((g) => g.publicId),
           );
           if (
@@ -358,11 +358,11 @@ export function AdminDashboard() {
 
   const filteredGroups = useMemo(() => {
     const normalizedQuery = groupSearch.trim().toLowerCase();
-    const selectedteacherPublicIds = new Set(selectedTeacherFilters.map((t) => t.publicId));
+    const selectedTeacherPublicIds = new Set(selectedTeacherFilters.map((t) => t.publicId));
     return groups.filter((group) => {
       if (
-        selectedteacherPublicIds.size > 0 &&
-        !selectedteacherPublicIds.has(group.teacherPublicId ?? -1)
+        selectedTeacherPublicIds.size > 0 &&
+        !selectedTeacherPublicIds.has(group.teacherPublicId ?? "")
       ) {
         return false;
       }
@@ -426,11 +426,11 @@ export function AdminDashboard() {
       return groups;
     }
 
-    const selectedteacherPublicIds = new Set(
+    const selectedTeacherPublicIds = new Set(
       selectedTeacherFilters.map((teacher) => teacher.publicId),
     );
     return groups.filter((group) =>
-      selectedteacherPublicIds.has(group.teacherPublicId ?? -1),
+      selectedTeacherPublicIds.has(group.teacherPublicId ?? ""),
     );
   }, [groups, selectedTeacherFilters]);
 
@@ -718,7 +718,7 @@ export function AdminDashboard() {
     setDeleteLoading(true);
     try {
       if (deleteDialog.type === "user") {
-        await userService.deleteUser(deleteDialog.publicId as number);
+        await userService.deleteUser(deleteDialog.publicId);
         if (selectedUser?.publicId === deleteDialog.publicId) {
           setSelectedUser(null);
         }
@@ -756,7 +756,7 @@ export function AdminDashboard() {
       groupName: group.name,
       teacherPublicId: group.teacherPublicId,
     });
-    setMembershipstudentPublicId("");
+    setMembershipStudentPublicId("");
   };
 
   const closeMembershipDialog = () => {
@@ -764,7 +764,7 @@ export function AdminDashboard() {
       return;
     }
     setMembershipDialog(null);
-    setMembershipstudentPublicId("");
+    setMembershipStudentPublicId("");
     setMembershipDialogFeedback(null);
   };
 
@@ -772,7 +772,7 @@ export function AdminDashboard() {
     if (!membershipDialog || membershipLoading) {
       return;
     }
-    if (membershipstudentPublicId === "") {
+    if (membershipStudentPublicId === "") {
       setMembershipDialogFeedback({
         severity: "error",
         message: "Wybierz ucznia z listy.",
@@ -785,14 +785,14 @@ export function AdminDashboard() {
     try {
       await userGroupService.addStudentToGroup(
         membershipDialog.groupPublicId,
-        membershipstudentPublicId,
+        membershipStudentPublicId,
       );
       setMembershipDialogFeedback({
         severity: "success",
         message: "Uczeń został dodany do grupy.",
       });
       await Promise.all([loadGroups(), loadUsers()]);
-      setMembershipstudentPublicId("");
+      setMembershipStudentPublicId("");
     } catch (error) {
       setMembershipDialogFeedback({
         severity: "error",
@@ -803,7 +803,7 @@ export function AdminDashboard() {
     }
   };
 
-  const removeMembershipStudent = async (studentPublicId: number) => {
+  const removeMembershipStudent = async (studentPublicId: string) => {
     if (!membershipDialog || membershipLoading) {
       return;
     }
@@ -1337,7 +1337,7 @@ export function AdminDashboard() {
                               onClick={() =>
                                 openDeleteDialog({
                                   type: "user",
-                                  id: user.publicId,
+                                  publicId: user.publicId,
                                   label: user.username,
                                   detail:
                                     user.role === "STUDENT" &&
@@ -1512,7 +1512,7 @@ export function AdminDashboard() {
                                 onClick={() =>
                                   openDeleteDialog({
                                     type: "user",
-                                    id: user.publicId,
+                                    publicId: user.publicId,
                                     label: user.username,
                                     detail:
                                       user.role === "STUDENT" &&
@@ -1762,10 +1762,10 @@ export function AdminDashboard() {
                                 >
                                   <UserAvatar
                                     avatarUrl={teacherAvatarById.get(
-                                      group.teacherPublicId ?? -1,
+                                      group.teacherPublicId ?? "",
                                     )}
                                     username={teacherNameById.get(
-                                      group.teacherPublicId ?? -1,
+                                      group.teacherPublicId ?? "",
                                     )}
                                     size={20}
                                   />
@@ -1777,7 +1777,7 @@ export function AdminDashboard() {
                                     }}
                                   >
                                     {teacherNameById.get(
-                                      group.teacherPublicId ?? -1,
+                                      group.teacherPublicId ?? "",
                                     ) ?? "Brak danych"}
                                   </Box>
                                 </Stack>
@@ -1820,7 +1820,7 @@ export function AdminDashboard() {
                                 onClick={() =>
                                   openDeleteDialog({
                                     type: "group",
-                                    id: group.publicId,
+                                    publicId: group.publicId,
                                     label: group.name,
                                     detail: group.description,
                                   })
@@ -1902,10 +1902,10 @@ export function AdminDashboard() {
                                     >
                                       <UserAvatar
                                         avatarUrl={teacherAvatarById.get(
-                                          group.teacherPublicId ?? -1,
+                                          group.teacherPublicId ?? "",
                                         )}
                                         username={teacherNameById.get(
-                                          group.teacherPublicId ?? -1,
+                                          group.teacherPublicId ?? "",
                                         )}
                                         size={18}
                                       />
@@ -1917,7 +1917,7 @@ export function AdminDashboard() {
                                         }}
                                       >
                                         {teacherNameById.get(
-                                          group.teacherPublicId ?? -1,
+                                          group.teacherPublicId ?? "",
                                         ) ?? "Brak danych"}
                                       </Box>
                                     </Stack>
@@ -1989,7 +1989,7 @@ export function AdminDashboard() {
                                 onClick={() =>
                                   openDeleteDialog({
                                     type: "group",
-                                    id: group.publicId,
+                                    publicId: group.publicId,
                                     label: group.name,
                                     detail: group.description,
                                   })
@@ -2250,10 +2250,7 @@ export function AdminDashboard() {
                     onChange={(event) =>
                       setGroupDraft((current) => ({
                         ...current,
-                        teacherPublicId:
-                          event.target.value === ""
-                            ? ""
-                            : Number(event.target.value),
+                        teacherPublicId: event.target.value,
                       }))
                     }
                     helperText="Wybierz nauczyciela, który ma zarządzać grupą."
@@ -2421,10 +2418,10 @@ export function AdminDashboard() {
                     >
                       <UserAvatar
                         avatarUrl={teacherAvatarById.get(
-                          membershipDialog?.teacherPublicId ?? -1,
+                          membershipDialog?.teacherPublicId ?? "",
                         )}
                         username={teacherNameById.get(
-                          membershipDialog?.teacherPublicId ?? -1,
+                          membershipDialog?.teacherPublicId ?? "",
                         )}
                         size={18}
                       />
@@ -2433,7 +2430,7 @@ export function AdminDashboard() {
                         sx={{ fontWeight: 700, color: "text.primary" }}
                       >
                         {teacherNameById.get(
-                          membershipDialog?.teacherPublicId ?? -1,
+                          membershipDialog?.teacherPublicId ?? "",
                         ) ?? "Brak danych"}
                       </Box>
                     </Stack>
@@ -2524,11 +2521,11 @@ export function AdminDashboard() {
                   )}
                   value={
                     availableMembershipStudents.find(
-                      (student) => student.publicId === membershipstudentPublicId,
+                      (student) => student.publicId === membershipStudentPublicId,
                     ) ?? null
                   }
                   onChange={(_, value) =>
-                    setMembershipstudentPublicId(value?.publicId ?? "")
+                    setMembershipStudentPublicId(value?.publicId ?? "")
                   }
                   getOptionLabel={(option) =>
                     `${option.username} (${option.email})`

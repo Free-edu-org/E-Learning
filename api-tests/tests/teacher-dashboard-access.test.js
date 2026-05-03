@@ -260,8 +260,8 @@ describe('Teacher Dashboard Access API (/api/v1/teacher/*)', () => {
 
         afterAll(async () => {
             setAuthToken(adminToken);
-            for (const id of createdStudentPublicIds.reverse()) {
-                const response = await apiClient.delete(`/users/${id}`);
+            for (const studentPublicId of createdStudentPublicIds.reverse()) {
+                const response = await apiClient.delete(`/users/${studentPublicId}`);
                 expect([204, 404]).toContain(response.status);
             }
         });
@@ -395,7 +395,7 @@ describe('Teacher Dashboard Access API (/api/v1/teacher/*)', () => {
         });
     });
 
-    describe('PUT /api/v1/teacher/students/{id}', () => {
+    describe('PUT /api/v1/teacher/students/{studentPublicId}', () => {
         let updatableStudentPublicId;
 
         beforeAll(async () => {

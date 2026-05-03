@@ -9,7 +9,7 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
     let teacherToken;
     let createdLessonPublicId;
     const createdLessonPublicIds = [];
-    const lessonTaskIds = new Map();
+    const lessonTaskPublicIds = new Map();
 
     beforeAll(async () => {
         let res = await apiClient.post('/auth/login', adminCreds);
@@ -47,10 +47,10 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
         };
 
         for (const lessonPublicId of createdLessonPublicIds.reverse()) {
-            const chooseTaskId = lessonTaskIds.get(lessonPublicId);
-            if (chooseTaskId) {
+            const chooseTaskPublicId = lessonTaskPublicIds.get(lessonPublicId);
+            if (chooseTaskPublicId) {
                 setAuthToken(teacherToken);
-                const taskDeleteResponse = await apiClient.delete(`/lessons/${lessonPublicId}/tasks/choose/${chooseTaskId}`);
+                const taskDeleteResponse = await apiClient.delete(`/lessons/${lessonPublicId}/tasks/choose/${chooseTaskPublicId}`);
                 expect([204, 404]).toContain(taskDeleteResponse.status);
             }
 
@@ -199,7 +199,7 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
     // ═══════════════════════════════════════════════
     // Update
     // ═══════════════════════════════════════════════
-    describe('PUT /lessons/{id} (Update)', () => {
+    describe('PUT /lessons/{lessonPublicId} (Update)', () => {
         it('should update a lesson as owner TEACHER (200)', async () => {
             setAuthToken(teacherToken);
             const response = await apiClient.put(`/lessons/${createdLessonPublicId}`, {
@@ -226,7 +226,7 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
     // ═══════════════════════════════════════════════
     // Status Change
     // ═══════════════════════════════════════════════
-    describe('PATCH /lessons/{id}/status', () => {
+    describe('PATCH /lessons/{lessonPublicId}/status', () => {
         it('should activate a lesson (204)', async () => {
             setAuthToken(teacherToken);
             const taskResponse = await apiClient.post(`/lessons/${createdLessonPublicId}/tasks/choose`, {
@@ -235,7 +235,9 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
                 correctAnswer: 1
             });
             expect(taskResponse.status).toBe(201);
-            lessonTaskIds.set(createdLessonPublicId, taskResponse.data.id);
+            expect(taskResponse.data.publicId).toBeTruthy();
+            expect(taskResponse.data).not.toHaveProperty('id');
+            lessonTaskPublicIds.set(createdLessonPublicId, taskResponse.data.publicId);
 
             const response = await apiClient.patch(`/lessons/${createdLessonPublicId}/status`, {
                 isActive: true
@@ -273,7 +275,7 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
     // ═══════════════════════════════════════════════
     // Delete
     // ═══════════════════════════════════════════════
-    describe('DELETE /lessons/{id}', () => {
+    describe('DELETE /lessons/{lessonPublicId}', () => {
         it('should delete a lesson as owner (204)', async () => {
             setAuthToken(teacherToken);
             // Create a disposable lesson

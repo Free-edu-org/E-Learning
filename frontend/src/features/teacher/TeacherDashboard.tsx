@@ -75,14 +75,14 @@ interface DialogFeedbackState {
 interface LessonDraft {
   title: string;
   theme: string;
-  groupIds: Group[];
+  groups: Group[];
   tasks: LessonTaskDraft[];
 }
 
 const emptyLessonDraft: LessonDraft = {
   title: "",
   theme: "",
-  groupIds: [],
+  groups: [],
   tasks: [],
 };
 
@@ -197,14 +197,14 @@ async function createLessonTask(lessonPublicId: string, task: LessonTaskDraft) {
 
 async function updateLessonTask(
   lessonPublicId: string,
-  backendId: number,
+  taskPublicId: string,
   task: LessonTaskDraft,
 ) {
   const hint = task.hint.trim() || undefined;
   const section = task.section.trim() || undefined;
 
   if (task.type === "choose") {
-    return taskService.updateChooseTask(lessonPublicId, backendId, {
+    return taskService.updateChooseTask(lessonPublicId, taskPublicId, {
       task: task.task.trim(),
       possibleAnswers: task.possibleAnswers.trim(),
       correctAnswer: Number(task.correctAnswer.trim()),
@@ -213,7 +213,7 @@ async function updateLessonTask(
     });
   }
   if (task.type === "write") {
-    return taskService.updateWriteTask(lessonPublicId, backendId, {
+    return taskService.updateWriteTask(lessonPublicId, taskPublicId, {
       task: task.task.trim(),
       correctAnswer: task.correctAnswer.trim(),
       hint,
@@ -221,7 +221,7 @@ async function updateLessonTask(
     });
   }
   if (task.type === "scatter") {
-    return taskService.updateScatterTask(lessonPublicId, backendId, {
+    return taskService.updateScatterTask(lessonPublicId, taskPublicId, {
       task: task.task.trim(),
       words: task.words.trim(),
       correctAnswer: task.correctAnswer.trim(),
@@ -229,7 +229,7 @@ async function updateLessonTask(
       section,
     });
   }
-  return taskService.updateSpeakTask(lessonPublicId, backendId, {
+  return taskService.updateSpeakTask(lessonPublicId, taskPublicId, {
     task: task.task.trim(),
     expectedText: task.correctAnswer.trim(),
     hint,
@@ -239,7 +239,7 @@ async function updateLessonTask(
 
 /**
  * Convert backend LessonTasksResponse to flat LessonTaskDraft[].
- * Each draft gets `backendId:<type>:<id>` as its `id` so we can track
+ * Each draft gets `backendTask:<type>:<publicId>` as its `id` so we can track
  * which ones already exist on the server.
  */
 function tasksResponseToDrafts(
@@ -250,7 +250,7 @@ function tasksResponseToDrafts(
     const sec = section.section ?? "";
     for (const t of section.chooseTasks) {
       drafts.push({
-        id: `backendId:choose:${t.id}`,
+        id: `backendTask:choose:${t.publicId}`,
         type: "choose",
         task: t.task,
         possibleAnswers: t.possibleAnswers,
@@ -262,7 +262,7 @@ function tasksResponseToDrafts(
     }
     for (const t of section.writeTasks) {
       drafts.push({
-        id: `backendId:write:${t.id}`,
+        id: `backendTask:write:${t.publicId}`,
         type: "write",
         task: t.task,
         possibleAnswers: "",
@@ -274,7 +274,7 @@ function tasksResponseToDrafts(
     }
     for (const t of section.scatterTasks) {
       drafts.push({
-        id: `backendId:scatter:${t.id}`,
+        id: `backendTask:scatter:${t.publicId}`,
         type: "scatter",
         task: t.task,
         possibleAnswers: "",
@@ -286,7 +286,7 @@ function tasksResponseToDrafts(
     }
     for (const t of section.speakTasks) {
       drafts.push({
-        id: `backendId:speak:${t.id}`,
+        id: `backendTask:speak:${t.publicId}`,
         type: "speak",
         task: t.task,
         possibleAnswers: "",
@@ -302,10 +302,10 @@ function tasksResponseToDrafts(
 
 function parseBackendDraftId(
   draftId: string,
-): { type: string; backendId: number } | null {
-  const match = /^backendId:(\w+):(\d+)$/.exec(draftId);
+): { type: string; taskPublicId: string } | null {
+  const match = /^backendTask:(\w+):(.+)$/.exec(draftId);
   if (!match) return null;
-  return { type: match[1], backendId: Number(match[2]) };
+  return { type: match[1], taskPublicId: match[2] };
 }
 
 export function TeacherDashboard() {
@@ -474,7 +474,7 @@ export function TeacherDashboard() {
     setCreateFieldErrors({});
     setCreateDialogLoading(true);
     try {
-      const groupPublicIds = lessonDraft.groupIds.map((g) => g.publicId);
+      const groupPublicIds = lessonDraft.groups.map((g) => g.publicId);
       const createdLesson = await lessonService.createLesson({
         title: lessonDraft.title,
         theme: lessonDraft.theme,
@@ -552,7 +552,7 @@ export function TeacherDashboard() {
     setEditDraft({
       title: lesson.title,
       theme: lesson.theme,
-      groupIds: lesson.groups,
+      groups: lesson.groups,
       tasks: [],
     });
     setEditDialogFeedback(null);
@@ -622,7 +622,7 @@ export function TeacherDashboard() {
 
     try {
       const lessonPublicId = editingLesson.publicId;
-      const groupPublicIds = editDraft.groupIds.map((g) => g.publicId);
+      const groupPublicIds = editDraft.groups.map((g) => g.publicId);
 
       // 1. Update lesson metadata
       await lessonService.updateLesson(lessonPublicId, {
@@ -652,11 +652,11 @@ export function TeacherDashboard() {
         const parsed = parseBackendDraftId(task.id);
         if (parsed) {
           allTaskOps.push(
-            taskService.deleteTask(
-              lessonPublicId,
-              task.type,
-              parsed.backendId,
-            ),
+              taskService.deleteTask(
+                lessonPublicId,
+                task.type,
+                parsed.taskPublicId,
+              ),
           );
         }
       }
@@ -666,7 +666,7 @@ export function TeacherDashboard() {
         const parsed = parseBackendDraftId(task.id);
         if (parsed) {
           allTaskOps.push(
-            updateLessonTask(lessonPublicId, parsed.backendId, task),
+            updateLessonTask(lessonPublicId, parsed.taskPublicId, task),
           );
         }
       }
@@ -1106,11 +1106,11 @@ export function TeacherDashboard() {
                   multiple
                   size="small"
                   options={availableGroups}
-                  value={lessonDraft.groupIds}
+                  value={lessonDraft.groups}
                   onChange={(_, value) =>
                     setLessonDraft((current) => ({
                       ...current,
-                      groupIds: value,
+                      groups: value,
                     }))
                   }
                   getOptionLabel={(option) => option.name}
@@ -1137,7 +1137,7 @@ export function TeacherDashboard() {
                     <TextField
                       {...params}
                       placeholder={
-                        lessonDraft.groupIds.length === 0
+                        lessonDraft.groups.length === 0
                           ? "Wybierz grupy..."
                           : undefined
                       }
@@ -1374,11 +1374,11 @@ export function TeacherDashboard() {
                   multiple
                   size="small"
                   options={availableGroups}
-                  value={editDraft.groupIds}
+                  value={editDraft.groups}
                   onChange={(_, value) =>
                     setEditDraft((current) => ({
                       ...current,
-                      groupIds: value,
+                      groups: value,
                     }))
                   }
                   getOptionLabel={(option) => option.name}
@@ -1405,7 +1405,7 @@ export function TeacherDashboard() {
                     <TextField
                       {...params}
                       placeholder={
-                        editDraft.groupIds.length === 0
+                        editDraft.groups.length === 0
                           ? "Wybierz grupy..."
                           : undefined
                       }

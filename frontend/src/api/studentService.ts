@@ -21,7 +21,7 @@ export interface StudentLessonGroup {
 }
 
 export interface StudentLessonAttachment {
-  id: number;
+  publicId: string;
   originalFileName: string;
   contentType: string;
   fileSize: number;
@@ -33,7 +33,7 @@ export interface StudentLesson {
   title: string;
   theme: string;
   isActive: boolean;
-  teacherPublicId: number;
+  teacherPublicId: string;
   teacherName: string;
   teacherAvatarUrl?: string | null;
   createdAt: string;
@@ -46,7 +46,7 @@ export interface StudentLesson {
 }
 
 export interface SubmitAnswerItem {
-  taskId: number;
+  taskPublicId: string;
   taskType: "choose" | "write" | "scatter" | "speak";
   answer: string;
 }
@@ -56,7 +56,7 @@ export interface SubmitAnswersRequest {
 }
 
 export interface SubmitAnswerDetail {
-  taskId: number;
+  taskPublicId: string;
   taskType: string;
   isCorrect: boolean;
   correctAnswer: string;
@@ -69,7 +69,7 @@ export interface SubmitAnswersResponse {
 }
 
 export interface LessonResultTaskDetail {
-  taskId: number;
+  taskPublicId: string;
   taskType: "choose" | "write" | "scatter" | "speak";
   section: string | null;
   taskText: string;
@@ -84,7 +84,7 @@ export interface LessonResultTaskDetail {
 export interface LessonResultDetailsResponse {
   lessonPublicId: string;
   lessonTitle: string;
-  userPublicId: number;
+  userPublicId: string;
   username: string;
   score: number;
   maxScore: number;

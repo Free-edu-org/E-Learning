@@ -131,7 +131,7 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonPublicId}/attachments)', ()
     // ═══════════════════════════════════════════════
     // Upload
     // ═══════════════════════════════════════════════
-    describe('POST /lessons/{id}/attachments (Upload)', () => {
+    describe('POST /lessons/{lessonPublicId}/attachments (Upload)', () => {
         it('should upload a valid PDF as TEACHER owner (201)', async () => {
             setAuthToken(teacherToken);
             const form = makePdfForm(VALID_PDF, 'notes.pdf');
@@ -219,7 +219,7 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonPublicId}/attachments)', ()
     // ═══════════════════════════════════════════════
     // Download
     // ═══════════════════════════════════════════════
-    describe('GET /lessons/{id}/attachments/{attachmentId} (Download)', () => {
+    describe('GET /lessons/{lessonPublicId}/attachments/{attachmentPublicId} (Download)', () => {
         it('should allow TEACHER owner to download (200)', async () => {
             setAuthToken(teacherToken);
             const res = await apiClient.get(
@@ -272,7 +272,7 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonPublicId}/attachments)', ()
     // ═══════════════════════════════════════════════
     // Delete
     // ═══════════════════════════════════════════════
-    describe('DELETE /lessons/{id}/attachments/{attachmentId} (Delete)', () => {
+    describe('DELETE /lessons/{lessonPublicId}/attachments/{attachmentPublicId} (Delete)', () => {
         it('should return 401 without auth', async () => {
             setAuthToken(null);
             const res = await apiClient.delete(

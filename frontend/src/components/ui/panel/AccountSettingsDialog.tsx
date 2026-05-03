@@ -134,7 +134,7 @@ export function AccountSettingsDialog({
     setFeedback(null);
     setProfileLoading(true);
     try {
-      const updatedUser = await userService.updateUser(user.id, {
+      const updatedUser = await userService.updateUser(user.publicId, {
         username: isEditingUsername ? trimmedUsername : user.username,
         email: isEditingEmail ? trimmedEmail : user.email,
       });
@@ -174,7 +174,7 @@ export function AccountSettingsDialog({
     setFeedback(null);
     setPasswordLoading(true);
     try {
-      await userService.changePassword(user.id, { oldPassword, newPassword });
+      await userService.changePassword(user.publicId, { oldPassword, newPassword });
       setOldPassword("");
       setNewPassword("");
       setConfirmPassword("");
@@ -211,7 +211,7 @@ export function AccountSettingsDialog({
     setFeedback(null);
     setAvatarLoading(true);
     try {
-      const updatedUser = await userService.uploadAvatar(user.id, file);
+      const updatedUser = await userService.uploadAvatar(user.publicId, file);
       onUserUpdated(updatedUser);
       setAvatarSnackbar(true);
     } catch {
@@ -231,7 +231,7 @@ export function AccountSettingsDialog({
     setAvatarLoading(true);
     try {
       const updatedUser = await userService.setPresetAvatar(
-        user.id,
+        user.publicId,
         presetName,
       );
       onUserUpdated(updatedUser);

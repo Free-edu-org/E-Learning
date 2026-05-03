@@ -13,15 +13,15 @@ GET http://localhost:5173/teacher/lessons/new
 Authorization: Bearer {{auth_token}}
 
 ### Teacher Lesson Edit View
-GET http://localhost:5173/teacher/lessons/:lessonId/edit
+GET http://localhost:5173/teacher/lessons/:lessonPublicId/edit
 Authorization: Bearer {{auth_token}}
 
 ### Lesson Stats View
-GET http://localhost:5173/teacher/lessons/:lessonId/stats
+GET http://localhost:5173/teacher/lessons/:lessonPublicId/stats
 Authorization: Bearer {{auth_token}}
 
 ### Teacher Lesson Result View
-GET http://localhost:5173/teacher/lessons/:lessonId/students/:userId/result
+GET http://localhost:5173/teacher/lessons/:lessonPublicId/students/:studentPublicId/result
 Authorization: Bearer {{auth_token}}
 
 

@@ -458,7 +458,7 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonPublicId}/submit)', () 
             expect(response.data.code).toBe('INVALID_TASK_TYPE');
         });
 
-        it('should return 404 TASK_NOT_FOUND for non-existent taskId', async () => {
+        it('should return 404 TASK_NOT_FOUND for non-existent taskPublicId', async () => {
             await resetAndStartLesson();
 
             setAuthToken(studentToken);

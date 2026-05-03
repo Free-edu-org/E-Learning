@@ -245,7 +245,7 @@ describe('Users API (/api/v1/users)', () => {
             });
         });
 
-        describe('GET /api/v1/users/{id} (Get User Details)', () => {
+        describe('GET /api/v1/users/{publicId} (Get User Details)', () => {
             it('should get user details when ID matches current user (200 OK)', async () => {
                 setAuthToken(newStudentToken);
                 const response = await apiClient.get(`/users/${newStudentPublicId}`);
@@ -274,7 +274,7 @@ describe('Users API (/api/v1/users)', () => {
             });
         });
 
-        describe('PUT /api/v1/users/{id} (Update User Profile)', () => {
+        describe('PUT /api/v1/users/{publicId} (Update User Profile)', () => {
             it('should update user profile for self (200 OK)', async () => {
                 setAuthToken(newStudentToken);
                 const updateData = {
@@ -397,7 +397,7 @@ describe('Users API (/api/v1/users)', () => {
             });
         });
 
-        describe('DELETE /api/v1/users/{id} (Delete User)', () => {
+        describe('DELETE /api/v1/users/{publicId} (Delete User)', () => {
             let tempUserId;
             let tempUserToken;
 

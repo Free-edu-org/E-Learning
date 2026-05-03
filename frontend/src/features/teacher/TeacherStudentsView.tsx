@@ -164,11 +164,11 @@ export function TeacherStudentsView() {
   const [createGroupFeedback, setCreateGroupFeedback] =
     useState<DialogFeedbackState | null>(null);
 
-  const [draggingstudentPublicId, setDraggingstudentPublicId] = useState<number | null>(
+  const [draggingStudentPublicId, setDraggingStudentPublicId] = useState<string | null>(
     null,
   );
   const [dragOverGroupId, setDragOverGroupId] = useState<string | null>(null);
-  const [movingstudentPublicId, setMovingstudentPublicId] = useState<string | null>(null);
+  const [movingStudentPublicId, setMovingStudentPublicId] = useState<string | null>(null);
   const [expandedGroupIds, setExpandedGroupIds] = useState<Set<string>>(
     () => new Set(),
   );
@@ -424,13 +424,13 @@ export function TeacherStudentsView() {
   ) => {
     if (
       student.groupPublicId === targetGroupPublicId ||
-      movingstudentPublicId !== null
+      movingStudentPublicId !== null
     ) {
       return;
     }
 
     const previousGroupPublicId = student.groupPublicId;
-    setMovingstudentPublicId(student.publicId);
+    setMovingStudentPublicId(student.publicId);
     setPageFeedback({
       severity: "info",
       message: "Przenoszenie ucznia do nowej grupy...",
@@ -473,17 +473,16 @@ export function TeacherStudentsView() {
         ),
       });
     } finally {
-      setMovingstudentPublicId(null);
-      setDraggingstudentPublicId(null);
+      setMovingStudentPublicId(null);
+      setDraggingStudentPublicId(null);
       setDragOverGroupId(null);
     }
   };
 
   const handleDrop = (event: DragEvent, targetGroupPublicId: string) => {
     event.preventDefault();
-    const rawstudentPublicId = event.dataTransfer.getData("text/plain");
-    const studentPublicId = Number(rawstudentPublicId);
-    const student = students.find((item) => item.publicId === studentPublicId);
+    const rawStudentPublicId = event.dataTransfer.getData("text/plain");
+    const student = students.find((item) => item.publicId === rawStudentPublicId);
     if (student) {
       moveStudentToGroup(student, targetGroupPublicId);
     }
@@ -785,21 +784,21 @@ export function TeacherStudentsView() {
                     ) : (
                       <Stack divider={<Divider flexItem />}>
                         {group.students.map((student) => {
-                          const isMoving = movingstudentPublicId === student.publicId;
+                          const isMoving = movingStudentPublicId === student.publicId;
                           return (
                             <Box
                               key={student.publicId}
-                              draggable={movingstudentPublicId === null}
+                              draggable={movingStudentPublicId === null}
                               onDragStart={(event) => {
                                 event.dataTransfer.effectAllowed = "move";
                                 event.dataTransfer.setData(
                                   "text/plain",
                                   String(student.publicId),
                                 );
-                                setDraggingstudentPublicId(student.publicId);
+                                setDraggingStudentPublicId(student.publicId);
                               }}
                               onDragEnd={() => {
-                                setDraggingstudentPublicId(null);
+                                setDraggingStudentPublicId(null);
                                 setDragOverGroupId(null);
                               }}
                               sx={{
@@ -811,11 +810,11 @@ export function TeacherStudentsView() {
                                 py: 1.5,
                                 minHeight: 72,
                                 opacity:
-                                  draggingstudentPublicId === student.publicId || isMoving
+                                  draggingStudentPublicId === student.publicId || isMoving
                                     ? 0.55
                                     : 1,
                                 cursor:
-                                  movingstudentPublicId === null ? "grab" : "default",
+                                  movingStudentPublicId === null ? "grab" : "default",
                                 "&:hover": { bgcolor: "action.hover" },
                               }}
                             >

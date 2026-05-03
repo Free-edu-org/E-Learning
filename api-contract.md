@@ -290,7 +290,7 @@ Default local development base URL is `http://localhost:8080`
 ---
 
 ### 5.4. Get Detailed Lesson Result For Selected Student
-- **URL**: `/api/v1/teacher/lessons/{lessonPublicId}/students/{userPublicId}/result`
+- **URL**: `/api/v1/teacher/lessons/{lessonPublicId}/students/{studentPublicId}/result`
 - **Method**: `GET`
 
 **Success (200 OK):**
@@ -330,7 +330,7 @@ Default local development base URL is `http://localhost:8080`
 ---
 
 ### 6.3. Create / Update Student (Admin API)
-- **URL**: `/api/v1/admin/students` or `/api/v1/admin/students/{userPublicId}`
+- **URL**: `/api/v1/admin/students` or `/api/v1/admin/students/{studentPublicId}`
 - **Method**: `POST` / `PUT`
 
 ---

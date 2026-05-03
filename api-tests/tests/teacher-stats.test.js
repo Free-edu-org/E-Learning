@@ -9,7 +9,7 @@ describe('Teacher Stats API (/api/v1/teacher/stats)', () => {
     let teacherToken;
     let studentToken;
     let isolatedTeacherToken;
-    let isolatedTeacherId;
+    let isolatedTeacherPublicId;
 
     beforeAll(async () => {
         let res = await apiClient.post('/auth/login', {
@@ -33,8 +33,8 @@ describe('Teacher Stats API (/api/v1/teacher/stats)', () => {
 
     afterAll(async () => {
         setAuthToken(adminToken);
-        if (isolatedTeacherId) {
-            const response = await apiClient.delete(`/users/${isolatedTeacherId}`);
+        if (isolatedTeacherPublicId) {
+            const response = await apiClient.delete(`/users/${isolatedTeacherPublicId}`);
             expect([204, 404]).toContain(response.status);
         }
         setAuthToken(null);
@@ -64,7 +64,8 @@ describe('Teacher Stats API (/api/v1/teacher/stats)', () => {
         setAuthToken(isolatedTeacherToken);
         res = await apiClient.get('/users/me');
         expect(res.status).toBe(200);
-        isolatedTeacherId = res.data.id;
+        isolatedTeacherPublicId = res.data.publicId;
+        expect(res.data).not.toHaveProperty('id');
 
         return isolatedTeacherToken;
     }

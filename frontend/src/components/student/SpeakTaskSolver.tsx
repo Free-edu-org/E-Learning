@@ -116,7 +116,7 @@ export function SpeakTaskSolver({
     try {
       const response = await taskService.transcribeSpeakTask(
         lessonPublicId,
-        task.id,
+        task.publicId,
         audio,
       );
       onChange(response.text);

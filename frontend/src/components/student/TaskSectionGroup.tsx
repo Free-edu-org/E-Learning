@@ -12,13 +12,13 @@ import { SpeakTaskSolver } from "./SpeakTaskSolver";
 interface TaskSectionGroupProps {
   lessonPublicId: string;
   section: TaskSectionDto;
-  answers: Record<number, SubmitAnswerItem>;
+  answers: Record<string, SubmitAnswerItem>;
   onAnswer: (
-    taskId: number,
+    taskPublicId: string,
     taskType: SubmitAnswerItem["taskType"],
     answer: string,
   ) => void;
-  results: Map<number, SubmitAnswerDetail> | null;
+  results: Map<string, SubmitAnswerDetail> | null;
   disabled: boolean;
 }
 
@@ -53,47 +53,47 @@ export function TaskSectionGroup({
       <Stack spacing={2}>
         {section.chooseTasks.map((task) => (
           <ChooseTaskSolver
-            key={`choose-${task.id}`}
+            key={`choose-${task.publicId}`}
             task={task}
-            value={answers[task.id]?.answer ?? ""}
-            onChange={(answer) => onAnswer(task.id, "choose", answer)}
-            result={results?.get(task.id) ?? null}
+            value={answers[task.publicId]?.answer ?? ""}
+            onChange={(answer) => onAnswer(task.publicId, "choose", answer)}
+            result={results?.get(task.publicId) ?? null}
             disabled={disabled}
           />
         ))}
 
         {section.writeTasks.map((task) => (
           <WriteTaskSolver
-            key={`write-${task.id}`}
+            key={`write-${task.publicId}`}
             task={task}
-            value={answers[task.id]?.answer ?? ""}
-            onChange={(answer) => onAnswer(task.id, "write", answer)}
-            result={results?.get(task.id) ?? null}
+            value={answers[task.publicId]?.answer ?? ""}
+            onChange={(answer) => onAnswer(task.publicId, "write", answer)}
+            result={results?.get(task.publicId) ?? null}
             disabled={disabled}
           />
         ))}
 
         {section.scatterTasks.map((task) => (
           <ScatterTaskSolver
-            key={`scatter-${task.id}`}
+            key={`scatter-${task.publicId}`}
             task={task}
-            value={answers[task.id]?.answer ?? ""}
-            onChange={(answer) => onAnswer(task.id, "scatter", answer)}
-            result={results?.get(task.id) ?? null}
+            value={answers[task.publicId]?.answer ?? ""}
+            onChange={(answer) => onAnswer(task.publicId, "scatter", answer)}
+            result={results?.get(task.publicId) ?? null}
             disabled={disabled}
           />
         ))}
 
         {section.speakTasks.map((task) => (
           <SpeakTaskSolver
-            key={`speak-${task.id}`}
+            key={`speak-${task.publicId}`}
             lessonPublicId={lessonPublicId}
             task={task}
             transcriptionResult={null}
             attempts={0}
-            onChange={(answer) => onAnswer(task.id, "speak", answer)}
+            onChange={(answer) => onAnswer(task.publicId, "speak", answer)}
             onTranscriptionResult={() => undefined}
-            result={results?.get(task.id) ?? null}
+            result={results?.get(task.publicId) ?? null}
             disabled={disabled}
           />
         ))}

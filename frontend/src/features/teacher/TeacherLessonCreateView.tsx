@@ -157,7 +157,7 @@ export function TeacherLessonCreateView() {
     setFieldErrors({});
 
     try {
-      const groupPublicIds = draft.groupIds.map((group) => group.publicId);
+      const groupPublicIds = draft.groups.map((group) => group.publicId);
       const createdLesson = await lessonService.createLesson({
         title: draft.title,
         theme: draft.theme,
@@ -409,11 +409,11 @@ export function TeacherLessonCreateView() {
                   multiple
                   size="small"
                   options={availableGroups}
-                  value={draft.groupIds}
+                  value={draft.groups}
                   onChange={(_, value) =>
                     setDraft((current) => ({
                       ...current,
-                      groupIds: value,
+                      groups: value,
                     }))
                   }
                   getOptionLabel={(option) => option.name}
@@ -440,7 +440,7 @@ export function TeacherLessonCreateView() {
                     <TextField
                       {...params}
                       placeholder={
-                        draft.groupIds.length === 0
+                        draft.groups.length === 0
                           ? "Wybierz grupy..."
                           : undefined
                       }
@@ -559,7 +559,7 @@ export function TeacherLessonCreateView() {
                       >
                         <GroupsIcon fontSize="small" color="primary" />
                         <Typography variant="body2">
-                          Grup: {draft.groupIds.length}
+                          Grup: {draft.groups.length}
                         </Typography>
                       </Box>
                       <Box

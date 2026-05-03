@@ -119,24 +119,24 @@ public class LessonController {
 	@Operation(summary = "Download PDF attachment for a lesson")
 	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "PDF file"),
 			@ApiResponse(responseCode = "404", description = "Lesson or attachment not found")})
-	@GetMapping("/{lessonPublicId}/attachments/{attachmentId}")
+	@GetMapping("/{lessonPublicId}/attachments/{attachmentPublicId}")
 	@PreAuthorize("@securityService.isAdmin(authentication) or "
 			+ "(hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId)) or "
 			+ "(hasRole('STUDENT') and @securityService.hasStudentAccessToLesson(authentication, #lessonPublicId))")
 	public Mono<ResponseEntity<Resource>> downloadAttachment(@PathVariable String lessonPublicId,
-			@PathVariable String attachmentId) {
-		return lessonAttachmentService
-				.downloadAttachment(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), attachmentId);
+			@PathVariable String attachmentPublicId) {
+		return lessonAttachmentService.downloadAttachment(
+				lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), attachmentPublicId);
 	}
 
 	@Operation(summary = "Delete PDF attachment for a lesson")
 	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Attachment deleted"),
 			@ApiResponse(responseCode = "404", description = "Lesson or attachment not found")})
-	@DeleteMapping("/{lessonPublicId}/attachments/{attachmentId}")
+	@DeleteMapping("/{lessonPublicId}/attachments/{attachmentPublicId}")
 	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public Mono<Void> deleteAttachment(@PathVariable String lessonPublicId, @PathVariable String attachmentId) {
-		return lessonAttachmentService
-				.deleteAttachment(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), attachmentId);
+	public Mono<Void> deleteAttachment(@PathVariable String lessonPublicId, @PathVariable String attachmentPublicId) {
+		return lessonAttachmentService.deleteAttachment(
+				lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), attachmentPublicId);
 	}
 }
