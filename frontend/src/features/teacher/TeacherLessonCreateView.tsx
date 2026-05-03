@@ -157,15 +157,15 @@ export function TeacherLessonCreateView() {
     setFieldErrors({});
 
     try {
-      const groupIds = draft.groupIds.map((group) => group.id);
+      const groupPublicIds = draft.groups.map((group) => group.publicId);
       const createdLesson = await lessonService.createLesson({
         title: draft.title,
         theme: draft.theme,
-        groupIds: groupIds.length > 0 ? groupIds : undefined,
+        groupPublicIds: groupPublicIds.length > 0 ? groupPublicIds : undefined,
       });
 
       const taskOperations = draft.tasks.map((task) =>
-        createLessonTask(createdLesson.id, task),
+        createLessonTask(createdLesson.publicId, task),
       );
 
       let nextFeedback: DialogFeedbackState;
@@ -200,7 +200,7 @@ export function TeacherLessonCreateView() {
       if (attachmentFile) {
         try {
           await lessonService.uploadAttachment(
-            createdLesson.id,
+            createdLesson.publicId,
             attachmentFile,
           );
         } catch {
@@ -222,7 +222,7 @@ export function TeacherLessonCreateView() {
       setFeedback(nextFeedback);
       setSavedDraftSignature(draftSignature);
       window.setTimeout(
-        () => navigate(`/teacher/lessons/${createdLesson.id}/edit`),
+        () => navigate(`/teacher/lessons/${createdLesson.publicId}/edit`),
         700,
       );
     } catch (createError) {
@@ -409,16 +409,16 @@ export function TeacherLessonCreateView() {
                   multiple
                   size="small"
                   options={availableGroups}
-                  value={draft.groupIds}
+                  value={draft.groups}
                   onChange={(_, value) =>
                     setDraft((current) => ({
                       ...current,
-                      groupIds: value,
+                      groups: value,
                     }))
                   }
                   getOptionLabel={(option) => option.name}
                   isOptionEqualToValue={(option, value) =>
-                    option.id === value.id
+                    option.publicId === value.publicId
                   }
                   disableCloseOnSelect
                   noOptionsText="Brak dostępnych grup"
@@ -440,7 +440,7 @@ export function TeacherLessonCreateView() {
                     <TextField
                       {...params}
                       placeholder={
-                        draft.groupIds.length === 0
+                        draft.groups.length === 0
                           ? "Wybierz grupy..."
                           : undefined
                       }
@@ -559,7 +559,7 @@ export function TeacherLessonCreateView() {
                       >
                         <GroupsIcon fontSize="small" color="primary" />
                         <Typography variant="body2">
-                          Grup: {draft.groupIds.length}
+                          Grup: {draft.groups.length}
                         </Typography>
                       </Box>
                       <Box

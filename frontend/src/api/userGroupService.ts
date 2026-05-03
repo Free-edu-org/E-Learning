@@ -1,18 +1,18 @@
 import { fetchApi } from "./apiClient";
 
 export interface UserGroup {
-  id: number;
+  publicId: string;
   name: string;
   description: string;
   studentCount: number;
-  teacherId?: number | null;
+  teacherPublicId?: string | null;
   createdAt: string;
 }
 
 export interface UserGroupRequest {
   name: string;
   description: string;
-  teacherId?: number | null;
+  teacherPublicId?: string | null;
 }
 
 export const userGroupService = {
@@ -22,21 +22,27 @@ export const userGroupService = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
-  updateGroup: (id: number, payload: UserGroupRequest) =>
-    fetchApi<UserGroup>(`/api/v1/user-groups/${id}`, {
+  updateGroup: (publicId: string, payload: UserGroupRequest) =>
+    fetchApi<UserGroup>(`/api/v1/user-groups/${publicId}`, {
       method: "PUT",
       body: JSON.stringify(payload),
     }),
-  deleteGroup: (id: number) =>
-    fetchApi<void>(`/api/v1/user-groups/${id}`, {
+  deleteGroup: (publicId: string) =>
+    fetchApi<void>(`/api/v1/user-groups/${publicId}`, {
       method: "DELETE",
     }),
-  addStudentToGroup: (groupId: number, userId: number) =>
-    fetchApi<void>(`/api/v1/user-groups/${groupId}/members/${userId}`, {
-      method: "POST",
-    }),
-  removeStudentFromGroup: (groupId: number, userId: number) =>
-    fetchApi<void>(`/api/v1/user-groups/${groupId}/members/${userId}`, {
-      method: "DELETE",
-    }),
+  addStudentToGroup: (groupPublicId: string, userPublicId: string) =>
+    fetchApi<void>(
+      `/api/v1/user-groups/${groupPublicId}/members/${userPublicId}`,
+      {
+        method: "POST",
+      },
+    ),
+  removeStudentFromGroup: (groupPublicId: string, userPublicId: string) =>
+    fetchApi<void>(
+      `/api/v1/user-groups/${groupPublicId}/members/${userPublicId}`,
+      {
+        method: "DELETE",
+      },
+    ),
 };

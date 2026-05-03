@@ -13,17 +13,17 @@ export interface AdminCreateStudentRequest {
   username: string;
   email: string;
   password: string;
-  groupId: number | null;
+  groupPublicId: string | null;
 }
 
 export interface AdminUpdateStudentRequest {
   username: string;
   email: string;
-  groupId: number | null;
+  groupPublicId: string | null;
 }
 
 export interface AdminStudentProfile extends UserProfile {
-  groupId?: number | null;
+  groupPublicId?: string | null;
   groupName?: string | null;
 }
 
@@ -36,8 +36,8 @@ export const adminService = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
-  updateStudent: (id: number, payload: AdminUpdateStudentRequest) =>
-    fetchApi<AdminStudentProfile>(`/api/v1/admin/students/${id}`, {
+  updateStudent: (publicId: string, payload: AdminUpdateStudentRequest) =>
+    fetchApi<AdminStudentProfile>(`/api/v1/admin/students/${publicId}`, {
       method: "PUT",
       body: JSON.stringify(payload),
     }),

@@ -37,10 +37,10 @@ public class JwtAuthenticationFilter implements WebFilter {
 
 		String jwt = authHeader.substring(7);
 		try {
-			Integer userId = jwtService.extractUserId(jwt);
-			if (userId != null) {
-				return Mono.fromCallable(() -> userRepository.findById(userId)).subscribeOn(Schedulers.boundedElastic())
-						.publishOn(Schedulers.parallel())
+			String userPublicId = jwtService.extractUserPublicId(jwt);
+			if (userPublicId != null) {
+				return Mono.fromCallable(() -> userRepository.findByPublicId(userPublicId))
+						.subscribeOn(Schedulers.boundedElastic()).publishOn(Schedulers.parallel())
 						.flatMap(optionalUser -> optionalUser.map(Mono::just).orElseGet(Mono::empty))
 						.filter(user -> jwtService.isTokenValid(jwt, user)).map(user -> {
 							var userDetails = new CustomUserDetails(user.getId(), user.getUsername(),

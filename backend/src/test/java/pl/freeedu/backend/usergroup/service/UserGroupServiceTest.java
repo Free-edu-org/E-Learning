@@ -50,14 +50,14 @@ class UserGroupServiceTest {
 	@Test
 	void shouldCreateGroupSucceed() {
 		// given
-		UserGroupRequest req = new UserGroupRequest("G1", "D1", 10);
+		UserGroupRequest req = new UserGroupRequest("G1", "D1", "teacher-public-id");
 		CustomUserDetails admin = new CustomUserDetails(1, "a", "p", Role.ADMIN);
 		User teacher = User.builder().id(10).role(Role.TEACHER).build();
 
 		when(securityService.getCurrentUser()).thenReturn(Mono.just(admin));
 		when(userGroupRepository.existsByName("G1")).thenReturn(false);
 		when(userGroupMapper.toUserGroup(req)).thenReturn(UserGroup.builder().name("G1").build());
-		when(userRepository.findById(10)).thenReturn(Optional.of(teacher));
+		when(userRepository.findByPublicId("teacher-public-id")).thenReturn(Optional.of(teacher));
 		when(userGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 		when(userGroupMapper.toUserGroupResponse(any())).thenReturn(UserGroupResponse.builder().name("G1").build());
 
@@ -85,15 +85,16 @@ class UserGroupServiceTest {
 	@Test
 	void shouldGetById() {
 		// given
-		UserGroup group = UserGroup.builder().id(1).name("G1").build();
+		UserGroup group = UserGroup.builder().id(1).publicId("group-public-id").name("G1").build();
 		when(userGroupRepository.findById(1)).thenReturn(Optional.of(group));
-		when(userGroupMapper.toUserGroupResponse(group)).thenReturn(UserGroupResponse.builder().id(1).build());
+		when(userGroupMapper.toUserGroupResponse(group))
+				.thenReturn(UserGroupResponse.builder().publicId("group-public-id").build());
 
 		// when
 		Mono<UserGroupResponse> result = userGroupService.getById(1);
 
 		// then
-		StepVerifier.create(result).assertNext(r -> assertEquals(1, r.getId())).verifyComplete();
+		StepVerifier.create(result).assertNext(r -> assertEquals("group-public-id", r.getPublicId())).verifyComplete();
 	}
 
 	@Test
@@ -111,7 +112,7 @@ class UserGroupServiceTest {
 	@Test
 	void shouldGetAllGroupsWithCounts() {
 		// given
-		UserGroup g1 = UserGroup.builder().id(1).build();
+		UserGroup g1 = UserGroup.builder().id(1).publicId("group-public-id").build();
 		when(userGroupRepository.findAll()).thenReturn(List.of(g1));
 		when(userInGroupRepository.countAllByGroupId())
 				.thenReturn(List.of(new UserInGroupRepository.GroupCountProjection() {
@@ -125,7 +126,8 @@ class UserGroupServiceTest {
 						return 5L;
 					}
 				}));
-		when(userGroupMapper.toUserGroupResponse(g1)).thenReturn(UserGroupResponse.builder().id(1).build());
+		when(userGroupMapper.toUserGroupResponse(g1))
+				.thenReturn(UserGroupResponse.builder().publicId("group-public-id").build());
 
 		// when
 		Flux<UserGroupResponse> result = userGroupService.getAll();

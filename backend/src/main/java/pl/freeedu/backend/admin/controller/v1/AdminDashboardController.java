@@ -24,6 +24,7 @@ import pl.freeedu.backend.admin.dto.AdminStatsResponse;
 import pl.freeedu.backend.admin.dto.AdminUpdateStudentRequest;
 import pl.freeedu.backend.admin.service.AdminService;
 import pl.freeedu.backend.user.dto.UserResponse;
+import pl.freeedu.backend.user.service.UserPublicIdLookupService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -33,9 +34,11 @@ import reactor.core.publisher.Mono;
 public class AdminDashboardController {
 
 	private final AdminService adminService;
+	private final UserPublicIdLookupService userPublicIdLookupService;
 
-	public AdminDashboardController(AdminService adminService) {
+	public AdminDashboardController(AdminService adminService, UserPublicIdLookupService userPublicIdLookupService) {
 		this.adminService = adminService;
+		this.userPublicIdLookupService = userPublicIdLookupService;
 	}
 
 	@Operation(summary = "Get global system stats")
@@ -81,7 +84,7 @@ public class AdminDashboardController {
 	@PostMapping("/students")
 	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseStatus(HttpStatus.CREATED)
-	public Mono<UserResponse> createStudent(@Valid @RequestBody Mono<AdminCreateStudentRequest> request) {
+	public Mono<AdminStudentResponse> createStudent(@Valid @RequestBody Mono<AdminCreateStudentRequest> request) {
 		return request.flatMap(adminService::createStudent);
 	}
 
@@ -92,11 +95,12 @@ public class AdminDashboardController {
 			@ApiResponse(responseCode = "403", description = "Forbidden - requires ADMIN role", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "404", description = "Not Found - USER_NOT_FOUND or USER_GROUP_NOT_FOUND", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "409", description = "Conflict - EMAIL_ALREADY_TAKEN or USERNAME_ALREADY_TAKEN", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
-	@PutMapping("/students/{id}")
+	@PutMapping("/students/{studentPublicId}")
 	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseStatus(HttpStatus.OK)
-	public Mono<AdminStudentResponse> updateStudent(@PathVariable Integer id,
+	public Mono<AdminStudentResponse> updateStudent(@PathVariable String studentPublicId,
 			@Valid @RequestBody Mono<AdminUpdateStudentRequest> request) {
-		return request.flatMap(payload -> adminService.updateStudent(id, payload));
+		return userPublicIdLookupService.getInternalId(studentPublicId)
+				.flatMap(id -> request.flatMap(payload -> adminService.updateStudent(id, payload)));
 	}
 }

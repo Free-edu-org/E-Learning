@@ -23,6 +23,8 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 
@@ -55,7 +57,7 @@ public class UserGroupService {
 						throw new UserGroupException(UserGroupErrorCode.GROUP_NAME_ALREADY_EXISTS);
 					}
 					UserGroup userGroup = userGroupMapper.toUserGroup(request);
-					userGroup.setTeacherId(resolveTeacherId(currentUser, request.getTeacherId()));
+					userGroup.setTeacherId(resolveTeacherId(currentUser, request.getTeacherPublicId()));
 					try {
 						UserGroup saved = userGroupRepository.save(userGroup);
 						log.info("Group created successfully. Group ID: {}, Teacher ID: {}", saved.getId(),
@@ -81,7 +83,12 @@ public class UserGroupService {
 			var countMap = userInGroupRepository.countAllByGroupId().stream()
 					.collect(Collectors.toMap(UserInGroupRepository.GroupCountProjection::getGroupId,
 							UserInGroupRepository.GroupCountProjection::getCount));
-			return userGroupRepository.findAll().stream().map(group -> toResponseWithCount(group, countMap)).toList();
+			var groups = userGroupRepository.findAll();
+			Set<Integer> teacherIds = groups.stream().map(UserGroup::getTeacherId).filter(Objects::nonNull)
+					.collect(Collectors.toSet());
+			Map<Integer, String> teacherPublicIdMap = userRepository.findAllById(teacherIds).stream()
+					.collect(Collectors.toMap(User::getId, User::getPublicId));
+			return groups.stream().map(group -> toResponseWithCount(group, countMap, teacherPublicIdMap)).toList();
 		}).subscribeOn(Schedulers.boundedElastic()).flatMapMany(Flux::fromIterable);
 	}
 
@@ -102,8 +109,13 @@ public class UserGroupService {
 			var countMap = userInGroupRepository.countAllByGroupId().stream()
 					.collect(Collectors.toMap(UserInGroupRepository.GroupCountProjection::getGroupId,
 							UserInGroupRepository.GroupCountProjection::getCount));
-			return userGroupRepository.findByTeacherId(teacherId).stream()
-					.map(group -> toResponseWithCount(group, countMap)).toList();
+			String teacherPublicId = userRepository.findById(teacherId).map(User::getPublicId).orElse(null);
+			return userGroupRepository.findByTeacherId(teacherId).stream().map(group -> {
+				UserGroupResponse response = userGroupMapper.toUserGroupResponse(group);
+				response.setStudentCount(countMap.getOrDefault(group.getId(), 0L).intValue());
+				response.setTeacherPublicId(teacherPublicId);
+				return response;
+			}).toList();
 		}).subscribeOn(Schedulers.boundedElastic()).flatMapMany(Flux::fromIterable);
 	}
 
@@ -122,7 +134,8 @@ public class UserGroupService {
 					}
 					group.setName(request.getName());
 					group.setDescription(request.getDescription());
-					group.setTeacherId(resolveTeacherId(currentUser, request.getTeacherId(), group.getTeacherId()));
+					group.setTeacherId(
+							resolveTeacherId(currentUser, request.getTeacherPublicId(), group.getTeacherId()));
 					try {
 						UserGroup saved = userGroupRepository.save(group);
 						log.info("Group ID: {} updated successfully", id);
@@ -197,28 +210,36 @@ public class UserGroupService {
 	private UserGroupResponse toResponseWithCount(UserGroup group) {
 		UserGroupResponse response = userGroupMapper.toUserGroupResponse(group);
 		response.setStudentCount(userInGroupRepository.countByGroupId(group.getId()));
+		if (group.getTeacherId() != null) {
+			response.setTeacherPublicId(
+					userRepository.findById(group.getTeacherId()).map(User::getPublicId).orElse(null));
+		}
 		return response;
 	}
 
-	private UserGroupResponse toResponseWithCount(UserGroup group, Map<Integer, Long> countMap) {
+	private UserGroupResponse toResponseWithCount(UserGroup group, Map<Integer, Long> countMap,
+			Map<Integer, String> teacherPublicIdMap) {
 		UserGroupResponse response = userGroupMapper.toUserGroupResponse(group);
 		response.setStudentCount(countMap.getOrDefault(group.getId(), 0L).intValue());
+		if (group.getTeacherId() != null) {
+			response.setTeacherPublicId(teacherPublicIdMap.get(group.getTeacherId()));
+		}
 		return response;
 	}
 
-	private Integer resolveTeacherId(CustomUserDetails currentUser, Integer requestedTeacherId) {
-		return resolveTeacherId(currentUser, requestedTeacherId, null);
+	private Integer resolveTeacherId(CustomUserDetails currentUser, String requestedTeacherPublicId) {
+		return resolveTeacherId(currentUser, requestedTeacherPublicId, null);
 	}
 
-	private Integer resolveTeacherId(CustomUserDetails currentUser, Integer requestedTeacherId,
+	private Integer resolveTeacherId(CustomUserDetails currentUser, String requestedTeacherPublicId,
 			Integer fallbackTeacherId) {
 		if (currentUser.getRole() == Role.TEACHER) {
 			return currentUser.getId();
 		}
-		if (requestedTeacherId == null) {
+		if (requestedTeacherPublicId == null || requestedTeacherPublicId.isBlank()) {
 			return fallbackTeacherId;
 		}
-		User teacher = userRepository.findById(requestedTeacherId)
+		User teacher = userRepository.findByPublicId(requestedTeacherPublicId)
 				.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 		if (teacher.getRole() != Role.TEACHER) {
 			throw new UserException(UserErrorCode.INVALID_TEACHER_ASSIGNMENT);

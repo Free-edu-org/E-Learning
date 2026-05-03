@@ -11,4 +11,6 @@ public interface UserGroupRepository extends JpaRepository<UserGroup, Integer> {
 	boolean existsByName(String name);
 
 	List<UserGroup> findByTeacherId(Integer teacherId);
+
+	java.util.Optional<UserGroup> findByPublicId(String publicId);
 }

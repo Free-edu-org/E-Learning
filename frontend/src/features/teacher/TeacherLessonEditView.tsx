@@ -73,13 +73,13 @@ function buildDraftFromLesson(
   return {
     title: lesson.title,
     theme: lesson.theme,
-    groupIds: lesson.groups,
+    groups: lesson.groups,
     tasks,
   };
 }
 
 export function TeacherLessonEditView() {
-  const { lessonId } = useParams<{ lessonId: string }>();
+  const { lessonPublicId } = useParams<{ lessonPublicId: string }>();
   const navigate = useNavigate();
   const { logout } = useAuth();
 
@@ -108,7 +108,7 @@ export function TeacherLessonEditView() {
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
   const [attachmentUploading, setAttachmentUploading] = useState(false);
   const [deletingAttachmentId, setDeletingAttachmentId] = useState<
-    number | null
+    string | null
   >(null);
   const [attachmentFeedback, setAttachmentFeedback] = useState<string | null>(
     null,
@@ -138,8 +138,7 @@ export function TeacherLessonEditView() {
   }, []);
 
   useEffect(() => {
-    const numericLessonId = Number(lessonId);
-    if (Number.isNaN(numericLessonId)) {
+    if (!lessonPublicId) {
       setError("Nieprawidłowy identyfikator lekcji.");
       setLoading(false);
       setTasksLoading(false);
@@ -165,7 +164,7 @@ export function TeacherLessonEditView() {
         }
 
         const matchedLesson = lessons.find(
-          (item) => item.id === numericLessonId,
+          (item) => item.publicId === lessonPublicId,
         );
         if (!matchedLesson) {
           setError("Nie znaleziono lekcji do edycji.");
@@ -183,7 +182,7 @@ export function TeacherLessonEditView() {
 
         try {
           const tasksResponse =
-            await taskService.getLessonTasks(numericLessonId);
+            await taskService.getLessonTasks(lessonPublicId);
           if (cancelled) {
             return;
           }
@@ -236,7 +235,7 @@ export function TeacherLessonEditView() {
     return () => {
       cancelled = true;
     };
-  }, [lessonId]);
+  }, [lessonPublicId]);
 
   const handleBack = () => {
     if (
@@ -286,12 +285,12 @@ export function TeacherLessonEditView() {
     setFieldErrors({});
 
     try {
-      const groupIds = draft.groupIds.map((group) => group.id);
+      const groupPublicIds = draft.groups.map((group) => group.publicId);
 
-      await lessonService.updateLesson(lesson.id, {
+      await lessonService.updateLesson(lesson.publicId, {
         title: draft.title,
         theme: draft.theme,
-        groupIds,
+        groupPublicIds,
       });
 
       let nextFeedback: DialogFeedbackState = {
@@ -319,7 +318,11 @@ export function TeacherLessonEditView() {
           const parsed = parseBackendDraftId(task.id);
           if (parsed) {
             taskOperations.push(
-              taskService.deleteTask(lesson.id, task.type, parsed.backendId),
+              taskService.deleteTask(
+                lesson.publicId,
+                task.type,
+                parsed.taskPublicId,
+              ),
             );
           }
         }
@@ -328,13 +331,13 @@ export function TeacherLessonEditView() {
           const parsed = parseBackendDraftId(task.id);
           if (parsed) {
             taskOperations.push(
-              updateLessonTask(lesson.id, parsed.backendId, task),
+              updateLessonTask(lesson.publicId, parsed.taskPublicId, task),
             );
           }
         }
 
         for (const task of tasksToCreate) {
-          taskOperations.push(createLessonTask(lesson.id, task));
+          taskOperations.push(createLessonTask(lesson.publicId, task));
         }
 
         if (taskOperations.length > 0) {
@@ -359,17 +362,17 @@ export function TeacherLessonEditView() {
       const [refreshedLessons, refreshedTasksResponse] = await Promise.all([
         lessonService.getTeacherLessons(),
         tasksAvailable
-          ? taskService.getLessonTasks(lesson.id)
+          ? taskService.getLessonTasks(lesson.publicId)
           : Promise.resolve(null),
       ]);
 
       const refreshedLesson = refreshedLessons.find(
-        (item) => item.id === lesson.id,
+        (item) => item.publicId === lesson.publicId,
       ) ?? {
         ...lesson,
         title: draft.title,
         theme: draft.theme,
-        groups: draft.groupIds,
+        groups: draft.groups,
       };
 
       setLesson(refreshedLesson);
@@ -416,7 +419,7 @@ export function TeacherLessonEditView() {
     setAttachmentFeedback(null);
     try {
       const result = await lessonService.uploadAttachment(
-        lesson.id,
+        lesson.publicId,
         attachmentFile,
       );
       setAttachments((prev) => [...prev, result]);
@@ -436,11 +439,11 @@ export function TeacherLessonEditView() {
 
   const handleDeleteAttachment = async (att: LessonAttachment) => {
     if (!lesson || deletingAttachmentId !== null) return;
-    setDeletingAttachmentId(att.id);
+    setDeletingAttachmentId(att.publicId);
     setAttachmentFeedback(null);
     try {
-      await lessonService.deleteAttachment(lesson.id, att.id);
-      setAttachments((prev) => prev.filter((a) => a.id !== att.id));
+      await lessonService.deleteAttachment(lesson.publicId, att.publicId);
+      setAttachments((prev) => prev.filter((a) => a.publicId !== att.publicId));
       setAttachmentFeedback("Załącznik został usunięty.");
     } catch {
       setAttachmentFeedback("Nie udało się usunąć załącznika.");
@@ -452,7 +455,10 @@ export function TeacherLessonEditView() {
   const handleDownloadAttachment = async (att: LessonAttachment) => {
     if (!lesson) return;
     try {
-      const blob = await lessonService.downloadAttachment(lesson.id, att.id);
+      const blob = await lessonService.downloadAttachment(
+        lesson.publicId,
+        att.publicId,
+      );
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -652,16 +658,16 @@ export function TeacherLessonEditView() {
                   multiple
                   size="small"
                   options={availableGroups}
-                  value={draft.groupIds}
+                  value={draft.groups}
                   onChange={(_, value) =>
                     setDraft((current) => ({
                       ...current,
-                      groupIds: value,
+                      groups: value,
                     }))
                   }
                   getOptionLabel={(option) => option.name}
                   isOptionEqualToValue={(option, value) =>
-                    option.id === value.id
+                    option.publicId === value.publicId
                   }
                   disableCloseOnSelect
                   noOptionsText="Brak dostępnych grup"
@@ -683,7 +689,7 @@ export function TeacherLessonEditView() {
                     <TextField
                       {...params}
                       placeholder={
-                        draft.groupIds.length === 0
+                        draft.groups.length === 0
                           ? "Wybierz grupy..."
                           : undefined
                       }
@@ -718,10 +724,11 @@ export function TeacherLessonEditView() {
                   ) : (
                     <Stack spacing={0.75}>
                       {attachments.map((att) => {
-                        const isDeleting = deletingAttachmentId === att.id;
+                        const isDeleting =
+                          deletingAttachmentId === att.publicId;
                         return (
                           <Box
-                            key={att.id}
+                            key={att.publicId}
                             sx={{
                               display: "flex",
                               alignItems: "center",
@@ -907,7 +914,7 @@ export function TeacherLessonEditView() {
                       >
                         <GroupsIcon fontSize="small" color="primary" />
                         <Typography variant="body2">
-                          Grup: {draft.groupIds.length}
+                          Grup: {draft.groups.length}
                         </Typography>
                       </Box>
                       <Box

@@ -14,17 +14,16 @@ import { LessonResultDetailsPanel } from "@/components/results/LessonResultDetai
 import { getErrorMessage } from "@/utils/dashboardUtils";
 
 export function TeacherLessonResultView() {
-  const { lessonId, userId } = useParams<{
-    lessonId: string;
-    userId: string;
+  const { lessonPublicId, studentPublicId } = useParams<{
+    lessonPublicId: string;
+    studentPublicId: string;
   }>();
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const numericLessonId = Number(lessonId);
-  const numericUserId = Number(userId);
+
   const routeError =
-    Number.isNaN(numericLessonId) || Number.isNaN(numericUserId)
-      ? "Nieprawidlowy identyfikator wyniku."
+    !lessonPublicId || !studentPublicId
+      ? "Nieprawidłowy identyfikator wyniku."
       : null;
   const [user, setUser] = useState<UserProfile | null>(null);
   const [result, setResult] = useState<LessonResultDetailsResponse | null>(
@@ -48,18 +47,18 @@ export function TeacherLessonResultView() {
     }
 
     lessonService
-      .getLessonResultDetails(numericLessonId, numericUserId)
+      .getLessonResultDetails(lessonPublicId!, studentPublicId!)
       .then(setResult)
       .catch((err: unknown) =>
         setError(
           getErrorMessage(
             err,
-            "Nie udalo sie pobrac szczegolow wyniku ucznia.",
+            "Nie udało się pobrać szczegółów wyniku ucznia.",
           ),
         ),
       )
       .finally(() => setLoading(false));
-  }, [numericLessonId, numericUserId, routeError]);
+  }, [lessonPublicId, studentPublicId, routeError]);
 
   return (
     <Box
@@ -90,7 +89,13 @@ export function TeacherLessonResultView() {
 
         <Button
           startIcon={<BackIcon />}
-          onClick={() => navigate(`/teacher/lessons/${lessonId}/stats`)}
+          onClick={() =>
+            navigate(
+              routeError
+                ? "/teacher"
+                : `/teacher/lessons/${lessonPublicId}/stats`,
+            )
+          }
           sx={{
             textTransform: "none",
             fontWeight: 600,
@@ -98,7 +103,7 @@ export function TeacherLessonResultView() {
             mt: { xs: 0.5, sm: 1 },
           }}
         >
-          Powrot do wynikow lekcji
+          {routeError ? "Powrót do panelu" : "Powrót do wyników lekcji"}
         </Button>
 
         {!routeError && loading && <CircularProgress />}

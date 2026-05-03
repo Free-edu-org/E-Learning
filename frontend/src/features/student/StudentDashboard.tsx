@@ -132,7 +132,7 @@ function getLessonStatusTag(lesson: StudentLesson) {
 interface ResultDialogProps {
   lesson: StudentLesson | null;
   onClose: () => void;
-  onOpenDetails: (lessonId: number) => void;
+  onOpenDetails: (lessonPublicId: string) => void;
 }
 
 function ResultDialog({ lesson, onClose, onOpenDetails }: ResultDialogProps) {
@@ -204,7 +204,7 @@ function ResultDialog({ lesson, onClose, onOpenDetails }: ResultDialogProps) {
         </Button>
         <Button
           variant="contained"
-          onClick={() => onOpenDetails(lesson.id)}
+          onClick={() => onOpenDetails(lesson.publicId)}
           sx={{ textTransform: "none", fontWeight: 600, borderRadius: 2 }}
         >
           Przejdź do szczegółów
@@ -224,10 +224,13 @@ function formatBytes(bytes: number): string {
 
 interface AttachmentDialogProps {
   lesson: StudentLesson | null;
-  downloadingAttachmentId: number | null;
+  downloadingAttachmentId: string | null;
   downloadError: string | null;
   onClose: () => void;
-  onDownload: (lessonId: number, attachment: StudentLessonAttachment) => void;
+  onDownload: (
+    lessonPublicId: string,
+    attachment: StudentLessonAttachment,
+  ) => void;
 }
 
 function AttachmentDialog({
@@ -273,10 +276,10 @@ function AttachmentDialog({
 
         <Stack spacing={1}>
           {lesson.attachments.map((att) => {
-            const isDownloading = downloadingAttachmentId === att.id;
+            const isDownloading = downloadingAttachmentId === att.publicId;
             return (
               <Box
-                key={att.id}
+                key={att.publicId}
                 sx={{
                   display: "flex",
                   alignItems: "center",
@@ -312,7 +315,7 @@ function AttachmentDialog({
                     <IconButton
                       size="small"
                       disabled={isDownloading}
-                      onClick={() => onDownload(lesson.id, att)}
+                      onClick={() => onDownload(lesson.publicId, att)}
                       sx={{
                         flexShrink: 0,
                         color: "info.main",
@@ -386,20 +389,20 @@ export function StudentDashboard() {
   const [lessonFilter, setLessonFilter] = useState<LessonFilter>("ALL");
   const [lessonSort, setLessonSort] = useState<LessonSort>("status");
   const [downloadingAttachmentId, setDownloadingAttachmentId] = useState<
-    number | null
+    string | null
   >(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
 
   const handleDownloadAttachment = async (
-    lessonId: number,
+    lessonPublicId: string,
     attachment: StudentLessonAttachment,
   ) => {
-    setDownloadingAttachmentId(attachment.id);
+    setDownloadingAttachmentId(attachment.publicId);
     setDownloadError(null);
     try {
       const blob = await lessonService.downloadAttachment(
-        lessonId,
-        attachment.id,
+        lessonPublicId,
+        attachment.publicId,
       );
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -725,7 +728,7 @@ export function StudentDashboard() {
               const isLocked = !lesson.isActive && !isCompleted;
 
               return (
-                <Grid key={lesson.id} size={{ xs: 12, md: 6, xl: 4 }}>
+                <Grid key={lesson.publicId} size={{ xs: 12, md: 6, xl: 4 }}>
                   <Paper
                     elevation={0}
                     sx={{
@@ -889,7 +892,9 @@ export function StudentDashboard() {
                               fullWidth
                               variant="contained"
                               onClick={() =>
-                                navigate(`/student/lessons/${lesson.id}/result`)
+                                navigate(
+                                  `/student/lessons/${lesson.publicId}/result`,
+                                )
                               }
                               sx={{
                                 ...panelFooterButtonSx,
@@ -977,7 +982,9 @@ export function StudentDashboard() {
         <ResultDialog
           lesson={resultLesson}
           onClose={() => setResultLesson(null)}
-          onOpenDetails={(id) => navigate(`/student/lessons/${id}/result`)}
+          onOpenDetails={(publicId) =>
+            navigate(`/student/lessons/${publicId}/result`)
+          }
         />
       )}
       {attachmentLesson && attachmentLesson.attachments.length > 0 && (
@@ -989,8 +996,8 @@ export function StudentDashboard() {
             setAttachmentLesson(null);
             setDownloadError(null);
           }}
-          onDownload={(lessonId, att) =>
-            void handleDownloadAttachment(lessonId, att)
+          onDownload={(lessonPublicId, att) =>
+            void handleDownloadAttachment(lessonPublicId, att)
           }
         />
       )}
@@ -1026,7 +1033,7 @@ export function StudentDashboard() {
             variant="contained"
             onClick={() => {
               if (confirmStartLesson) {
-                navigate(`/student/lessons/${confirmStartLesson.id}`, {
+                navigate(`/student/lessons/${confirmStartLesson.publicId}`, {
                   state: { attachments: confirmStartLesson.attachments },
                 });
               }

@@ -26,6 +26,9 @@ public interface LessonRepository extends JpaRepository<Lesson, Integer> {
 	@EntityGraph(attributePaths = {"teacher"})
 	Optional<Lesson> findById(Integer id);
 
+	@EntityGraph(attributePaths = {"teacher"})
+	Optional<Lesson> findByPublicId(String publicId);
+
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("SELECT l FROM Lesson l WHERE l.id = :id")
 	Optional<Lesson> findByIdForUpdate(@Param("id") Integer id);

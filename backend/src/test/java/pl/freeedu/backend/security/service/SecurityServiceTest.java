@@ -49,11 +49,11 @@ class SecurityServiceTest {
 		CustomUserDetails principal = new CustomUserDetails(10, "teacher", "pwd", Role.TEACHER);
 		Authentication authentication = new UsernamePasswordAuthenticationToken(principal, null,
 				principal.getAuthorities());
-		UserGroup group = UserGroup.builder().id(7).teacherId(10).build();
-		when(userGroupRepository.findById(7)).thenReturn(Optional.of(group));
+		UserGroup group = UserGroup.builder().id(7).publicId("group-public-id").teacherId(10).build();
+		when(userGroupRepository.findByPublicId("group-public-id")).thenReturn(Optional.of(group));
 
 		// when
-		boolean result = securityService.isGroupOwner(authentication, 7);
+		boolean result = securityService.isGroupOwner(authentication, "group-public-id");
 
 		// then
 		assertTrue(result);
@@ -65,11 +65,11 @@ class SecurityServiceTest {
 		CustomUserDetails principal = new CustomUserDetails(10, "teacher", "pwd", Role.TEACHER);
 		Authentication authentication = new UsernamePasswordAuthenticationToken(principal, null,
 				principal.getAuthorities());
-		UserGroup group = UserGroup.builder().id(7).teacherId(99).build();
-		when(userGroupRepository.findById(7)).thenReturn(Optional.of(group));
+		UserGroup group = UserGroup.builder().id(7).publicId("group-public-id").teacherId(99).build();
+		when(userGroupRepository.findByPublicId("group-public-id")).thenReturn(Optional.of(group));
 
 		// when
-		boolean result = securityService.isGroupOwner(authentication, 7);
+		boolean result = securityService.isGroupOwner(authentication, "group-public-id");
 
 		// then
 		assertFalse(result);
@@ -81,11 +81,11 @@ class SecurityServiceTest {
 		CustomUserDetails principal = new CustomUserDetails(10, "teacher", "pwd", Role.TEACHER);
 		Authentication authentication = new UsernamePasswordAuthenticationToken(principal, null,
 				principal.getAuthorities());
-		Lesson lesson = Lesson.builder().id(5).teacher(User.builder().id(10).build()).build();
-		when(lessonRepository.findById(5)).thenReturn(Optional.of(lesson));
+		Lesson lesson = Lesson.builder().id(5).publicId("lesson-5").teacher(User.builder().id(10).build()).build();
+		when(lessonRepository.findByPublicId("lesson-5")).thenReturn(Optional.of(lesson));
 
 		// when
-		boolean result = securityService.isLessonOwner(authentication, 5);
+		boolean result = securityService.isLessonOwner(authentication, "lesson-5");
 
 		// then
 		assertTrue(result);
@@ -191,10 +191,12 @@ class SecurityServiceTest {
 		// given
 		CustomUserDetails student = new CustomUserDetails(10, "s", "p", Role.STUDENT);
 		Authentication auth = new UsernamePasswordAuthenticationToken(student, null, student.getAuthorities());
+		Lesson lesson = Lesson.builder().id(5).publicId("lesson-5").build();
 
 		// when
+		when(lessonRepository.findByPublicId("lesson-5")).thenReturn(Optional.of(lesson));
 		when(userInGroupRepository.hasAccessToLesson(10, 5)).thenReturn(true);
-		boolean result = securityService.hasStudentAccessToLesson(auth, 5);
+		boolean result = securityService.hasStudentAccessToLesson(auth, "lesson-5");
 
 		// then
 		assertTrue(result);

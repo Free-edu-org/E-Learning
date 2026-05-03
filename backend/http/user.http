@@ -21,7 +21,7 @@ Authorization: Bearer {{auth_token}}
 }
 
 ### Get User Details (Requires Admin, Teacher of student's group, or Owner)
-GET http://localhost:8080/api/v1/users/1
+GET http://localhost:8080/api/v1/users/{{user_public_id}}
 Authorization: Bearer {{auth_token}}
 
 ### Get Current User Profile
@@ -29,7 +29,7 @@ GET http://localhost:8080/api/v1/users/me
 Authorization: Bearer {{auth_token}}
 
 ### Change User Password (Requires Admin or Owner)
-PUT http://localhost:8080/api/v1/users/1/password
+PUT http://localhost:8080/api/v1/users/{{user_public_id}}/password
 Content-Type: application/json
 Authorization: Bearer {{auth_token}}
 
@@ -39,7 +39,7 @@ Authorization: Bearer {{auth_token}}
 }
 
 ### Change User Password - wrong old password (401 INVALID_OLD_PASSWORD)
-PUT http://localhost:8080/api/v1/users/1/password
+PUT http://localhost:8080/api/v1/users/{{user_public_id}}/password
 Content-Type: application/json
 Authorization: Bearer {{auth_token}}
 
@@ -49,7 +49,7 @@ Authorization: Bearer {{auth_token}}
 }
 
 ### Change User Password - unauthenticated (401 UNAUTHORIZED)
-PUT http://localhost:8080/api/v1/users/1/password
+PUT http://localhost:8080/api/v1/users/{{user_public_id}}/password
 Content-Type: application/json
 
 {
@@ -58,7 +58,7 @@ Content-Type: application/json
 }
 
 ### Change User Password - forbidden for non-owner (403 FORBIDDEN)
-PUT http://localhost:8080/api/v1/users/1/password
+PUT http://localhost:8080/api/v1/users/{{user_public_id}}/password
 Content-Type: application/json
 Authorization: Bearer {{other_user_auth_token}}
 
@@ -68,7 +68,7 @@ Authorization: Bearer {{other_user_auth_token}}
 }
 
 ### Change User Password - validation failed (400 VALIDATION_FAILED)
-PUT http://localhost:8080/api/v1/users/1/password
+PUT http://localhost:8080/api/v1/users/{{user_public_id}}/password
 Content-Type: application/json
 Authorization: Bearer {{auth_token}}
 
@@ -89,7 +89,7 @@ Authorization: Bearer {{auth_token}}
 }
 
 ### Update User Profile (Requires Admin or Owner)
-PUT http://localhost:8080/api/v1/users/1
+PUT http://localhost:8080/api/v1/users/{{user_public_id}}
 Content-Type: application/json
 Authorization: Bearer {{auth_token}}
 
@@ -99,5 +99,5 @@ Authorization: Bearer {{auth_token}}
 }
 
 ### Delete User (Requires Admin or Owner)
-DELETE http://localhost:8080/api/v1/users/1
+DELETE http://localhost:8080/api/v1/users/{{user_public_id}}
 Authorization: Bearer {{auth_token}}

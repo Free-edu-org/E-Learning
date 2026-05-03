@@ -24,13 +24,13 @@ describe('Users API (/api/v1/users)', () => {
     let staticAdminToken;
     let staticStudent1Token;
     let staticStudent2Token;
-    let newStudentId;
+    let newStudentPublicId;
     let newStudentToken;
-    let newAdminId; // Used for created admin
+    let newAdminPublicId; // Used for created admin
     let createdAdminToken;
     let newStudentUsername = null;
     let newStudentPassword = null;
-    let tempUserIdForCleanup = null;
+    let tempUserPublicIdForCleanup = null;
 
     const newStudentData = {
         email: `student.new.${uniqueId}@example.com`,
@@ -177,7 +177,7 @@ describe('Users API (/api/v1/users)', () => {
             setAuthToken(createdAdminToken);
             const meResponse = await apiClient.get('/users/me');
             expect(meResponse.status).toBe(200);
-            newAdminId = meResponse.data.id;
+            newAdminPublicId = meResponse.data.publicId;
         });
 
         it('should deny student from creating an admin (403 Forbidden)', async () => {
@@ -219,7 +219,7 @@ describe('Users API (/api/v1/users)', () => {
 
             setAuthToken(newStudentToken);
             const meRes = await apiClient.get('/users/me');
-            newStudentId = meRes.data.id;
+            newStudentPublicId = meRes.data.publicId;
         });
 
         describe('GET /api/v1/users/me (Current User Profile)', () => {
@@ -227,7 +227,7 @@ describe('Users API (/api/v1/users)', () => {
                 setAuthToken(staticStudent1Token);
                 const response = await apiClient.get('/users/me');
                 expect(response.status).toBe(200);
-                expect(response.data).toHaveProperty('id');
+                expect(response.data).toHaveProperty('publicId');
                 expect(response.data.email).toBe(staticStudent1.email);
                 expect(response.data.username).toBe(staticStudent1.username);
                 expect(response.data.role).toBe('STUDENT');
@@ -245,43 +245,43 @@ describe('Users API (/api/v1/users)', () => {
             });
         });
 
-        describe('GET /api/v1/users/{id} (Get User Details)', () => {
+        describe('GET /api/v1/users/{publicId} (Get User Details)', () => {
             it('should get user details when ID matches current user (200 OK)', async () => {
                 setAuthToken(newStudentToken);
-                const response = await apiClient.get(`/users/${newStudentId}`);
+                const response = await apiClient.get(`/users/${newStudentPublicId}`);
                 expect(response.status).toBe(200);
-                expect(response.data.id).toBe(newStudentId);
+                expect(response.data.publicId).toBe(newStudentPublicId);
                 expect(response.data).toHaveProperty('avatarUrl');
             });
 
             it('should allow access if ADMIN (200 OK)', async () => {
                 setAuthToken(staticAdminToken);
-                const response = await apiClient.get(`/users/${newStudentId}`);
+                const response = await apiClient.get(`/users/${newStudentPublicId}`);
                 expect(response.status).toBe(200);
-                expect(response.data.id).toBe(newStudentId);
+                expect(response.data.publicId).toBe(newStudentPublicId);
             });
 
             it('should deny access if ID does not match and not ADMIN (403 Forbidden)', async () => {
                 setAuthToken(staticStudent2Token); // Use student 2 to request student 1
-                const response = await apiClient.get(`/users/${newStudentId}`);
+                const response = await apiClient.get(`/users/${newStudentPublicId}`);
                 expect([403, 401]).toContain(response.status);
             });
 
             it('should return 404 for non-existent user if ADMIN (404 NOT FOUND)', async () => {
                 setAuthToken(staticAdminToken);
-                const response = await apiClient.get('/users/9999999');
+                const response = await apiClient.get('/users/non-existent-user');
                 expect(response.status).toBe(404);
             });
         });
 
-        describe('PUT /api/v1/users/{id} (Update User Profile)', () => {
+        describe('PUT /api/v1/users/{publicId} (Update User Profile)', () => {
             it('should update user profile for self (200 OK)', async () => {
                 setAuthToken(newStudentToken);
                 const updateData = {
                     email: `updated.email.${uniqueId}@example.com`,
                     username: `updatedUser${uniqueId}`
                 };
-                const response = await apiClient.put(`/users/${newStudentId}`, updateData);
+                const response = await apiClient.put(`/users/${newStudentPublicId}`, updateData);
                 expect(response.status).toBe(200);
                 expect(response.data.email).toBe(updateData.email);
                 expect(response.data.username).toBe(updateData.username);
@@ -292,7 +292,7 @@ describe('Users API (/api/v1/users)', () => {
             it('should allow admin to update another profile (200 OK)', async () => {
                 setAuthToken(staticAdminToken);
                 const updateData = { email: `admin.updated.${uniqueId}@example.com`, username: `adminUpdatedUser${uniqueId}` };
-                const response = await apiClient.put(`/users/${newStudentId}`, updateData);
+                const response = await apiClient.put(`/users/${newStudentPublicId}`, updateData);
                 expect(response.status).toBe(200);
                 expect(response.data.username).toBe(updateData.username);
                 newStudentUsername = updateData.username;
@@ -301,13 +301,13 @@ describe('Users API (/api/v1/users)', () => {
             it('should deny student from updating another profile (403 Forbidden)', async () => {
                 setAuthToken(staticStudent2Token); // student2 token
                 const updateData = { email: `some.email.${uniqueId}@example.com`, username: `someUser${uniqueId}` };
-                const response = await apiClient.put(`/users/${newStudentId}`, updateData); // accessing newStudentId
+                const response = await apiClient.put(`/users/${newStudentPublicId}`, updateData); // accessing newStudentPublicId
                 expect([403, 401]).toContain(response.status);
             });
 
             it('should fail with VALIDATION_FAILED for invalid input (400 Bad Request)', async () => {
                 setAuthToken(newStudentToken);
-                const response = await apiClient.put(`/users/${newStudentId}`, {
+                const response = await apiClient.put(`/users/${newStudentPublicId}`, {
                     email: 'not-an-email',
                     username: ''
                 });
@@ -318,7 +318,7 @@ describe('Users API (/api/v1/users)', () => {
             it('should fail with EMAIL_ALREADY_TAKEN when updating to an existing email (409 Conflict)', async () => {
                 setAuthToken(newStudentToken);
                 const updateData = { email: staticAdmin.email, username: `uniqueUser${uniqueId}` };
-                const response = await apiClient.put(`/users/${newStudentId}`, updateData);
+                const response = await apiClient.put(`/users/${newStudentPublicId}`, updateData);
                 expect(response.status).toBe(409);
                 expect(response.data.code).toBe('EMAIL_ALREADY_TAKEN');
             });
@@ -326,13 +326,13 @@ describe('Users API (/api/v1/users)', () => {
             it('should fail with USERNAME_ALREADY_TAKEN when updating to an existing username (409 Conflict)', async () => {
                 setAuthToken(newStudentToken);
                 const updateData = { email: `unique.email.${uniqueId}X@example.com`, username: staticAdmin.username };
-                const response = await apiClient.put(`/users/${newStudentId}`, updateData);
+                const response = await apiClient.put(`/users/${newStudentPublicId}`, updateData);
                 expect(response.status).toBe(409);
                 expect(response.data.code).toBe('USERNAME_ALREADY_TAKEN');
             });
         });
 
-        describe('PUT /api/v1/users/{id}/password (Change Password)', () => {
+        describe('PUT /api/v1/users/{publicId}/password (Change Password)', () => {
             const newPassword = 'newStrongPassword456';
             const secondNewPassword = 'newStrongPassword789';
 
@@ -342,7 +342,7 @@ describe('Users API (/api/v1/users)', () => {
                     oldPassword: 'password123', // Initial password defined in `newStudentData`
                     newPassword: newPassword
                 };
-                const response = await apiClient.put(`/users/${newStudentId}/password`, passwordData);
+                const response = await apiClient.put(`/users/${newStudentPublicId}/password`, passwordData);
                 expect(response.status).toBe(204);
 
                 // Verify new password works
@@ -356,7 +356,7 @@ describe('Users API (/api/v1/users)', () => {
                     oldPassword: newPassword,
                     newPassword: secondNewPassword
                 };
-                const response = await apiClient.put(`/users/${newStudentId}/password`, passwordData);
+                const response = await apiClient.put(`/users/${newStudentPublicId}/password`, passwordData);
 
                 expect(response.status).toBe(204);
                 await loginNewStudent(newStudentUsername, secondNewPassword);
@@ -364,7 +364,7 @@ describe('Users API (/api/v1/users)', () => {
 
             it('should fail if unauthenticated (401 Unauthorized)', async () => {
                 setAuthToken(null);
-                const response = await apiClient.put(`/users/${newStudentId}/password`, {
+                const response = await apiClient.put(`/users/${newStudentPublicId}/password`, {
                     oldPassword: secondNewPassword,
                     newPassword: 'unauthenticatedPassword123'
                 });
@@ -373,7 +373,7 @@ describe('Users API (/api/v1/users)', () => {
 
             it('should deny student from changing another user password (403 Forbidden)', async () => {
                 setAuthToken(staticStudent2Token);
-                const response = await apiClient.put(`/users/${newStudentId}/password`, { oldPassword: '...', newPassword: '...' });
+                const response = await apiClient.put(`/users/${newStudentPublicId}/password`, { oldPassword: '...', newPassword: '...' });
                 expect([403, 401]).toContain(response.status);
             });
 
@@ -383,7 +383,7 @@ describe('Users API (/api/v1/users)', () => {
                     oldPassword: 'wrongOldPassword',
                     newPassword: 'anotherPassword789'
                 };
-                const response = await apiClient.put(`/users/${newStudentId}/password`, passwordData);
+                const response = await apiClient.put(`/users/${newStudentPublicId}/password`, passwordData);
                 expect(response.status).toBe(401);
                 expect(response.data.code).toBe('INVALID_OLD_PASSWORD');
                 expect(response.data.detail).toBe('Obecne haslo jest nieprawidlowe.');
@@ -391,13 +391,13 @@ describe('Users API (/api/v1/users)', () => {
 
             it('should fail with VALIDATION_FAILED for empty passwords (400 Bad Request)', async () => {
                 setAuthToken(newStudentToken);
-                const response = await apiClient.put(`/users/${newStudentId}/password`, { oldPassword: '', newPassword: '' });
+                const response = await apiClient.put(`/users/${newStudentPublicId}/password`, { oldPassword: '', newPassword: '' });
                 expect(response.status).toBe(400);
                 expect(response.data.code).toBe('VALIDATION_FAILED');
             });
         });
 
-        describe('DELETE /api/v1/users/{id} (Delete User)', () => {
+        describe('DELETE /api/v1/users/{publicId} (Delete User)', () => {
             let tempUserId;
             let tempUserToken;
 
@@ -416,27 +416,27 @@ describe('Users API (/api/v1/users)', () => {
                 tempUserToken = loginRes.data.token;
                 setAuthToken(tempUserToken);
                 const meRes = await apiClient.get('/users/me');
-                tempUserId = meRes.data.id;
+                tempUserPublicId = meRes.data.publicId;
                 tempUserIdForCleanup = tempUserId;
             });
 
             it('should deny student from deleting another user profile (403 Forbidden)', async () => {
                 setAuthToken(staticStudent2Token);
-                const response = await apiClient.delete(`/users/${tempUserId}`);
+                const response = await apiClient.delete(`/users/${tempUserPublicId}`);
                 expect([403, 401]).toContain(response.status);
             });
 
             it('should allow user self-delete (204 No Content)', async () => {
                 // Testing Owner deletion point in contract
                 setAuthToken(tempUserToken); // Authenticated as tempUser
-                const response = await apiClient.delete(`/users/${tempUserId}`);
+                const response = await apiClient.delete(`/users/${tempUserPublicId}`);
                 expect(response.status).toBe(204);
             });
 
             it('should allow admin to delete user profile (204 No Content)', async () => {
                 // Cover cross-user admin deletion
                 setAuthToken(staticAdminToken);
-                const response = await apiClient.delete(`/users/${newStudentId}`);
+                const response = await apiClient.delete(`/users/${newStudentPublicId}`);
                 expect(response.status).toBe(204);
 
                 // Verify user is gone
@@ -447,7 +447,7 @@ describe('Users API (/api/v1/users)', () => {
 
             it('should return 404 when deleting already deleted user (404 NOT FOUND)', async () => {
                 setAuthToken(staticAdminToken);
-                const response = await apiClient.delete(`/users/${newStudentId}`);
+                const response = await apiClient.delete(`/users/${newStudentPublicId}`);
                 expect(response.status).toBe(404);
             });
         });
@@ -456,18 +456,18 @@ describe('Users API (/api/v1/users)', () => {
     afterAll(async () => {
         setAuthToken(staticAdminToken);
 
-        if (newAdminId) {
-            const response = await apiClient.delete(`/users/${newAdminId}`);
+        if (newAdminPublicId) {
+            const response = await apiClient.delete(`/users/${newAdminPublicId}`);
             expect([204, 404]).toContain(response.status);
         }
 
-        if (tempUserIdForCleanup) {
-            const response = await apiClient.delete(`/users/${tempUserIdForCleanup}`);
+        if (tempUserPublicIdForCleanup) {
+            const response = await apiClient.delete(`/users/${tempUserPublicIdForCleanup}`);
             expect([204, 404]).toContain(response.status);
         }
 
-        if (newStudentId) {
-            const response = await apiClient.delete(`/users/${newStudentId}`);
+        if (newStudentPublicId) {
+            const response = await apiClient.delete(`/users/${newStudentPublicId}`);
             expect([204, 404]).toContain(response.status);
         }
 

@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import pl.freeedu.backend.lesson.service.LessonPublicIdLookupService;
 import pl.freeedu.backend.student.dto.StudentLessonResponse;
 import pl.freeedu.backend.student.dto.StudentProgressResponse;
 import pl.freeedu.backend.student.dto.StudentStatsResponse;
@@ -17,6 +18,7 @@ import pl.freeedu.backend.task.dto.LessonResultDetailsResponse;
 import pl.freeedu.backend.student.service.StudentService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 @RestController
 @RequestMapping("/api/v1/student")
@@ -24,9 +26,12 @@ import reactor.core.publisher.Mono;
 public class StudentDashboardController {
 
 	private final StudentService studentService;
+	private final LessonPublicIdLookupService lessonPublicIdLookupService;
 
-	public StudentDashboardController(StudentService studentService) {
+	public StudentDashboardController(StudentService studentService,
+			LessonPublicIdLookupService lessonPublicIdLookupService) {
 		this.studentService = studentService;
+		this.lessonPublicIdLookupService = lessonPublicIdLookupService;
 	}
 
 	@Operation(summary = "Get student dashboard statistics")
@@ -58,10 +63,12 @@ public class StudentDashboardController {
 
 	@Operation(summary = "Get detailed result of student's completed lesson")
 	@ApiResponse(responseCode = "200", description = "Detailed result scoped to current student")
-	@GetMapping("/lessons/{lessonId}/result")
+	@GetMapping("/lessons/{lessonPublicId}/result")
 	@PreAuthorize("hasRole('STUDENT')")
 	@ResponseStatus(HttpStatus.OK)
-	public Mono<LessonResultDetailsResponse> getLessonResultDetails(@PathVariable Integer lessonId) {
-		return studentService.getLessonResultDetails(lessonId);
+	public Mono<LessonResultDetailsResponse> getLessonResultDetails(@PathVariable String lessonPublicId) {
+		return Mono.fromCallable(() -> lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId))
+				.subscribeOn(Schedulers.boundedElastic())
+				.flatMap(lessonId -> studentService.getLessonResultDetails(lessonId));
 	}
 }

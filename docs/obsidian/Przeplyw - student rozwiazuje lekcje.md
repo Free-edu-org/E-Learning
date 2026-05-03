@@ -7,12 +7,12 @@ sequenceDiagram
   participant API as Task API
   participant DB as MySQL
   S->>F: otwiera lekcje
-  F->>API: GET /api/v1/lessons/{lessonId}/tasks
+  F->>API: GET /api/v1/lessons/{lessonPublicId}/tasks
   API->>DB: sprawdz dostep przez grupe
   API->>DB: utworz lub pobierz user_lessons
   API-->>F: zadania bez odpowiedzi poprawnych
   S->>F: wysyla odpowiedzi
-  F->>API: POST /api/v1/lessons/{lessonId}/submit
+  F->>API: POST /api/v1/lessons/{lessonPublicId}/submit
   API->>DB: user_answers + user_lessons COMPLETED
   API-->>F: wynik i detale
 ```

@@ -10,7 +10,7 @@ public interface LessonMapper {
 
 	@Mapping(target = "groups", ignore = true)
 	@Mapping(target = "attachments", ignore = true)
-	@Mapping(source = "teacher.id", target = "teacherId")
+	@Mapping(source = "teacher.publicId", target = "teacherPublicId")
 	@Mapping(source = "teacher.username", target = "teacherName")
 	@Mapping(source = "teacher.avatarUrl", target = "teacherAvatarUrl")
 	LessonResponse toResponse(Lesson lesson);

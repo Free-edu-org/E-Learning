@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class LessonResultTaskDetailDto {
 
-	private Integer taskId;
+	private String taskPublicId;
 	private String taskType;
 	private String section;
 	private String taskText;

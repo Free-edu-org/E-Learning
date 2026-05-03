@@ -10,7 +10,9 @@ import pl.freeedu.backend.user.model.Role;
 import pl.freeedu.backend.lesson.repository.LessonRepository;
 import pl.freeedu.backend.usergroup.repository.UserGroupRepository;
 import pl.freeedu.backend.usergroup.repository.UserInGroupRepository;
+import pl.freeedu.backend.user.repository.UserRepository;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 import org.springframework.context.annotation.Lazy;
 import lombok.extern.slf4j.Slf4j;
 
@@ -21,12 +23,14 @@ public class SecurityService {
 	private final UserGroupRepository userGroupRepository;
 	private final LessonRepository lessonRepository;
 	private final UserInGroupRepository userInGroupRepository;
+	private final UserRepository userRepository;
 
 	public SecurityService(@Lazy UserGroupRepository userGroupRepository, @Lazy LessonRepository lessonRepository,
-			@Lazy UserInGroupRepository userInGroupRepository) {
+			@Lazy UserInGroupRepository userInGroupRepository, @Lazy UserRepository userRepository) {
 		this.userGroupRepository = userGroupRepository;
 		this.lessonRepository = lessonRepository;
 		this.userInGroupRepository = userInGroupRepository;
+		this.userRepository = userRepository;
 	}
 
 	public Mono<Integer> getCurrentUserId() {
@@ -51,7 +55,7 @@ public class SecurityService {
 		return result;
 	}
 
-	public boolean isGroupOwner(Authentication authentication, Integer groupId) {
+	public boolean isOwnerByPublicId(Authentication authentication, String publicId) {
 		if (authentication == null || !authentication.isAuthenticated()) {
 			return false;
 		}
@@ -59,16 +63,16 @@ public class SecurityService {
 		if (!(principal instanceof CustomUserDetails userDetails)) {
 			return false;
 		}
-		boolean result = userGroupRepository.findById(groupId)
-				.map(group -> userDetails.getId().equals(group.getTeacherId())).orElse(false);
+		boolean result = userRepository.findByPublicId(publicId).map(user -> userDetails.getId().equals(user.getId()))
+				.orElse(false);
 		if (!result) {
-			log.debug("Group ownership check failed: Principal ID: {} is not the owner of group ID: {}",
-					userDetails.getId(), groupId);
+			log.debug("Ownership check failed: Principal ID: {} is not the owner of target user public ID: {}",
+					userDetails.getId(), publicId);
 		}
 		return result;
 	}
 
-	public boolean isLessonOwner(Authentication authentication, Integer lessonId) {
+	public boolean isGroupOwner(Authentication authentication, String groupPublicId) {
 		if (authentication == null || !authentication.isAuthenticated()) {
 			return false;
 		}
@@ -76,12 +80,29 @@ public class SecurityService {
 		if (!(principal instanceof CustomUserDetails userDetails)) {
 			return false;
 		}
-		boolean result = lessonRepository.findById(lessonId)
+		boolean result = userGroupRepository.findByPublicId(groupPublicId)
+				.map(group -> userDetails.getId().equals(group.getTeacherId())).orElse(false);
+		if (!result) {
+			log.debug("Group ownership check failed: Principal ID: {} is not the owner of group public ID: {}",
+					userDetails.getId(), groupPublicId);
+		}
+		return result;
+	}
+
+	public boolean isLessonOwner(Authentication authentication, String lessonPublicId) {
+		if (authentication == null || !authentication.isAuthenticated()) {
+			return false;
+		}
+		Object principal = authentication.getPrincipal();
+		if (!(principal instanceof CustomUserDetails userDetails)) {
+			return false;
+		}
+		boolean result = lessonRepository.findByPublicId(lessonPublicId)
 				.map(lesson -> lesson.getTeacher() != null && userDetails.getId().equals(lesson.getTeacher().getId()))
 				.orElse(false);
 		if (!result) {
-			log.debug("Lesson ownership check failed: Principal ID: {} is not the owner of lesson ID: {}",
-					userDetails.getId(), lessonId);
+			log.debug("Lesson ownership check failed: Principal ID: {} is not the owner of lesson public ID: {}",
+					userDetails.getId(), lessonPublicId);
 		}
 		return result;
 	}
@@ -108,7 +129,7 @@ public class SecurityService {
 		return userInGroupRepository.isStudentInTeachersGroup(studentId, userDetails.getId());
 	}
 
-	public boolean hasStudentAccessToLesson(Authentication authentication, Integer lessonId) {
+	public boolean isTeacherOfStudentByPublicId(Authentication authentication, String studentPublicId) {
 		if (authentication == null || !authentication.isAuthenticated()) {
 			return false;
 		}
@@ -116,12 +137,87 @@ public class SecurityService {
 		if (!(principal instanceof CustomUserDetails userDetails)) {
 			return false;
 		}
-		boolean result = userInGroupRepository.hasAccessToLesson(userDetails.getId(), lessonId);
+		if (userDetails.getRole() != Role.TEACHER) {
+			return false;
+		}
+
+		return userRepository.findByPublicId(studentPublicId)
+				.map(student -> userInGroupRepository.isStudentInTeachersGroup(student.getId(), userDetails.getId()))
+				.orElse(false);
+	}
+
+	public boolean hasStudentAccessToLesson(Authentication authentication, String lessonPublicId) {
+		if (authentication == null || !authentication.isAuthenticated()) {
+			return false;
+		}
+		Object principal = authentication.getPrincipal();
+		if (!(principal instanceof CustomUserDetails userDetails)) {
+			return false;
+		}
+		boolean result = lessonRepository.findByPublicId(lessonPublicId)
+				.map(lesson -> userInGroupRepository.hasAccessToLesson(userDetails.getId(), lesson.getId()))
+				.orElse(false);
 		if (!result) {
-			log.debug("Student access check failed: Student ID: {} has no access to lesson ID: {}", userDetails.getId(),
-					lessonId);
+			log.debug("Student access check failed: Student ID: {} has no access to lesson public ID: {}",
+					userDetails.getId(), lessonPublicId);
 		}
 		return result;
+	}
+
+	public Mono<Boolean> isOwnerByPublicIdReactive(Authentication authentication, String publicId) {
+		if (authentication == null || !(authentication.getPrincipal() instanceof CustomUserDetails userDetails)) {
+			return Mono.just(false);
+		}
+		return Mono.fromCallable(() -> {
+			return userRepository.findByPublicId(publicId).map(user -> userDetails.getId().equals(user.getId()))
+					.orElse(false);
+		}).subscribeOn(Schedulers.boundedElastic());
+	}
+
+	public Mono<Boolean> isGroupOwnerReactive(Authentication authentication, String groupPublicId) {
+		if (authentication == null || !(authentication.getPrincipal() instanceof CustomUserDetails userDetails)) {
+			return Mono.just(false);
+		}
+		return Mono.fromCallable(() -> {
+			return userGroupRepository.findByPublicId(groupPublicId)
+					.map(group -> userDetails.getId().equals(group.getTeacherId())).orElse(false);
+		}).subscribeOn(Schedulers.boundedElastic());
+	}
+
+	public Mono<Boolean> isLessonOwnerReactive(Authentication authentication, String lessonPublicId) {
+		if (authentication == null || !(authentication.getPrincipal() instanceof CustomUserDetails userDetails)) {
+			return Mono.just(false);
+		}
+		return Mono.fromCallable(() -> {
+			return lessonRepository.findByPublicId(lessonPublicId).map(
+					lesson -> lesson.getTeacher() != null && userDetails.getId().equals(lesson.getTeacher().getId()))
+					.orElse(false);
+		}).subscribeOn(Schedulers.boundedElastic());
+	}
+
+	public Mono<Boolean> isTeacherOfStudentByPublicIdReactive(Authentication authentication, String studentPublicId) {
+		if (authentication == null || !(authentication.getPrincipal() instanceof CustomUserDetails userDetails)) {
+			return Mono.just(false);
+		}
+		return Mono.fromCallable(() -> {
+			if (userDetails.getRole() != Role.TEACHER) {
+				return false;
+			}
+			return userRepository.findByPublicId(studentPublicId).map(
+					student -> userInGroupRepository.isStudentInTeachersGroup(student.getId(), userDetails.getId()))
+					.orElse(false);
+		}).subscribeOn(Schedulers.boundedElastic());
+	}
+
+	public Mono<Boolean> hasStudentAccessToLessonReactive(Authentication authentication, String lessonPublicId) {
+		if (authentication == null || !(authentication.getPrincipal() instanceof CustomUserDetails userDetails)) {
+			return Mono.just(false);
+		}
+		return Mono.fromCallable(() -> {
+			return lessonRepository.findByPublicId(lessonPublicId)
+					.map(lesson -> userInGroupRepository.hasAccessToLesson(userDetails.getId(), lesson.getId()))
+					.orElse(false);
+		}).subscribeOn(Schedulers.boundedElastic());
 	}
 
 	public Mono<CustomUserDetails> getCurrentUser() {

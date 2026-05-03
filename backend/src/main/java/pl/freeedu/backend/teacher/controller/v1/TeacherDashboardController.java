@@ -16,15 +16,18 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import pl.freeedu.backend.lesson.dto.LessonResponse;
+import pl.freeedu.backend.lesson.service.LessonPublicIdLookupService;
 import pl.freeedu.backend.teacher.dto.LessonStatsResponse;
 import pl.freeedu.backend.teacher.dto.TeacherCreateStudentRequest;
 import pl.freeedu.backend.teacher.dto.TeacherStatsResponse;
 import pl.freeedu.backend.teacher.dto.TeacherStudentResponse;
 import pl.freeedu.backend.task.dto.LessonResultDetailsResponse;
 import pl.freeedu.backend.teacher.service.TeacherService;
+import pl.freeedu.backend.user.service.UserPublicIdLookupService;
 import pl.freeedu.backend.usergroup.dto.UserGroupResponse;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 @RestController
 @RequestMapping("/api/v1/teacher")
@@ -32,9 +35,15 @@ import reactor.core.publisher.Mono;
 public class TeacherDashboardController {
 
 	private final TeacherService teacherService;
+	private final LessonPublicIdLookupService lessonPublicIdLookupService;
+	private final UserPublicIdLookupService userPublicIdLookupService;
 
-	public TeacherDashboardController(TeacherService teacherService) {
+	public TeacherDashboardController(TeacherService teacherService,
+			LessonPublicIdLookupService lessonPublicIdLookupService,
+			UserPublicIdLookupService userPublicIdLookupService) {
 		this.teacherService = teacherService;
+		this.lessonPublicIdLookupService = lessonPublicIdLookupService;
+		this.userPublicIdLookupService = userPublicIdLookupService;
 	}
 
 	@Operation(summary = "Get private dashboard statistics")
@@ -66,21 +75,26 @@ public class TeacherDashboardController {
 
 	@Operation(summary = "Get lesson statistics for teacher")
 	@ApiResponse(responseCode = "200", description = "Lesson statistics scoped to current teacher")
-	@GetMapping("/lessons/{lessonId}/stats")
+	@GetMapping("/lessons/{lessonPublicId}/stats")
 	@PreAuthorize("hasRole('TEACHER')")
 	@ResponseStatus(HttpStatus.OK)
-	public Mono<LessonStatsResponse> getLessonStats(@PathVariable Integer lessonId) {
-		return teacherService.getLessonStats(lessonId);
+	public Mono<LessonStatsResponse> getLessonStats(@PathVariable String lessonPublicId) {
+		return Mono.fromCallable(() -> lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId))
+				.subscribeOn(Schedulers.boundedElastic()).flatMap(lessonId -> teacherService.getLessonStats(lessonId));
 	}
 
 	@Operation(summary = "Get detailed lesson result for a student")
 	@ApiResponse(responseCode = "200", description = "Detailed lesson result scoped to current teacher and selected student")
-	@GetMapping("/lessons/{lessonId}/students/{userId}/result")
+	@GetMapping("/lessons/{lessonPublicId}/students/{studentPublicId}/result")
 	@PreAuthorize("hasRole('TEACHER')")
 	@ResponseStatus(HttpStatus.OK)
-	public Mono<LessonResultDetailsResponse> getLessonResultDetails(@PathVariable Integer lessonId,
-			@PathVariable Integer userId) {
-		return teacherService.getLessonResultDetails(lessonId, userId);
+	public Mono<LessonResultDetailsResponse> getLessonResultDetails(@PathVariable String lessonPublicId,
+			@PathVariable String studentPublicId) {
+		return userPublicIdLookupService.getInternalId(studentPublicId)
+				.flatMap(studentId -> Mono
+						.fromCallable(() -> lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId))
+						.subscribeOn(Schedulers.boundedElastic())
+						.flatMap(lessonId -> teacherService.getLessonResultDetails(lessonId, studentId)));
 	}
 
 	@Operation(summary = "Get teacher's students")
@@ -111,11 +125,13 @@ public class TeacherDashboardController {
 			@ApiResponse(responseCode = "403", description = "Forbidden - requires TEACHER role and ownership"),
 			@ApiResponse(responseCode = "404", description = "Group or student not found"),
 			@ApiResponse(responseCode = "409", description = "Conflict - EMAIL_ALREADY_TAKEN or USERNAME_ALREADY_TAKEN")})
-	@PutMapping("/students/{id}")
+	@PutMapping("/students/{studentPublicId}")
 	@PreAuthorize("hasRole('TEACHER')")
 	@ResponseStatus(HttpStatus.OK)
-	public Mono<TeacherStudentResponse> updateStudent(@org.springframework.web.bind.annotation.PathVariable Integer id,
+	public Mono<TeacherStudentResponse> updateStudent(
+			@org.springframework.web.bind.annotation.PathVariable String studentPublicId,
 			@Valid @RequestBody Mono<pl.freeedu.backend.teacher.dto.TeacherUpdateStudentRequest> request) {
-		return teacherService.updateStudent(id, request);
+		return userPublicIdLookupService.getInternalId(studentPublicId)
+				.flatMap(studentId -> teacherService.updateStudent(studentId, request));
 	}
 }

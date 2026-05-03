@@ -21,5 +21,5 @@ public class UserGroupRequest {
 	@Size(max = 300, message = "Description must be at most 300 characters long")
 	private String description;
 
-	private Integer teacherId;
+	private String teacherPublicId;
 }

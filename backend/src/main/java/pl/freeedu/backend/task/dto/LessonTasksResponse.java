@@ -13,7 +13,7 @@ import java.util.List;
 @AllArgsConstructor
 public class LessonTasksResponse {
 
-	private Integer lessonId;
+	private String lessonPublicId;
 	private String status;
 	private List<TaskSectionDto> sections;
 }

@@ -12,11 +12,11 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TeacherStudentResponse {
-	private Integer id;
+	private String publicId;
 	private String username;
 	private String email;
 	private String role;
 	private LocalDateTime createdAt;
-	private Integer groupId;
+	private String groupPublicId;
 	private String avatarUrl;
 }

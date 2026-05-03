@@ -2,7 +2,6 @@ package pl.freeedu.backend.teacher.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,6 +25,6 @@ public class TeacherCreateStudentRequest {
 	@NotBlank(message = "Password is required")
 	private String password;
 
-	@NotNull(message = "Group ID is required")
-	private Integer groupId;
+	@NotBlank(message = "Group public ID is required")
+	private String groupPublicId;
 }

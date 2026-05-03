@@ -6,9 +6,12 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import pl.freeedu.backend.usergroup.dto.UserGroupRequest;
 import pl.freeedu.backend.usergroup.dto.UserGroupResponse;
+import pl.freeedu.backend.usergroup.service.UserGroupPublicIdLookupService;
 import pl.freeedu.backend.usergroup.service.UserGroupService;
+import pl.freeedu.backend.user.service.UserPublicIdLookupService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -24,9 +27,15 @@ import org.springframework.http.ProblemDetail;
 public class UserGroupController {
 
 	private final UserGroupService userGroupService;
+	private final UserGroupPublicIdLookupService userGroupPublicIdLookupService;
+	private final UserPublicIdLookupService userPublicIdLookupService;
 
-	public UserGroupController(UserGroupService userGroupService) {
+	public UserGroupController(UserGroupService userGroupService,
+			UserGroupPublicIdLookupService userGroupPublicIdLookupService,
+			UserPublicIdLookupService userPublicIdLookupService) {
 		this.userGroupService = userGroupService;
+		this.userGroupPublicIdLookupService = userGroupPublicIdLookupService;
+		this.userPublicIdLookupService = userPublicIdLookupService;
 	}
 
 	@Operation(summary = "Create a new user group")
@@ -49,36 +58,39 @@ public class UserGroupController {
 		return userGroupService.getVisibleGroups();
 	}
 
-	@Operation(summary = "Get user group by id")
+	@Operation(summary = "Get user group by publicId")
 	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "User group found"),
 			@ApiResponse(responseCode = "404", description = "User group not found")})
-	@GetMapping("/{id}")
-	@PreAuthorize("hasRole('ADMIN') or (hasRole('TEACHER') and @securityService.isGroupOwner(authentication, #id))")
+	@GetMapping("/{groupPublicId}")
+	@PreAuthorize("hasRole('ADMIN') or (hasRole('TEACHER') and @securityService.isGroupOwner(authentication, #groupPublicId))")
 	@ResponseStatus(HttpStatus.OK)
-	public Mono<UserGroupResponse> getById(@PathVariable Integer id) {
-		return userGroupService.getById(id);
+	public Mono<UserGroupResponse> getById(@PathVariable String groupPublicId) {
+		return Mono.fromCallable(() -> userGroupPublicIdLookupService.getRequiredInternalId(groupPublicId))
+				.subscribeOn(Schedulers.boundedElastic()).flatMap(userGroupService::getById);
 	}
 
 	@Operation(summary = "Update user group")
 	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "User group successfully updated"),
 			@ApiResponse(responseCode = "400", description = "Invalid input data", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "404", description = "User group not found")})
-	@PutMapping("/{id}")
-	@PreAuthorize("hasRole('ADMIN') or (hasRole('TEACHER') and @securityService.isGroupOwner(authentication, #id))")
+	@PutMapping("/{groupPublicId}")
+	@PreAuthorize("hasRole('ADMIN') or (hasRole('TEACHER') and @securityService.isGroupOwner(authentication, #groupPublicId))")
 	@ResponseStatus(HttpStatus.OK)
-	public Mono<UserGroupResponse> update(@PathVariable Integer id,
+	public Mono<UserGroupResponse> update(@PathVariable String groupPublicId,
 			@Valid @RequestBody Mono<UserGroupRequest> request) {
-		return userGroupService.update(id, request);
+		return Mono.fromCallable(() -> userGroupPublicIdLookupService.getRequiredInternalId(groupPublicId))
+				.subscribeOn(Schedulers.boundedElastic()).flatMap(groupId -> userGroupService.update(groupId, request));
 	}
 
 	@Operation(summary = "Delete user group")
 	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "User group successfully deleted"),
 			@ApiResponse(responseCode = "404", description = "User group not found")})
-	@DeleteMapping("/{id}")
-	@PreAuthorize("hasRole('ADMIN') or (hasRole('TEACHER') and @securityService.isGroupOwner(authentication, #id))")
+	@DeleteMapping("/{groupPublicId}")
+	@PreAuthorize("hasRole('ADMIN') or (hasRole('TEACHER') and @securityService.isGroupOwner(authentication, #groupPublicId))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public Mono<Void> delete(@PathVariable Integer id) {
-		return userGroupService.delete(id);
+	public Mono<Void> delete(@PathVariable String groupPublicId) {
+		return Mono.fromCallable(() -> userGroupPublicIdLookupService.getRequiredInternalId(groupPublicId))
+				.subscribeOn(Schedulers.boundedElastic()).flatMap(userGroupService::delete);
 	}
 
 	@Operation(summary = "Add a member to a group")
@@ -86,20 +98,28 @@ public class UserGroupController {
 			@ApiResponse(responseCode = "400", description = "Invalid role for group member"),
 			@ApiResponse(responseCode = "404", description = "Group or user not found"),
 			@ApiResponse(responseCode = "409", description = "Student already assigned to a group")})
-	@PostMapping("/{id}/members/{userId}")
-	@PreAuthorize("hasRole('ADMIN') or (hasRole('TEACHER') and @securityService.isGroupOwner(authentication, #id))")
+	@PostMapping("/{groupPublicId}/members/{userPublicId}")
+	@PreAuthorize("hasRole('ADMIN') or (hasRole('TEACHER') and @securityService.isGroupOwner(authentication, #groupPublicId))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public Mono<Void> addMember(@PathVariable Integer id, @PathVariable Integer userId) {
-		return userGroupService.addMember(id, userId);
+	public Mono<Void> addMember(@PathVariable String groupPublicId, @PathVariable String userPublicId) {
+		return userPublicIdLookupService.getInternalId(userPublicId)
+				.flatMap(userId -> Mono
+						.fromCallable(() -> userGroupPublicIdLookupService.getRequiredInternalId(groupPublicId))
+						.subscribeOn(Schedulers.boundedElastic())
+						.flatMap(groupId -> userGroupService.addMember(groupId, userId)));
 	}
 
 	@Operation(summary = "Remove a member from a group")
 	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Member removed from group"),
 			@ApiResponse(responseCode = "404", description = "Group or membership not found")})
-	@DeleteMapping("/{id}/members/{userId}")
-	@PreAuthorize("hasRole('ADMIN') or (hasRole('TEACHER') and @securityService.isGroupOwner(authentication, #id))")
+	@DeleteMapping("/{groupPublicId}/members/{userPublicId}")
+	@PreAuthorize("hasRole('ADMIN') or (hasRole('TEACHER') and @securityService.isGroupOwner(authentication, #groupPublicId))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public Mono<Void> removeMember(@PathVariable Integer id, @PathVariable Integer userId) {
-		return userGroupService.removeMember(id, userId);
+	public Mono<Void> removeMember(@PathVariable String groupPublicId, @PathVariable String userPublicId) {
+		return userPublicIdLookupService.getInternalId(userPublicId)
+				.flatMap(userId -> Mono
+						.fromCallable(() -> userGroupPublicIdLookupService.getRequiredInternalId(groupPublicId))
+						.subscribeOn(Schedulers.boundedElastic())
+						.flatMap(groupId -> userGroupService.removeMember(groupId, userId)));
 	}
 }

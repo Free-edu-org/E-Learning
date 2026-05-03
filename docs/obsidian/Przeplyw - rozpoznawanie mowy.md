@@ -8,7 +8,7 @@ sequenceDiagram
   participant C as SttClient
   participant STT as STT Service
   S->>F: nagrywa audio
-  F->>B: multipart POST /tasks/speak/{taskId}/transcribe
+  F->>B: multipart POST /tasks/speak/{taskPublicId}/transcribe
   B->>B: sprawdz dostep i aktywnosc lekcji
   B->>C: przekaz FilePart
   C->>STT: POST /stt/transcribe

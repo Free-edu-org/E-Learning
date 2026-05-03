@@ -10,7 +10,7 @@ Authorization: Bearer {{admin_token}}
 GET http://localhost:8080/api/v1/admin/students
 Authorization: Bearer {{admin_token}}
 
-### Create admin student WITHOUT group (groupId optional)
+### Create admin student WITHOUT group (groupPublicId optional)
 POST http://localhost:8080/api/v1/admin/students
 Authorization: Bearer {{admin_token}}
 Content-Type: application/json
@@ -30,7 +30,7 @@ Content-Type: application/json
   "username": "admin_student_with_group",
   "email": "admin.student.withgroup@example.com",
   "password": "password123",
-  "groupId": 1
+  "groupPublicId": "{{group_public_id}}"
 }
 
 ### Create admin student - validation fail (bad email)
@@ -45,29 +45,29 @@ Content-Type: application/json
 }
 
 ### Update admin student assignment (with group)
-PUT http://localhost:8080/api/v1/admin/students/15
+PUT http://localhost:8080/api/v1/admin/students/{{student_public_id}}
 Authorization: Bearer {{admin_token}}
 Content-Type: application/json
 
 {
   "username": "admin_student_updated",
   "email": "admin.student.updated@example.com",
-  "groupId": 2
+  "groupPublicId": "{{group_public_id}}"
 }
 
-### Update admin student - unassign from group (null groupId)
-PUT http://localhost:8080/api/v1/admin/students/15
+### Update admin student - unassign from group (null groupPublicId)
+PUT http://localhost:8080/api/v1/admin/students/{{student_public_id}}
 Authorization: Bearer {{admin_token}}
 Content-Type: application/json
 
 {
   "username": "admin_student_updated",
   "email": "admin.student.updated@example.com",
-  "groupId": null
+  "groupPublicId": null
 }
 
 ### Update admin student - forbidden (TEACHER token)
-PUT http://localhost:8080/api/v1/admin/students/15
+PUT http://localhost:8080/api/v1/admin/students/{{student_public_id}}
 Authorization: Bearer {{teacher_token}}
 Content-Type: application/json
 

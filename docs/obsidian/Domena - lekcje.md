@@ -12,10 +12,10 @@ Polaczenia:
 Endpointy:
 - `GET /api/v1/lessons`
 - `POST /api/v1/lessons`
-- `PUT /api/v1/lessons/{id}`
-- `PATCH /api/v1/lessons/{id}/status`
-- `DELETE /api/v1/lessons/{id}`
-- `GET /api/v1/teacher/lessons/{lessonId}/stats` — statystyki wynikow uczniow dla lekcji
+- `PUT /api/v1/lessons/{lessonPublicId}`
+- `PATCH /api/v1/lessons/{lessonPublicId}/status`
+- `DELETE /api/v1/lessons/{lessonPublicId}`
+- `GET /api/v1/teacher/lessons/{lessonPublicId}/stats` — statystyki wynikow uczniow dla lekcji
 
 Zrodla:
 - [LessonController.java](../../backend/src/main/java/pl/freeedu/backend/lesson/controller/LessonController.java)

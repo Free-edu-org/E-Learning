@@ -69,7 +69,7 @@ import {
 // ── Types ────────────────────────────────────────────────────────────────────
 
 interface FlatTask {
-  taskId: number;
+  taskPublicId: string;
   taskType: SubmitAnswerItem["taskType"];
   section: string | null;
   hint: string | null;
@@ -87,9 +87,9 @@ interface SpeakAttemptState {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Composite key that avoids ID collisions across task tables */
-function answerKey(taskType: string, taskId: number): string {
-  return `${taskType}_${taskId}`;
+/** Composite key that avoids accidental collisions across task type namespaces. */
+function answerKey(taskType: string, taskPublicId: string): string {
+  return `${taskType}_${taskPublicId}`;
 }
 
 function flattenTasks(lessonData: LessonTasksResponse): FlatTask[] {
@@ -97,7 +97,7 @@ function flattenTasks(lessonData: LessonTasksResponse): FlatTask[] {
   for (const section of lessonData.sections) {
     for (const t of section.chooseTasks)
       tasks.push({
-        taskId: t.id,
+        taskPublicId: t.publicId,
         taskType: "choose",
         section: section.section,
         hint: t.hint ?? null,
@@ -105,7 +105,7 @@ function flattenTasks(lessonData: LessonTasksResponse): FlatTask[] {
       });
     for (const t of section.writeTasks)
       tasks.push({
-        taskId: t.id,
+        taskPublicId: t.publicId,
         taskType: "write",
         section: section.section,
         hint: t.hint ?? null,
@@ -113,7 +113,7 @@ function flattenTasks(lessonData: LessonTasksResponse): FlatTask[] {
       });
     for (const t of section.scatterTasks)
       tasks.push({
-        taskId: t.id,
+        taskPublicId: t.publicId,
         taskType: "scatter",
         section: section.section,
         hint: t.hint ?? null,
@@ -121,7 +121,7 @@ function flattenTasks(lessonData: LessonTasksResponse): FlatTask[] {
       });
     for (const t of section.speakTasks)
       tasks.push({
-        taskId: t.id,
+        taskPublicId: t.publicId,
         taskType: "speak",
         section: section.section,
         hint: t.hint ?? null,
@@ -134,7 +134,7 @@ function flattenTasks(lessonData: LessonTasksResponse): FlatTask[] {
 // ── Component ────────────────────────────────────────────────────────────────
 
 export function LessonSolver() {
-  const { lessonId } = useParams<{ lessonId: string }>();
+  const { lessonPublicId } = useParams<{ lessonPublicId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
   const { logout } = useAuth();
@@ -148,7 +148,7 @@ export function LessonSolver() {
     stateAttachments ?? [],
   );
   const [downloadingAttachmentId, setDownloadingAttachmentId] = useState<
-    number | null
+    string | null
   >(null);
   const [attachmentDownloadError, setAttachmentDownloadError] = useState<
     string | null
@@ -157,26 +157,26 @@ export function LessonSolver() {
   // Fallback: if navigation state had no attachments (refresh / direct URL),
   // fetch them from the student lessons list.
   useEffect(() => {
-    if (stateAttachments !== null || !lessonId) return;
+    if (stateAttachments !== null || !lessonPublicId) return;
     let cancelled = false;
     void studentService.getLessons().then((lessons) => {
       if (cancelled) return;
-      const lesson = lessons.find((l) => l.id === Number(lessonId));
+      const lesson = lessons.find((l) => l.publicId === lessonPublicId);
       if (lesson) setAttachments(lesson.attachments);
     });
     return () => {
       cancelled = true;
     };
-  }, [lessonId, stateAttachments]);
+  }, [lessonPublicId, stateAttachments]);
 
   const handleDownloadAttachment = async (att: LessonAttachment) => {
-    if (!lessonId) return;
-    setDownloadingAttachmentId(att.id);
+    if (!lessonPublicId) return;
+    setDownloadingAttachmentId(att.publicId);
     setAttachmentDownloadError(null);
     try {
       const blob = await lessonService.downloadAttachment(
-        Number(lessonId),
-        att.id,
+        lessonPublicId,
+        att.publicId,
       );
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -217,15 +217,14 @@ export function LessonSolver() {
 
   // Load lesson tasks
   useEffect(() => {
-    const id = Number(lessonId);
-    if (isNaN(id)) {
+    if (!lessonPublicId) {
       setError("Nieprawidłowy identyfikator lekcji.");
       setLoading(false);
       return;
     }
 
     taskService
-      .getLessonTasks(id)
+      .getLessonTasks(lessonPublicId)
       .then(setLessonData)
       .catch((err: unknown) => {
         if (err instanceof ApiError) {
@@ -244,7 +243,7 @@ export function LessonSolver() {
         }
       })
       .finally(() => setLoading(false));
-  }, [lessonId]);
+  }, [lessonPublicId]);
 
   // Flatten all tasks
   const flatTasks = useMemo(
@@ -263,33 +262,33 @@ export function LessonSolver() {
     (a) => a.answer !== "",
   ).length;
 
-  // Results map for per-task feedback (keyed by "taskType_taskId")
+  // Results map for per-task feedback (keyed by "taskType_taskPublicId")
   const resultsMap = useMemo(() => {
     if (!submitResult) return null;
     const map = new Map<string, SubmitAnswerDetail>();
     for (const d of submitResult.details) {
-      map.set(answerKey(d.taskType, d.taskId), d);
+      map.set(answerKey(d.taskType, d.taskPublicId), d);
     }
     return map;
   }, [submitResult]);
 
   const handleAnswer = (
-    taskId: number,
+    taskPublicId: string,
     taskType: SubmitAnswerItem["taskType"],
     answer: string,
   ) => {
     setAnswers((prev) => ({
       ...prev,
-      [answerKey(taskType, taskId)]: { taskId, taskType, answer },
+      [answerKey(taskType, taskPublicId)]: { taskPublicId, taskType, answer },
     }));
   };
 
   const handleSpeakTranscriptionResult = (
-    taskId: number,
+    taskPublicId: string,
     result: SpeakTranscriptionResponse,
   ) => {
     setSpeakAttempts((prev) => {
-      const key = answerKey("speak", taskId);
+      const key = answerKey("speak", taskPublicId);
       const current = prev[key] ?? { attempts: 0, result: null };
       return {
         ...prev,
@@ -325,7 +324,8 @@ export function LessonSolver() {
 
   const goToFirstUnansweredTask = (hideAlert = true) => {
     const firstUnansweredIdx = flatTasks.findIndex(
-      (t) => (answers[answerKey(t.taskType, t.taskId)]?.answer ?? "") === "",
+      (t) =>
+        (answers[answerKey(t.taskType, t.taskPublicId)]?.answer ?? "") === "",
     );
     if (firstUnansweredIdx >= 0) {
       setCurrentStep(firstUnansweredIdx);
@@ -338,9 +338,9 @@ export function LessonSolver() {
   const buildCompleteAnswers = useCallback(
     (): SubmitAnswerItem[] =>
       flatTasks.map(
-        ({ taskId, taskType }) =>
-          answers[answerKey(taskType, taskId)] ?? {
-            taskId,
+        ({ taskPublicId, taskType }) =>
+          answers[answerKey(taskType, taskPublicId)] ?? {
+            taskPublicId,
             taskType,
             answer: "",
           },
@@ -349,9 +349,7 @@ export function LessonSolver() {
   );
 
   const doSubmit = async (options?: { navigateAfterSubmit?: boolean }) => {
-    if (!lessonData) return;
-    const id = Number(lessonId);
-
+    if (!lessonData || !lessonPublicId) return;
     const completeAnswers = buildCompleteAnswers();
 
     setSubmitting(true);
@@ -360,7 +358,7 @@ export function LessonSolver() {
     setShowUnansweredAlert(false);
 
     try {
-      const result = await studentService.submitAnswers(id, {
+      const result = await studentService.submitAnswers(lessonPublicId, {
         answers: completeAnswers,
       });
       setSubmitResult(result);
@@ -394,8 +392,8 @@ export function LessonSolver() {
 
   const goBack = () => navigate("/student");
   const openResultDetails = () => {
-    if (!lessonId) return;
-    navigate(`/student/lessons/${lessonId}/result`);
+    if (!lessonPublicId) return;
+    navigate(`/student/lessons/${lessonPublicId}/result`);
   };
 
   const requestExit = () => {
@@ -424,7 +422,7 @@ export function LessonSolver() {
     };
 
     const handlePageHide = () => {
-      if (unloadSubmitSentRef.current || !lessonId) return;
+      if (unloadSubmitSentRef.current || !lessonPublicId) return;
       unloadSubmitSentRef.current = true;
 
       const token = localStorage.getItem("token");
@@ -436,7 +434,7 @@ export function LessonSolver() {
       }
 
       fetch(
-        `${import.meta.env.VITE_API_URL || "http://localhost:8080"}/api/v1/lessons/${lessonId}/submit`,
+        `${import.meta.env.VITE_API_URL || "http://localhost:8080"}/api/v1/lessons/${lessonPublicId}/submit`,
         {
           method: "POST",
           headers,
@@ -456,7 +454,7 @@ export function LessonSolver() {
       window.removeEventListener("popstate", handlePopState);
       window.removeEventListener("pagehide", handlePageHide);
     };
-  }, [buildCompleteAnswers, lessonId, shouldBlockExit]);
+  }, [buildCompleteAnswers, lessonPublicId, shouldBlockExit]);
 
   const hasNoTasks = lessonData != null && totalTaskCount === 0;
   const progressPercent =
@@ -465,7 +463,7 @@ export function LessonSolver() {
     .map((t, i) => ({ idx: i, t }))
     .filter(
       ({ t }) =>
-        (answers[answerKey(t.taskType, t.taskId)]?.answer ?? "") === "",
+        (answers[answerKey(t.taskType, t.taskPublicId)]?.answer ?? "") === "",
     )
     .map(({ idx }) => idx);
 
@@ -475,22 +473,23 @@ export function LessonSolver() {
     if (!currentTask) return null;
 
     const taskResult =
-      resultsMap?.get(answerKey(currentTask.taskType, currentTask.taskId)) ??
-      null;
+      resultsMap?.get(
+        answerKey(currentTask.taskType, currentTask.taskPublicId),
+      ) ?? null;
     const currentAnswer =
-      answers[answerKey(currentTask.taskType, currentTask.taskId)]?.answer ??
-      "";
+      answers[answerKey(currentTask.taskType, currentTask.taskPublicId)]
+        ?.answer ?? "";
     const disabled = submitting || isSubmitted;
 
     switch (currentTask.taskType) {
       case "choose":
         return (
           <ChooseTaskSolver
-            key={`choose_${currentTask.taskId}`}
+            key={`choose_${currentTask.taskPublicId}`}
             task={currentTask.taskData as ChooseTaskResponse}
             value={currentAnswer}
             onChange={(answer) =>
-              handleAnswer(currentTask.taskId, "choose", answer)
+              handleAnswer(currentTask.taskPublicId, "choose", answer)
             }
             result={taskResult}
             disabled={disabled}
@@ -499,11 +498,11 @@ export function LessonSolver() {
       case "write":
         return (
           <WriteTaskSolver
-            key={`write_${currentTask.taskId}`}
+            key={`write_${currentTask.taskPublicId}`}
             task={currentTask.taskData as WriteTaskResponse}
             value={currentAnswer}
             onChange={(answer) =>
-              handleAnswer(currentTask.taskId, "write", answer)
+              handleAnswer(currentTask.taskPublicId, "write", answer)
             }
             result={taskResult}
             disabled={disabled}
@@ -512,11 +511,11 @@ export function LessonSolver() {
       case "scatter":
         return (
           <ScatterTaskSolver
-            key={`scatter_${currentTask.taskId}`}
+            key={`scatter_${currentTask.taskPublicId}`}
             task={currentTask.taskData as ScatterTaskResponse}
             value={currentAnswer}
             onChange={(answer) =>
-              handleAnswer(currentTask.taskId, "scatter", answer)
+              handleAnswer(currentTask.taskPublicId, "scatter", answer)
             }
             result={taskResult}
             disabled={disabled}
@@ -524,20 +523,20 @@ export function LessonSolver() {
         );
       case "speak": {
         const speakAttempt =
-          speakAttempts[answerKey("speak", currentTask.taskId)] ?? null;
+          speakAttempts[answerKey("speak", currentTask.taskPublicId)] ?? null;
         return (
           <SpeakTaskSolver
-            key={`speak_${currentTask.taskId}`}
-            lessonId={Number(lessonId)}
+            key={`speak_${currentTask.taskPublicId}`}
+            lessonPublicId={lessonPublicId ?? ""}
             task={currentTask.taskData as SpeakTaskResponse}
             transcriptionResult={speakAttempt?.result ?? null}
             attempts={speakAttempt?.attempts ?? 0}
             onChange={(answer) =>
-              handleAnswer(currentTask.taskId, "speak", answer)
+              handleAnswer(currentTask.taskPublicId, "speak", answer)
             }
             onTranscriptionResult={(transcriptionResult) =>
               handleSpeakTranscriptionResult(
-                currentTask.taskId,
+                currentTask.taskPublicId,
                 transcriptionResult,
               )
             }
@@ -643,7 +642,7 @@ export function LessonSolver() {
                 }}
               >
                 {flatTasks.map((ft, idx) => {
-                  const key = answerKey(ft.taskType, ft.taskId);
+                  const key = answerKey(ft.taskType, ft.taskPublicId);
                   const isAnswered = (answers[key]?.answer ?? "") !== "";
                   const isCurrent = idx === currentStep;
                   const meta = taskTypeMeta[ft.taskType];
@@ -1014,10 +1013,10 @@ export function LessonSolver() {
                           <Stack spacing={0.75}>
                             {attachments.map((att) => {
                               const isDownloading =
-                                downloadingAttachmentId === att.id;
+                                downloadingAttachmentId === att.publicId;
                               return (
                                 <Box
-                                  key={att.id}
+                                  key={att.publicId}
                                   sx={{
                                     display: "flex",
                                     alignItems: "center",

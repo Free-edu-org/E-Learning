@@ -179,63 +179,69 @@ public class UserService {
 				throw new UserException(UserErrorCode.AVATAR_INVALID_FILE_TYPE);
 			}
 			return baseType;
-		}).subscribeOn(Schedulers.boundedElastic()).flatMap(baseType -> {
-			String extension = switch (baseType) {
-				case "image/jpeg" -> "jpg";
-				case "image/png" -> "png";
-				default -> "bin";
-			};
-			String fileName = id + "-" + System.currentTimeMillis() + "." + extension;
-			Path dir = Paths.get(AVATAR_DIR);
-			Path filePath = dir.resolve(fileName);
+		}).subscribeOn(Schedulers.boundedElastic())
+				.flatMap(baseType -> Mono.fromCallable(() -> userRepository.findById(id).orElseThrow(() -> {
+					log.warn("Avatar processing failed: User with ID: {} not found", id);
+					return new UserException(UserErrorCode.USER_NOT_FOUND);
+				})).subscribeOn(Schedulers.boundedElastic()).flatMap(user -> {
+					String extension = switch (baseType) {
+						case "image/jpeg" -> "jpg";
+						case "image/png" -> "png";
+						default -> "bin";
+					};
+					String publicIdPrefix = user.getPublicId();
+					String legacyInternalIdPrefix = String.valueOf(id);
+					String fileName = publicIdPrefix + "-" + System.currentTimeMillis() + "." + extension;
+					Path dir = Paths.get(AVATAR_DIR);
+					Path filePath = dir.resolve(fileName);
 
-			return Mono.fromCallable(() -> {
-				try {
-					log.debug("Preparing avatar directory and deleting old files for user ID: {}", id);
-					Files.createDirectories(dir);
-					try (Stream<Path> files = Files.list(dir)) {
-						files.filter(path -> {
-							String name = path.getFileName().toString();
-							return name.startsWith(id + ".") || name.startsWith(id + "-");
-						}).forEach(path -> {
-							try {
-								Files.deleteIfExists(path);
-							} catch (IOException e) {
-								log.error("Failed to delete previous avatar file: {}", path, e);
-								throw new RuntimeException("Failed to delete previous avatar file", e);
-							}
-						});
-					}
-					return filePath;
-				} catch (IOException e) {
-					log.error("Failed to prepare avatar directory for user ID: {}", id, e);
-					throw new RuntimeException("Failed to prepare avatar directory", e);
-				}
-			}).subscribeOn(Schedulers.boundedElastic()).flatMap(path -> filePart.transferTo(path).thenReturn(path))
-					.flatMap(path -> Mono.fromCallable(() -> {
+					return Mono.fromCallable(() -> {
 						try {
-							long fileSize = Files.size(path);
-							if (fileSize > MAX_AVATAR_SIZE_BYTES) {
-								log.warn("Avatar upload failed for user ID: {}: file too large ({} bytes)", id,
-										fileSize);
-								Files.deleteIfExists(path);
-								throw new UserException(UserErrorCode.AVATAR_FILE_TOO_LARGE);
+							log.debug("Preparing avatar directory and deleting old files for user ID: {}", id);
+							Files.createDirectories(dir);
+							try (Stream<Path> files = Files.list(dir)) {
+								files.filter(path -> {
+									String name = path.getFileName().toString();
+									return name.startsWith(publicIdPrefix + ".")
+											|| name.startsWith(publicIdPrefix + "-")
+											|| name.startsWith(legacyInternalIdPrefix + ".")
+											|| name.startsWith(legacyInternalIdPrefix + "-");
+								}).forEach(path -> {
+									try {
+										Files.deleteIfExists(path);
+									} catch (IOException e) {
+										log.error("Failed to delete previous avatar file: {}", path, e);
+										throw new RuntimeException("Failed to delete previous avatar file", e);
+									}
+								});
 							}
-							String avatarUrl = "/uploads/avatars/" + path.getFileName().toString();
-							User user = userRepository.findById(id).orElseThrow(() -> {
-								log.warn("Avatar processing failed: User with ID: {} not found", id);
-								return new UserException(UserErrorCode.USER_NOT_FOUND);
-							});
-							user.setAvatarUrl(avatarUrl);
-							User updatedUser = userRepository.save(user);
-							log.info("Avatar uploaded successfully for user ID: {}", id);
-							return userMapper.toUserResponse(updatedUser);
+							return filePath;
 						} catch (IOException e) {
-							log.error("Failed to process avatar file for user ID: {}", id, e);
-							throw new RuntimeException("Failed to process avatar file", e);
+							log.error("Failed to prepare avatar directory for user ID: {}", id, e);
+							throw new RuntimeException("Failed to prepare avatar directory", e);
 						}
-					}).subscribeOn(Schedulers.boundedElastic()));
-		});
+					}).subscribeOn(Schedulers.boundedElastic())
+							.flatMap(path -> filePart.transferTo(path).thenReturn(path))
+							.flatMap(path -> Mono.fromCallable(() -> {
+								try {
+									long fileSize = Files.size(path);
+									if (fileSize > MAX_AVATAR_SIZE_BYTES) {
+										log.warn("Avatar upload failed for user ID: {}: file too large ({} bytes)", id,
+												fileSize);
+										Files.deleteIfExists(path);
+										throw new UserException(UserErrorCode.AVATAR_FILE_TOO_LARGE);
+									}
+									String avatarUrl = "/uploads/avatars/" + path.getFileName().toString();
+									user.setAvatarUrl(avatarUrl);
+									User updatedUser = userRepository.save(user);
+									log.info("Avatar uploaded successfully for user ID: {}", id);
+									return userMapper.toUserResponse(updatedUser);
+								} catch (IOException e) {
+									log.error("Failed to process avatar file for user ID: {}", id, e);
+									throw new RuntimeException("Failed to process avatar file", e);
+								}
+							}).subscribeOn(Schedulers.boundedElastic()));
+				}));
 	}
 
 	public Mono<UserResponse> setPresetAvatar(Integer id, String presetName) {

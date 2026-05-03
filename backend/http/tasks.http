@@ -1,9 +1,9 @@
 ### Get all tasks for a lesson (STUDENT/TEACHER/ADMIN)
-GET http://localhost:8080/api/v1/lessons/1/tasks
+GET http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/tasks
 Authorization: Bearer {{auth_token}}
 
 ### Create choose task (ADMIN or lesson owner TEACHER)
-POST http://localhost:8080/api/v1/lessons/1/tasks/choose
+POST http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/tasks/choose
 Content-Type: application/json
 Authorization: Bearer {{auth_token}}
 
@@ -16,7 +16,7 @@ Authorization: Bearer {{auth_token}}
 }
 
 ### Update choose task
-PUT http://localhost:8080/api/v1/lessons/1/tasks/choose/1
+PUT http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/tasks/choose/{{task_public_id}}
 Content-Type: application/json
 Authorization: Bearer {{auth_token}}
 
@@ -29,11 +29,11 @@ Authorization: Bearer {{auth_token}}
 }
 
 ### Delete choose task
-DELETE http://localhost:8080/api/v1/lessons/1/tasks/choose/1
+DELETE http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/tasks/choose/{{task_public_id}}
 Authorization: Bearer {{auth_token}}
 
 ### Create write task
-POST http://localhost:8080/api/v1/lessons/1/tasks/write
+POST http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/tasks/write
 Content-Type: application/json
 Authorization: Bearer {{auth_token}}
 
@@ -45,7 +45,7 @@ Authorization: Bearer {{auth_token}}
 }
 
 ### Update write task
-PUT http://localhost:8080/api/v1/lessons/1/tasks/write/1
+PUT http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/tasks/write/{{task_public_id}}
 Content-Type: application/json
 Authorization: Bearer {{auth_token}}
 
@@ -57,11 +57,11 @@ Authorization: Bearer {{auth_token}}
 }
 
 ### Delete write task
-DELETE http://localhost:8080/api/v1/lessons/1/tasks/write/1
+DELETE http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/tasks/write/{{task_public_id}}
 Authorization: Bearer {{auth_token}}
 
 ### Create scatter task
-POST http://localhost:8080/api/v1/lessons/1/tasks/scatter
+POST http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/tasks/scatter
 Content-Type: application/json
 Authorization: Bearer {{auth_token}}
 
@@ -74,7 +74,7 @@ Authorization: Bearer {{auth_token}}
 }
 
 ### Update scatter task
-PUT http://localhost:8080/api/v1/lessons/1/tasks/scatter/1
+PUT http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/tasks/scatter/{{task_public_id}}
 Content-Type: application/json
 Authorization: Bearer {{auth_token}}
 
@@ -86,11 +86,11 @@ Authorization: Bearer {{auth_token}}
 }
 
 ### Delete scatter task
-DELETE http://localhost:8080/api/v1/lessons/1/tasks/scatter/1
+DELETE http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/tasks/scatter/{{task_public_id}}
 Authorization: Bearer {{auth_token}}
 
 ### Create speak task
-POST http://localhost:8080/api/v1/lessons/1/tasks/speak
+POST http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/tasks/speak
 Content-Type: application/json
 Authorization: Bearer {{auth_token}}
 
@@ -102,7 +102,7 @@ Authorization: Bearer {{auth_token}}
 }
 
 ### Update speak task
-PUT http://localhost:8080/api/v1/lessons/1/tasks/speak/1
+PUT http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/tasks/speak/{{task_public_id}}
 Content-Type: application/json
 Authorization: Bearer {{auth_token}}
 
@@ -113,7 +113,7 @@ Authorization: Bearer {{auth_token}}
 }
 
 ### Transcribe speak task audio (STUDENT only)
-POST http://localhost:8080/api/v1/lessons/1/tasks/speak/1/transcribe
+POST http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/tasks/speak/{{task_public_id}}/transcribe
 Authorization: Bearer {{auth_token}}
 Content-Type: multipart/form-data; boundary=FreeEduBoundary
 
@@ -125,28 +125,28 @@ Content-Type: audio/webm
 --FreeEduBoundary--
 
 ### Delete speak task
-DELETE http://localhost:8080/api/v1/lessons/1/tasks/speak/1
+DELETE http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/tasks/speak/{{task_public_id}}
 Authorization: Bearer {{auth_token}}
 
 ### Submit lesson answers (STUDENT only)
-POST http://localhost:8080/api/v1/lessons/1/submit
+POST http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/submit
 Content-Type: application/json
 Authorization: Bearer {{auth_token}}
 
 {
   "answers": [
-    { "taskId": 1, "taskType": "choose", "answer": "1" },
-    { "taskId": 2, "taskType": "write", "answer": "went" },
-    { "taskId": 3, "taskType": "speak", "answer": "Hello" }
+    { "taskPublicId": "{{task_public_id}}", "taskType": "choose", "answer": "1" },
+    { "taskPublicId": "{{task_public_id}}", "taskType": "write", "answer": "went" },
+    { "taskPublicId": "{{task_public_id}}", "taskType": "speak", "answer": "Hello" }
   ]
 }
 
 ### Reset user progress (ADMIN or lesson owner TEACHER)
-POST http://localhost:8080/api/v1/lessons/1/users/1/reset
+POST http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/users/{{user_public_id}}/reset
 Authorization: Bearer {{auth_token}}
 
 ### Create choose task without auth (expect 401)
-POST http://localhost:8080/api/v1/lessons/1/tasks/choose
+POST http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/tasks/choose
 Content-Type: application/json
 
 {
@@ -156,7 +156,7 @@ Content-Type: application/json
 }
 
 ### Create choose task with invalid payload (expect 400)
-POST http://localhost:8080/api/v1/lessons/1/tasks/choose
+POST http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/tasks/choose
 Content-Type: application/json
 Authorization: Bearer {{auth_token}}
 

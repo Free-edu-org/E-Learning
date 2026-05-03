@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserResponse {
-	private Integer id;
+	private String publicId;
 	private String email;
 	private String username;
 	private Role role;

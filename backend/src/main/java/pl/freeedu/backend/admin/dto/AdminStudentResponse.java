@@ -14,7 +14,7 @@ import pl.freeedu.backend.user.model.Role;
 @AllArgsConstructor
 public class AdminStudentResponse {
 
-	private Integer id;
+	private String publicId;
 
 	private String email;
 
@@ -22,7 +22,7 @@ public class AdminStudentResponse {
 
 	private Role role;
 
-	private Integer groupId;
+	private String groupPublicId;
 
 	private String groupName;
 

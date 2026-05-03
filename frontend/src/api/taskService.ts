@@ -33,8 +33,8 @@ export interface CreateSpeakTaskRequest {
 }
 
 export interface TaskResponse {
-  id: number;
-  lessonId: number;
+  publicId: string;
+  lessonPublicId: string;
   task: string;
   hint?: string;
   section?: string;
@@ -83,82 +83,95 @@ export interface TaskSectionDto {
 }
 
 export interface LessonTasksResponse {
-  lessonId: number;
+  lessonPublicId: string;
   status: string | null;
   sections: TaskSectionDto[];
 }
 
 export const taskService = {
-  createChooseTask: (lessonId: number, payload: CreateChooseTaskRequest) =>
-    fetchApi<TaskResponse>(`/api/v1/lessons/${lessonId}/tasks/choose`, {
+  createChooseTask: (
+    lessonPublicId: string,
+    payload: CreateChooseTaskRequest,
+  ) =>
+    fetchApi<TaskResponse>(`/api/v1/lessons/${lessonPublicId}/tasks/choose`, {
       method: "POST",
       body: JSON.stringify(payload),
     }),
-  createWriteTask: (lessonId: number, payload: CreateWriteTaskRequest) =>
-    fetchApi<TaskResponse>(`/api/v1/lessons/${lessonId}/tasks/write`, {
+  createWriteTask: (lessonPublicId: string, payload: CreateWriteTaskRequest) =>
+    fetchApi<TaskResponse>(`/api/v1/lessons/${lessonPublicId}/tasks/write`, {
       method: "POST",
       body: JSON.stringify(payload),
     }),
-  createScatterTask: (lessonId: number, payload: CreateScatterTaskRequest) =>
-    fetchApi<TaskResponse>(`/api/v1/lessons/${lessonId}/tasks/scatter`, {
+  createScatterTask: (
+    lessonPublicId: string,
+    payload: CreateScatterTaskRequest,
+  ) =>
+    fetchApi<TaskResponse>(`/api/v1/lessons/${lessonPublicId}/tasks/scatter`, {
       method: "POST",
       body: JSON.stringify(payload),
     }),
-  createSpeakTask: (lessonId: number, payload: CreateSpeakTaskRequest) =>
-    fetchApi<TaskResponse>(`/api/v1/lessons/${lessonId}/tasks/speak`, {
+  createSpeakTask: (lessonPublicId: string, payload: CreateSpeakTaskRequest) =>
+    fetchApi<TaskResponse>(`/api/v1/lessons/${lessonPublicId}/tasks/speak`, {
       method: "POST",
       body: JSON.stringify(payload),
     }),
 
-  getLessonTasks: (lessonId: number) =>
-    fetchApi<LessonTasksResponse>(`/api/v1/lessons/${lessonId}/tasks`),
+  getLessonTasks: (lessonPublicId: string) =>
+    fetchApi<LessonTasksResponse>(`/api/v1/lessons/${lessonPublicId}/tasks`),
 
   updateChooseTask: (
-    lessonId: number,
-    taskId: number,
+    lessonPublicId: string,
+    taskPublicId: string,
     payload: CreateChooseTaskRequest,
   ) =>
     fetchApi<ChooseTaskResponse>(
-      `/api/v1/lessons/${lessonId}/tasks/choose/${taskId}`,
+      `/api/v1/lessons/${lessonPublicId}/tasks/choose/${taskPublicId}`,
       { method: "PUT", body: JSON.stringify(payload) },
     ),
   updateWriteTask: (
-    lessonId: number,
-    taskId: number,
+    lessonPublicId: string,
+    taskPublicId: string,
     payload: CreateWriteTaskRequest,
   ) =>
     fetchApi<WriteTaskResponse>(
-      `/api/v1/lessons/${lessonId}/tasks/write/${taskId}`,
+      `/api/v1/lessons/${lessonPublicId}/tasks/write/${taskPublicId}`,
       { method: "PUT", body: JSON.stringify(payload) },
     ),
   updateScatterTask: (
-    lessonId: number,
-    taskId: number,
+    lessonPublicId: string,
+    taskPublicId: string,
     payload: CreateScatterTaskRequest,
   ) =>
     fetchApi<ScatterTaskResponse>(
-      `/api/v1/lessons/${lessonId}/tasks/scatter/${taskId}`,
+      `/api/v1/lessons/${lessonPublicId}/tasks/scatter/${taskPublicId}`,
       { method: "PUT", body: JSON.stringify(payload) },
     ),
   updateSpeakTask: (
-    lessonId: number,
-    taskId: number,
+    lessonPublicId: string,
+    taskPublicId: string,
     payload: CreateSpeakTaskRequest,
   ) =>
     fetchApi<SpeakTaskResponse>(
-      `/api/v1/lessons/${lessonId}/tasks/speak/${taskId}`,
+      `/api/v1/lessons/${lessonPublicId}/tasks/speak/${taskPublicId}`,
       { method: "PUT", body: JSON.stringify(payload) },
     ),
 
-  deleteTask: (lessonId: number, type: TaskType, taskId: number) =>
-    fetchApi<void>(`/api/v1/lessons/${lessonId}/tasks/${type}/${taskId}`, {
-      method: "DELETE",
-    }),
-  transcribeSpeakTask: (lessonId: number, taskId: number, audio: Blob) => {
+  deleteTask: (lessonPublicId: string, type: TaskType, taskPublicId: string) =>
+    fetchApi<void>(
+      `/api/v1/lessons/${lessonPublicId}/tasks/${type}/${taskPublicId}`,
+      {
+        method: "DELETE",
+      },
+    ),
+  transcribeSpeakTask: (
+    lessonPublicId: string,
+    taskPublicId: string,
+    audio: Blob,
+  ) => {
     const formData = new FormData();
     formData.append("file", audio, "answer.webm");
     return fetchApi<SpeakTranscriptionResponse>(
-      `/api/v1/lessons/${lessonId}/tasks/speak/${taskId}/transcribe`,
+      `/api/v1/lessons/${lessonPublicId}/tasks/speak/${taskPublicId}/transcribe`,
       {
         method: "POST",
         body: formData,

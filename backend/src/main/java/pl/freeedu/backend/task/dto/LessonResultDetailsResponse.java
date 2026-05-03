@@ -14,9 +14,9 @@ import java.util.List;
 @AllArgsConstructor
 public class LessonResultDetailsResponse {
 
-	private Integer lessonId;
+	private String lessonPublicId;
 	private String lessonTitle;
-	private Integer userId;
+	private String userPublicId;
 	private String username;
 	private Integer score;
 	private Integer maxScore;

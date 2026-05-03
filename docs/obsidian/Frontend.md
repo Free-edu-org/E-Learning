@@ -29,7 +29,7 @@ Routing:
 - `/teacher` -> [[Frontend - Teacher Dashboard]]
 - `/teacher/students` -> widok uczniow nauczyciela
 - `/student` -> [[Frontend - Student Dashboard]]
-- `/student/lessons/:lessonId` -> [[Frontend - Lesson Solver]]
+- `/student/lessons/:lessonPublicId` -> [[Frontend - Lesson Solver]]
 
 Najwazniejsze pliki:
 - [App.tsx](../../frontend/src/App.tsx)

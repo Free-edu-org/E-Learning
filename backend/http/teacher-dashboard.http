@@ -11,32 +11,32 @@ GET http://localhost:8080/api/v1/teacher/my-groups
 Authorization: Bearer {{teacher_token}}
 
 ### Get lesson statistics for a specific lesson (Requires TEACHER)
-GET http://localhost:8080/api/v1/teacher/lessons/1/stats
+GET http://localhost:8080/api/v1/teacher/lessons/{{lesson_public_id}}/stats
 Authorization: Bearer {{teacher_token}}
 
 ### Get lesson statistics — 401 (no token)
-GET http://localhost:8080/api/v1/teacher/lessons/1/stats
+GET http://localhost:8080/api/v1/teacher/lessons/{{lesson_public_id}}/stats
 
 ### Get detailed lesson result for a student (Requires TEACHER)
-GET http://localhost:8080/api/v1/teacher/lessons/1/students/1/result
+GET http://localhost:8080/api/v1/teacher/lessons/{{lesson_public_id}}/students/{{student_public_id}}/result
 Authorization: Bearer {{teacher_token}}
 
 ### Get detailed lesson result for a student — 401 (no token)
-GET http://localhost:8080/api/v1/teacher/lessons/1/students/1/result
+GET http://localhost:8080/api/v1/teacher/lessons/{{lesson_public_id}}/students/{{student_public_id}}/result
 
 ### Get detailed lesson result for a student — 404 LESSON_NOT_FOUND
-GET http://localhost:8080/api/v1/teacher/lessons/999999/students/1/result
+GET http://localhost:8080/api/v1/teacher/lessons/{{invalid_lesson_public_id}}/students/{{student_public_id}}/result
 Authorization: Bearer {{teacher_token}}
 
 ### Get detailed lesson result for a student — 403 STUDENT_NO_ACCESS
-GET http://localhost:8080/api/v1/teacher/lessons/1/students/999999/result
+GET http://localhost:8080/api/v1/teacher/lessons/{{lesson_public_id}}/students/{{unauthorized_student_public_id}}/result
 Authorization: Bearer {{teacher_token}}
 
 ### Get Teacher's own students (Requires TEACHER)
 GET http://localhost:8080/api/v1/teacher/students
 Authorization: Bearer {{teacher_token}}
 
-### Create student in teacher's own group (Requires TEACHER, groupId mandatory)
+### Create student in teacher's own group (Requires TEACHER, groupPublicId mandatory)
 POST http://localhost:8080/api/v1/teacher/students
 Authorization: Bearer {{teacher_token}}
 Content-Type: application/json
@@ -45,10 +45,10 @@ Content-Type: application/json
   "username": "teacher_created_student",
   "email": "teacher.created@example.com",
   "password": "password123",
-  "groupId": 1
+  "groupPublicId": "{{group_public_id}}"
 }
 
-### Create student - missing groupId (400 VALIDATION_FAILED)
+### Create student - missing groupPublicId (400 VALIDATION_FAILED)
 POST http://localhost:8080/api/v1/teacher/students
 Authorization: Bearer {{teacher_token}}
 Content-Type: application/json
@@ -68,38 +68,38 @@ Content-Type: application/json
   "username": "admin_attempt",
   "email": "admin.attempt@example.com",
   "password": "password123",
-  "groupId": 1
+  "groupPublicId": "{{group_public_id}}"
 }
 
-### Update student in teacher's own group (Requires TEACHER, groupId mandatory)
-PUT http://localhost:8080/api/v1/teacher/students/15
+### Update student in teacher's own group (Requires TEACHER, groupPublicId mandatory)
+PUT http://localhost:8080/api/v1/teacher/students/{{student_public_id}}
 Authorization: Bearer {{teacher_token}}
 Content-Type: application/json
 
 {
   "username": "updated_student",
   "email": "updated.student@example.com",
-  "groupId": 1
+  "groupPublicId": "{{group_public_id}}"
 }
 
 ### Update student - foreign teacher group (400 INVALID_ROLE_FOR_GROUP)
-PUT http://localhost:8080/api/v1/teacher/students/15
+PUT http://localhost:8080/api/v1/teacher/students/{{student_public_id}}
 Authorization: Bearer {{teacher_token}}
 Content-Type: application/json
 
 {
   "username": "updated_student",
   "email": "updated.student@example.com",
-  "groupId": 99
+  "groupPublicId": "missing-group-public-id"
 }
 
 ### Update student - student not owned (403 Forbidden)
-PUT http://localhost:8080/api/v1/teacher/students/999
+PUT http://localhost:8080/api/v1/teacher/students/{{unauthorized_student_public_id}}
 Authorization: Bearer {{teacher_token}}
 Content-Type: application/json
 
 {
   "username": "hacked_student",
   "email": "hacked@example.com",
-  "groupId": 1
+  "groupPublicId": "{{group_public_id}}"
 }

@@ -79,7 +79,7 @@ function GroupChips({ groups }: { groups: Lesson["groups"] }) {
     <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
       {visible.map((g) => (
         <Chip
-          key={g.id}
+          key={g.publicId}
           label={g.name}
           size="small"
           variant="outlined"

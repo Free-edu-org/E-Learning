@@ -104,7 +104,7 @@ export function LessonToolbar({
         value={selectedGroups}
         onChange={(_, newValue) => onSelectedGroupsChange(newValue)}
         getOptionLabel={(option) => option.name}
-        isOptionEqualToValue={(opt, val) => opt.id === val.id}
+        isOptionEqualToValue={(opt, val) => opt.publicId === val.publicId}
         disableCloseOnSelect
         limitTags={1}
         noOptionsText="Brak grup"

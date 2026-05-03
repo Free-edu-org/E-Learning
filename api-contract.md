@@ -172,7 +172,7 @@ Default local development base URL is `http://localhost:8080`
 **Success (200 OK):**
 ```json
 {
-  "id": 1,
+  "publicId": "33333333-3333-3333-3333-333333333333",
   "username": "student1",
   "email": "user@example.com",
   "role": "STUDENT",
@@ -188,14 +188,14 @@ Default local development base URL is `http://localhost:8080`
 ---
 
 ### 2.4. Get User Details
-- **URL**: `/api/v1/users/{id}`
+- **URL**: `/api/v1/users/{publicId}`
 - **Method**: `GET`
 - **Description**: Retrieves user details. Requires `ADMIN` authority OR requester is the same user (`owner`) OR `TEACHER` authority with access only to students assigned to one of the current teacher's groups.
 
 **Success (200 OK):**
 ```json
 {
-  "id": 1,
+  "publicId": "33333333-3333-3333-3333-333333333333",
   "username": "student1",
   "email": "user@example.com",
   "role": "STUDENT",
@@ -212,7 +212,7 @@ Default local development base URL is `http://localhost:8080`
 ---
 
 ### 2.5. Update User Profile
-- **URL**: `/api/v1/users/{id}`
+- **URL**: `/api/v1/users/{publicId}`
 - **Method**: `PUT`
 - **Description**: Updates username or email. Requires `ADMIN` authority OR the requesting user ID must match the parameter ID.
 
@@ -227,7 +227,7 @@ Default local development base URL is `http://localhost:8080`
 **Success (200 OK):**
 ```json
 {
-  "id": 1,
+  "publicId": "33333333-3333-3333-3333-333333333333",
   "username": "newUsername",
   "email": "new.email@example.com",
   "role": "STUDENT",
@@ -246,7 +246,7 @@ Default local development base URL is `http://localhost:8080`
 ---
 
 ### 2.6. Change Password
-- **URL**: `/api/v1/users/{id}/password`
+- **URL**: `/api/v1/users/{publicId}/password`
 - **Method**: `PUT`
 - **Description**: Changes the user's password. Requires `ADMIN` authority OR the requesting user ID must match the parameter ID.
 
@@ -283,7 +283,7 @@ Default local development base URL is `http://localhost:8080`
 ---
 
 ### 2.7. Delete User
-- **URL**: `/api/v1/users/{id}`
+- **URL**: `/api/v1/users/{publicId}`
 - **Method**: `DELETE`
 - **Description**: Deletes a user account. Requires `ADMIN` authority OR the requesting user ID must match the parameter ID.
 
@@ -298,7 +298,7 @@ Default local development base URL is `http://localhost:8080`
 ---
 
 ### 2.8. Upload Avatar
-- **URL**: `/api/v1/users/{id}/avatar`
+- **URL**: `/api/v1/users/{publicId}/avatar`
 - **Method**: `POST`
 - **Description**: Uploads a custom avatar image (JPEG, PNG). Maximum file size is 2 MB. Requires `ADMIN` authority OR the requesting user ID must match the parameter ID.
 
@@ -308,7 +308,7 @@ Default local development base URL is `http://localhost:8080`
 **Success (200 OK):**
 ```json
 {
-  "id": 1,
+  "publicId": "33333333-3333-3333-3333-333333333333",
   "username": "student1",
   "email": "user@example.com",
   "role": "STUDENT",
@@ -327,7 +327,7 @@ Default local development base URL is `http://localhost:8080`
 ---
 
 ### 2.9. Set Preset Avatar
-- **URL**: `/api/v1/users/{id}/avatar/preset`
+- **URL**: `/api/v1/users/{publicId}/avatar/preset`
 - **Method**: `PUT`
 - **Description**: Sets the user's avatar to one of the predefined presets (e.g., `avatar_1`, `avatar_2`). Requires `ADMIN` authority OR the requesting user ID must match the parameter ID.
 
@@ -341,7 +341,7 @@ Default local development base URL is `http://localhost:8080`
 **Success (200 OK):**
 ```json
 {
-  "id": 1,
+  "publicId": "33333333-3333-3333-3333-333333333333",
   "username": "student1",
   "email": "user@example.com",
   "role": "STUDENT",
@@ -377,11 +377,11 @@ Default local development base URL is `http://localhost:8080`
 **Success (201 Created):**
 ```json
 {
-  "id": 1,
+  "publicId": "33333333-3333-3333-3333-333333333333",
   "name": "Angielski A1",
   "description": "Grupa początkująca - semestr letni",
   "studentCount": 0,
-  "teacherId": 4,
+  "teacherPublicId": "22222222-2222-2222-2222-222222222222",
   "createdAt": "2026-03-21T10:00:00"
 }
 ```
@@ -403,11 +403,11 @@ Default local development base URL is `http://localhost:8080`
 ```json
 [
   {
-    "id": 1,
+    "publicId": "33333333-3333-3333-3333-333333333333",
     "name": "Angielski A1",
     "description": "Grupa początkująca - semestr letni",
     "studentCount": 2,
-    "teacherId": 4,
+    "teacherPublicId": "22222222-2222-2222-2222-222222222222",
     "createdAt": "2026-03-21T10:00:00"
   }
 ]
@@ -419,19 +419,19 @@ Default local development base URL is `http://localhost:8080`
 
 ---
 
-### 3.3. Get User Group by ID
-- **URL**: `/api/v1/user-groups/{id}`
+### 3.3. Get User Group by Public ID
+- **URL**: `/api/v1/user-groups/{groupPublicId}`
 - **Method**: `GET`
 - **Description**: Returns a single user group by its ID. Requires `ADMIN` OR teacher who owns that group.
 
 **Success (200 OK):**
 ```json
 {
-  "id": 1,
+  "publicId": "33333333-3333-3333-3333-333333333333",
   "name": "Angielski A1",
   "description": "Grupa początkująca - semestr letni",
   "studentCount": 2,
-  "teacherId": 4,
+  "teacherPublicId": "22222222-2222-2222-2222-222222222222",
   "createdAt": "2026-03-21T10:00:00"
 }
 ```
@@ -444,7 +444,7 @@ Default local development base URL is `http://localhost:8080`
 ---
 
 ### 3.4. Update User Group
-- **URL**: `/api/v1/user-groups/{id}`
+- **URL**: `/api/v1/user-groups/{groupPublicId}`
 - **Method**: `PUT`
 - **Description**: Updates name and/or description of an existing group. Requires `ADMIN` authority OR the requesting user must be the group owner (`TEACHER`).
 
@@ -459,7 +459,7 @@ Default local development base URL is `http://localhost:8080`
 **Success (200 OK):**
 ```json
 {
-  "id": 1,
+  "publicId": "33333333-3333-3333-3333-333333333333",
   "name": "Angielski B1",
   "description": "Grupa średniozaawansowana",
   "studentCount": 2,
@@ -477,7 +477,7 @@ Default local development base URL is `http://localhost:8080`
 ---
 
 ### 3.5. Delete User Group
-- **URL**: `/api/v1/user-groups/{id}`
+- **URL**: `/api/v1/user-groups/{groupPublicId}`
 - **Method**: `DELETE`
 - **Description**: Deletes a user group and all member associations. Does not delete user accounts. Requires `ADMIN` authority OR the requesting user must be the group owner (`TEACHER`).
 
@@ -492,7 +492,7 @@ Default local development base URL is `http://localhost:8080`
 ---
 
 ### 3.6. Add Member to Group
-- **URL**: `/api/v1/user-groups/{id}/members/{userId}`
+- **URL**: `/api/v1/user-groups/{groupPublicId}/members/{userPublicId}`
 - **Method**: `POST`
 - **Description**: Adds a student to a group. Only users with role `STUDENT` can be added. A student can belong to at most one group. Requires `ADMIN` authority OR the requesting user must be the group owner (`TEACHER`).
 
@@ -510,7 +510,7 @@ Default local development base URL is `http://localhost:8080`
 ---
 
 ### 3.7. Remove Member from Group
-- **URL**: `/api/v1/user-groups/{id}/members/{userId}`
+- **URL**: `/api/v1/user-groups/{groupPublicId}/members/{userPublicId}`
 - **Method**: `DELETE`
 - **Description**: Removes a student from a group. Does not delete the user account. Requires `ADMIN` authority OR the requesting user must be the group owner (`TEACHER`).
 
@@ -544,30 +544,30 @@ Poniżej znajdziesz opis endpointów do zarządzania lekcjami. Ścieżka bazowa:
 ```json
 [
   {
-    "id": 12,
+    "publicId": "33333333-3333-3333-3333-333333333333",
     "title": "Present Simple - lesson 1",
     "theme": "Grammar",
     "isActive": true,
-    "teacherId": 3,
+    "teacherPublicId": "22222222-2222-2222-2222-222222222222",
     "teacherName": "pan_tomasz",
     "teacherAvatarUrl": "preset:avatar_3",
     "createdAt": "2026-03-21T10:00:00",
-    "groups": [ { "id": 1, "name": "Angielski A1" } ]
+    "groups": [ { "publicId": "33333333-3333-3333-3333-333333333333", "name": "Angielski A1" } ]
   }
 ]
 ```
 
 | Field | Type                  | Description |
 |-------|-----------------------|-------------|
-| `id` | Integer               | ID lekcji |
+| `publicId` | String               | Public ID lekcji |
 | `title` | String                | Tytuł lekcji |
 | `theme` | String                | Temat kategorii lekcji |
 | `isActive` | Boolean               | Czy lekcja jest aktywna |
-| `teacherId` | Integer               | ID nauczyciela, który utworzył lekcję |
+| `teacherPublicId` | String               | Public ID nauczyciela, który utworzył lekcję |
 | `teacherName` | String                | Username nauczyciela |
 | `teacherAvatarUrl` | String                | URL do awatara nauczyciela (preset:name lub /uploads/...) |
 | `createdAt` | String (ISO datetime) | Data utworzenia |
-| `groups` | List<GroupDto>        | Lista grup przypisanych do lekcji (id, name) |
+| `groups` | List<GroupDto>        | Lista grup przypisanych do lekcji (publicId, name) |
 | `attachments` | List<LessonAttachmentResponse> | Lista załączników lekcji (maks. 5). Pusta lista jeśli brak załączników. |
 
 **Known Errors:**
@@ -587,7 +587,7 @@ Poniżej znajdziesz opis endpointów do zarządzania lekcjami. Ścieżka bazowa:
 {
   "title": "Present Simple - lesson 1",
   "theme": "Grammar",
-  "groupIds": [1, 2]
+  "groupPublicIds": ["11111111-1111-1111-1111-111111111111", "22222222-2222-2222-2222-222222222222"]
 }
 ```
 
@@ -602,7 +602,7 @@ Zwraca utworzoną reprezentację `LessonResponse` (jak w sekcji 4.1).
 ---
 
 ### 4.3. Update lesson data
-- **URL**: `/api/v1/lessons/{id}`
+- **URL**: `/api/v1/lessons/{lessonPublicId}`
 - **Method**: `PUT`
 - **Description**: Aktualizuje pola lekcji (title, theme, description, group assignment). Wymaga uprawnień nauczyciela. `title` może mieć maksymalnie 30 znaków.
 - **Authorization**: `ADMIN` lub właściciel lekcji (`TEACHER`)
@@ -622,7 +622,7 @@ Zwraca zaktualizowaną reprezentację `LessonResponse`.
 ---
 
 ### 4.4. Quick status change (is_active)
-- **URL**: `/api/v1/lessons/{id}/status`
+- **URL**: `/api/v1/lessons/{lessonPublicId}/status`
 - **Method**: `PATCH`
 - **Description**: Szybka zmiana flagi `isActive` (włącz/wyłącz lekcję).
 - **Authorization**: `ADMIN` lub właściciel lekcji (`TEACHER`)
@@ -644,7 +644,7 @@ Zwraca zaktualizowaną reprezentację `LessonResponse`.
 ---
 
 ### 4.5. Delete lesson
-- **URL**: `/api/v1/lessons/{id}`
+- **URL**: `/api/v1/lessons/{lessonPublicId}`
 - **Method**: `DELETE`
 - **Description**: Usuwa lekcję. Dostęp dla `ADMIN` lub właściciela lekcji (`TEACHER`).
 - **Authorization**: `ADMIN` lub właściciel lekcji (`TEACHER`)
@@ -659,7 +659,7 @@ Zwraca zaktualizowaną reprezentację `LessonResponse`.
 ---
 
 ### 4.6. Upload lesson attachment
-- **URL**: `/api/v1/lessons/{lessonId}/attachments`
+- **URL**: `/api/v1/lessons/{lessonPublicId}/attachments`
 - **Method**: `POST`
 - **Content-Type**: `multipart/form-data`
 - **Description**: Przesyła plik jako załącznik do lekcji. Lekcja może mieć maksymalnie 5 załączników.
@@ -681,7 +681,7 @@ Zwraca zaktualizowaną reprezentację `LessonResponse`.
 **Success (201 Created):**
 ```json
 {
-  "id": 1,
+  "publicId": "33333333-3333-3333-3333-333333333333",
   "originalFileName": "notatki.pdf",
   "contentType": "application/pdf",
   "fileSize": 204800,
@@ -691,7 +691,7 @@ Zwraca zaktualizowaną reprezentację `LessonResponse`.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `id` | Integer | ID załącznika |
+| `publicId` | String | ID załącznika |
 | `originalFileName` | String | Oryginalna nazwa pliku |
 | `contentType` | String | Typ MIME przesłanego pliku (np. `application/pdf`, `text/plain`) |
 | `fileSize` | Long | Rozmiar pliku w bajtach |
@@ -708,7 +708,7 @@ Zwraca zaktualizowaną reprezentację `LessonResponse`.
 ---
 
 ### 4.7. Download attachment
-- **URL**: `/api/v1/lessons/{lessonId}/attachments/{attachmentId}`
+- **URL**: `/api/v1/lessons/{lessonPublicId}/attachments/{attachmentPublicId}`
 - **Method**: `GET`
 - **Description**: Pobiera plik załącznika. Wymaga autoryzacji — nie jest dostępny publicznie. Uczeń może pobrać załącznik tylko jeśli ma dostęp do tej lekcji.
 - **Authorization**: `ADMIN`, właściciel lekcji (`TEACHER`) lub uczeń mający dostęp do lekcji (`STUDENT`)
@@ -726,7 +726,7 @@ Zwraca zaktualizowaną reprezentację `LessonResponse`.
 ---
 
 ### 4.8. Delete lesson attachment
-- **URL**: `/api/v1/lessons/{lessonId}/attachments/{attachmentId}`
+- **URL**: `/api/v1/lessons/{lessonPublicId}/attachments/{attachmentPublicId}`
 - **Method**: `DELETE`
 - **Description**: Usuwa załącznik z lekcji. Plik jest fizycznie usuwany z dysku.
 - **Authorization**: `ADMIN` lub właściciel lekcji (`TEACHER`)
@@ -744,18 +744,18 @@ Zwraca zaktualizowaną reprezentację `LessonResponse`.
 **LessonResponse** (`attachments` field — present in all lesson endpoints):
 ```json
 {
-  "id": 12,
+  "publicId": "33333333-3333-3333-3333-333333333333",
   "title": "Present Simple - lesson 1",
   "theme": "Grammar",
   "isActive": true,
-  "teacherId": 3,
+  "teacherPublicId": "22222222-2222-2222-2222-222222222222",
   "teacherName": "pan_tomasz",
   "teacherAvatarUrl": "preset:avatar_3",
   "createdAt": "2026-03-21T10:00:00",
-  "groups": [ { "id": 1, "name": "Angielski A1" } ],
+  "groups": [ { "publicId": "33333333-3333-3333-3333-333333333333", "name": "Angielski A1" } ],
   "attachments": [
     {
-      "id": 1,
+      "publicId": "33333333-3333-3333-3333-333333333333",
       "originalFileName": "notatki.pdf",
       "contentType": "application/pdf",
       "fileSize": 204800,
@@ -811,7 +811,7 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
 ---
 
 ### 5.3. Get Lesson Statistics
-- **URL**: `/api/v1/teacher/lessons/{lessonId}/stats`
+- **URL**: `/api/v1/teacher/lessons/{lessonPublicId}/stats`
 - **Method**: `GET`
 - **Description**: Zwraca statystyki wyników uczniów dla wskazanej lekcji. Scoped do nauczyciela autoryzowanego przez JWT.
 - **Authorization**: `TEACHER`
@@ -824,7 +824,7 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
   "bestScore": 100.0,
   "studentResults": [
     {
-      "userId": 8,
+      "userPublicId": "33333333-3333-3333-3333-333333333333",
       "username": "jan_kowalski",
       "completedAt": "2026-01-20T12:00:00",
       "score": 8,
@@ -849,7 +849,7 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
 ---
 
 ### 5.3.1. Get Detailed Lesson Result For Selected Student
-- **URL**: `/api/v1/teacher/lessons/{lessonId}/students/{userId}/result`
+- **URL**: `/api/v1/teacher/lessons/{lessonPublicId}/students/{userPublicId}/result`
 - **Method**: `GET`
 - **Description**: Zwraca szczegolowy wynik ukonczonej lekcji dla wskazanego ucznia. Endpoint jest scoped do nauczyciela-owner'a lekcji.
 - **Authorization**: `TEACHER`
@@ -857,9 +857,9 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
 **Success (200 OK):**
 ```json
 {
-  "lessonId": 12,
+  "lessonPublicId": "44444444-4444-4444-4444-444444444444",
   "lessonTitle": "Present Simple - lesson 1",
-  "userId": 8,
+  "userPublicId": "33333333-3333-3333-3333-333333333333",
   "username": "jan_kowalski",
   "score": 4,
   "maxScore": 5,
@@ -867,7 +867,7 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
   "completedAt": "2026-03-21T10:25:00",
   "tasks": [
     {
-      "taskId": 101,
+      "taskPublicId": "66666666-6666-6666-6666-666666666666",
       "taskType": "choose",
       "section": "Grammar",
       "taskText": "Choose the correct answer",
@@ -884,16 +884,16 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `lessonId` | Integer | ID lekcji. |
+| `lessonPublicId` | String | Public ID lekcji. |
 | `lessonTitle` | String | Tytul lekcji. |
-| `userId` | Integer | ID ucznia, ktorego wynik jest zwracany. |
+| `userPublicId` | String | Public ID ucznia, ktorego wynik jest zwracany. |
 | `username` | String | Username ucznia. |
 | `score` | Integer | Zdobyte punkty. |
 | `maxScore` | Integer | Maksymalna liczba punktow. |
 | `resultPercent` | Double | Wynik procentowy zaokraglony do jednego miejsca po przecinku. |
 | `completedAt` | String (ISO datetime) | Czas zakonczenia lekcji. |
 | `tasks` | List | Lista zadan w stabilnej kolejnosci prezentacyjnej. |
-| `tasks[].taskId` | Integer | ID zadania w aktualnej lekcji. |
+| `tasks[].taskId` | Integer | Public ID zadania w aktualnej lekcji. |
 | `tasks[].taskType` | String | `choose`, `write`, `scatter` albo `speak`. |
 | `tasks[].section` | String or null | Sekcja zadania, jesli jest ustawiona. |
 | `tasks[].taskText` | String | Tresc zadania. |
@@ -949,19 +949,19 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
   "username": "new_student",
   "email": "new.student@example.com",
   "password": "password123",
-  "groupId": 1
+  "groupPublicId": "11111111-1111-1111-1111-111111111111"
 }
 ```
 
 **Success (201 Created):**
 ```json
 {
-  "id": 15,
+  "publicId": "33333333-3333-3333-3333-333333333333",
   "username": "new_student",
   "email": "new.student@example.com",
   "role": "STUDENT",
   "createdAt": "2026-03-30T20:15:00",
-  "groupId": 1,
+  "groupPublicId": "11111111-1111-1111-1111-111111111111",
   "avatarUrl": "preset:avatar_1"
 }
 ```
@@ -978,9 +978,9 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
 ---
 
 ### 5.7. Update Student (Teacher API)
-- **URL**: `/api/v1/teacher/students/{id}`
+- **URL**: `/api/v1/teacher/students/{studentPublicId}`
 - **Method**: `PUT`
-- **Description**: Aktualizuje dane ucznia (username, email) oraz przypisaną grupę. Uczeń musi należeć do jednej z grup nauczyciela. `groupId` jest wymagany i docelowa grupa również musi należeć do nauczyciela.
+- **Description**: Aktualizuje dane ucznia (username, email) oraz przypisaną grupę. Uczeń musi należeć do jednej z grup nauczyciela. `groupPublicId` jest wymagany i docelowa grupa również musi należeć do nauczyciela.
 - **Authorization**: `TEACHER`
 
 **Request Body (JSON):**
@@ -988,19 +988,19 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
 {
   "username": "updated_student",
   "email": "updated.student@example.com",
-  "groupId": 2
+  "groupPublicId": "11111111-1111-1111-1111-111111111111"
 }
 ```
 
 **Success (200 OK):**
 ```json
 {
-  "id": 15,
+  "publicId": "33333333-3333-3333-3333-333333333333",
   "username": "updated_student",
   "email": "updated.student@example.com",
   "role": "STUDENT",
   "createdAt": "2026-03-30T20:15:00",
-  "groupId": 2,
+  "groupPublicId": "11111111-1111-1111-1111-111111111111",
   "avatarUrl": "preset:avatar_5"
 }
 ```
@@ -1052,7 +1052,7 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
 ```json
 [
   {
-    "id": 3,
+    "publicId": "33333333-3333-3333-3333-333333333333",
     "username": "teacher1",
     "email": "teacher@example.com",
     "role": "TEACHER",
@@ -1076,11 +1076,11 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
 ```json
 [
   {
-    "id": 8,
+    "publicId": "33333333-3333-3333-3333-333333333333",
     "username": "student1",
     "email": "user@example.com",
     "role": "STUDENT",
-    "groupId": 1,
+    "groupPublicId": "11111111-1111-1111-1111-111111111111",
     "groupName": "Angielski A1",
     "createdAt": "2026-03-02T21:00:00"
   }
@@ -1103,15 +1103,15 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
   "username": "new_student",
   "email": "new.student@example.com",
   "password": "password123",
-  "groupId": 1
+  "groupPublicId": "11111111-1111-1111-1111-111111111111"
 }
 ```
-> `groupId` jest opcjonalne. Jeśli nie podano, uczeń zostaje stworzony bez przypisania do grupy.
+> `groupPublicId` jest opcjonalne. Jeśli nie podano, uczeń zostaje stworzony bez przypisania do grupy.
 
 **Success (201 Created):**
 ```json
 {
-  "id": 15,
+  "publicId": "33333333-3333-3333-3333-333333333333",
   "username": "new_student",
   "email": "new.student@example.com",
   "role": "STUDENT",
@@ -1129,7 +1129,7 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
 
 ---
 ### 6.5. Update Student (Admin API)
-- **URL**: `/api/v1/admin/students/{id}`
+- **URL**: `/api/v1/admin/students/{studentPublicId}`
 - **Method**: `PUT`
 - **Description**: Aktualizuje dane ucznia (username, email) oraz opcjonalnie zmienia przypisanie do grupy. Wymaga `ADMIN`.
 
@@ -1138,7 +1138,7 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
 {
   "username": "updated_student",
   "email": "updated.student@example.com",
-  "groupId": 2
+  "groupPublicId": "11111111-1111-1111-1111-111111111111"
 }
 ```
 > Jeśli `groupId` jest `null` lub pominięte, dotychczasowe powiązanie z grupą zostaje usunięte.
@@ -1146,11 +1146,11 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
 **Success (200 OK):**
 ```json
 {
-  "id": 15,
+  "publicId": "33333333-3333-3333-3333-333333333333",
   "username": "updated_student",
   "email": "updated.student@example.com",
   "role": "STUDENT",
-  "groupId": 2,
+  "groupPublicId": "11111111-1111-1111-1111-111111111111",
   "groupName": "Angielski B2",
   "createdAt": "2026-03-26T20:15:00"
 }
@@ -1208,16 +1208,16 @@ Warstwa BFF dla uczniow.
 ```json
 [
   {
-    "id": 12,
+    "publicId": "33333333-3333-3333-3333-333333333333",
     "title": "Present Simple - lesson 1",
     "theme": "Grammar",
     "isActive": true,
-    "teacherId": 3,
+    "teacherPublicId": "22222222-2222-2222-2222-222222222222",
     "teacherName": "pan_tomasz",
     "teacherAvatarUrl": "preset:avatar_3",
     "createdAt": "2026-03-21T10:00:00",
     "groups": [
-      { "id": 1, "name": "Angielski A1" }
+      { "publicId": "33333333-3333-3333-3333-333333333333", "name": "Angielski A1" }
     ],
     "status": "COMPLETED",
     "score": 4,
@@ -1225,7 +1225,7 @@ Warstwa BFF dla uczniow.
     "resultPercent": 80.0,
     "attachments": [
       {
-        "id": 1,
+        "publicId": "33333333-3333-3333-3333-333333333333",
         "originalFileName": "notatki.pdf",
         "contentType": "application/pdf",
         "fileSize": 204800,
@@ -1238,11 +1238,11 @@ Warstwa BFF dla uczniow.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `id` | Integer | ID lekcji. |
+| `publicId` | String | Public ID lekcji. |
 | `title` | String | Tytul lekcji. |
 | `theme` | String | Temat lekcji. |
 | `isActive` | Boolean | Flaga aktywnosci lekcji. |
-| `teacherId` | Integer | ID nauczyciela prowadzacego. |
+| `teacherPublicId` | String | Public ID nauczyciela prowadzacego. |
 | `teacherName` | String | Username nauczyciela prowadzacego. |
 | `createdAt` | String (ISO datetime) | Data utworzenia lekcji. |
 | `groups` | List<GroupDto> | W student dashboard zwracana jest tylko grupa aktualnego ucznia, nawet jesli lekcja jest przypisana do wielu grup. |
@@ -1250,7 +1250,7 @@ Warstwa BFF dla uczniow.
 | `score` | Integer or null | Zdobyta liczba punktow dla lekcji z zapisanym postepem. |
 | `maxScore` | Integer or null | Maksymalna liczba punktow dla biezacej proby. |
 | `resultPercent` | Double or null | Wynik procentowy, jesli lekcja ma zapisany rezultat. |
-| `attachments` | List<LessonAttachmentResponse> | Lista załączników lekcji (maks. 5). Pusta lista jeśli brak. Pobieranie: `GET /api/v1/lessons/{lessonId}/attachments/{attachmentId}`. |
+| `attachments` | List<LessonAttachmentResponse> | Lista załączników lekcji (maks. 5). Pusta lista jeśli brak. Pobieranie: `GET /api/v1/lessons/{lessonPublicId}/attachments/{attachmentPublicId}`. |
 
 **Known Errors:**
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
@@ -1259,12 +1259,12 @@ Warstwa BFF dla uczniow.
 ---
 
 ### 7.2.1. Get Detailed Result Of Completed Lesson
-- **URL**: `/api/v1/student/lessons/{lessonId}/result`
+- **URL**: `/api/v1/student/lessons/{lessonPublicId}/result`
 - **Method**: `GET`
 - **Description**: Zwraca trwaly widok szczegolowego wyniku ukonczonej lekcji dla aktualnie zalogowanego ucznia.
 - **Authorization**: `STUDENT`
 
-**Success (200 OK):** Response ma ten sam shape jak `GET /api/v1/teacher/lessons/{lessonId}/students/{userId}/result`.
+**Success (200 OK):** Response ma ten sam shape jak `GET /api/v1/teacher/lessons/{lessonPublicId}/students/{userPublicId}/result`.
 
 **Known Errors:**
 - `LESSON_NOT_FOUND` (404 Not Found)
@@ -1296,12 +1296,12 @@ Warstwa BFF dla uczniow.
 - `FORBIDDEN` (403 Forbidden): Token role does not permit access.
 
 ---
-## 8. Tasks (`/api/v1/lessons/{lessonId}/tasks`)
+## 8. Tasks (`/api/v1/lessons/{lessonPublicId}/tasks`)
 
 Task management endpoints nested under lessons. All task CRUD requires `ADMIN` or lesson owner (`TEACHER`).
 
 ### 8.1. Get Lesson Tasks
-- **URL**: `/api/v1/lessons/{lessonId}/tasks`
+- **URL**: `/api/v1/lessons/{lessonPublicId}/tasks`
 - **Method**: `GET`
 - **Description**: Returns all tasks for a lesson grouped by section. Students get answers stripped and auto-start tracking only when the lesson is active. Teachers/admins see correct answers and may inspect inactive lessons.
 - **Authorization**: `STUDENT`, `TEACHER`, or `ADMIN`
@@ -1309,15 +1309,15 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 **Success (200 OK):**
 ```json
 {
-  "lessonId": 1,
+  "lessonPublicId": "44444444-4444-4444-4444-444444444444",
   "status": "IN_PROGRESS",
   "sections": [
     {
       "section": "Vocabulary",
       "chooseTasks": [
         {
-          "id": 1,
-          "lessonId": 1,
+          "publicId": "33333333-3333-3333-3333-333333333333",
+          "lessonPublicId": "44444444-4444-4444-4444-444444444444",
           "task": "Choose the correct answer",
           "possibleAnswers": "a|b|c|d",
           "correctAnswer": null,
@@ -1349,7 +1349,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 ---
 
 ### 8.2. Create Choose Task
-- **URL**: `/api/v1/lessons/{lessonId}/tasks/choose`
+- **URL**: `/api/v1/lessons/{lessonPublicId}/tasks/choose`
 - **Method**: `POST`
 - **Authorization**: `ADMIN` or lesson owner (`TEACHER`)
 
@@ -1367,7 +1367,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 **Success (201 Created):**
 ```json
 {
-  "id": 1, "lessonId": 1, "task": "...", "possibleAnswers": "...",
+  "publicId": "33333333-3333-3333-3333-333333333333", "lessonPublicId": "44444444-4444-4444-4444-444444444444", "task": "...", "possibleAnswers": "...",
   "correctAnswer": 1, "hint": "...", "section": "...", "createdAt": "..."
 }
 ```
@@ -1380,7 +1380,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 ---
 
 ### 8.3. Update Choose Task
-- **URL**: `/api/v1/lessons/{lessonId}/tasks/choose/{taskId}`
+- **URL**: `/api/v1/lessons/{lessonPublicId}/tasks/choose/{taskPublicId}`
 - **Method**: `PUT`
 - **Authorization**: `ADMIN` or lesson owner (`TEACHER`)
 
@@ -1393,7 +1393,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 ---
 
 ### 8.4. Delete Choose Task
-- **URL**: `/api/v1/lessons/{lessonId}/tasks/choose/{taskId}`
+- **URL**: `/api/v1/lessons/{lessonPublicId}/tasks/choose/{taskPublicId}`
 - **Method**: `DELETE`
 - **Authorization**: `ADMIN` or lesson owner (`TEACHER`)
 
@@ -1406,7 +1406,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 ---
 
 ### 8.5. Create Write Task
-- **URL**: `/api/v1/lessons/{lessonId}/tasks/write`
+- **URL**: `/api/v1/lessons/{lessonPublicId}/tasks/write`
 - **Method**: `POST`
 - **Authorization**: `ADMIN` or lesson owner (`TEACHER`)
 
@@ -1423,7 +1423,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 **Success (201 Created):**
 ```json
 {
-  "id": 1, "lessonId": 1, "task": "...", "correctAnswer": "...",
+  "publicId": "33333333-3333-3333-3333-333333333333", "lessonPublicId": "44444444-4444-4444-4444-444444444444", "task": "...", "correctAnswer": "...",
   "hint": "...", "section": "...", "createdAt": "..."
 }
 ```
@@ -1434,7 +1434,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 ---
 
 ### 8.6. Update Write Task
-- **URL**: `/api/v1/lessons/{lessonId}/tasks/write/{taskId}`
+- **URL**: `/api/v1/lessons/{lessonPublicId}/tasks/write/{taskPublicId}`
 - **Method**: `PUT`
 - **Authorization**: `ADMIN` or lesson owner (`TEACHER`)
 
@@ -1446,7 +1446,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 ---
 
 ### 8.7. Delete Write Task
-- **URL**: `/api/v1/lessons/{lessonId}/tasks/write/{taskId}`
+- **URL**: `/api/v1/lessons/{lessonPublicId}/tasks/write/{taskPublicId}`
 - **Method**: `DELETE`
 - **Authorization**: `ADMIN` or lesson owner (`TEACHER`)
 
@@ -1458,7 +1458,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 ---
 
 ### 8.8. Create Scatter Task
-- **URL**: `/api/v1/lessons/{lessonId}/tasks/scatter`
+- **URL**: `/api/v1/lessons/{lessonPublicId}/tasks/scatter`
 - **Method**: `POST`
 - **Authorization**: `ADMIN` or lesson owner (`TEACHER`)
 
@@ -1476,7 +1476,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 **Success (201 Created):**
 ```json
 {
-  "id": 1, "lessonId": 1, "task": "...", "words": "...", "correctAnswer": "...",
+  "publicId": "33333333-3333-3333-3333-333333333333", "lessonPublicId": "44444444-4444-4444-4444-444444444444", "task": "...", "words": "...", "correctAnswer": "...",
   "hint": "...", "section": "...", "createdAt": "..."
 }
 ```
@@ -1487,7 +1487,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 ---
 
 ### 8.9. Update Scatter Task
-- **URL**: `/api/v1/lessons/{lessonId}/tasks/scatter/{taskId}`
+- **URL**: `/api/v1/lessons/{lessonPublicId}/tasks/scatter/{taskPublicId}`
 - **Method**: `PUT`
 - **Authorization**: `ADMIN` or lesson owner (`TEACHER`)
 
@@ -1499,7 +1499,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 ---
 
 ### 8.10. Delete Scatter Task
-- **URL**: `/api/v1/lessons/{lessonId}/tasks/scatter/{taskId}`
+- **URL**: `/api/v1/lessons/{lessonPublicId}/tasks/scatter/{taskPublicId}`
 - **Method**: `DELETE`
 - **Authorization**: `ADMIN` or lesson owner (`TEACHER`)
 
@@ -1511,7 +1511,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 ---
 
 ### 8.11. Create Speak Task
-- **URL**: `/api/v1/lessons/{lessonId}/tasks/speak`
+- **URL**: `/api/v1/lessons/{lessonPublicId}/tasks/speak`
 - **Method**: `POST`
 - **Authorization**: `ADMIN` or lesson owner (`TEACHER`)
 
@@ -1528,7 +1528,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 **Success (201 Created):**
 ```json
 {
-  "id": 1, "lessonId": 1, "task": "...", "expectedText": "...", "hint": "...",
+  "publicId": "33333333-3333-3333-3333-333333333333", "lessonPublicId": "44444444-4444-4444-4444-444444444444", "task": "...", "expectedText": "...", "hint": "...",
   "section": "...", "createdAt": "..."
 }
 ```
@@ -1539,7 +1539,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 ---
 
 ### 8.12. Update Speak Task
-- **URL**: `/api/v1/lessons/{lessonId}/tasks/speak/{taskId}`
+- **URL**: `/api/v1/lessons/{lessonPublicId}/tasks/speak/{taskPublicId}`
 - **Method**: `PUT`
 - **Authorization**: `ADMIN` or lesson owner (`TEACHER`)
 
@@ -1551,7 +1551,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 ---
 
 ### 8.13. Delete Speak Task
-- **URL**: `/api/v1/lessons/{lessonId}/tasks/speak/{taskId}`
+- **URL**: `/api/v1/lessons/{lessonPublicId}/tasks/speak/{taskPublicId}`
 - **Method**: `DELETE`
 - **Authorization**: `ADMIN` or lesson owner (`TEACHER`)
 
@@ -1563,7 +1563,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 ---
 
 ### 8.14. Transcribe Speak Task Audio
-- **URL**: `/api/v1/lessons/{lessonId}/tasks/speak/{taskId}/transcribe`
+- **URL**: `/api/v1/lessons/{lessonPublicId}/tasks/speak/{taskPublicId}/transcribe`
 - **Method**: `POST`
 - **Content-Type**: `multipart/form-data`
 - **Authorization**: `STUDENT` only
@@ -1606,9 +1606,9 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 ```json
 {
   "answers": [
-    { "taskId": 1, "taskType": "choose", "answer": "1" },
-    { "taskId": 2, "taskType": "write", "answer": "went" },
-    { "taskId": 3, "taskType": "speak", "answer": "Hello how are you" }
+    { "taskPublicId": "66666666-6666-6666-6666-666666666666", "taskType": "choose", "answer": "1" },
+    { "taskPublicId": "66666666-6666-6666-6666-666666666666", "taskType": "write", "answer": "went" },
+    { "taskPublicId": "66666666-6666-6666-6666-666666666666", "taskType": "speak", "answer": "Hello how are you" }
   ]
 }
 ```
@@ -1619,8 +1619,8 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
   "score": 2,
   "maxScore": 3,
   "details": [
-    { "taskId": 1, "taskType": "choose", "isCorrect": true, "correctAnswer": "1" },
-    { "taskId": 2, "taskType": "write", "isCorrect": true, "correctAnswer": "went" }
+    { "taskPublicId": "66666666-6666-6666-6666-666666666666", "taskType": "choose", "isCorrect": true, "correctAnswer": "1" },
+    { "taskPublicId": "66666666-6666-6666-6666-666666666666", "taskType": "write", "isCorrect": true, "correctAnswer": "went" }
   ]
 }
 ```

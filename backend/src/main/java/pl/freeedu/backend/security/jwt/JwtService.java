@@ -27,8 +27,8 @@ public class JwtService {
 	@Value("${application.security.jwt.expiration:86400000}")
 	private long jwtExpiration;
 
-	public Integer extractUserId(String token) {
-		return Integer.parseInt(extractClaim(token, Claims::getSubject));
+	public String extractUserPublicId(String token) {
+		return extractClaim(token, Claims::getSubject);
 	}
 
 	public Integer extractTokenVersion(String token) {
@@ -41,18 +41,18 @@ public class JwtService {
 		return claimsResolver.apply(claims);
 	}
 
-	public String generateToken(Integer userId, Integer tokenVersion) {
+	public String generateToken(String userPublicId, Integer tokenVersion) {
 		Map<String, Object> extraClaims = new HashMap<>();
 		extraClaims.put(TOKEN_VERSION_CLAIM, tokenVersion);
-		return generateToken(extraClaims, userId);
+		return generateToken(extraClaims, userPublicId);
 	}
 
-	public String generateToken(Integer userId) {
-		return generateToken(userId, 0);
+	public String generateToken(String userPublicId) {
+		return generateToken(userPublicId, 0);
 	}
 
-	public String generateToken(Map<String, Object> extraClaims, Integer userId) {
-		return buildToken(extraClaims, String.valueOf(userId), jwtExpiration);
+	public String generateToken(Map<String, Object> extraClaims, String userPublicId) {
+		return buildToken(extraClaims, userPublicId, jwtExpiration);
 	}
 
 	private String buildToken(Map<String, Object> extraClaims, String subject, long expiration) {
@@ -62,15 +62,15 @@ public class JwtService {
 	}
 
 	public boolean isTokenValid(String token, User user) {
-		final Integer userId = extractUserId(token);
+		final String userPublicId = extractUserPublicId(token);
 		final Integer tokenVersion = extractTokenVersion(token);
-		return userId.equals(user.getId()) && tokenVersion.equals(Optional.ofNullable(user.getTokenVersion()).orElse(0))
-				&& !isTokenExpired(token);
+		return userPublicId.equals(user.getPublicId())
+				&& tokenVersion.equals(Optional.ofNullable(user.getTokenVersion()).orElse(0)) && !isTokenExpired(token);
 	}
 
-	public boolean isTokenValid(String token, Integer targetUserId) {
-		final Integer userId = extractUserId(token);
-		return userId.equals(targetUserId) && !isTokenExpired(token);
+	public boolean isTokenValidForPublicId(String token, String targetUserPublicId) {
+		final String userPublicId = extractUserPublicId(token);
+		return userPublicId.equals(targetUserPublicId) && !isTokenExpired(token);
 	}
 
 	private boolean isTokenExpired(String token) {

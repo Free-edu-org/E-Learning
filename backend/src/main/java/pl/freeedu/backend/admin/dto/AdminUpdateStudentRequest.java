@@ -23,5 +23,5 @@ public class AdminUpdateStudentRequest {
 	@Email(message = "Invalid email format")
 	private String email;
 
-	private Integer groupId;
+	private String groupPublicId;
 }

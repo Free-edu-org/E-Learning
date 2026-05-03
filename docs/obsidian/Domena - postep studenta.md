@@ -9,7 +9,7 @@ Tabele:
 Cykl zycia:
 1. Student otwiera lekcje przez [[Frontend - Lesson Solver]].
 2. Backend tworzy `user_lessons` ze statusem `IN_PROGRESS`, jezeli wpis jeszcze nie istnieje.
-3. Student wysyla odpowiedzi przez `POST /api/v1/lessons/{lessonId}/submit`.
+3. Student wysyla odpowiedzi przez `POST /api/v1/lessons/{lessonPublicId}/submit`.
 4. Backend liczy wynik, zapisuje `user_answers`, ustawia `COMPLETED`.
 5. Nauczyciel lub admin moze zresetowac postep ucznia dla lekcji.
 

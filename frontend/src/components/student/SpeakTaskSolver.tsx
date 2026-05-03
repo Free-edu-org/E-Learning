@@ -32,7 +32,7 @@ import { formatPercent } from "@/utils/dashboardUtils";
 import { getApiErrorMessage } from "@/utils/dashboardUtils";
 
 interface SpeakTaskSolverProps {
-  lessonId: number;
+  lessonPublicId: string;
   task: SpeakTaskResponse;
   transcriptionResult: SpeakTranscriptionResponse | null;
   attempts: number;
@@ -43,7 +43,7 @@ interface SpeakTaskSolverProps {
 }
 
 export function SpeakTaskSolver({
-  lessonId,
+  lessonPublicId,
   task,
   transcriptionResult,
   attempts,
@@ -115,8 +115,8 @@ export function SpeakTaskSolver({
     setRecordingError(null);
     try {
       const response = await taskService.transcribeSpeakTask(
-        lessonId,
-        task.id,
+        lessonPublicId,
+        task.publicId,
         audio,
       );
       onChange(response.text);

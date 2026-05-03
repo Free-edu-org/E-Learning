@@ -1,7 +1,7 @@
 import { fetchApi } from "./apiClient";
 
 export interface UserProfile {
-  id: number;
+  publicId: string;
   username: string;
   email: string;
   role: string;
@@ -27,7 +27,6 @@ export interface ChangePasswordRequest {
 
 export const userService = {
   getCurrentUser: () => fetchApi<UserProfile>("/api/v1/users/me"),
-  getUserById: (id: number) => fetchApi<UserProfile>(`/api/v1/users/${id}`),
   createTeacher: (payload: CreateUserRequest) =>
     fetchApi<void>("/api/v1/users/teacher", {
       method: "POST",
@@ -38,30 +37,30 @@ export const userService = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
-  updateUser: (id: number, payload: UpdateUserRequest) =>
-    fetchApi<UserProfile>(`/api/v1/users/${id}`, {
+  updateUser: (publicId: string, payload: UpdateUserRequest) =>
+    fetchApi<UserProfile>(`/api/v1/users/${publicId}`, {
       method: "PUT",
       body: JSON.stringify(payload),
     }),
-  changePassword: (id: number, payload: ChangePasswordRequest) =>
-    fetchApi<void>(`/api/v1/users/${id}/password`, {
+  changePassword: (publicId: string, payload: ChangePasswordRequest) =>
+    fetchApi<void>(`/api/v1/users/${publicId}/password`, {
       method: "PUT",
       body: JSON.stringify(payload),
     }),
-  deleteUser: (id: number) =>
-    fetchApi<void>(`/api/v1/users/${id}`, {
+  deleteUser: (publicId: string) =>
+    fetchApi<void>(`/api/v1/users/${publicId}`, {
       method: "DELETE",
     }),
-  uploadAvatar: (id: number, file: File) => {
+  uploadAvatar: (publicId: string, file: File) => {
     const formData = new FormData();
     formData.append("file", file);
-    return fetchApi<UserProfile>(`/api/v1/users/${id}/avatar`, {
+    return fetchApi<UserProfile>(`/api/v1/users/${publicId}/avatar`, {
       method: "POST",
       body: formData,
     });
   },
-  setPresetAvatar: (id: number, presetName: string) =>
-    fetchApi<UserProfile>(`/api/v1/users/${id}/avatar/preset`, {
+  setPresetAvatar: (publicId: string, presetName: string) =>
+    fetchApi<UserProfile>(`/api/v1/users/${publicId}/avatar/preset`, {
       method: "PUT",
       body: JSON.stringify({ presetName }),
     }),
