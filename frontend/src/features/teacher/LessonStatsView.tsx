@@ -152,10 +152,10 @@ export function LessonStatsView() {
     severity: "success" | "error";
     message: string;
   } | null>(null);
-  const [resettingUserPublicIds, setresettingUserPublicIds] = useState<
+  const [resettingUserPublicIds, setResettingUserPublicIds] = useState<
     string[]
   >([]);
-  const [resetConfirmStudent, setresetConfirmStudent] =
+  const [resetConfirmStudent, setResetConfirmStudent] =
     useState<LessonStatsStudentResult | null>(null);
 
   useEffect(() => {
@@ -188,7 +188,7 @@ export function LessonStatsView() {
     if (!lessonPublicId) return;
 
     setActionFeedback(null);
-    setresettingUserPublicIds((prev) => [...prev, student.userPublicId]);
+    setResettingUserPublicIds((prev) => [...prev, student.userPublicId]);
 
     try {
       await lessonService.resetStudentLessonProgress(
@@ -207,10 +207,10 @@ export function LessonStatsView() {
         message: `Nie udało się zresetować wyniku ucznia ${student.username}.`,
       });
     } finally {
-      setresettingUserPublicIds((prev) =>
+      setResettingUserPublicIds((prev) =>
         prev.filter((userPublicId) => userPublicId !== student.userPublicId),
       );
-      setresetConfirmStudent(null);
+      setResetConfirmStudent(null);
     }
   };
 
@@ -536,7 +536,7 @@ export function LessonStatsView() {
                           disabled={resettingUserPublicIds.includes(
                             student.userPublicId,
                           )}
-                          onClick={() => setresetConfirmStudent(student)}
+                          onClick={() => setResetConfirmStudent(student)}
                         >
                           {resettingUserPublicIds.includes(student.userPublicId)
                             ? "Resetowanie..."
@@ -586,7 +586,7 @@ export function LessonStatsView() {
             ) {
               return;
             }
-            setresetConfirmStudent(null);
+            setResetConfirmStudent(null);
           }}
           maxWidth="xs"
         >
@@ -608,7 +608,7 @@ export function LessonStatsView() {
           <AppDialogFooter>
             <FormActions>
               <Button
-                onClick={() => setresetConfirmStudent(null)}
+                onClick={() => setResetConfirmStudent(null)}
                 disabled={
                   resetConfirmStudent
                     ? resettingUserPublicIds.includes(

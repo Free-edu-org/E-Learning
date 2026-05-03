@@ -58,8 +58,6 @@ class LessonResultDetailsServiceTest {
 	private LessonRepository lessonRepository;
 	@Mock
 	private UserRepository userRepository;
-	@Mock
-	private TaskPublicIdLookupService taskPublicIdLookupService;
 
 	private LessonResultDetailsService lessonResultDetailsService;
 
@@ -67,7 +65,7 @@ class LessonResultDetailsServiceTest {
 	void setUp() {
 		lessonResultDetailsService = new LessonResultDetailsService(chooseTaskRepository, writeTaskRepository,
 				scatterTaskRepository, speakTaskRepository, userAnswerRepository, userLessonRepository,
-				lessonRepository, userRepository, taskPublicIdLookupService);
+				lessonRepository, userRepository);
 	}
 
 	@Test
@@ -96,11 +94,6 @@ class LessonResultDetailsServiceTest {
 		when(speakTaskRepository.findByLessonId(lessonId))
 				.thenReturn(List.of(SpeakTask.builder().id(4).publicId("tp4").lessonId(lessonId).section("B")
 						.task("Speak task").hint("Hint speak").expectedText("good morning").build()));
-
-		when(taskPublicIdLookupService.getPublicId(1, "choose_tasks")).thenReturn("tp1");
-		when(taskPublicIdLookupService.getPublicId(2, "write_tasks")).thenReturn("tp2");
-		when(taskPublicIdLookupService.getPublicId(3, "scatter_tasks")).thenReturn("tp3");
-		when(taskPublicIdLookupService.getPublicId(4, "speak_tasks")).thenReturn("tp4");
 
 		when(userAnswerRepository.findByUserIdAndLessonId(userId, lessonId)).thenReturn(List.of(
 				UserAnswer.builder().lessonId(lessonId).userId(userId).taskId(1).taskType("choose_tasks").answer("0")

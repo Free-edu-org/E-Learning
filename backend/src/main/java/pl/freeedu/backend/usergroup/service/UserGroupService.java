@@ -23,6 +23,8 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 
@@ -81,7 +83,12 @@ public class UserGroupService {
 			var countMap = userInGroupRepository.countAllByGroupId().stream()
 					.collect(Collectors.toMap(UserInGroupRepository.GroupCountProjection::getGroupId,
 							UserInGroupRepository.GroupCountProjection::getCount));
-			return userGroupRepository.findAll().stream().map(group -> toResponseWithCount(group, countMap)).toList();
+			var groups = userGroupRepository.findAll();
+			Set<Integer> teacherIds = groups.stream().map(UserGroup::getTeacherId).filter(Objects::nonNull)
+					.collect(Collectors.toSet());
+			Map<Integer, String> teacherPublicIdMap = userRepository.findAllById(teacherIds).stream()
+					.collect(Collectors.toMap(User::getId, User::getPublicId));
+			return groups.stream().map(group -> toResponseWithCount(group, countMap, teacherPublicIdMap)).toList();
 		}).subscribeOn(Schedulers.boundedElastic()).flatMapMany(Flux::fromIterable);
 	}
 
@@ -102,8 +109,13 @@ public class UserGroupService {
 			var countMap = userInGroupRepository.countAllByGroupId().stream()
 					.collect(Collectors.toMap(UserInGroupRepository.GroupCountProjection::getGroupId,
 							UserInGroupRepository.GroupCountProjection::getCount));
-			return userGroupRepository.findByTeacherId(teacherId).stream()
-					.map(group -> toResponseWithCount(group, countMap)).toList();
+			String teacherPublicId = userRepository.findById(teacherId).map(User::getPublicId).orElse(null);
+			return userGroupRepository.findByTeacherId(teacherId).stream().map(group -> {
+				UserGroupResponse response = userGroupMapper.toUserGroupResponse(group);
+				response.setStudentCount(countMap.getOrDefault(group.getId(), 0L).intValue());
+				response.setTeacherPublicId(teacherPublicId);
+				return response;
+			}).toList();
 		}).subscribeOn(Schedulers.boundedElastic()).flatMapMany(Flux::fromIterable);
 	}
 
@@ -198,12 +210,20 @@ public class UserGroupService {
 	private UserGroupResponse toResponseWithCount(UserGroup group) {
 		UserGroupResponse response = userGroupMapper.toUserGroupResponse(group);
 		response.setStudentCount(userInGroupRepository.countByGroupId(group.getId()));
+		if (group.getTeacherId() != null) {
+			response.setTeacherPublicId(
+					userRepository.findById(group.getTeacherId()).map(User::getPublicId).orElse(null));
+		}
 		return response;
 	}
 
-	private UserGroupResponse toResponseWithCount(UserGroup group, Map<Integer, Long> countMap) {
+	private UserGroupResponse toResponseWithCount(UserGroup group, Map<Integer, Long> countMap,
+			Map<Integer, String> teacherPublicIdMap) {
 		UserGroupResponse response = userGroupMapper.toUserGroupResponse(group);
 		response.setStudentCount(countMap.getOrDefault(group.getId(), 0L).intValue());
+		if (group.getTeacherId() != null) {
+			response.setTeacherPublicId(teacherPublicIdMap.get(group.getTeacherId()));
+		}
 		return response;
 	}
 

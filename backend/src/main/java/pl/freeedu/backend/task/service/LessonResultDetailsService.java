@@ -40,13 +40,12 @@ public class LessonResultDetailsService {
 	private final UserLessonRepository userLessonRepository;
 	private final LessonRepository lessonRepository;
 	private final UserRepository userRepository;
-	private final TaskPublicIdLookupService taskPublicIdLookupService;
 
 	public LessonResultDetailsService(ChooseTaskRepository chooseTaskRepository,
 			WriteTaskRepository writeTaskRepository, ScatterTaskRepository scatterTaskRepository,
 			SpeakTaskRepository speakTaskRepository, UserAnswerRepository userAnswerRepository,
-			UserLessonRepository userLessonRepository, LessonRepository lessonRepository, UserRepository userRepository,
-			TaskPublicIdLookupService taskPublicIdLookupService) {
+			UserLessonRepository userLessonRepository, LessonRepository lessonRepository,
+			UserRepository userRepository) {
 		this.chooseTaskRepository = chooseTaskRepository;
 		this.writeTaskRepository = writeTaskRepository;
 		this.scatterTaskRepository = scatterTaskRepository;
@@ -55,7 +54,6 @@ public class LessonResultDetailsService {
 		this.userLessonRepository = userLessonRepository;
 		this.lessonRepository = lessonRepository;
 		this.userRepository = userRepository;
-		this.taskPublicIdLookupService = taskPublicIdLookupService;
 	}
 
 	public Mono<LessonResultDetailsResponse> getCompletedLessonResult(Integer lessonId, Integer userId) {
@@ -80,9 +78,8 @@ public class LessonResultDetailsService {
 					.stream().collect(Collectors.toMap(answer -> answerKey(answer.getTaskType(), answer.getTaskId()),
 							Function.identity(), (left, right) -> right));
 
-			List<LessonResultTaskDetailDto> taskDetails = buildTaskDefinitions(lessonId).stream().map(task -> task
-					.toDto(answersByKey.get(answerKey(task.dbTaskType(), task.taskId())), taskPublicIdLookupService))
-					.toList();
+			List<LessonResultTaskDetailDto> taskDetails = buildTaskDefinitions(lessonId).stream()
+					.map(task -> task.toDto(answersByKey.get(answerKey(task.dbTaskType(), task.taskId())))).toList();
 
 			log.info("Result details fetched successfully for user ID: {} and lesson ID: {}", userId, lessonId);
 			return LessonResultDetailsResponse.builder().lessonPublicId(lesson.getPublicId())
@@ -95,20 +92,22 @@ public class LessonResultDetailsService {
 
 	private List<TaskDefinition> buildTaskDefinitions(Integer lessonId) {
 		List<TaskDefinition> definitions = chooseTaskRepository.findByLessonId(lessonId).stream()
-				.map(task -> TaskDefinition.choose(task.getId(), task.getSection(), task.getTask(), task.getHint(),
-						task.getPossibleAnswers(), String.valueOf(task.getCorrectAnswer())))
+				.map(task -> TaskDefinition.choose(task.getId(), task.getPublicId(), task.getSection(), task.getTask(),
+						task.getHint(), task.getPossibleAnswers(), String.valueOf(task.getCorrectAnswer())))
 				.collect(Collectors.toList());
 
-		definitions.addAll(
-				writeTaskRepository.findByLessonId(lessonId).stream().map(task -> TaskDefinition.write(task.getId(),
-						task.getSection(), task.getTask(), task.getHint(), task.getCorrectAnswer())).toList());
-		definitions.addAll(scatterTaskRepository.findByLessonId(lessonId).stream()
-				.map(task -> TaskDefinition.scatter(task.getId(), task.getSection(), task.getTask(), task.getHint(),
-						task.getWords(), task.getCorrectAnswer()))
+		definitions.addAll(writeTaskRepository.findByLessonId(lessonId).stream()
+				.map(task -> TaskDefinition.write(task.getId(), task.getPublicId(), task.getSection(), task.getTask(),
+						task.getHint(), task.getCorrectAnswer()))
 				.toList());
-		definitions.addAll(
-				speakTaskRepository.findByLessonId(lessonId).stream().map(task -> TaskDefinition.speak(task.getId(),
-						task.getSection(), task.getTask(), task.getHint(), task.getExpectedText())).toList());
+		definitions.addAll(scatterTaskRepository
+				.findByLessonId(lessonId).stream().map(task -> TaskDefinition.scatter(task.getId(), task.getPublicId(),
+						task.getSection(), task.getTask(), task.getHint(), task.getWords(), task.getCorrectAnswer()))
+				.toList());
+		definitions.addAll(speakTaskRepository.findByLessonId(lessonId).stream()
+				.map(task -> TaskDefinition.speak(task.getId(), task.getPublicId(), task.getSection(), task.getTask(),
+						task.getHint(), task.getExpectedText()))
+				.toList());
 
 		definitions
 				.sort(Comparator.comparing(TaskDefinition::section, Comparator.nullsFirst(String::compareToIgnoreCase))
@@ -127,34 +126,35 @@ public class LessonResultDetailsService {
 		return taskType + "_" + taskId;
 	}
 
-	private record TaskDefinition(Integer taskId, String taskType, String dbTaskType, String section, String taskText,
-			String hint, String correctAnswer, String possibleAnswers, String words, int displayOrder) {
+	private record TaskDefinition(Integer taskId, String publicId, String taskType, String dbTaskType, String section,
+			String taskText, String hint, String correctAnswer, String possibleAnswers, String words,
+			int displayOrder) {
 
-		private static TaskDefinition choose(Integer taskId, String section, String taskText, String hint,
-				String possibleAnswers, String correctAnswer) {
-			return new TaskDefinition(taskId, "choose", "choose_tasks", section, taskText, hint, correctAnswer,
-					possibleAnswers, null, 0);
+		private static TaskDefinition choose(Integer taskId, String publicId, String section, String taskText,
+				String hint, String possibleAnswers, String correctAnswer) {
+			return new TaskDefinition(taskId, publicId, "choose", "choose_tasks", section, taskText, hint,
+					correctAnswer, possibleAnswers, null, 0);
 		}
 
-		private static TaskDefinition write(Integer taskId, String section, String taskText, String hint,
-				String correctAnswer) {
-			return new TaskDefinition(taskId, "write", "write_tasks", section, taskText, hint, correctAnswer, null,
-					null, 1);
+		private static TaskDefinition write(Integer taskId, String publicId, String section, String taskText,
+				String hint, String correctAnswer) {
+			return new TaskDefinition(taskId, publicId, "write", "write_tasks", section, taskText, hint, correctAnswer,
+					null, null, 1);
 		}
 
-		private static TaskDefinition scatter(Integer taskId, String section, String taskText, String hint,
-				String words, String correctAnswer) {
-			return new TaskDefinition(taskId, "scatter", "scatter_tasks", section, taskText, hint, correctAnswer, null,
-					words, 2);
+		private static TaskDefinition scatter(Integer taskId, String publicId, String section, String taskText,
+				String hint, String words, String correctAnswer) {
+			return new TaskDefinition(taskId, publicId, "scatter", "scatter_tasks", section, taskText, hint,
+					correctAnswer, null, words, 2);
 		}
 
-		private static TaskDefinition speak(Integer taskId, String section, String taskText, String hint,
-				String correctAnswer) {
-			return new TaskDefinition(taskId, "speak", "speak_tasks", section, taskText, hint, correctAnswer, null,
-					null, 3);
+		private static TaskDefinition speak(Integer taskId, String publicId, String section, String taskText,
+				String hint, String correctAnswer) {
+			return new TaskDefinition(taskId, publicId, "speak", "speak_tasks", section, taskText, hint, correctAnswer,
+					null, null, 3);
 		}
 
-		private LessonResultTaskDetailDto toDto(UserAnswer answer, TaskPublicIdLookupService lookupService) {
+		private LessonResultTaskDetailDto toDto(UserAnswer answer) {
 			String mappedUserAnswer = answer != null ? answer.getAnswer() : null;
 			String mappedCorrectAnswer = correctAnswer;
 
@@ -163,9 +163,7 @@ public class LessonResultDetailsService {
 				mappedCorrectAnswer = mapChooseAnswer(correctAnswer, possibleAnswers);
 			}
 
-			String taskPublicId = lookupService.getPublicId(taskId, dbTaskType);
-
-			return LessonResultTaskDetailDto.builder().taskPublicId(taskPublicId).taskType(taskType).section(section)
+			return LessonResultTaskDetailDto.builder().taskPublicId(publicId).taskType(taskType).section(section)
 					.taskText(taskText).hint(hint).userAnswer(mappedUserAnswer).correctAnswer(mappedCorrectAnswer)
 					.isCorrect(answer != null ? Boolean.TRUE.equals(answer.getIsCorrect()) : Boolean.FALSE)
 					.possibleAnswers(possibleAnswers).words(words).build();

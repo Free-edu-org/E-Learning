@@ -27,6 +27,7 @@ import pl.freeedu.backend.user.service.UserPublicIdLookupService;
 import pl.freeedu.backend.usergroup.dto.UserGroupResponse;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 @RestController
 @RequestMapping("/api/v1/teacher")
@@ -78,7 +79,8 @@ public class TeacherDashboardController {
 	@PreAuthorize("hasRole('TEACHER')")
 	@ResponseStatus(HttpStatus.OK)
 	public Mono<LessonStatsResponse> getLessonStats(@PathVariable String lessonPublicId) {
-		return teacherService.getLessonStats(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId));
+		return Mono.fromCallable(() -> lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId))
+				.subscribeOn(Schedulers.boundedElastic()).flatMap(lessonId -> teacherService.getLessonStats(lessonId));
 	}
 
 	@Operation(summary = "Get detailed lesson result for a student")
@@ -88,8 +90,11 @@ public class TeacherDashboardController {
 	@ResponseStatus(HttpStatus.OK)
 	public Mono<LessonResultDetailsResponse> getLessonResultDetails(@PathVariable String lessonPublicId,
 			@PathVariable String studentPublicId) {
-		return userPublicIdLookupService.getInternalId(studentPublicId).flatMap(studentId -> teacherService
-				.getLessonResultDetails(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId), studentId));
+		return userPublicIdLookupService.getInternalId(studentPublicId)
+				.flatMap(studentId -> Mono
+						.fromCallable(() -> lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId))
+						.subscribeOn(Schedulers.boundedElastic())
+						.flatMap(lessonId -> teacherService.getLessonResultDetails(lessonId, studentId)));
 	}
 
 	@Operation(summary = "Get teacher's students")

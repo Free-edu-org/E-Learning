@@ -378,10 +378,10 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonPublicId}/attachments)', ()
             let res = await apiClient.post('/lessons', {
                 title: `Reg ${uniqueId}`,
                 theme: 'Regression test',
-                groupIds: [groupId],
+                groupPublicIds: [groupPublicId],
             });
             expect(res.status).toBe(201);
-            regLessonId = res.data.id;
+            regLessonId = res.data.publicId;
 
             let form = makePdfForm(VALID_PDF, 'reg1.pdf');
             res = await apiClient.post(
@@ -390,7 +390,7 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonPublicId}/attachments)', ()
                 { headers: form.getHeaders() }
             );
             expect(res.status).toBe(201);
-            regAttachmentId1 = res.data.id;
+            regAttachmentId1 = res.data.publicId;
 
             form = makePdfForm(VALID_PDF, 'reg2.pdf');
             res = await apiClient.post(
@@ -399,7 +399,7 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonPublicId}/attachments)', ()
                 { headers: form.getHeaders() }
             );
             expect(res.status).toBe(201);
-            regAttachmentId2 = res.data.id;
+            regAttachmentId2 = res.data.publicId;
         });
 
         it('should delete a lesson with one attachment still present (204)', async () => {
@@ -409,10 +409,10 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonPublicId}/attachments)', ()
             let res = await apiClient.post('/lessons', {
                 title: `Reg1Att ${uniqueId}`,
                 theme: 'Regression 1 att',
-                groupIds: [groupId],
+                groupPublicIds: [groupPublicId],
             });
             expect(res.status).toBe(201);
-            const oneAttLessonId = res.data.id;
+            const oneAttLessonId = res.data.publicId;
 
             const form = makePdfForm(VALID_PDF, 'one.pdf');
             res = await apiClient.post(
@@ -440,7 +440,7 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonPublicId}/attachments)', ()
             setAuthToken(adminToken);
             const res = await apiClient.get('/lessons');
             expect(res.status).toBe(200);
-            const found = res.data.find((l) => l.id === regLessonId);
+            const found = res.data.find((l) => l.publicId === regLessonId);
             expect(found).toBeUndefined();
         });
 
@@ -449,10 +449,10 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonPublicId}/attachments)', ()
             let res = await apiClient.post('/lessons', {
                 title: `Sec ${uniqueId}`,
                 theme: 'Security regression',
-                groupIds: [groupId],
+                groupPublicIds: [groupPublicId],
             });
             expect(res.status).toBe(201);
-            const secLessonId = res.data.id;
+            const secLessonId = res.data.publicId;
 
             const form = makePdfForm(VALID_PDF, 'sec.pdf');
             res = await apiClient.post(

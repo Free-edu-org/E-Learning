@@ -18,7 +18,7 @@ export function StudentLessonResultView() {
   const navigate = useNavigate();
   const { logout } = useAuth();
   const routeError = !lessonPublicId
-    ? "Nieprawidlowy identyfikator lekcji."
+    ? "Nieprawidłowy identyfikator lekcji."
     : null;
   const [user, setUser] = useState<UserProfile | null>(null);
   const [result, setResult] = useState<LessonResultDetailsResponse | null>(
@@ -48,7 +48,7 @@ export function StudentLessonResultView() {
         setError(
           getErrorMessage(
             err,
-            "Nie udalo sie pobrac szczegolow wyniku lekcji.",
+            "Nie udało się pobrać szczegółów wyniku lekcji.",
           ),
         ),
       )
@@ -92,7 +92,7 @@ export function StudentLessonResultView() {
             mt: { xs: 0.5, sm: 1 },
           }}
         >
-          Powrot do panelu
+          Powrót do panelu
         </Button>
 
         {!routeError && loading && <CircularProgress />}

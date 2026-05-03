@@ -18,6 +18,7 @@ import pl.freeedu.backend.task.dto.LessonResultDetailsResponse;
 import pl.freeedu.backend.student.service.StudentService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 @RestController
 @RequestMapping("/api/v1/student")
@@ -66,6 +67,8 @@ public class StudentDashboardController {
 	@PreAuthorize("hasRole('STUDENT')")
 	@ResponseStatus(HttpStatus.OK)
 	public Mono<LessonResultDetailsResponse> getLessonResultDetails(@PathVariable String lessonPublicId) {
-		return studentService.getLessonResultDetails(lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId));
+		return Mono.fromCallable(() -> lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId))
+				.subscribeOn(Schedulers.boundedElastic())
+				.flatMap(lessonId -> studentService.getLessonResultDetails(lessonId));
 	}
 }

@@ -23,7 +23,7 @@ export function TeacherLessonResultView() {
 
   const routeError =
     !lessonPublicId || !studentPublicId
-      ? "Nieprawidlowy identyfikator wyniku."
+      ? "Nieprawidłowy identyfikator wyniku."
       : null;
   const [user, setUser] = useState<UserProfile | null>(null);
   const [result, setResult] = useState<LessonResultDetailsResponse | null>(
@@ -53,7 +53,7 @@ export function TeacherLessonResultView() {
         setError(
           getErrorMessage(
             err,
-            "Nie udalo sie pobrac szczegolow wyniku ucznia.",
+            "Nie udało się pobrać szczegółów wyniku ucznia.",
           ),
         ),
       )
@@ -97,7 +97,7 @@ export function TeacherLessonResultView() {
             mt: { xs: 0.5, sm: 1 },
           }}
         >
-          Powrot do wynikow lekcji
+          Powrót do wyników lekcji
         </Button>
 
         {!routeError && loading && <CircularProgress />}
