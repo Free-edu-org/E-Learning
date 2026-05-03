@@ -11,6 +11,7 @@ import pl.freeedu.backend.usergroup.service.UserGroupService;
 import pl.freeedu.backend.user.service.UserPublicIdLookupService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -64,7 +65,8 @@ public class UserGroupController {
 	@PreAuthorize("hasRole('ADMIN') or (hasRole('TEACHER') and @securityService.isGroupOwner(authentication, #groupPublicId))")
 	@ResponseStatus(HttpStatus.OK)
 	public Mono<UserGroupResponse> getById(@PathVariable String groupPublicId) {
-		return userGroupService.getById(userGroupPublicIdLookupService.getRequiredInternalId(groupPublicId));
+		return Mono.fromCallable(() -> userGroupPublicIdLookupService.getRequiredInternalId(groupPublicId))
+				.subscribeOn(Schedulers.boundedElastic()).flatMap(userGroupService::getById);
 	}
 
 	@Operation(summary = "Update user group")
@@ -76,7 +78,8 @@ public class UserGroupController {
 	@ResponseStatus(HttpStatus.OK)
 	public Mono<UserGroupResponse> update(@PathVariable String groupPublicId,
 			@Valid @RequestBody Mono<UserGroupRequest> request) {
-		return userGroupService.update(userGroupPublicIdLookupService.getRequiredInternalId(groupPublicId), request);
+		return Mono.fromCallable(() -> userGroupPublicIdLookupService.getRequiredInternalId(groupPublicId))
+				.subscribeOn(Schedulers.boundedElastic()).flatMap(groupId -> userGroupService.update(groupId, request));
 	}
 
 	@Operation(summary = "Delete user group")
@@ -86,7 +89,8 @@ public class UserGroupController {
 	@PreAuthorize("hasRole('ADMIN') or (hasRole('TEACHER') and @securityService.isGroupOwner(authentication, #groupPublicId))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public Mono<Void> delete(@PathVariable String groupPublicId) {
-		return userGroupService.delete(userGroupPublicIdLookupService.getRequiredInternalId(groupPublicId));
+		return Mono.fromCallable(() -> userGroupPublicIdLookupService.getRequiredInternalId(groupPublicId))
+				.subscribeOn(Schedulers.boundedElastic()).flatMap(userGroupService::delete);
 	}
 
 	@Operation(summary = "Add a member to a group")
@@ -98,8 +102,11 @@ public class UserGroupController {
 	@PreAuthorize("hasRole('ADMIN') or (hasRole('TEACHER') and @securityService.isGroupOwner(authentication, #groupPublicId))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public Mono<Void> addMember(@PathVariable String groupPublicId, @PathVariable String userPublicId) {
-		return userPublicIdLookupService.getInternalId(userPublicId).flatMap(userId -> userGroupService
-				.addMember(userGroupPublicIdLookupService.getRequiredInternalId(groupPublicId), userId));
+		return userPublicIdLookupService.getInternalId(userPublicId)
+				.flatMap(userId -> Mono
+						.fromCallable(() -> userGroupPublicIdLookupService.getRequiredInternalId(groupPublicId))
+						.subscribeOn(Schedulers.boundedElastic())
+						.flatMap(groupId -> userGroupService.addMember(groupId, userId)));
 	}
 
 	@Operation(summary = "Remove a member from a group")
@@ -109,7 +116,10 @@ public class UserGroupController {
 	@PreAuthorize("hasRole('ADMIN') or (hasRole('TEACHER') and @securityService.isGroupOwner(authentication, #groupPublicId))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public Mono<Void> removeMember(@PathVariable String groupPublicId, @PathVariable String userPublicId) {
-		return userPublicIdLookupService.getInternalId(userPublicId).flatMap(userId -> userGroupService
-				.removeMember(userGroupPublicIdLookupService.getRequiredInternalId(groupPublicId), userId));
+		return userPublicIdLookupService.getInternalId(userPublicId)
+				.flatMap(userId -> Mono
+						.fromCallable(() -> userGroupPublicIdLookupService.getRequiredInternalId(groupPublicId))
+						.subscribeOn(Schedulers.boundedElastic())
+						.flatMap(groupId -> userGroupService.removeMember(groupId, userId)));
 	}
 }
