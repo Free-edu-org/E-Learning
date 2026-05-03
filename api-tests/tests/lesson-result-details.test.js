@@ -10,7 +10,7 @@ describe('Lesson Result Details API', () => {
     let studentToken, studentId;
     let foreignStudentToken, foreignStudentId;
     let otherTeacherToken, otherTeacherId;
-    let groupId, lessonId, emptyLessonId;
+    let groupId, lessonPublicId, emptyLessonPublicId;
     let chooseTaskId, writeTaskId;
 
     beforeAll(async () => {
@@ -39,9 +39,10 @@ describe('Lesson Result Details API', () => {
             groupIds: [groupId]
         });
         expect(response.status).toBe(201);
-        lessonId = response.data.id;
+        lessonPublicId = response.data.publicId;
+        expect(response.data).not.toHaveProperty('id');
 
-        response = await apiClient.post(`/lessons/${lessonId}/tasks/choose`, {
+        response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/choose`, {
             task: 'Choose the right option',
             possibleAnswers: 'red|green|blue',
             correctAnswer: 1,
@@ -51,7 +52,7 @@ describe('Lesson Result Details API', () => {
         expect(response.status).toBe(201);
         chooseTaskId = response.data.id;
 
-        response = await apiClient.post(`/lessons/${lessonId}/tasks/write`, {
+        response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/write`, {
             task: 'Write the word "hello"',
             correctAnswer: 'hello',
             hint: 'Simple greeting',
@@ -60,7 +61,7 @@ describe('Lesson Result Details API', () => {
         expect(response.status).toBe(201);
         writeTaskId = response.data.id;
 
-        response = await apiClient.patch(`/lessons/${lessonId}/status`, { isActive: true });
+        response = await apiClient.patch(`/lessons/${lessonPublicId}/status`, { isActive: true });
         expect(response.status).toBe(204);
 
         response = await apiClient.post('/lessons', {
@@ -69,7 +70,8 @@ describe('Lesson Result Details API', () => {
             groupIds: [groupId]
         });
         expect(response.status).toBe(201);
-        emptyLessonId = response.data.id;
+        emptyLessonPublicId = response.data.publicId;
+        expect(response.data).not.toHaveProperty('id');
 
         setAuthToken(adminToken);
         const studentData = {
@@ -132,10 +134,12 @@ describe('Lesson Result Details API', () => {
         otherTeacherId = response.data.id;
 
         setAuthToken(studentToken);
-        response = await apiClient.get(`/lessons/${lessonId}/tasks`);
+        response = await apiClient.get(`/lessons/${lessonPublicId}/tasks`);
         expect(response.status).toBe(200);
+        expect(response.data.lessonPublicId).toBe(lessonPublicId);
+        expect(response.data).not.toHaveProperty('lessonId');
 
-        response = await apiClient.post(`/lessons/${lessonId}/submit`, {
+        response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
             answers: [
                 { taskId: chooseTaskId, taskType: 'choose', answer: '1' },
                 { taskId: writeTaskId, taskType: 'write', answer: 'wrong-answer' }
@@ -148,19 +152,19 @@ describe('Lesson Result Details API', () => {
 
     afterAll(async () => {
         setAuthToken(teacherToken);
-        if (lessonId && studentId) {
-            const resetResponse = await apiClient.post(`/lessons/${lessonId}/users/${studentId}/reset`);
+        if (lessonPublicId && studentId) {
+            const resetResponse = await apiClient.post(`/lessons/${lessonPublicId}/users/${studentId}/reset`);
             expect([204, 404]).toContain(resetResponse.status);
         }
 
         for (const [type, taskId] of [['choose', chooseTaskId], ['write', writeTaskId]]) {
-            if (lessonId && taskId) {
-                const deleteTaskResponse = await apiClient.delete(`/lessons/${lessonId}/tasks/${type}/${taskId}`);
+            if (lessonPublicId && taskId) {
+                const deleteTaskResponse = await apiClient.delete(`/lessons/${lessonPublicId}/tasks/${type}/${taskId}`);
                 expect([204, 404]).toContain(deleteTaskResponse.status);
             }
         }
 
-        for (const lessonToDelete of [lessonId, emptyLessonId]) {
+        for (const lessonToDelete of [lessonPublicId, emptyLessonPublicId]) {
             if (lessonToDelete) {
                 const deleteLessonResponse = await apiClient.delete(`/lessons/${lessonToDelete}`);
                 expect([204, 404]).toContain(deleteLessonResponse.status);
@@ -183,14 +187,15 @@ describe('Lesson Result Details API', () => {
         setAuthToken(null);
     });
 
-    describe('GET /api/v1/teacher/lessons/{lessonId}/students/{userId}/result', () => {
+    describe('GET /api/v1/teacher/lessons/{lessonPublicId}/students/{userId}/result', () => {
         it('should return 200 with detailed lesson result for lesson owner', async () => {
             setAuthToken(teacherToken);
 
-            const response = await apiClient.get(`/teacher/lessons/${lessonId}/students/${studentId}/result`);
+            const response = await apiClient.get(`/teacher/lessons/${lessonPublicId}/students/${studentId}/result`);
 
             expect(response.status).toBe(200);
-            expect(response.data.lessonId).toBe(lessonId);
+            expect(response.data.lessonPublicId).toBe(lessonPublicId);
+            expect(response.data).not.toHaveProperty('lessonId');
             expect(response.data.userId).toBe(studentId);
             expect(response.data.username).toBeDefined();
             expect(response.data.score).toBe(1);
@@ -201,7 +206,7 @@ describe('Lesson Result Details API', () => {
         it('should return 401 when unauthenticated', async () => {
             setAuthToken(null);
 
-            const response = await apiClient.get(`/teacher/lessons/${lessonId}/students/${studentId}/result`);
+            const response = await apiClient.get(`/teacher/lessons/${lessonPublicId}/students/${studentId}/result`);
 
             expect(response.status).toBe(401);
         });
@@ -209,7 +214,7 @@ describe('Lesson Result Details API', () => {
         it('should return 403 for STUDENT role', async () => {
             setAuthToken(studentToken);
 
-            const response = await apiClient.get(`/teacher/lessons/${lessonId}/students/${studentId}/result`);
+            const response = await apiClient.get(`/teacher/lessons/${lessonPublicId}/students/${studentId}/result`);
 
             expect(response.status).toBe(403);
         });
@@ -217,7 +222,7 @@ describe('Lesson Result Details API', () => {
         it('should return 403 for ADMIN role', async () => {
             setAuthToken(adminToken);
 
-            const response = await apiClient.get(`/teacher/lessons/${lessonId}/students/${studentId}/result`);
+            const response = await apiClient.get(`/teacher/lessons/${lessonPublicId}/students/${studentId}/result`);
 
             expect(response.status).toBe(403);
         });
@@ -225,7 +230,7 @@ describe('Lesson Result Details API', () => {
         it('should return 403 for teacher who does not own the lesson', async () => {
             setAuthToken(otherTeacherToken);
 
-            const response = await apiClient.get(`/teacher/lessons/${lessonId}/students/${studentId}/result`);
+            const response = await apiClient.get(`/teacher/lessons/${lessonPublicId}/students/${studentId}/result`);
 
             expect(response.status).toBe(403);
         });
@@ -233,7 +238,7 @@ describe('Lesson Result Details API', () => {
         it('should return 403 STUDENT_NO_ACCESS when requested student is outside lesson relation', async () => {
             setAuthToken(teacherToken);
 
-            const response = await apiClient.get(`/teacher/lessons/${lessonId}/students/${foreignStudentId}/result`);
+            const response = await apiClient.get(`/teacher/lessons/${lessonPublicId}/students/${foreignStudentId}/result`);
 
             expect(response.status).toBe(403);
             expect(response.data.code).toBe('STUDENT_NO_ACCESS');
@@ -242,7 +247,7 @@ describe('Lesson Result Details API', () => {
         it('should return 404 LESSON_RESULT_NOT_FOUND when student has no completed result', async () => {
             setAuthToken(teacherToken);
 
-            const response = await apiClient.get(`/teacher/lessons/${emptyLessonId}/students/${studentId}/result`);
+            const response = await apiClient.get(`/teacher/lessons/${emptyLessonPublicId}/students/${studentId}/result`);
 
             expect(response.status).toBe(404);
             expect(response.data.code).toBe('LESSON_RESULT_NOT_FOUND');
@@ -258,14 +263,15 @@ describe('Lesson Result Details API', () => {
         });
     });
 
-    describe('GET /api/v1/student/lessons/{lessonId}/result', () => {
+    describe('GET /api/v1/student/lessons/{lessonPublicId}/result', () => {
         it('should return 200 with current student result details', async () => {
             setAuthToken(studentToken);
 
-            const response = await apiClient.get(`/student/lessons/${lessonId}/result`);
+            const response = await apiClient.get(`/student/lessons/${lessonPublicId}/result`);
 
             expect(response.status).toBe(200);
-            expect(response.data.lessonId).toBe(lessonId);
+            expect(response.data.lessonPublicId).toBe(lessonPublicId);
+            expect(response.data).not.toHaveProperty('lessonId');
             expect(response.data.userId).toBe(studentId);
             expect(response.data.score).toBe(1);
             expect(response.data.maxScore).toBe(2);
@@ -275,7 +281,7 @@ describe('Lesson Result Details API', () => {
         it('should return 401 when unauthenticated', async () => {
             setAuthToken(null);
 
-            const response = await apiClient.get(`/student/lessons/${lessonId}/result`);
+            const response = await apiClient.get(`/student/lessons/${lessonPublicId}/result`);
 
             expect(response.status).toBe(401);
         });
@@ -283,7 +289,7 @@ describe('Lesson Result Details API', () => {
         it('should return 403 for TEACHER role', async () => {
             setAuthToken(teacherToken);
 
-            const response = await apiClient.get(`/student/lessons/${lessonId}/result`);
+            const response = await apiClient.get(`/student/lessons/${lessonPublicId}/result`);
 
             expect(response.status).toBe(403);
         });
@@ -291,7 +297,7 @@ describe('Lesson Result Details API', () => {
         it('should return 403 for ADMIN role', async () => {
             setAuthToken(adminToken);
 
-            const response = await apiClient.get(`/student/lessons/${lessonId}/result`);
+            const response = await apiClient.get(`/student/lessons/${lessonPublicId}/result`);
 
             expect(response.status).toBe(403);
         });
@@ -299,7 +305,7 @@ describe('Lesson Result Details API', () => {
         it('should return 403 STUDENT_NO_ACCESS for student outside lesson group', async () => {
             setAuthToken(foreignStudentToken);
 
-            const response = await apiClient.get(`/student/lessons/${lessonId}/result`);
+            const response = await apiClient.get(`/student/lessons/${lessonPublicId}/result`);
 
             expect(response.status).toBe(403);
             expect(response.data.code).toBe('STUDENT_NO_ACCESS');
@@ -308,7 +314,7 @@ describe('Lesson Result Details API', () => {
         it('should return 404 LESSON_RESULT_NOT_FOUND when lesson is assigned but not completed', async () => {
             setAuthToken(studentToken);
 
-            const response = await apiClient.get(`/student/lessons/${emptyLessonId}/result`);
+            const response = await apiClient.get(`/student/lessons/${emptyLessonPublicId}/result`);
 
             expect(response.status).toBe(404);
             expect(response.data.code).toBe('LESSON_RESULT_NOT_FOUND');

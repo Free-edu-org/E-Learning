@@ -14,11 +14,11 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
     let isolatedStudentId;
     let isolatedGroupId;
     let otherGroupId;
-    let sharedLessonId;
+    let sharedLessonPublicId;
     let sharedLessonTaskId;
 
     // Attachment test resources
-    let attachmentLessonId;
+    let attachmentLessonPublicId;
     let attachmentGroupId;
     let attachmentLessonTaskId;
     let attachmentStudentToken;
@@ -67,10 +67,11 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
             groupIds: [attachmentGroupId],
         });
         expect(res.status).toBe(201);
-        attachmentLessonId = res.data.id;
+        attachmentLessonPublicId = res.data.publicId;
+        expect(res.data).not.toHaveProperty('id');
 
         setAuthToken(teacherToken);
-        res = await apiClient.post(`/lessons/${attachmentLessonId}/tasks/choose`, {
+        res = await apiClient.post(`/lessons/${attachmentLessonPublicId}/tasks/choose`, {
             task: 'Attachment setup task',
             possibleAnswers: 'skip|ok',
             correctAnswer: 1
@@ -80,14 +81,14 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
 
         // Activate the lesson
         setAuthToken(adminToken);
-        res = await apiClient.patch(`/lessons/${attachmentLessonId}/status`, {isActive: true});
+        res = await apiClient.patch(`/lessons/${attachmentLessonPublicId}/status`, {isActive: true});
         expect(res.status).toBe(204);
 
         // Upload attachment as teacher
         setAuthToken(teacherToken);
         const form = makePdfForm();
         res = await apiClient.post(
-            `/lessons/${attachmentLessonId}/attachments`,
+            `/lessons/${attachmentLessonPublicId}/attachments`,
             form,
             {headers: form.getHeaders()}
         );
@@ -140,28 +141,28 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
 
     afterAll(async () => {
         setAuthToken(teacherToken);
-        for (const [lessonId, taskId] of [
-            [sharedLessonId, sharedLessonTaskId],
-            [attachmentLessonId, attachmentLessonTaskId]
+        for (const [lessonPublicId, taskId] of [
+            [sharedLessonPublicId, sharedLessonTaskId],
+            [attachmentLessonPublicId, attachmentLessonTaskId]
         ]) {
-            if (lessonId && taskId) {
-                const response = await apiClient.delete(`/lessons/${lessonId}/tasks/choose/${taskId}`);
+            if (lessonPublicId && taskId) {
+                const response = await apiClient.delete(`/lessons/${lessonPublicId}/tasks/choose/${taskId}`);
                 expect([204, 404]).toContain(response.status);
             }
         }
 
-        if (attachmentLessonId && attachmentId) {
-            const response = await apiClient.delete(`/lessons/${attachmentLessonId}/attachments/${attachmentId}`);
+        if (attachmentLessonPublicId && attachmentId) {
+            const response = await apiClient.delete(`/lessons/${attachmentLessonPublicId}/attachments/${attachmentId}`);
             expect([204, 404]).toContain(response.status);
         }
 
         setAuthToken(teacherToken);
-        if (sharedLessonId) {
-            const response = await apiClient.delete(`/lessons/${sharedLessonId}`);
+        if (sharedLessonPublicId) {
+            const response = await apiClient.delete(`/lessons/${sharedLessonPublicId}`);
             expect([204, 404]).toContain(response.status);
         }
-        if (attachmentLessonId) {
-            const response = await apiClient.delete(`/lessons/${attachmentLessonId}`);
+        if (attachmentLessonPublicId) {
+            const response = await apiClient.delete(`/lessons/${attachmentLessonPublicId}`);
             expect([204, 404]).toContain(response.status);
         }
 
@@ -206,10 +207,11 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
             groupIds: [isolatedGroupId, otherGroupId]
         });
         expect(res.status).toBe(201);
-        sharedLessonId = res.data.id;
+        sharedLessonPublicId = res.data.publicId;
+        expect(res.data).not.toHaveProperty('id');
 
         setAuthToken(teacherToken);
-        res = await apiClient.post(`/lessons/${sharedLessonId}/tasks/choose`, {
+        res = await apiClient.post(`/lessons/${sharedLessonPublicId}/tasks/choose`, {
             task: 'Shared lesson setup task',
             possibleAnswers: 'a|b',
             correctAnswer: 0
@@ -217,7 +219,7 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
         expect(res.status).toBe(201);
         sharedLessonTaskId = res.data.id;
 
-        res = await apiClient.patch(`/lessons/${sharedLessonId}/status`, {isActive: true});
+        res = await apiClient.patch(`/lessons/${sharedLessonPublicId}/status`, {isActive: true});
         expect(res.status).toBe(204);
 
         setAuthToken(adminToken);
@@ -305,7 +307,8 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
             const response = await apiClient.get('/student/lessons');
 
             response.data.forEach((lesson) => {
-                expect(lesson).toHaveProperty('id');
+                expect(lesson).toHaveProperty('publicId');
+                expect(lesson).not.toHaveProperty('id');
                 expect(lesson).toHaveProperty('title');
                 expect(lesson).toHaveProperty('theme');
                 expect(lesson).toHaveProperty('teacherId');
@@ -328,8 +331,9 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
             const response = await apiClient.get('/student/lessons');
 
             expect(response.status).toBe(200);
-            const lesson = response.data.find((item) => item.id === sharedLessonId);
+            const lesson = response.data.find((item) => item.publicId === sharedLessonPublicId);
             expect(lesson).toBeDefined();
+            expect(lesson).not.toHaveProperty('id');
             expect(lesson.groups).toHaveLength(1);
             expect(lesson.groups[0].id).toBe(isolatedGroupId);
             expect(lesson.groups.map((group) => group.id)).not.toContain(otherGroupId);
@@ -419,8 +423,9 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
             setAuthToken(attachmentStudentToken);
             const response = await apiClient.get('/student/lessons');
             expect(response.status).toBe(200);
-            const lesson = response.data.find((l) => l.id === attachmentLessonId);
+            const lesson = response.data.find((l) => l.publicId === attachmentLessonPublicId);
             expect(lesson).toBeDefined();
+            expect(lesson).not.toHaveProperty('id');
             expect(lesson.attachments.length).toBeGreaterThan(0);
             const att = lesson.attachments.find((a) => a.id === attachmentId);
             expect(att).toBeDefined();
@@ -432,16 +437,16 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
             setAuthToken(noAccessStudentToken);
             const response = await apiClient.get('/student/lessons');
             expect(response.status).toBe(200);
-            const lesson = response.data.find((l) => l.id === attachmentLessonId);
+            const lesson = response.data.find((l) => l.publicId === attachmentLessonPublicId);
             expect(lesson).toBeUndefined();
         });
     });
 
-    describe('GET /lessons/{lessonId}/attachments/{attachmentId} — student download access', () => {
+    describe('GET /lessons/{lessonPublicId}/attachments/{attachmentId} — student download access', () => {
         it('student with lesson access should download attachment (200)', async () => {
             setAuthToken(attachmentStudentToken);
             const response = await apiClient.get(
-                `/lessons/${attachmentLessonId}/attachments/${attachmentId}`,
+                `/lessons/${attachmentLessonPublicId}/attachments/${attachmentId}`,
                 {responseType: 'arraybuffer'}
             );
             expect(response.status).toBe(200);
@@ -452,7 +457,7 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
         it('student without lesson access should be denied (403)', async () => {
             setAuthToken(noAccessStudentToken);
             const response = await apiClient.get(
-                `/lessons/${attachmentLessonId}/attachments/${attachmentId}`
+                `/lessons/${attachmentLessonPublicId}/attachments/${attachmentId}`
             );
             expect(response.status).toBe(403);
         });
@@ -460,7 +465,7 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
         it('unauthenticated user should be denied (401)', async () => {
             setAuthToken(null);
             const response = await apiClient.get(
-                `/lessons/${attachmentLessonId}/attachments/${attachmentId}`
+                `/lessons/${attachmentLessonPublicId}/attachments/${attachmentId}`
             );
             expect(response.status).toBe(401);
         });

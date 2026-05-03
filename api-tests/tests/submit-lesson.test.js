@@ -1,6 +1,6 @@
 const { apiClient, setAuthToken } = require('../utils/apiClient');
 
-describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
+describe('Submit Lesson API (POST /api/v1/lessons/{lessonPublicId}/submit)', () => {
     const uniqueId = Date.now();
     const adminCreds = { identifier: 'admin_marek', password: 'admin1' };
     const teacherCreds = { identifier: 'pan_tomasz', password: 'admin1' };
@@ -8,7 +8,7 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
     let adminToken, teacherToken;
     let studentToken, studentId;
     let student2Token, student2Id; // student NOT in group
-    let groupId, lessonId;
+    let groupId, lessonPublicId;
     let chooseTaskId, writeTaskId, scatterTaskId, speakTaskId;
 
     // ─── Setup: create fully isolated test data ──────────────────────
@@ -36,10 +36,11 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
             groupIds: [groupId]
         });
         expect(res.status).toBe(201);
-        lessonId = res.data.id;
+        lessonPublicId = res.data.publicId;
+        expect(res.data).not.toHaveProperty('id');
 
         // Teacher creates 4 task types
-        res = await apiClient.post(`/lessons/${lessonId}/tasks/choose`, {
+        res = await apiClient.post(`/lessons/${lessonPublicId}/tasks/choose`, {
             task: 'What is 2+2?',
             possibleAnswers: '3|4|5|6',
             correctAnswer: 1,
@@ -49,7 +50,7 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
         expect(res.status).toBe(201);
         chooseTaskId = res.data.id;
 
-        res = await apiClient.post(`/lessons/${lessonId}/tasks/write`, {
+        res = await apiClient.post(`/lessons/${lessonPublicId}/tasks/write`, {
             task: 'Translate "hello" to Polish',
             correctAnswer: 'cześć',
             hint: 'Common greeting',
@@ -58,7 +59,7 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
         expect(res.status).toBe(201);
         writeTaskId = res.data.id;
 
-        res = await apiClient.post(`/lessons/${lessonId}/tasks/scatter`, {
+        res = await apiClient.post(`/lessons/${lessonPublicId}/tasks/scatter`, {
             task: 'Arrange the words into a sentence',
             words: 'is|the|big|cat',
             correctAnswer: 'the cat is big',
@@ -68,7 +69,7 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
         expect(res.status).toBe(201);
         scatterTaskId = res.data.id;
 
-        res = await apiClient.post(`/lessons/${lessonId}/tasks/speak`, {
+        res = await apiClient.post(`/lessons/${lessonPublicId}/tasks/speak`, {
             task: 'Say "Hello, how are you?"',
             expectedText: 'Hello, how are you?',
             hint: 'Focus on pronunciation',
@@ -77,7 +78,7 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
         expect(res.status).toBe(201);
         speakTaskId = res.data.id;
 
-        res = await apiClient.patch(`/lessons/${lessonId}/status`, { isActive: true });
+        res = await apiClient.patch(`/lessons/${lessonPublicId}/status`, { isActive: true });
         expect(res.status).toBe(204);
 
         // Register student1 (will be added to group)
@@ -131,8 +132,8 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
     afterAll(async () => {
         // Reset student progress
         setAuthToken(teacherToken);
-        if (lessonId && studentId) {
-            await apiClient.post(`/lessons/${lessonId}/users/${studentId}/reset`);
+        if (lessonPublicId && studentId) {
+            await apiClient.post(`/lessons/${lessonPublicId}/users/${studentId}/reset`);
         }
 
         // Delete tasks
@@ -143,14 +144,14 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
             ['speak', speakTaskId]
         ]) {
             if (id) {
-                const r = await apiClient.delete(`/lessons/${lessonId}/tasks/${type}/${id}`);
+                const r = await apiClient.delete(`/lessons/${lessonPublicId}/tasks/${type}/${id}`);
                 expect([204, 404]).toContain(r.status);
             }
         }
 
         // Delete lesson
-        if (lessonId) {
-            const r = await apiClient.delete(`/lessons/${lessonId}`);
+        if (lessonPublicId) {
+            const r = await apiClient.delete(`/lessons/${lessonPublicId}`);
             expect([204, 404]).toContain(r.status);
         }
 
@@ -175,10 +176,12 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
     // Helper: reset progress and re-start lesson for student1
     async function resetAndStartLesson() {
         setAuthToken(teacherToken);
-        await apiClient.post(`/lessons/${lessonId}/users/${studentId}/reset`);
+        await apiClient.post(`/lessons/${lessonPublicId}/users/${studentId}/reset`);
         setAuthToken(studentToken);
-        const res = await apiClient.get(`/lessons/${lessonId}/tasks`);
+        const res = await apiClient.get(`/lessons/${lessonPublicId}/tasks`);
         expect(res.status).toBe(200);
+        expect(res.data.lessonPublicId).toBe(lessonPublicId);
+        expect(res.data).not.toHaveProperty('lessonId');
     }
 
     function allCorrectAnswers() {
@@ -197,18 +200,18 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
         beforeAll(async () => {
             // Student starts the lesson (creates UserLesson IN_PROGRESS)
             setAuthToken(studentToken);
-            const res = await apiClient.get(`/lessons/${lessonId}/tasks`);
+            const res = await apiClient.get(`/lessons/${lessonPublicId}/tasks`);
             expect(res.status).toBe(200);
         });
 
         afterAll(async () => {
             setAuthToken(teacherToken);
-            await apiClient.post(`/lessons/${lessonId}/users/${studentId}/reset`);
+            await apiClient.post(`/lessons/${lessonPublicId}/users/${studentId}/reset`);
         });
 
         it('should return 200 with perfect score when all answers are correct', async () => {
             setAuthToken(studentToken);
-            const response = await apiClient.post(`/lessons/${lessonId}/submit`, {
+            const response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
                 answers: allCorrectAnswers()
             });
             expect(response.status).toBe(200);
@@ -219,7 +222,7 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
         it('should return details array matching the number of submitted answers', async () => {
             await resetAndStartLesson();
             setAuthToken(studentToken);
-            const response = await apiClient.post(`/lessons/${lessonId}/submit`, {
+            const response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
                 answers: allCorrectAnswers()
             });
             expect(response.status).toBe(200);
@@ -229,7 +232,7 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
         it('should return correct detail structure for each result item', async () => {
             await resetAndStartLesson();
             setAuthToken(studentToken);
-            const response = await apiClient.post(`/lessons/${lessonId}/submit`, {
+            const response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
                 answers: allCorrectAnswers()
             });
             expect(response.status).toBe(200);
@@ -256,12 +259,12 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
 
         afterAll(async () => {
             setAuthToken(teacherToken);
-            await apiClient.post(`/lessons/${lessonId}/users/${studentId}/reset`);
+            await apiClient.post(`/lessons/${lessonPublicId}/users/${studentId}/reset`);
         });
 
         it('should score wrong answers correctly (score < maxScore)', async () => {
             setAuthToken(studentToken);
-            const response = await apiClient.post(`/lessons/${lessonId}/submit`, {
+            const response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
                 answers: [
                     { taskId: chooseTaskId, taskType: 'choose', answer: '0' },        // wrong
                     { taskId: writeTaskId, taskType: 'write', answer: 'wrong' },       // wrong
@@ -287,7 +290,7 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
 
         it('should be case-insensitive for write tasks', async () => {
             setAuthToken(studentToken);
-            const response = await apiClient.post(`/lessons/${lessonId}/submit`, {
+            const response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
                 answers: [
                     { taskId: chooseTaskId, taskType: 'choose', answer: '1' },
                     { taskId: writeTaskId, taskType: 'write', answer: 'CZEŚĆ' },
@@ -302,7 +305,7 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
 
         it('should be case-insensitive for scatter tasks', async () => {
             setAuthToken(studentToken);
-            const response = await apiClient.post(`/lessons/${lessonId}/submit`, {
+            const response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
                 answers: [
                     { taskId: chooseTaskId, taskType: 'choose', answer: '1' },
                     { taskId: writeTaskId, taskType: 'write', answer: 'cześć' },
@@ -317,7 +320,7 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
 
         it('should trim whitespace in write answers', async () => {
             setAuthToken(studentToken);
-            const response = await apiClient.post(`/lessons/${lessonId}/submit`, {
+            const response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
                 answers: [
                     { taskId: chooseTaskId, taskType: 'choose', answer: '1' },
                     { taskId: writeTaskId, taskType: 'write', answer: '  cześć  ' },
@@ -332,7 +335,7 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
 
         it('should mark speak task as wrong when transcription does not match expected text', async () => {
             setAuthToken(studentToken);
-            const response = await apiClient.post(`/lessons/${lessonId}/submit`, {
+            const response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
                 answers: [
                     { taskId: chooseTaskId, taskType: 'choose', answer: '1' },
                     { taskId: writeTaskId, taskType: 'write', answer: 'cześć' },
@@ -348,7 +351,7 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
 
         it('should handle partial submission (fewer answers than total tasks)', async () => {
             setAuthToken(studentToken);
-            const response = await apiClient.post(`/lessons/${lessonId}/submit`, {
+            const response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
                 answers: [
                     { taskId: chooseTaskId, taskType: 'choose', answer: '1' },
                     { taskId: speakTaskId, taskType: 'speak', answer: 'Hello, how are you?' }
@@ -367,7 +370,7 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
     describe('Authorization', () => {
         it('should return 401 without token', async () => {
             setAuthToken(null);
-            const response = await apiClient.post(`/lessons/${lessonId}/submit`, {
+            const response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
                 answers: [{ taskId: chooseTaskId, taskType: 'choose', answer: '1' }]
             });
             expect(response.status).toBe(401);
@@ -375,7 +378,7 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
 
         it('should return 403 for TEACHER', async () => {
             setAuthToken(teacherToken);
-            const response = await apiClient.post(`/lessons/${lessonId}/submit`, {
+            const response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
                 answers: [{ taskId: chooseTaskId, taskType: 'choose', answer: '1' }]
             });
             expect(response.status).toBe(403);
@@ -383,7 +386,7 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
 
         it('should return 403 for ADMIN', async () => {
             setAuthToken(adminToken);
-            const response = await apiClient.post(`/lessons/${lessonId}/submit`, {
+            const response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
                 answers: [{ taskId: chooseTaskId, taskType: 'choose', answer: '1' }]
             });
             expect(response.status).toBe(403);
@@ -391,7 +394,7 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
 
         it('should return 403 STUDENT_NO_ACCESS for student not in group', async () => {
             setAuthToken(student2Token);
-            const response = await apiClient.post(`/lessons/${lessonId}/submit`, {
+            const response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
                 answers: [{ taskId: chooseTaskId, taskType: 'choose', answer: '1' }]
             });
             expect(response.status).toBe(403);
@@ -415,11 +418,11 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
         it('should return 400 LESSON_NOT_STARTED when lesson has not been started', async () => {
             // Reset progress to remove UserLesson record
             setAuthToken(teacherToken);
-            await apiClient.post(`/lessons/${lessonId}/users/${studentId}/reset`);
+            await apiClient.post(`/lessons/${lessonPublicId}/users/${studentId}/reset`);
 
             // Submit WITHOUT calling GET /tasks first
             setAuthToken(studentToken);
-            const response = await apiClient.post(`/lessons/${lessonId}/submit`, {
+            const response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
                 answers: [{ taskId: chooseTaskId, taskType: 'choose', answer: '1' }]
             });
             expect(response.status).toBe(400);
@@ -431,13 +434,13 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
 
             // First submit
             setAuthToken(studentToken);
-            const first = await apiClient.post(`/lessons/${lessonId}/submit`, {
+            const first = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
                 answers: allCorrectAnswers()
             });
             expect(first.status).toBe(200);
 
             // Second submit — must be blocked
-            const second = await apiClient.post(`/lessons/${lessonId}/submit`, {
+            const second = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
                 answers: allCorrectAnswers()
             });
             expect(second.status).toBe(403);
@@ -448,7 +451,7 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
             await resetAndStartLesson();
 
             setAuthToken(studentToken);
-            const response = await apiClient.post(`/lessons/${lessonId}/submit`, {
+            const response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
                 answers: [{ taskId: chooseTaskId, taskType: 'unknown_type', answer: '1' }]
             });
             expect(response.status).toBe(400);
@@ -459,7 +462,7 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
             await resetAndStartLesson();
 
             setAuthToken(studentToken);
-            const response = await apiClient.post(`/lessons/${lessonId}/submit`, {
+            const response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
                 answers: [{ taskId: 9999999, taskType: 'choose', answer: '1' }]
             });
             expect(response.status).toBe(404);
@@ -468,24 +471,24 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
 
         it('should return 403 LESSON_NOT_ACTIVE when student starts or submits an inactive lesson', async () => {
             setAuthToken(teacherToken);
-            await apiClient.post(`/lessons/${lessonId}/users/${studentId}/reset`);
-            let response = await apiClient.patch(`/lessons/${lessonId}/status`, { isActive: false });
+            await apiClient.post(`/lessons/${lessonPublicId}/users/${studentId}/reset`);
+            let response = await apiClient.patch(`/lessons/${lessonPublicId}/status`, { isActive: false });
             expect(response.status).toBe(204);
 
             try {
                 setAuthToken(studentToken);
-                response = await apiClient.get(`/lessons/${lessonId}/tasks`);
+                response = await apiClient.get(`/lessons/${lessonPublicId}/tasks`);
                 expect(response.status).toBe(403);
                 expect(response.data.code).toBe('LESSON_NOT_ACTIVE');
 
-                response = await apiClient.post(`/lessons/${lessonId}/submit`, {
+                response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
                     answers: [{ taskId: chooseTaskId, taskType: 'choose', answer: '1' }]
                 });
                 expect(response.status).toBe(403);
                 expect(response.data.code).toBe('LESSON_NOT_ACTIVE');
             } finally {
                 setAuthToken(teacherToken);
-                response = await apiClient.patch(`/lessons/${lessonId}/status`, { isActive: true });
+                response = await apiClient.patch(`/lessons/${lessonPublicId}/status`, { isActive: true });
                 expect(response.status).toBe(204);
             }
         });
@@ -497,21 +500,23 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
     describe('GET /tasks interaction for students', () => {
         afterAll(async () => {
             setAuthToken(teacherToken);
-            await apiClient.post(`/lessons/${lessonId}/users/${studentId}/reset`);
+            await apiClient.post(`/lessons/${lessonPublicId}/users/${studentId}/reset`);
         });
 
         it('should set lesson status to IN_PROGRESS on first GET /tasks', async () => {
             await resetAndStartLesson();
 
             setAuthToken(studentToken);
-            const response = await apiClient.get(`/lessons/${lessonId}/tasks`);
+            const response = await apiClient.get(`/lessons/${lessonPublicId}/tasks`);
             expect(response.status).toBe(200);
+            expect(response.data.lessonPublicId).toBe(lessonPublicId);
+            expect(response.data).not.toHaveProperty('lessonId');
             expect(response.data.status).toBe('IN_PROGRESS');
         });
 
         it('should strip correct answers from student task view', async () => {
             setAuthToken(studentToken);
-            const response = await apiClient.get(`/lessons/${lessonId}/tasks`);
+            const response = await apiClient.get(`/lessons/${lessonPublicId}/tasks`);
             expect(response.status).toBe(200);
 
             for (const section of response.data.sections) {
@@ -530,19 +535,19 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonId}/submit)', () => {
         it('should return 403 LESSON_ALREADY_COMPLETED when student views completed lesson tasks', async () => {
             // Submit to complete
             setAuthToken(studentToken);
-            await apiClient.post(`/lessons/${lessonId}/submit`, {
+            await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
                 answers: allCorrectAnswers()
             });
 
             // GET /tasks should be blocked
-            const response = await apiClient.get(`/lessons/${lessonId}/tasks`);
+            const response = await apiClient.get(`/lessons/${lessonPublicId}/tasks`);
             expect(response.status).toBe(403);
             expect(response.data.code).toBe('LESSON_ALREADY_COMPLETED');
         });
 
         it('should return 403 STUDENT_NO_ACCESS for student not in lesson group', async () => {
             setAuthToken(student2Token);
-            const response = await apiClient.get(`/lessons/${lessonId}/tasks`);
+            const response = await apiClient.get(`/lessons/${lessonPublicId}/tasks`);
             expect(response.status).toBe(403);
             expect(response.data.code).toBe('STUDENT_NO_ACCESS');
         });

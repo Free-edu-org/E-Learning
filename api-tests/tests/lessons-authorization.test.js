@@ -11,7 +11,7 @@ describe('Lessons API Authorization (/api/v1/lessons)', () => {
     let studentToken;
     let secondTeacherToken;
     let secondTeacherId;
-    let ownLessonId;
+    let ownLessonPublicId;
 
     beforeAll(async () => {
         let res = await apiClient.post('/auth/login', adminCreds);
@@ -46,7 +46,8 @@ describe('Lessons API Authorization (/api/v1/lessons)', () => {
             theme: 'Grammar',
             groupIds: []
         });
-        ownLessonId = res.data.id;
+        ownLessonPublicId = res.data.publicId;
+        expect(res.data).not.toHaveProperty('id');
     });
 
     it('should return 401 for GET /lessons without token', async () => {
@@ -74,7 +75,7 @@ describe('Lessons API Authorization (/api/v1/lessons)', () => {
 
     it('should block other TEACHER from updating lesson they do not own', async () => {
         setAuthToken(secondTeacherToken);
-        const response = await apiClient.put(`/lessons/${ownLessonId}`, {
+        const response = await apiClient.put(`/lessons/${ownLessonPublicId}`, {
             title: 'Tampered title',
             theme: 'Tampered',
             groupIds: []
@@ -85,7 +86,7 @@ describe('Lessons API Authorization (/api/v1/lessons)', () => {
 
     it('should block other TEACHER from changing status of lesson they do not own', async () => {
         setAuthToken(secondTeacherToken);
-        const response = await apiClient.patch(`/lessons/${ownLessonId}/status`, {
+        const response = await apiClient.patch(`/lessons/${ownLessonPublicId}/status`, {
             isActive: false
         });
         expect(response.status).toBe(403);
@@ -94,28 +95,29 @@ describe('Lessons API Authorization (/api/v1/lessons)', () => {
 
     it('should block other TEACHER from deleting lesson they do not own', async () => {
         setAuthToken(secondTeacherToken);
-        const response = await apiClient.delete(`/lessons/${ownLessonId}`);
+        const response = await apiClient.delete(`/lessons/${ownLessonPublicId}`);
         expect(response.status).toBe(403);
         expect(response.data.code).toBe('FORBIDDEN');
     });
 
     it('should allow ADMIN to update teacher lesson (200)', async () => {
         setAuthToken(adminToken);
-        const response = await apiClient.put(`/lessons/${ownLessonId}`, {
+        const response = await apiClient.put(`/lessons/${ownLessonPublicId}`, {
             title: `Admin Updated ${uniqueId}`,
             theme: 'Admin Review',
             groupIds: []
         });
         expect(response.status).toBe(200);
-        expect(response.data.id).toBe(ownLessonId);
+        expect(response.data.publicId).toBe(ownLessonPublicId);
+        expect(response.data).not.toHaveProperty('id');
         expect(response.data.title).toBe(`Admin Updated ${uniqueId}`);
     });
 
     afterAll(async () => {
         setAuthToken(adminToken);
 
-        if (ownLessonId) {
-            const response = await apiClient.delete(`/lessons/${ownLessonId}`);
+        if (ownLessonPublicId) {
+            const response = await apiClient.delete(`/lessons/${ownLessonPublicId}`);
             expect([204, 404]).toContain(response.status);
         }
 
