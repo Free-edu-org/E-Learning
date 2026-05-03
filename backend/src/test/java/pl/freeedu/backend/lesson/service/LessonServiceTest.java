@@ -18,6 +18,7 @@ import pl.freeedu.backend.task.repository.ChooseTaskRepository;
 import pl.freeedu.backend.task.repository.ScatterTaskRepository;
 import pl.freeedu.backend.task.repository.SpeakTaskRepository;
 import pl.freeedu.backend.task.repository.WriteTaskRepository;
+import pl.freeedu.backend.user.model.User;
 import pl.freeedu.backend.usergroup.service.UserGroupPublicIdLookupService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -63,6 +64,9 @@ class LessonServiceTest {
 
 	@Mock
 	private UserGroupPublicIdLookupService userGroupPublicIdLookupService;
+
+	@Mock
+	private pl.freeedu.backend.user.repository.UserRepository userRepository;
 
 	@InjectMocks
 	private LessonService lessonService;
@@ -133,6 +137,7 @@ class LessonServiceTest {
 		LessonRequest request = LessonRequest.builder().title("Title").theme("Theme")
 				.groupPublicIds(List.of("group-public-1", "group-public-2")).build();
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
+		when(userRepository.findById(10)).thenReturn(Optional.of(User.builder().id(10).build()));
 		when(userGroupPublicIdLookupService.getRequiredInternalId("group-public-1")).thenReturn(1);
 		when(userGroupPublicIdLookupService.getRequiredInternalId("group-public-2")).thenReturn(2);
 		when(lessonRepository.save(any())).thenAnswer(inv -> {

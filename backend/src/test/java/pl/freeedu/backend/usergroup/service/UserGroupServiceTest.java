@@ -57,7 +57,7 @@ class UserGroupServiceTest {
 		when(securityService.getCurrentUser()).thenReturn(Mono.just(admin));
 		when(userGroupRepository.existsByName("G1")).thenReturn(false);
 		when(userGroupMapper.toUserGroup(req)).thenReturn(UserGroup.builder().name("G1").build());
-		when(userRepository.findById(10)).thenReturn(Optional.of(teacher));
+		when(userRepository.findByPublicId("teacher-public-id")).thenReturn(Optional.of(teacher));
 		when(userGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 		when(userGroupMapper.toUserGroupResponse(any())).thenReturn(UserGroupResponse.builder().name("G1").build());
 

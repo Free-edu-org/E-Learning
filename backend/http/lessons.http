@@ -32,7 +32,7 @@ Authorization: Bearer {{auth_token}}
 { "isActive": false }
 
 ### Activate lesson without tasks (expect 400 LESSON_CANNOT_BE_ACTIVATED_WITHOUT_TASKS)
-PATCH http://localhost:8080/api/v1/lessons/999/status
+PATCH http://localhost:8080/api/v1/lessons/{{invalid_lesson_public_id}}/status
 Content-Type: application/json
 Authorization: Bearer {{auth_token}}
 
@@ -67,11 +67,11 @@ Content-Type: text/plain
 --boundary--
 
 ### Download lesson attachment (requires ADMIN, lesson owner TEACHER, or STUDENT with lesson access)
-GET http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/attachments/1
+GET http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/attachments/{{attachment_public_id}}
 Authorization: Bearer {{auth_token}}
 
 ### Delete lesson attachment (requires ADMIN or lesson owner TEACHER)
-DELETE http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/attachments/1
+DELETE http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/attachments/{{attachment_public_id}}
 Authorization: Bearer {{auth_token}}
 
 ### Create lesson with invalid payload (expect 400)

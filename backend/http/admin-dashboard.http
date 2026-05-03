@@ -45,7 +45,7 @@ Content-Type: application/json
 }
 
 ### Update admin student assignment (with group)
-PUT http://localhost:8080/api/v1/admin/students/15
+PUT http://localhost:8080/api/v1/admin/students/{{student_public_id}}
 Authorization: Bearer {{admin_token}}
 Content-Type: application/json
 
@@ -56,7 +56,7 @@ Content-Type: application/json
 }
 
 ### Update admin student - unassign from group (null groupPublicId)
-PUT http://localhost:8080/api/v1/admin/students/15
+PUT http://localhost:8080/api/v1/admin/students/{{student_public_id}}
 Authorization: Bearer {{admin_token}}
 Content-Type: application/json
 
@@ -67,7 +67,7 @@ Content-Type: application/json
 }
 
 ### Update admin student - forbidden (TEACHER token)
-PUT http://localhost:8080/api/v1/admin/students/15
+PUT http://localhost:8080/api/v1/admin/students/{{student_public_id}}
 Authorization: Bearer {{teacher_token}}
 Content-Type: application/json
 

@@ -71,6 +71,7 @@ class TeacherDashboardControllerPublicIdWebTest {
 	void shouldReturnDetailedLessonResultByPublicIdWhenTeacherHasAccess() {
 		// given
 		when(lessonPublicIdLookupService.getRequiredInternalId("lesson-public-id")).thenReturn(21);
+		when(userPublicIdLookupService.getInternalId("77")).thenReturn(Mono.just(77));
 		when(teacherService.getLessonResultDetails(21, 77)).thenReturn(Mono.just(LessonResultDetailsResponse.builder()
 				.lessonPublicId("lesson-public-id").lessonTitle("Lesson").userPublicId("77").tasks(List.of()).build()));
 
@@ -103,6 +104,7 @@ class TeacherDashboardControllerPublicIdWebTest {
 	void shouldReturnForbiddenWhenTeacherRequestsForeignLessonResultByPublicId() {
 		// given
 		when(lessonPublicIdLookupService.getRequiredInternalId("foreign-lesson-public-id")).thenReturn(21);
+		when(userPublicIdLookupService.getInternalId("77")).thenReturn(Mono.just(77));
 		when(teacherService.getLessonResultDetails(21, 77))
 				.thenThrow(new LessonException(LessonErrorCode.NOT_LESSON_OWNER));
 
@@ -119,8 +121,8 @@ class TeacherDashboardControllerPublicIdWebTest {
 	static class TestConfig {
 
 		@Bean
-		TeacherService teacherService() {
-			return mock(TeacherService.class);
+		pl.freeedu.backend.teacher.service.TeacherService teacherService() {
+			return mock(pl.freeedu.backend.teacher.service.TeacherService.class);
 		}
 
 		@Bean
@@ -139,7 +141,8 @@ class TeacherDashboardControllerPublicIdWebTest {
 		}
 
 		@Bean
-		TeacherDashboardController teacherDashboardController(TeacherService teacherService,
+		TeacherDashboardController teacherDashboardController(
+				pl.freeedu.backend.teacher.service.TeacherService teacherService,
 				LessonPublicIdLookupService lessonPublicIdLookupService,
 				pl.freeedu.backend.user.service.UserPublicIdLookupService userPublicIdLookupService) {
 			return new TeacherDashboardController(teacherService, lessonPublicIdLookupService,

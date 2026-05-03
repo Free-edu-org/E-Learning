@@ -152,6 +152,7 @@ class TeacherServiceTest {
 		when(userRepository.save(any())).thenAnswer(inv -> {
 			User u = inv.getArgument(0);
 			u.setId(1);
+			u.setPublicId("pub-1");
 			return u;
 		});
 
@@ -196,7 +197,7 @@ class TeacherServiceTest {
 		// given
 		TeacherUpdateStudentRequest req = TeacherUpdateStudentRequest.builder().email("n@e.com").username("n")
 				.groupPublicId("group-public-id").build();
-		User student = User.builder().id(1).email("o@e.com").username("o").role(Role.STUDENT).build();
+		User student = User.builder().id(1).publicId("pub-1").email("o@e.com").username("o").role(Role.STUDENT).build();
 		UserGroup group = UserGroup.builder().id(5).publicId("group-public-id").teacherId(10).build();
 
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
