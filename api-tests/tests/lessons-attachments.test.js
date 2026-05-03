@@ -364,4 +364,118 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonPublicId}/attachments)', ()
             expect(found).toBeUndefined();
         });
     });
+
+    // ═══════════════════════════════════════════════
+    // Regression: delete lesson WITH attachments still present
+    // ═══════════════════════════════════════════════
+    describe('DELETE lesson with attachments still present (regression)', () => {
+        let regLessonId;
+        let regAttachmentId1;
+        let regAttachmentId2;
+
+        beforeAll(async () => {
+            setAuthToken(teacherToken);
+            let res = await apiClient.post('/lessons', {
+                title: `Reg ${uniqueId}`,
+                theme: 'Regression test',
+                groupIds: [groupId],
+            });
+            expect(res.status).toBe(201);
+            regLessonId = res.data.id;
+
+            let form = makePdfForm(VALID_PDF, 'reg1.pdf');
+            res = await apiClient.post(
+                `/lessons/${regLessonId}/attachments`,
+                form,
+                { headers: form.getHeaders() }
+            );
+            expect(res.status).toBe(201);
+            regAttachmentId1 = res.data.id;
+
+            form = makePdfForm(VALID_PDF, 'reg2.pdf');
+            res = await apiClient.post(
+                `/lessons/${regLessonId}/attachments`,
+                form,
+                { headers: form.getHeaders() }
+            );
+            expect(res.status).toBe(201);
+            regAttachmentId2 = res.data.id;
+        });
+
+        it('should delete a lesson with one attachment still present (204)', async () => {
+            setAuthToken(teacherToken);
+
+            // Create a separate lesson with one attachment and delete it directly
+            let res = await apiClient.post('/lessons', {
+                title: `Reg1Att ${uniqueId}`,
+                theme: 'Regression 1 att',
+                groupIds: [groupId],
+            });
+            expect(res.status).toBe(201);
+            const oneAttLessonId = res.data.id;
+
+            const form = makePdfForm(VALID_PDF, 'one.pdf');
+            res = await apiClient.post(
+                `/lessons/${oneAttLessonId}/attachments`,
+                form,
+                { headers: form.getHeaders() }
+            );
+            expect(res.status).toBe(201);
+
+            // Delete lesson without removing attachment first — must succeed
+            res = await apiClient.delete(`/lessons/${oneAttLessonId}`);
+            expect(res.status).toBe(204);
+        });
+
+        it('should delete a lesson with multiple attachments still present (204)', async () => {
+            setAuthToken(teacherToken);
+
+            // regLessonId already has two attachments — delete it directly
+            const res = await apiClient.delete(`/lessons/${regLessonId}`);
+            expect(res.status).toBe(204);
+            regLessonId = null;
+        });
+
+        it('orphaned attachment records should not remain after lesson delete', async () => {
+            setAuthToken(adminToken);
+            const res = await apiClient.get('/lessons');
+            expect(res.status).toBe(200);
+            const found = res.data.find((l) => l.id === regLessonId);
+            expect(found).toBeUndefined();
+        });
+
+        it('unauthorized user should still not be able to delete a lesson (401/403)', async () => {
+            setAuthToken(teacherToken);
+            let res = await apiClient.post('/lessons', {
+                title: `Sec ${uniqueId}`,
+                theme: 'Security regression',
+                groupIds: [groupId],
+            });
+            expect(res.status).toBe(201);
+            const secLessonId = res.data.id;
+
+            const form = makePdfForm(VALID_PDF, 'sec.pdf');
+            res = await apiClient.post(
+                `/lessons/${secLessonId}/attachments`,
+                form,
+                { headers: form.getHeaders() }
+            );
+            expect(res.status).toBe(201);
+
+            // Unauthenticated delete must fail
+            setAuthToken(null);
+            res = await apiClient.delete(`/lessons/${secLessonId}`);
+            expect(res.status).toBe(401);
+
+            // Student cannot delete either
+            setAuthToken(studentToken);
+            res = await apiClient.delete(`/lessons/${secLessonId}`);
+            expect(res.status).toBe(403);
+
+            // Cleanup
+            setAuthToken(teacherToken);
+            res = await apiClient.delete(`/lessons/${secLessonId}`);
+            expect(res.status).toBe(204);
+        });
+    });
 });

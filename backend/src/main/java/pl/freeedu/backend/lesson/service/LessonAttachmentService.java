@@ -14,6 +14,7 @@ import pl.freeedu.backend.lesson.exception.LessonException;
 import pl.freeedu.backend.lesson.model.LessonAttachment;
 import pl.freeedu.backend.lesson.repository.LessonAttachmentRepository;
 import pl.freeedu.backend.lesson.repository.LessonRepository;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -202,6 +203,7 @@ public class LessonAttachmentService {
 		}).subscribeOn(Schedulers.boundedElastic()).then();
 	}
 
+	@Transactional
 	public void deleteAttachmentsByLessonId(Integer lessonId) {
 		List<LessonAttachment> all = lessonAttachmentRepository.findAllByLessonId(lessonId);
 		for (LessonAttachment attachment : all) {
