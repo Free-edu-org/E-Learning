@@ -1,4 +1,5 @@
 import {
+  Autocomplete,
   Box,
   Chip,
   Collapse,
@@ -19,9 +20,11 @@ import {
   MicNoneOutlined as SpeakIcon,
   ShuffleOutlined as ScatterIcon,
 } from "@mui/icons-material";
+import { keyframes } from "@emotion/react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useState, type ReactNode } from "react";
+import { memo, useCallback, useState, type ReactNode } from "react";
+import type { DraggableAttributes } from "@dnd-kit/core";
 import type { TaskType } from "@/api/taskService";
 import { uiTokens } from "@/theme/uiTokens";
 import { INPUT_LIMITS } from "@/utils/inputLimits";
@@ -38,6 +41,12 @@ export interface LessonTaskDraft {
   hint: string;
   section: string;
 }
+
+// Defined at module level — not recreated on re-render
+const taskSlideIn = keyframes`
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0);    }
+`;
 
 const taskTypeMeta: Record<
   TaskType,
@@ -65,6 +74,10 @@ const taskTypeMeta: Record<
   },
 };
 
+// ─── Header ───────────────────────────────────────────────────────────────────
+// The entire header row is both the drag activator and the toggle trigger.
+// PointerSensor distance:3 constraint distinguishes a click (toggle) from a drag.
+// Action buttons (delete, chevron) stop propagation so they don't toggle.
 function TaskCardHeader({
   task,
   index,
@@ -83,6 +96,7 @@ function TaskCardHeader({
   dragHandleProps?: {
     ref: React.Ref<HTMLElement>;
     listeners: Record<string, unknown>;
+    attributes: DraggableAttributes;
   };
 }) {
   const meta = taskTypeMeta[task.type];
@@ -90,13 +104,14 @@ function TaskCardHeader({
   return (
     <Box
       ref={dragHandleProps?.ref}
+      {...dragHandleProps?.attributes}
       {...dragHandleProps?.listeners}
+      onClick={() => {
+        if (!isDragOverlay) onToggle?.();
+      }}
       sx={{
         display: "flex",
         alignItems: "center",
-        gap: 1,
-        px: 2,
-        py: 1.25,
         borderBottom: expanded ? "1px solid" : "none",
         borderColor: (theme) =>
           alpha(
@@ -105,36 +120,35 @@ function TaskCardHeader({
           ),
         bgcolor: (theme) =>
           alpha(meta.color, theme.palette.mode === "dark" ? 0.06 : 0.04),
-        cursor: isDragOverlay ? "grabbing" : "grab",
+        cursor: isDragOverlay ? "grabbing" : "pointer",
         touchAction: "none",
-        transition:
-          "background-color 0.2s ease, transform 0.15s ease, box-shadow 0.15s ease",
+        userSelect: "none",
+        transition: "background-color 0.2s ease",
         ...(!isDragOverlay && {
           "&:hover": {
             bgcolor: (theme: import("@mui/material/styles").Theme) =>
               alpha(meta.color, theme.palette.mode === "dark" ? 0.1 : 0.07),
           },
-          "&:active": {
-            transform: "scale(1.015)",
-            boxShadow: `0 6px 20px ${alpha(meta.color, 0.18)}`,
-            bgcolor: (theme: import("@mui/material/styles").Theme) =>
-              alpha(meta.color, theme.palette.mode === "dark" ? 0.14 : 0.1),
-          },
         }),
       }}
-      onClick={onToggle}
     >
+      {/* Visual drag indicator only — no listeners here */}
       <Box
         sx={{
           display: "flex",
           alignItems: "center",
+          justifyContent: "center",
           flexShrink: 0,
+          px: 1.5,
+          py: 1.25,
           color: "text.disabled",
+          transition: "color 0.15s ease",
           "&:hover": { color: "text.secondary" },
         }}
       >
         <DragIcon fontSize="small" />
       </Box>
+
       <Chip
         icon={meta.icon as React.ReactElement}
         label={meta.label}
@@ -144,22 +158,20 @@ function TaskCardHeader({
           bgcolor: alpha(meta.color, 0.12),
           color: meta.color,
           borderRadius: uiTokens.radius.control,
+          flexShrink: 0,
           "& .MuiChip-icon": { color: meta.color },
         }}
       />
       <Typography
         variant="body2"
         fontWeight={600}
-        sx={{
-          flex: 1,
-          minWidth: 0,
-          overflowWrap: "anywhere",
-        }}
+        sx={{ flex: 1, minWidth: 0, mx: 1, overflowWrap: "anywhere" }}
       >
         {task.task || `Zadanie ${index + 1}`}
       </Typography>
+
       {!isDragOverlay && (
-        <>
+        <Box sx={{ display: "flex", alignItems: "center", pr: 0.5 }}>
           <Tooltip title="Usuń zadanie" arrow>
             <IconButton
               size="small"
@@ -176,19 +188,27 @@ function TaskCardHeader({
               <DeleteIcon fontSize="small" />
             </IconButton>
           </Tooltip>
-          <IconButton size="small" sx={{ color: "text.secondary" }}>
+          <IconButton
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggle?.();
+            }}
+            sx={{ color: "text.secondary" }}
+          >
             {expanded ? (
               <CollapseIcon fontSize="small" />
             ) : (
               <ExpandIcon fontSize="small" />
             )}
           </IconButton>
-        </>
+        </Box>
       )}
     </Box>
   );
 }
 
+// ─── Overlay (shown while dragging) ──────────────────────────────────────────
 export function TaskCardOverlay({
   task,
   index,
@@ -220,20 +240,210 @@ export function TaskCardOverlay({
   );
 }
 
+// ─── Memoized fields ──────────────────────────────────────────────────────────
+// Only re-renders when task data changes (user typing) — not on dnd transforms.
+const TaskCardFields = memo(function TaskCardFields({
+  task,
+  onChangeById,
+  existingSections,
+}: {
+  task: LessonTaskDraft;
+  onChangeById: (id: string, updated: LessonTaskDraft) => void;
+  existingSections: string[];
+}) {
+  const updateField = useCallback(
+    <K extends keyof LessonTaskDraft>(field: K, value: LessonTaskDraft[K]) => {
+      onChangeById(task.id, { ...task, [field]: value });
+    },
+    [task, onChangeById],
+  );
+
+  // Local state for the section input — committed to parent only on blur or dropdown
+  // select, so typing doesn't create a new section on every keystroke.
+  // Initialised from task.section on focus (not via effect/ref), which also handles
+  // external changes (e.g. drag-based reassignment) naturally.
+  const [sectionInput, setSectionInput] = useState(task.section);
+  const [sectionFocused, setSectionFocused] = useState(false);
+
+  const handleChooseChange = useCallback(
+    (pa: string, ca: string) =>
+      onChangeById(task.id, {
+        ...task,
+        possibleAnswers: pa,
+        correctAnswer: ca,
+      }),
+    [task, onChangeById],
+  );
+
+  const handleWordsChange = useCallback(
+    (w: string) => updateField("words", w),
+    [updateField],
+  );
+
+  return (
+    <Box sx={{ p: 2 }}>
+      <Stack spacing={2}>
+        <TextField
+          label="Treść zadania"
+          value={task.task}
+          onChange={(e) =>
+            updateField("task", e.target.value.slice(0, INPUT_LIMITS.taskText))
+          }
+          inputProps={{ maxLength: INPUT_LIMITS.taskText }}
+          helperText={`${task.task.length}/${INPUT_LIMITS.taskText}`}
+          multiline
+          minRows={2}
+          fullWidth
+          placeholder="Wpisz treść pytania lub polecenia..."
+        />
+
+        {task.type === "choose" && (
+          <ChooseAnswerBuilder
+            possibleAnswers={task.possibleAnswers}
+            correctAnswer={task.correctAnswer}
+            onChange={handleChooseChange}
+          />
+        )}
+
+        {task.type === "scatter" && (
+          <>
+            <ScatterWordBuilder
+              words={task.words}
+              onChange={handleWordsChange}
+            />
+            <TextField
+              label="Poprawna kolejność (pełne zdanie)"
+              value={task.correctAnswer}
+              onChange={(e) =>
+                updateField(
+                  "correctAnswer",
+                  e.target.value.slice(0, INPUT_LIMITS.taskAnswerText),
+                )
+              }
+              inputProps={{ maxLength: INPUT_LIMITS.taskAnswerText }}
+              helperText={`${task.correctAnswer.length}/${INPUT_LIMITS.taskAnswerText}`}
+              fullWidth
+              placeholder="np. The cat is big"
+            />
+          </>
+        )}
+
+        {task.type === "write" && (
+          <TextField
+            label="Poprawna odpowiedź"
+            value={task.correctAnswer}
+            onChange={(e) =>
+              updateField(
+                "correctAnswer",
+                e.target.value.slice(0, INPUT_LIMITS.taskAnswerText),
+              )
+            }
+            inputProps={{ maxLength: INPUT_LIMITS.taskAnswerText }}
+            helperText={`${task.correctAnswer.length}/${INPUT_LIMITS.taskAnswerText}`}
+            fullWidth
+            placeholder="Wpisz oczekiwaną odpowiedź..."
+          />
+        )}
+
+        {task.type === "speak" && (
+          <TextField
+            label="Tekst do rozpoznania"
+            value={task.correctAnswer}
+            onChange={(e) =>
+              updateField(
+                "correctAnswer",
+                e.target.value.slice(0, INPUT_LIMITS.taskAnswerText),
+              )
+            }
+            inputProps={{ maxLength: INPUT_LIMITS.taskAnswerText }}
+            fullWidth
+            placeholder="np. The cat is black and the dog is brown"
+            helperText={`${task.correctAnswer.length}/${INPUT_LIMITS.taskAnswerText} • Uczeń nagra ten tekst, a STT porówna transkrypcję z tą wartością.`}
+          />
+        )}
+
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+            gap: 1.5,
+          }}
+        >
+          <TextField
+            label="Podpowiedź (opcjonalnie)"
+            value={task.hint}
+            onChange={(e) =>
+              updateField(
+                "hint",
+                e.target.value.slice(0, INPUT_LIMITS.taskHint),
+              )
+            }
+            inputProps={{ maxLength: INPUT_LIMITS.taskHint }}
+            helperText={`${task.hint.length}/${INPUT_LIMITS.taskHint}`}
+            fullWidth
+            size="small"
+            placeholder="Wskazówka dla ucznia..."
+          />
+          {/* Sekcja — freeSolo Autocomplete: wybór z listy lub wpisanie nowej.
+              Commit do parenta następuje dopiero na blur lub wyborze z listy,
+              żeby nie tworzyć sekcji po każdej wpisanej literze. */}
+          <Autocomplete
+            freeSolo
+            options={existingSections}
+            value={task.section}
+            inputValue={sectionFocused ? sectionInput : task.section}
+            onFocus={() => {
+              setSectionInput(task.section);
+              setSectionFocused(true);
+            }}
+            onInputChange={(_, value, reason) => {
+              const clamped = value.slice(0, INPUT_LIMITS.taskSection);
+              setSectionInput(clamped);
+              if (reason !== "input") {
+                updateField("section", clamped);
+              }
+            }}
+            onBlur={() => {
+              setSectionFocused(false);
+              updateField("section", sectionInput);
+            }}
+            size="small"
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Sekcja (opcjonalnie)"
+                helperText={
+                  existingSections.length > 0
+                    ? `${sectionInput.length}/${INPUT_LIMITS.taskSection} • wybierz lub wpisz nową`
+                    : `${sectionInput.length}/${INPUT_LIMITS.taskSection}`
+                }
+                placeholder="Nazwa sekcji grupującej..."
+              />
+            )}
+          />
+        </Box>
+      </Stack>
+    </Box>
+  );
+});
+
+// ─── TaskCard ─────────────────────────────────────────────────────────────────
 interface TaskCardProps {
   task: LessonTaskDraft;
   index: number;
-  onChange: (updated: LessonTaskDraft) => void;
-  onDelete: () => void;
+  onChangeById: (id: string, updated: LessonTaskDraft) => void;
+  onDeleteById: (id: string) => void;
+  existingSections: string[];
   defaultExpanded?: boolean;
 }
 
 export function TaskCard({
   task,
   index,
-  onChange,
-  onDelete,
-  defaultExpanded = true,
+  onChangeById,
+  onDeleteById,
+  existingSections,
+  defaultExpanded = false,
 }: TaskCardProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const meta = taskTypeMeta[task.type];
@@ -246,26 +456,31 @@ export function TaskCard({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: task.id });
+  } = useSortable({
+    id: task.id,
+    data: { type: "task", sectionName: task.section },
+  });
 
   const style = {
-    transform: CSS.Transform.toString(transform),
+    transform: CSS.Transform.toString(
+      transform ? { ...transform, scaleX: 1, scaleY: 1 } : null,
+    ),
     transition,
+    willChange: (transform ? "transform" : "auto") as "transform" | "auto",
   };
 
-  const updateField = <K extends keyof LessonTaskDraft>(
-    field: K,
-    value: LessonTaskDraft[K],
-  ) => {
-    onChange({ ...task, [field]: value });
-  };
+  const handleDelete = useCallback(
+    () => onDeleteById(task.id),
+    [onDeleteById, task.id],
+  );
+
+  const handleToggle = useCallback(() => setExpanded((prev) => !prev), []);
 
   if (isDragging) {
     return (
       <Box
         ref={setNodeRef}
         style={style}
-        {...attributes}
         sx={{
           borderRadius: uiTokens.radius.card,
           border: "2px dashed",
@@ -282,7 +497,6 @@ export function TaskCard({
     <Box
       ref={setNodeRef}
       style={style}
-      {...attributes}
       sx={{
         borderRadius: uiTokens.radius.card,
         border: "1px solid",
@@ -298,156 +512,32 @@ export function TaskCard({
           ),
         overflow: "hidden",
         transition: "border-color 0.25s ease, box-shadow 0.25s ease",
+        animation: `${taskSlideIn} 0.25s ease-out`,
         "&:hover": {
           borderColor: () => alpha(meta.color, 0.4),
           boxShadow: `0 4px 16px ${alpha(meta.color, 0.1)}`,
         },
-        "@keyframes taskSlideIn": {
-          from: { opacity: 0, transform: "translateY(12px)" },
-          to: { opacity: 1, transform: "translateY(0)" },
-        },
-        animation: "taskSlideIn 0.3s ease-out",
       }}
     >
       <TaskCardHeader
         task={task}
         index={index}
         expanded={expanded}
-        onToggle={() => setExpanded((prev) => !prev)}
-        onDelete={onDelete}
+        onToggle={handleToggle}
+        onDelete={handleDelete}
         dragHandleProps={{
           ref: setActivatorNodeRef,
           listeners: listeners as Record<string, unknown>,
+          attributes: attributes,
         }}
       />
 
-      <Collapse in={expanded} timeout={250}>
-        <Box sx={{ p: 2 }}>
-          <Stack spacing={2}>
-            <TextField
-              label="Treść zadania"
-              value={task.task}
-              onChange={(e) =>
-                updateField(
-                  "task",
-                  e.target.value.slice(0, INPUT_LIMITS.taskText),
-                )
-              }
-              inputProps={{ maxLength: INPUT_LIMITS.taskText }}
-              helperText={`${task.task.length}/${INPUT_LIMITS.taskText}`}
-              multiline
-              minRows={2}
-              fullWidth
-              placeholder="Wpisz treść pytania lub polecenia..."
-            />
-
-            {task.type === "choose" && (
-              <ChooseAnswerBuilder
-                possibleAnswers={task.possibleAnswers}
-                correctAnswer={task.correctAnswer}
-                onChange={(pa, ca) =>
-                  onChange({ ...task, possibleAnswers: pa, correctAnswer: ca })
-                }
-              />
-            )}
-
-            {task.type === "scatter" && (
-              <>
-                <ScatterWordBuilder
-                  words={task.words}
-                  onChange={(w) => updateField("words", w)}
-                />
-                <TextField
-                  label="Poprawna kolejność (pełne zdanie)"
-                  value={task.correctAnswer}
-                  onChange={(e) =>
-                    updateField(
-                      "correctAnswer",
-                      e.target.value.slice(0, INPUT_LIMITS.taskAnswerText),
-                    )
-                  }
-                  inputProps={{ maxLength: INPUT_LIMITS.taskAnswerText }}
-                  helperText={`${task.correctAnswer.length}/${INPUT_LIMITS.taskAnswerText}`}
-                  fullWidth
-                  placeholder="np. The cat is big"
-                />
-              </>
-            )}
-
-            {task.type === "write" && (
-              <TextField
-                label="Poprawna odpowiedź"
-                value={task.correctAnswer}
-                onChange={(e) =>
-                  updateField(
-                    "correctAnswer",
-                    e.target.value.slice(0, INPUT_LIMITS.taskAnswerText),
-                  )
-                }
-                inputProps={{ maxLength: INPUT_LIMITS.taskAnswerText }}
-                helperText={`${task.correctAnswer.length}/${INPUT_LIMITS.taskAnswerText}`}
-                fullWidth
-                placeholder="Wpisz oczekiwaną odpowiedź..."
-              />
-            )}
-
-            {task.type === "speak" && (
-              <TextField
-                label="Tekst do rozpoznania"
-                value={task.correctAnswer}
-                onChange={(e) =>
-                  updateField(
-                    "correctAnswer",
-                    e.target.value.slice(0, INPUT_LIMITS.taskAnswerText),
-                  )
-                }
-                inputProps={{ maxLength: INPUT_LIMITS.taskAnswerText }}
-                fullWidth
-                placeholder="np. The cat is black and the dog is brown"
-                helperText={`${task.correctAnswer.length}/${INPUT_LIMITS.taskAnswerText} • Uczeń nagra ten tekst, a STT porówna transkrypcję z tą wartością.`}
-              />
-            )}
-
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
-                gap: 1.5,
-              }}
-            >
-              <TextField
-                label="Podpowiedź (opcjonalnie)"
-                value={task.hint}
-                onChange={(e) =>
-                  updateField(
-                    "hint",
-                    e.target.value.slice(0, INPUT_LIMITS.taskHint),
-                  )
-                }
-                inputProps={{ maxLength: INPUT_LIMITS.taskHint }}
-                helperText={`${task.hint.length}/${INPUT_LIMITS.taskHint}`}
-                fullWidth
-                size="small"
-                placeholder="Wskazówka dla ucznia..."
-              />
-              <TextField
-                label="Sekcja (opcjonalnie)"
-                value={task.section}
-                onChange={(e) =>
-                  updateField(
-                    "section",
-                    e.target.value.slice(0, INPUT_LIMITS.taskSection),
-                  )
-                }
-                inputProps={{ maxLength: INPUT_LIMITS.taskSection }}
-                helperText={`${task.section.length}/${INPUT_LIMITS.taskSection}`}
-                fullWidth
-                size="small"
-                placeholder="Nazwa sekcji grupującej..."
-              />
-            </Box>
-          </Stack>
-        </Box>
+      <Collapse in={expanded} timeout={200} unmountOnExit>
+        <TaskCardFields
+          task={task}
+          onChangeById={onChangeById}
+          existingSections={existingSections}
+        />
       </Collapse>
     </Box>
   );
