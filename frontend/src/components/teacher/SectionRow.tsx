@@ -1,7 +1,8 @@
-import { Box, Chip, Collapse, IconButton, Typography } from "@mui/material";
+import { Box, Chip, Collapse, IconButton, TextField, Tooltip, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import {
   DragIndicator as DragIcon,
+  EditOutlined as EditIcon,
   ExpandLess as CollapseIcon,
   ExpandMore as ExpandIcon,
   LayersOutlined as LayersIcon,
@@ -9,7 +10,9 @@ import {
 import { useSortable } from "@dnd-kit/sortable";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useState } from "react";
 import { uiTokens } from "@/theme/uiTokens";
+import { INPUT_LIMITS } from "@/utils/inputLimits";
 import { TaskCard } from "./TaskCard";
 import type { LessonTaskDraft } from "./TaskCard";
 
@@ -23,6 +26,7 @@ interface SectionRowProps {
   /** True when a task is being dragged and hovers over this (collapsed) section */
   isOver: boolean;
   onToggle: () => void;
+  onRename: (sectionId: string, newName: string) => void;
   onChangeById: (id: string, updated: LessonTaskDraft) => void;
   onDeleteById: (id: string) => void;
   existingSections: string[];
@@ -38,11 +42,14 @@ export function SectionRow({
   expanded,
   isOver,
   onToggle,
+  onRename,
   onChangeById,
   onDeleteById,
   existingSections,
   defaultExpanded = false,
 }: SectionRowProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState("");
   const {
     attributes,
     listeners,
@@ -65,6 +72,25 @@ export function SectionRow({
     ),
     transition,
     willChange: (transform ? "transform" : "auto") as "transform" | "auto",
+  };
+
+  const startEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditValue(sectionName);
+    setIsEditing(true);
+  };
+
+  const commitEdit = () => {
+    setIsEditing(false);
+    const trimmed = editValue.trim();
+    if (trimmed !== sectionName) {
+      onRename(sectionId, trimmed);
+    }
+  };
+
+  const handleEditKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") { e.preventDefault(); commitEdit(); }
+    if (e.key === "Escape") { setIsEditing(false); }
   };
 
   if (isDragging) {
@@ -91,15 +117,14 @@ export function SectionRow({
     <Box ref={setNodeRef} style={style}>
       {/*
         ── Section header row ────────────────────────────────────────────────
-        Whole row = drag activator (setActivatorNodeRef + listeners + attributes).
-        PointerSensor distance:3 distinguishes a click (toggle) from a drag (move).
-        Chevron button stops propagation so it doesn't trigger twice on the row.
+        Whole row = drag activator when NOT editing.
+        In edit mode: listeners are suppressed so the TextField doesn't trigger drag.
       */}
       <Box
         ref={setActivatorNodeRef}
         {...attributes}
-        {...listeners}
-        onClick={onToggle}
+        {...(isEditing ? {} : listeners)}
+        onClick={isEditing ? undefined : onToggle}
         sx={{
           display: "flex",
           alignItems: "center",
@@ -125,11 +150,11 @@ export function SectionRow({
                   theme.palette.primary.main,
                   theme.palette.mode === "dark" ? 0.06 : 0.04,
                 ),
-          cursor: "grab",
+          cursor: isEditing ? "default" : "grab",
           touchAction: "none",
           userSelect: "none",
           transition: "border-color 0.15s ease, background-color 0.15s ease",
-          "&:active": { cursor: "grabbing" },
+          "&:active": { cursor: isEditing ? "default" : "grabbing" },
           "&:hover": {
             borderColor: (theme) =>
               isOver
@@ -168,14 +193,51 @@ export function SectionRow({
 
         <LayersIcon sx={{ fontSize: 14, color: "primary.main", flexShrink: 0 }} />
 
-        <Typography
-          variant="caption"
-          fontWeight={700}
-          color="primary.main"
-          sx={{ letterSpacing: 0.3, lineHeight: 1, flex: 1, mx: 0.75 }}
-        >
-          {displayName}
-        </Typography>
+        {isEditing ? (
+          <TextField
+            autoFocus
+            variant="standard"
+            size="small"
+            value={editValue}
+            onChange={(e) =>
+              setEditValue(e.target.value.slice(0, INPUT_LIMITS.taskSection))
+            }
+            onBlur={commitEdit}
+            onKeyDown={handleEditKeyDown}
+            onClick={(e) => e.stopPropagation()}
+            sx={{ flex: 1, mx: 0.75 }}
+            inputProps={{
+              style: { fontSize: "0.75rem", fontWeight: 700 },
+            }}
+          />
+        ) : (
+          <Typography
+            variant="caption"
+            fontWeight={700}
+            color="primary.main"
+            sx={{ letterSpacing: 0.3, lineHeight: 1, flex: 1, mx: 0.75 }}
+          >
+            {displayName}
+          </Typography>
+        )}
+
+        {!isEditing && (
+          <Tooltip title="Zmień nazwę sekcji" arrow>
+            <IconButton
+              size="small"
+              onClick={startEdit}
+              sx={{
+                color: "primary.main",
+                p: 0.25,
+                opacity: 0.5,
+                transition: "opacity 0.15s ease",
+                "&:hover": { opacity: 1 },
+              }}
+            >
+              <EditIcon sx={{ fontSize: 14 }} />
+            </IconButton>
+          </Tooltip>
+        )}
 
         <Chip
           label={tasks.length}

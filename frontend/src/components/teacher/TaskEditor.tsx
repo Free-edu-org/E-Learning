@@ -381,6 +381,23 @@ export function TaskEditor({
 
   // ── Stable task callbacks ────────────────────────────────────────────────────
 
+  const handleRenameSection = useCallback(
+    (sectionId: string, newName: string) => {
+      const currentGroups = groupTasks(tasksRef.current);
+      const group = currentGroups.find((g) => g.sectionId === sectionId);
+      if (!group) return;
+      // Update section field on every task in this group; groupTasks will merge
+      // tasks into the target section if newName already exists
+      const newGroups = currentGroups.map((g) =>
+        g.sectionId === sectionId
+          ? { ...g, tasks: g.tasks.map((t) => ({ ...t, section: newName })) }
+          : g,
+      );
+      onChange(flattenGroups(newGroups));
+    },
+    [onChange],
+  );
+
   const handleUpdateTaskById = useCallback(
     (id: string, updated: LessonTaskDraft) => {
       const original = tasksRef.current.find((t) => t.id === id);
@@ -524,6 +541,7 @@ export function TaskEditor({
                         expanded={expandedSections.has(group.sectionId)}
                         isOver={overSectionId === group.sectionId}
                         onToggle={() => toggleSection(group.sectionId)}
+                        onRename={handleRenameSection}
                         onChangeById={handleUpdateTaskById}
                         onDeleteById={handleDeleteTaskById}
                         existingSections={existingSections}
