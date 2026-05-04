@@ -18,6 +18,7 @@ public class WriteTaskResponse {
 	private String task;
 	private String correctAnswer;
 	private String hint;
+	private String hintImageUrl;
 	private String section;
 	private LocalDateTime createdAt;
 }

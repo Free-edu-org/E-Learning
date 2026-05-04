@@ -19,6 +19,7 @@ public class ScatterTaskResponse {
 	private String words;
 	private String correctAnswer;
 	private String hint;
+	private String hintImageUrl;
 	private String section;
 	private LocalDateTime createdAt;
 }

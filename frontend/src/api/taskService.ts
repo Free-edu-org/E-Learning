@@ -37,6 +37,7 @@ export interface TaskResponse {
   lessonPublicId: string;
   task: string;
   hint?: string;
+  hintImageUrl?: string | null;
   section?: string;
 }
 
@@ -178,4 +179,28 @@ export const taskService = {
       },
     );
   },
+
+  uploadHintImage: (
+    lessonPublicId: string,
+    taskType: string,
+    taskPublicId: string,
+    file: File,
+  ) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return fetchApi<void>(
+      `/api/v1/lessons/${lessonPublicId}/tasks/${taskType}/${taskPublicId}/hint-image`,
+      { method: "POST", body: formData },
+    );
+  },
+
+  deleteHintImage: (
+    lessonPublicId: string,
+    taskType: string,
+    taskPublicId: string,
+  ) =>
+    fetchApi<void>(
+      `/api/v1/lessons/${lessonPublicId}/tasks/${taskType}/${taskPublicId}/hint-image`,
+      { method: "DELETE" },
+    ),
 };

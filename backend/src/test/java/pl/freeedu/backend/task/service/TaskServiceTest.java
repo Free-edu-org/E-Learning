@@ -52,6 +52,8 @@ class TaskServiceTest {
 	private SttClient sttClient;
 	@Mock
 	private TaskPublicIdLookupService taskPublicIdLookupService;
+	@Mock
+	private TaskHintImageService taskHintImageService;
 
 	private TaskService taskService;
 
@@ -59,7 +61,7 @@ class TaskServiceTest {
 	void setUp() {
 		taskService = new TaskService(chooseTaskRepository, writeTaskRepository, scatterTaskRepository,
 				speakTaskRepository, userAnswerRepository, userLessonRepository, lessonRepository, securityService,
-				userInGroupRepository, sttClient, taskPublicIdLookupService, 0.85);
+				userInGroupRepository, sttClient, taskPublicIdLookupService, taskHintImageService, 0.85);
 	}
 
 	@Test

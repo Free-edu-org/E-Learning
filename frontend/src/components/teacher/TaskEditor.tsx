@@ -53,6 +53,7 @@ function createEmptyTaskDraft(type: TaskType = "write"): LessonTaskDraft {
     words: "",
     hint: "",
     section: "",
+    hintImageUrl: null,
   };
 }
 
@@ -94,12 +95,14 @@ interface TaskEditorProps {
   tasks: LessonTaskDraft[];
   onChange: (tasks: LessonTaskDraft[]) => void;
   defaultExpanded?: boolean;
+  lessonPublicId?: string;
 }
 
 export function TaskEditor({
   tasks,
   onChange,
   defaultExpanded = false,
+  lessonPublicId,
 }: TaskEditorProps) {
   const [showTypeSelector, setShowTypeSelector] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -552,6 +555,7 @@ export function TaskEditor({
                         onDeleteById={handleDeleteTaskById}
                         existingSections={existingSections}
                         defaultExpanded={defaultExpanded}
+                        lessonPublicId={lessonPublicId}
                       />
                     );
                   })
@@ -564,6 +568,7 @@ export function TaskEditor({
                       onDeleteById={handleDeleteTaskById}
                       existingSections={existingSections}
                       defaultExpanded={defaultExpanded}
+                      lessonPublicId={lessonPublicId}
                     />
                   ))}
             </Stack>
