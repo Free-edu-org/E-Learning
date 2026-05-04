@@ -105,12 +105,17 @@ public class StudentService {
 					"Twoja grupa nie ma jeszcze przypisanych lekcji. Wroc pozniej lub skontaktuj sie z nauczycielem.");
 		}
 
-		List<Lesson> lessons = lessonRepository.findByIdIn(lessonIds);
+		List<Lesson> lessons = lessonRepository.findByIdIn(lessonIds).stream()
+				.filter(lesson -> Boolean.TRUE.equals(lesson.getIsActive())).toList();
+		if (lessons.isEmpty()) {
+			return emptySnapshot(
+					"Twoja grupa nie ma jeszcze aktywnych lekcji. Wroc pozniej lub skontaktuj sie z nauczycielem.");
+		}
 		Map<Integer, UserLesson> userLessonsByLessonId = userLessonRepository
-				.findByUserIdAndLessonIdIn(userId, lessonIds).stream()
+				.findByUserIdAndLessonIdIn(userId, lessons.stream().map(Lesson::getId).toList()).stream()
 				.collect(Collectors.toMap(UserLesson::getLessonId, Function.identity()));
 		Map<Integer, List<pl.freeedu.backend.lesson.dto.LessonAttachmentResponse>> attachmentsMap = lessonAttachmentService
-				.findByLessonIds(lessonIds);
+				.findByLessonIds(lessons.stream().map(Lesson::getId).toList());
 
 		List<StudentLessonResponse> studentLessons = new ArrayList<>();
 		for (Lesson lesson : lessons) {

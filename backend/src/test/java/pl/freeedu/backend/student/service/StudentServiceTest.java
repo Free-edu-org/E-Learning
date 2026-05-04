@@ -86,7 +86,7 @@ class StudentServiceTest {
 		// given
 		Integer userId = 10;
 		Integer groupId = 5;
-		Lesson lesson = Lesson.builder().id(1).title("L1").createdAt(LocalDateTime.now()).build();
+		Lesson lesson = Lesson.builder().id(1).title("L1").isActive(true).createdAt(LocalDateTime.now()).build();
 		UserInGroup membership = UserInGroup.builder().userId(userId).groupId(groupId).build();
 
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(userId));
@@ -112,12 +112,47 @@ class StudentServiceTest {
 	}
 
 	@Test
+	void shouldHideInactiveLessonsFromStudentDashboard() {
+		// given
+		Integer userId = 10;
+		Integer groupId = 5;
+		Lesson activeLesson = Lesson.builder().id(1).title("Active").isActive(true).createdAt(LocalDateTime.now())
+				.build();
+		Lesson inactiveLesson = Lesson.builder().id(2).title("Inactive").isActive(false)
+				.createdAt(LocalDateTime.now().minusDays(1)).build();
+
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(userId));
+		when(userInGroupRepository.findByUserId(userId))
+				.thenReturn(Optional.of(UserInGroup.builder().userId(userId).groupId(groupId).build()));
+		when(userGroupRepository.findById(groupId))
+				.thenReturn(Optional.of(UserGroup.builder().id(groupId).publicId("group-public-id").build()));
+		when(groupHasLessonRepository.findLessonIdsByGroupId(groupId)).thenReturn(List.of(1, 2));
+		when(lessonRepository.findByIdIn(List.of(1, 2))).thenReturn(List.of(activeLesson, inactiveLesson));
+		when(userLessonRepository.findByUserIdAndLessonIdIn(userId, List.of(1))).thenReturn(List.of());
+		when(lessonMapper.toResponse(activeLesson))
+				.thenReturn(LessonResponse.builder().publicId("lesson-active").title("Active").isActive(true).build());
+		when(groupHasLessonRepository.findGroupsForLesson(1))
+				.thenReturn(List.of(new GroupDto("group-public-id", "G1")));
+
+		// when
+		Flux<StudentLessonResponse> result = studentService.getLessons();
+
+		// then
+		StepVerifier.create(result).assertNext(resp -> {
+			assertEquals("lesson-active", resp.getPublicId());
+			assertTrue(resp.getIsActive());
+		}).verifyComplete();
+		verify(lessonMapper, never()).toResponse(inactiveLesson);
+		verify(groupHasLessonRepository, never()).findGroupsForLesson(2);
+	}
+
+	@Test
 	void shouldCalculateStatsCorrectly() {
 		// given
 		Integer userId = 10;
 		Integer groupId = 5;
-		Lesson l1 = Lesson.builder().id(1).createdAt(LocalDateTime.now().minusDays(1)).build();
-		Lesson l2 = Lesson.builder().id(2).createdAt(LocalDateTime.now()).build();
+		Lesson l1 = Lesson.builder().id(1).isActive(true).createdAt(LocalDateTime.now().minusDays(1)).build();
+		Lesson l2 = Lesson.builder().id(2).isActive(true).createdAt(LocalDateTime.now()).build();
 
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(userId));
 		when(userInGroupRepository.findByUserId(userId))
@@ -178,7 +213,7 @@ class StudentServiceTest {
 		// We'll test this via getStats with specific scores
 		Integer userId = 10;
 		Integer groupId = 5;
-		Lesson l1 = Lesson.builder().id(1).build();
+		Lesson l1 = Lesson.builder().id(1).isActive(true).build();
 
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(userId));
 		when(userInGroupRepository.findByUserId(userId))
