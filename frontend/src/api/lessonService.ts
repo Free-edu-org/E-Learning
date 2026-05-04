@@ -2,16 +2,16 @@ import { fetchApi, fetchApiBlob } from "./apiClient";
 import type { LessonResultDetailsResponse } from "./studentService";
 
 export interface Group {
-  id: number;
+  publicId: string;
   name: string;
   description?: string;
   studentCount?: number;
-  teacherId?: number | null;
+  teacherPublicId?: string | null;
   createdAt?: string;
 }
 
 export interface LessonAttachment {
-  id: number;
+  publicId: string;
   originalFileName: string;
   contentType: string;
   fileSize: number;
@@ -19,11 +19,11 @@ export interface LessonAttachment {
 }
 
 export interface Lesson {
-  id: number;
+  publicId: string;
   title: string;
   theme: string;
   isActive: boolean;
-  teacherId?: number;
+  teacherPublicId?: string;
   teacherName?: string;
   teacherAvatarUrl?: string | null;
   createdAt: string;
@@ -39,17 +39,17 @@ export interface TeacherStats {
 }
 
 export interface TeacherStudentResponse {
-  id: number;
+  publicId: string;
   username: string;
   email: string;
   role: string;
   createdAt: string;
-  groupId: number;
+  groupPublicId: string;
   avatarUrl?: string | null;
 }
 
 export interface LessonStatsStudentResult {
-  userId: number;
+  userPublicId: string;
   username: string;
   avatarUrl?: string | null;
   completedAt: string | null;
@@ -71,19 +71,19 @@ export interface CreateTeacherStudentRequest {
   username: string;
   email: string;
   password: string;
-  groupId: number;
+  groupPublicId: string;
 }
 
 export interface UpdateTeacherStudentRequest {
   username: string;
   email: string;
-  groupId: number;
+  groupPublicId: string;
 }
 
 export interface CreateLessonRequest {
   title: string;
   theme: string;
-  groupIds?: number[];
+  groupPublicIds?: string[];
 }
 
 export const lessonService = {
@@ -98,8 +98,11 @@ export const lessonService = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
-  updateTeacherStudent: (id: number, payload: UpdateTeacherStudentRequest) =>
-    fetchApi<TeacherStudentResponse>(`/api/v1/teacher/students/${id}`, {
+  updateTeacherStudent: (
+    publicId: string,
+    payload: UpdateTeacherStudentRequest,
+  ) =>
+    fetchApi<TeacherStudentResponse>(`/api/v1/teacher/students/${publicId}`, {
       method: "PUT",
       body: JSON.stringify(payload),
     }),
@@ -108,45 +111,55 @@ export const lessonService = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
-  updateLesson: (id: number, payload: CreateLessonRequest) =>
-    fetchApi<Lesson>(`/api/v1/lessons/${id}`, {
+  updateLesson: (publicId: string, payload: CreateLessonRequest) =>
+    fetchApi<Lesson>(`/api/v1/lessons/${publicId}`, {
       method: "PUT",
       body: JSON.stringify(payload),
     }),
-  updateLessonStatus: (id: number, isActive: boolean) =>
-    fetchApi<void>(`/api/v1/lessons/${id}/status`, {
+  updateLessonStatus: (publicId: string, isActive: boolean) =>
+    fetchApi<void>(`/api/v1/lessons/${publicId}/status`, {
       method: "PATCH",
       body: JSON.stringify({ isActive }),
     }),
-  deleteLesson: (id: number) =>
-    fetchApi<void>(`/api/v1/lessons/${id}`, {
+  deleteLesson: (publicId: string) =>
+    fetchApi<void>(`/api/v1/lessons/${publicId}`, {
       method: "DELETE",
     }),
-  getLessonStats: (lessonId: number) =>
-    fetchApi<LessonStatsResponse>(`/api/v1/teacher/lessons/${lessonId}/stats`),
-  getLessonResultDetails: (lessonId: number, userId: number) =>
-    fetchApi<LessonResultDetailsResponse>(
-      `/api/v1/teacher/lessons/${lessonId}/students/${userId}/result`,
+  getLessonStats: (lessonPublicId: string) =>
+    fetchApi<LessonStatsResponse>(
+      `/api/v1/teacher/lessons/${lessonPublicId}/stats`,
     ),
-  resetStudentLessonProgress: (lessonId: number, userId: number) =>
-    fetchApi<void>(`/api/v1/lessons/${lessonId}/users/${userId}/reset`, {
-      method: "POST",
-    }),
-  uploadAttachment: (lessonId: number, file: File) => {
+  getLessonResultDetails: (lessonPublicId: string, studentPublicId: string) =>
+    fetchApi<LessonResultDetailsResponse>(
+      `/api/v1/teacher/lessons/${lessonPublicId}/students/${studentPublicId}/result`,
+    ),
+  resetStudentLessonProgress: (lessonPublicId: string, userPublicId: string) =>
+    fetchApi<void>(
+      `/api/v1/lessons/${lessonPublicId}/users/${userPublicId}/reset`,
+      {
+        method: "POST",
+      },
+    ),
+  uploadAttachment: (lessonPublicId: string, file: File) => {
     const formData = new FormData();
     formData.append("file", file);
     return fetchApi<LessonAttachment>(
-      `/api/v1/lessons/${lessonId}/attachments`,
+      `/api/v1/lessons/${lessonPublicId}/attachments`,
       {
         method: "POST",
         body: formData,
       },
     );
   },
-  downloadAttachment: (lessonId: number, attachmentId: number) =>
-    fetchApiBlob(`/api/v1/lessons/${lessonId}/attachments/${attachmentId}`),
-  deleteAttachment: (lessonId: number, attachmentId: number) =>
-    fetchApi<void>(`/api/v1/lessons/${lessonId}/attachments/${attachmentId}`, {
-      method: "DELETE",
-    }),
+  downloadAttachment: (lessonPublicId: string, attachmentPublicId: string) =>
+    fetchApiBlob(
+      `/api/v1/lessons/${lessonPublicId}/attachments/${attachmentPublicId}`,
+    ),
+  deleteAttachment: (lessonPublicId: string, attachmentPublicId: string) =>
+    fetchApi<void>(
+      `/api/v1/lessons/${lessonPublicId}/attachments/${attachmentPublicId}`,
+      {
+        method: "DELETE",
+      },
+    ),
 };

@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class UserGroupResponse {
 
-	private Integer id;
+	private String publicId;
 
 	private String name;
 
@@ -23,5 +23,5 @@ public class UserGroupResponse {
 
 	private LocalDateTime createdAt;
 
-	private Integer teacherId;
+	private String teacherPublicId;
 }

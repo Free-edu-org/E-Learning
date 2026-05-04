@@ -14,12 +14,11 @@ import { useAuth } from "@/context/AuthContext";
 import { getErrorMessage } from "@/utils/dashboardUtils";
 
 export function StudentLessonResultView() {
-  const { lessonId } = useParams<{ lessonId: string }>();
+  const { lessonPublicId } = useParams<{ lessonPublicId: string }>();
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const numericLessonId = Number(lessonId);
-  const routeError = Number.isNaN(numericLessonId)
-    ? "Nieprawidlowy identyfikator lekcji."
+  const routeError = !lessonPublicId
+    ? "Nieprawidłowy identyfikator lekcji."
     : null;
   const [user, setUser] = useState<UserProfile | null>(null);
   const [result, setResult] = useState<LessonResultDetailsResponse | null>(
@@ -43,18 +42,18 @@ export function StudentLessonResultView() {
     }
 
     studentService
-      .getLessonResultDetails(numericLessonId)
+      .getLessonResultDetails(lessonPublicId!)
       .then(setResult)
       .catch((err: unknown) =>
         setError(
           getErrorMessage(
             err,
-            "Nie udalo sie pobrac szczegolow wyniku lekcji.",
+            "Nie udało się pobrać szczegółów wyniku lekcji.",
           ),
         ),
       )
       .finally(() => setLoading(false));
-  }, [numericLessonId, routeError]);
+  }, [lessonPublicId, routeError]);
 
   return (
     <Box
@@ -93,7 +92,7 @@ export function StudentLessonResultView() {
             mt: { xs: 0.5, sm: 1 },
           }}
         >
-          Powrot do panelu
+          Powrót do panelu
         </Button>
 
         {!routeError && loading && <CircularProgress />}

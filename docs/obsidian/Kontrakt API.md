@@ -17,12 +17,12 @@ Przy zmianie endpointu aktualizuj razem:
 |---|---|---|---|
 | Auth | `POST /api/v1/auth/login` | public | [[Przeplyw - logowanie i sesja]] |
 | Users | `/api/v1/users/**` | authenticated + owner/admin | [[Domena - uzytkownicy]] |
-| User avatars | `/api/v1/users/{id}/avatar`, `/api/v1/users/{id}/avatar/preset`, `/uploads/avatars/**` | owner/admin, public read dla plikow | [[Awatary uzytkownikow]] |
+| User avatars | `/api/v1/users/{publicId}/avatar`, `/api/v1/users/{publicId}/avatar/preset`, `/uploads/avatars/**` | owner/admin, public read dla plikow | [[Awatary uzytkownikow]] |
 | Admin BFF | `/api/v1/admin/**` | `ADMIN` | [[Rola - Admin]] |
 | Teacher BFF | `/api/v1/teacher/**` | `TEACHER` | [[Rola - Teacher]] |
 | Student BFF | `/api/v1/student/**` | `STUDENT` | [[Rola - Student]] |
 | Lessons | `/api/v1/lessons` | `TEACHER` lub `ADMIN` | [[Domena - lekcje]] |
-| Tasks | `/api/v1/lessons/{lessonId}/tasks/**` | zalezne od akcji | [[Domena - zadania]] |
+| Tasks | `/api/v1/lessons/{lessonPublicId}/tasks/**` | zalezne od akcji | [[Domena - zadania]] |
 | Groups | `/api/v1/user-groups/**` | `TEACHER` lub `ADMIN` | [[Domena - grupy]] |
 
 ## DTO

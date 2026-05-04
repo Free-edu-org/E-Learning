@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class LessonAttachmentResponse {
 
-	private Integer id;
+	private String publicId;
 	private String originalFileName;
 	private String contentType;
 	private Long fileSize;

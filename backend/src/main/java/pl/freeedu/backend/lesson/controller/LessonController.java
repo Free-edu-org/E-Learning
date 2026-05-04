@@ -20,9 +20,12 @@ import pl.freeedu.backend.lesson.dto.LessonRequest;
 import pl.freeedu.backend.lesson.dto.LessonResponse;
 import pl.freeedu.backend.lesson.dto.LessonStatusRequest;
 import pl.freeedu.backend.lesson.service.LessonAttachmentService;
+import pl.freeedu.backend.lesson.service.LessonPublicIdLookupService;
 import pl.freeedu.backend.lesson.service.LessonService;
+import pl.freeedu.backend.usergroup.service.UserGroupPublicIdLookupService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 @RestController
 @RequestMapping("/api/v1/lessons")
@@ -31,10 +34,16 @@ public class LessonController {
 
 	private final LessonService lessonService;
 	private final LessonAttachmentService lessonAttachmentService;
+	private final LessonPublicIdLookupService lessonPublicIdLookupService;
+	private final UserGroupPublicIdLookupService userGroupPublicIdLookupService;
 
-	public LessonController(LessonService lessonService, LessonAttachmentService lessonAttachmentService) {
+	public LessonController(LessonService lessonService, LessonAttachmentService lessonAttachmentService,
+			LessonPublicIdLookupService lessonPublicIdLookupService,
+			UserGroupPublicIdLookupService userGroupPublicIdLookupService) {
 		this.lessonService = lessonService;
 		this.lessonAttachmentService = lessonAttachmentService;
+		this.lessonPublicIdLookupService = lessonPublicIdLookupService;
+		this.userGroupPublicIdLookupService = userGroupPublicIdLookupService;
 	}
 
 	@Operation(summary = "Get list of lessons (with filters)")
@@ -42,9 +51,14 @@ public class LessonController {
 	@GetMapping
 	@PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
 	public Flux<LessonResponse> getLessons(@RequestParam(required = false) String search,
-			@RequestParam(required = false) Integer groupId, @RequestParam(required = false) Boolean status,
+			@RequestParam(required = false) String groupPublicId, @RequestParam(required = false) Boolean status,
 			@RequestParam(required = false) String sort) {
-		return lessonService.getLessons(search, groupId, status, sort);
+		if (groupPublicId == null) {
+			return lessonService.getLessons(search, null, status, sort);
+		}
+		return Mono.fromCallable(() -> userGroupPublicIdLookupService.getRequiredInternalId(groupPublicId))
+				.subscribeOn(Schedulers.boundedElastic())
+				.flatMapMany(groupId -> lessonService.getLessons(search, groupId, status, sort));
 	}
 
 	@Operation(summary = "Create a new lesson")
@@ -61,66 +75,77 @@ public class LessonController {
 	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Lesson successfully updated"),
 			@ApiResponse(responseCode = "400", description = "Invalid input data", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "404", description = "Lesson not found")})
-	@PutMapping("/{id}")
-	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #id))")
-	public Mono<LessonResponse> updateLesson(@PathVariable Integer id,
+	@PutMapping("/{lessonPublicId}")
+	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
+	public Mono<LessonResponse> updateLesson(@PathVariable String lessonPublicId,
 			@Valid @RequestBody Mono<LessonRequest> lessonRequest) {
-		return lessonService.updateLesson(id, lessonRequest);
+		return Mono.fromCallable(() -> lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId))
+				.subscribeOn(Schedulers.boundedElastic())
+				.flatMap(lessonId -> lessonService.updateLesson(lessonId, lessonRequest));
 	}
 
 	@Operation(summary = "Quick status change (is_active)")
 	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Lesson status updated"),
 			@ApiResponse(responseCode = "400", description = "Invalid input data", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "404", description = "Lesson not found")})
-	@PatchMapping("/{id}/status")
-	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #id))")
+	@PatchMapping("/{lessonPublicId}/status")
+	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public Mono<Void> updateLessonStatus(@PathVariable Integer id,
+	public Mono<Void> updateLessonStatus(@PathVariable String lessonPublicId,
 			@Valid @RequestBody Mono<LessonStatusRequest> statusRequest) {
-		return lessonService.updateLessonStatus(id, statusRequest);
+		return Mono.fromCallable(() -> lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId))
+				.subscribeOn(Schedulers.boundedElastic())
+				.flatMap(lessonId -> lessonService.updateLessonStatus(lessonId, statusRequest));
 	}
 
 	@Operation(summary = "Delete lesson")
 	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Lesson successfully deleted"),
 			@ApiResponse(responseCode = "404", description = "Lesson not found")})
-	@DeleteMapping("/{id}")
-	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #id))")
+	@DeleteMapping("/{lessonPublicId}")
+	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public Mono<Void> deleteLesson(@PathVariable Integer id) {
-		return lessonService.deleteLesson(id);
+	public Mono<Void> deleteLesson(@PathVariable String lessonPublicId) {
+		return Mono.fromCallable(() -> lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId))
+				.subscribeOn(Schedulers.boundedElastic()).flatMap(lessonService::deleteLesson);
 	}
 
 	@Operation(summary = "Upload PDF attachment for a lesson")
 	@ApiResponses(value = {@ApiResponse(responseCode = "201", description = "Attachment uploaded successfully"),
 			@ApiResponse(responseCode = "400", description = "Invalid file type or file too large", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "404", description = "Lesson not found")})
-	@PostMapping(value = "/{lessonId}/attachments", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonId))")
+	@PostMapping(value = "/{lessonPublicId}/attachments", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
 	@ResponseStatus(HttpStatus.CREATED)
-	public Mono<LessonAttachmentResponse> uploadAttachment(@PathVariable Integer lessonId,
+	public Mono<LessonAttachmentResponse> uploadAttachment(@PathVariable String lessonPublicId,
 			@RequestPart("file") FilePart filePart) {
-		return lessonAttachmentService.uploadAttachment(lessonId, filePart);
+		return Mono.fromCallable(() -> lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId))
+				.subscribeOn(Schedulers.boundedElastic())
+				.flatMap(lessonId -> lessonAttachmentService.uploadAttachment(lessonId, filePart));
 	}
 
 	@Operation(summary = "Download PDF attachment for a lesson")
 	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "PDF file"),
 			@ApiResponse(responseCode = "404", description = "Lesson or attachment not found")})
-	@GetMapping("/{lessonId}/attachments/{attachmentId}")
+	@GetMapping("/{lessonPublicId}/attachments/{attachmentPublicId}")
 	@PreAuthorize("@securityService.isAdmin(authentication) or "
-			+ "(hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonId)) or "
-			+ "(hasRole('STUDENT') and @securityService.hasStudentAccessToLesson(authentication, #lessonId))")
-	public Mono<ResponseEntity<Resource>> downloadAttachment(@PathVariable Integer lessonId,
-			@PathVariable Integer attachmentId) {
-		return lessonAttachmentService.downloadAttachment(lessonId, attachmentId);
+			+ "(hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId)) or "
+			+ "(hasRole('STUDENT') and @securityService.hasStudentAccessToLesson(authentication, #lessonPublicId))")
+	public Mono<ResponseEntity<Resource>> downloadAttachment(@PathVariable String lessonPublicId,
+			@PathVariable String attachmentPublicId) {
+		return Mono.fromCallable(() -> lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId))
+				.subscribeOn(Schedulers.boundedElastic())
+				.flatMap(lessonId -> lessonAttachmentService.downloadAttachment(lessonId, attachmentPublicId));
 	}
 
 	@Operation(summary = "Delete PDF attachment for a lesson")
 	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Attachment deleted"),
 			@ApiResponse(responseCode = "404", description = "Lesson or attachment not found")})
-	@DeleteMapping("/{lessonId}/attachments/{attachmentId}")
-	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonId))")
+	@DeleteMapping("/{lessonPublicId}/attachments/{attachmentPublicId}")
+	@PreAuthorize("@securityService.isAdmin(authentication) or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId))")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public Mono<Void> deleteAttachment(@PathVariable Integer lessonId, @PathVariable Integer attachmentId) {
-		return lessonAttachmentService.deleteAttachment(lessonId, attachmentId);
+	public Mono<Void> deleteAttachment(@PathVariable String lessonPublicId, @PathVariable String attachmentPublicId) {
+		return Mono.fromCallable(() -> lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId))
+				.subscribeOn(Schedulers.boundedElastic())
+				.flatMap(lessonId -> lessonAttachmentService.deleteAttachment(lessonId, attachmentPublicId));
 	}
 }

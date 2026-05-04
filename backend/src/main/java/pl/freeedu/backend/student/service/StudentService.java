@@ -26,6 +26,7 @@ import pl.freeedu.backend.task.model.UserLesson;
 import pl.freeedu.backend.task.model.UserLessonStatus;
 import pl.freeedu.backend.task.repository.UserLessonRepository;
 import pl.freeedu.backend.task.service.LessonResultDetailsService;
+import pl.freeedu.backend.usergroup.repository.UserGroupRepository;
 import pl.freeedu.backend.usergroup.repository.UserInGroupRepository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -42,11 +43,13 @@ public class StudentService {
 	private final LessonMapper lessonMapper;
 	private final LessonResultDetailsService lessonResultDetailsService;
 	private final LessonAttachmentService lessonAttachmentService;
+	private final UserGroupRepository userGroupRepository;
 
 	public StudentService(SecurityService securityService, UserInGroupRepository userInGroupRepository,
 			GroupHasLessonRepository groupHasLessonRepository, LessonRepository lessonRepository,
 			UserLessonRepository userLessonRepository, LessonMapper lessonMapper,
-			LessonResultDetailsService lessonResultDetailsService, LessonAttachmentService lessonAttachmentService) {
+			LessonResultDetailsService lessonResultDetailsService, LessonAttachmentService lessonAttachmentService,
+			UserGroupRepository userGroupRepository) {
 		this.securityService = securityService;
 		this.userInGroupRepository = userInGroupRepository;
 		this.groupHasLessonRepository = groupHasLessonRepository;
@@ -55,6 +58,7 @@ public class StudentService {
 		this.lessonMapper = lessonMapper;
 		this.lessonResultDetailsService = lessonResultDetailsService;
 		this.lessonAttachmentService = lessonAttachmentService;
+		this.userGroupRepository = userGroupRepository;
 	}
 
 	public Mono<StudentStatsResponse> getStats() {
@@ -93,6 +97,8 @@ public class StudentService {
 					"Nie masz jeszcze przypisanej grupy. Gdy nauczyciel doda Cie do grupy, tutaj pojawia sie lekcje i wyniki.");
 		}
 
+		String currentGroupPublicId = userGroupRepository.findById(maybeGroupId.get()).map(group -> group.getPublicId())
+				.orElse(null);
 		List<Integer> lessonIds = groupHasLessonRepository.findLessonIdsByGroupId(maybeGroupId.get());
 		if (lessonIds.isEmpty()) {
 			return emptySnapshot(
@@ -110,15 +116,16 @@ public class StudentService {
 		for (Lesson lesson : lessons) {
 			var lessonResponse = lessonMapper.toResponse(lesson);
 			lessonResponse.setGroups(groupHasLessonRepository.findGroupsForLesson(lesson.getId()).stream()
-					.filter(group -> maybeGroupId.get().equals(group.getId())).toList());
+					.filter(group -> currentGroupPublicId != null && currentGroupPublicId.equals(group.getPublicId()))
+					.toList());
 
 			UserLesson userLesson = userLessonsByLessonId.get(lesson.getId());
 			Integer score = userLesson != null ? userLesson.getScore() : null;
 			Integer maxScore = userLesson != null ? userLesson.getMaxScore() : null;
 
-			studentLessons.add(StudentLessonResponse.builder().id(lessonResponse.getId())
+			studentLessons.add(StudentLessonResponse.builder().publicId(lessonResponse.getPublicId())
 					.title(lessonResponse.getTitle()).theme(lessonResponse.getTheme())
-					.isActive(lessonResponse.getIsActive()).teacherId(lessonResponse.getTeacherId())
+					.isActive(lessonResponse.getIsActive()).teacherPublicId(lessonResponse.getTeacherPublicId())
 					.teacherName(lessonResponse.getTeacherName()).teacherAvatarUrl(lessonResponse.getTeacherAvatarUrl())
 					.createdAt(lessonResponse.getCreatedAt()).groups(lessonResponse.getGroups())
 					.status(userLesson != null ? userLesson.getStatus().name() : "NOT_STARTED").score(score)

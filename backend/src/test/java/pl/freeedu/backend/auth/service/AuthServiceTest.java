@@ -71,13 +71,13 @@ class AuthServiceTest {
 	@Test
 	void shouldLoginByEmailWhenCredentialsAreCorrect() {
 		LoginRequest request = LoginRequest.builder().identifier("teacher@freeedu.pl").password("secret").build();
-		User user = User.builder().id(10).email("teacher@freeedu.pl").username("teacher").password("hashed")
-				.role(Role.TEACHER).tokenVersion(2).build();
+		User user = User.builder().id(10).publicId("teacher-public-id").email("teacher@freeedu.pl").username("teacher")
+				.password("hashed").role(Role.TEACHER).tokenVersion(2).build();
 		AuthResponse response = AuthResponse.builder().token("jwt").role(Role.TEACHER).build();
 
 		when(userRepository.findByEmail("teacher@freeedu.pl")).thenReturn(Optional.of(user));
 		when(passwordEncoder.matches("secret", "hashed")).thenReturn(true);
-		when(jwtService.generateToken(10, 2)).thenReturn("jwt");
+		when(jwtService.generateToken("teacher-public-id", 2)).thenReturn("jwt");
 		when(authMapper.toAuthResponse("jwt", Role.TEACHER)).thenReturn(response);
 
 		Mono<AuthResponse> result = authService.login(Mono.just(request));
@@ -91,14 +91,14 @@ class AuthServiceTest {
 	@Test
 	void shouldLoginByUsernameWhenEmailNotFound() {
 		LoginRequest request = LoginRequest.builder().identifier("teacher").password("secret").build();
-		User user = User.builder().id(11).email("x@x.pl").username("teacher").password("hashed").role(Role.ADMIN)
-				.tokenVersion(0).build();
+		User user = User.builder().id(11).publicId("admin-public-id").email("x@x.pl").username("teacher")
+				.password("hashed").role(Role.ADMIN).tokenVersion(0).build();
 		AuthResponse response = AuthResponse.builder().token("jwt2").role(Role.ADMIN).build();
 
 		when(userRepository.findByEmail("teacher")).thenReturn(Optional.empty());
 		when(userRepository.findByUsername("teacher")).thenReturn(Optional.of(user));
 		when(passwordEncoder.matches("secret", "hashed")).thenReturn(true);
-		when(jwtService.generateToken(11, 0)).thenReturn("jwt2");
+		when(jwtService.generateToken("admin-public-id", 0)).thenReturn("jwt2");
 		when(authMapper.toAuthResponse("jwt2", Role.ADMIN)).thenReturn(response);
 
 		Mono<AuthResponse> result = authService.login(Mono.just(request));
@@ -125,7 +125,7 @@ class AuthServiceTest {
 			assertEquals(AuthErrorCode.INVALID_CREDENTIALS, exception.getErrorCode());
 		}).verify();
 
-		verify(jwtService, never()).generateToken(any(Integer.class), any(Integer.class));
+		verify(jwtService, never()).generateToken(any(String.class), any(Integer.class));
 	}
 
 	@Test

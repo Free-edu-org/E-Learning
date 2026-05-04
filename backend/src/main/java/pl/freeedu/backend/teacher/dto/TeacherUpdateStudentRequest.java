@@ -2,7 +2,6 @@ package pl.freeedu.backend.teacher.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -23,6 +22,6 @@ public class TeacherUpdateStudentRequest {
 	@Email(message = "Invalid email format")
 	private String email;
 
-	@NotNull(message = "Group ID is required")
-	private Integer groupId;
+	@NotBlank(message = "Group public ID is required")
+	private String groupPublicId;
 }

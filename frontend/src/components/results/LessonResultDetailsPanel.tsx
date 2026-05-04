@@ -143,7 +143,7 @@ export function LessonResultDetailsPanel({
 
             return (
               <Accordion
-                key={`${task.taskType}_${task.taskId}`}
+                key={`${task.taskType}_${task.taskPublicId}`}
                 disableGutters
                 sx={{
                   borderRadius: 3,

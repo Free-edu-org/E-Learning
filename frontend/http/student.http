@@ -9,10 +9,10 @@ GET http://localhost:5173/student/progress
 Authorization: Bearer {{auth_token}}
 
 ### Lesson Solver
-GET http://localhost:5173/student/lessons/:lessonId
+GET http://localhost:5173/student/lessons/:lessonPublicId
 Authorization: Bearer {{auth_token}}
 
 ### Student Lesson Result View
-GET http://localhost:5173/student/lessons/:lessonId/result
+GET http://localhost:5173/student/lessons/:lessonPublicId/result
 Authorization: Bearer {{auth_token}}
 

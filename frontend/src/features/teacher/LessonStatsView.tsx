@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Alert,
@@ -139,7 +139,7 @@ function buildDistributionData(results: LessonStatsStudentResult[]) {
 }
 
 export function LessonStatsView() {
-  const { lessonId } = useParams<{ lessonId: string }>();
+  const { lessonPublicId } = useParams<{ lessonPublicId: string }>();
   const navigate = useNavigate();
   const { logout } = useAuth();
   const [stats, setStats] = useState<LessonStatsResponse | null>(null);
@@ -152,7 +152,9 @@ export function LessonStatsView() {
     severity: "success" | "error";
     message: string;
   } | null>(null);
-  const [resettingUserIds, setResettingUserIds] = useState<number[]>([]);
+  const [resettingUserPublicIds, setResettingUserPublicIds] = useState<
+    string[]
+  >([]);
   const [resetConfirmStudent, setResetConfirmStudent] =
     useState<LessonStatsStudentResult | null>(null);
 
@@ -165,39 +167,35 @@ export function LessonStatsView() {
   }, []);
 
   useEffect(() => {
-    if (!lessonId) return;
-    const id = Number(lessonId);
+    if (!lessonPublicId) return;
 
     Promise.all([
-      lessonService.getLessonStats(id),
+      lessonService.getLessonStats(lessonPublicId),
       lessonService.getTeacherLessons(),
     ])
       .then(([statsData, lessons]) => {
         setStats(statsData);
-        const lesson = lessons.find((l) => l.id === id);
+        const lesson = lessons.find((l) => l.publicId === lessonPublicId);
         if (lesson) setLessonTitle(lesson.title);
       })
       .catch(() => setError("Nie udało się wczytać wyników lekcji."))
       .finally(() => setLoading(false));
-  }, [lessonId]);
+  }, [lessonPublicId]);
 
   const handleResetStudentProgress = async (
     student: LessonStatsStudentResult,
   ) => {
-    if (!lessonId) return;
-    const numericLessonId = Number(lessonId);
-    if (isNaN(numericLessonId)) return;
+    if (!lessonPublicId) return;
 
     setActionFeedback(null);
-    setResettingUserIds((prev) => [...prev, student.userId]);
+    setResettingUserPublicIds((prev) => [...prev, student.userPublicId]);
 
     try {
       await lessonService.resetStudentLessonProgress(
-        numericLessonId,
-        student.userId,
+        lessonPublicId,
+        student.userPublicId,
       );
-      const refreshedStats =
-        await lessonService.getLessonStats(numericLessonId);
+      const refreshedStats = await lessonService.getLessonStats(lessonPublicId);
       setStats(refreshedStats);
       setActionFeedback({
         severity: "success",
@@ -209,7 +207,9 @@ export function LessonStatsView() {
         message: `Nie udało się zresetować wyniku ucznia ${student.username}.`,
       });
     } finally {
-      setResettingUserIds((prev) => prev.filter((id) => id !== student.userId));
+      setResettingUserPublicIds((prev) =>
+        prev.filter((userPublicId) => userPublicId !== student.userPublicId),
+      );
       setResetConfirmStudent(null);
     }
   };
@@ -458,7 +458,7 @@ export function LessonStatsView() {
                 </Box>
               ) : (
                 stats.studentResults.map((student, idx) => (
-                  <Box key={student.userId}>
+                  <Box key={student.userPublicId}>
                     <Box
                       sx={{
                         display: "flex",
@@ -533,10 +533,12 @@ export function LessonStatsView() {
                             fontSize: "0.8rem",
                             borderRadius: 2,
                           }}
-                          disabled={resettingUserIds.includes(student.userId)}
+                          disabled={resettingUserPublicIds.includes(
+                            student.userPublicId,
+                          )}
                           onClick={() => setResetConfirmStudent(student)}
                         >
-                          {resettingUserIds.includes(student.userId)
+                          {resettingUserPublicIds.includes(student.userPublicId)
                             ? "Resetowanie..."
                             : "Resetuj wynik"}
                         </Button>
@@ -559,7 +561,7 @@ export function LessonStatsView() {
                           }}
                           onClick={() =>
                             navigate(
-                              `/teacher/lessons/${lessonId}/students/${student.userId}/result`,
+                              `/teacher/lessons/${lessonPublicId}/students/${student.userPublicId}/result`,
                             )
                           }
                         >
@@ -580,7 +582,7 @@ export function LessonStatsView() {
           onClose={() => {
             if (
               resetConfirmStudent &&
-              resettingUserIds.includes(resetConfirmStudent.userId)
+              resettingUserPublicIds.includes(resetConfirmStudent.userPublicId)
             ) {
               return;
             }
@@ -609,7 +611,9 @@ export function LessonStatsView() {
                 onClick={() => setResetConfirmStudent(null)}
                 disabled={
                   resetConfirmStudent
-                    ? resettingUserIds.includes(resetConfirmStudent.userId)
+                    ? resettingUserPublicIds.includes(
+                        resetConfirmStudent.userPublicId,
+                      )
                     : false
                 }
                 sx={{ ...panelFooterButtonSx, color: "text.secondary" }}
@@ -622,7 +626,9 @@ export function LessonStatsView() {
                 startIcon={<ReplayIcon />}
                 disabled={
                   !resetConfirmStudent ||
-                  resettingUserIds.includes(resetConfirmStudent.userId)
+                  resettingUserPublicIds.includes(
+                    resetConfirmStudent.userPublicId,
+                  )
                 }
                 onClick={() => {
                   if (!resetConfirmStudent) return;
@@ -631,7 +637,9 @@ export function LessonStatsView() {
                 sx={panelFooterButtonSx}
               >
                 {resetConfirmStudent &&
-                resettingUserIds.includes(resetConfirmStudent.userId)
+                resettingUserPublicIds.includes(
+                  resetConfirmStudent.userPublicId,
+                )
                   ? "Resetowanie..."
                   : "Potwierdź reset"}
               </Button>

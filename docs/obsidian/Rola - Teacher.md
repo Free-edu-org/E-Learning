@@ -14,7 +14,7 @@ Powiazania:
 
 Najwazniejsze endpointy:
 - `/api/v1/teacher/**`
-- `/api/v1/teacher/lessons/{lessonId}/stats`
+- `/api/v1/teacher/lessons/{lessonPublicId}/stats`
 - `/api/v1/lessons`
-- `/api/v1/lessons/{lessonId}/tasks/**`
+- `/api/v1/lessons/{lessonPublicId}/tasks/**`
 - `/api/v1/user-groups/**`

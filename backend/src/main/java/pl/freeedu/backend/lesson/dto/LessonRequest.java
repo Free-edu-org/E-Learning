@@ -23,6 +23,6 @@ public class LessonRequest {
 	@Size(max = 120, message = "Theme must be at most 120 characters long")
 	private String theme;
 
-	// optional list of group ids to assign this lesson to
-	private List<Integer> groupIds;
+	// optional list of group public ids to assign this lesson to
+	private List<String> groupPublicIds;
 }

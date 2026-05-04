@@ -12,6 +12,7 @@ import pl.freeedu.backend.user.dto.SetPresetAvatarRequest;
 import pl.freeedu.backend.user.dto.UpdateUserRequest;
 import pl.freeedu.backend.user.dto.UserResponse;
 import pl.freeedu.backend.user.service.UserService;
+import pl.freeedu.backend.user.service.UserPublicIdLookupService;
 import reactor.core.publisher.Mono;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -28,9 +29,11 @@ import org.springframework.http.ProblemDetail;
 public class UserController {
 
 	private final UserService userService;
+	private final UserPublicIdLookupService userPublicIdLookupService;
 
-	public UserController(UserService userService) {
+	public UserController(UserService userService, UserPublicIdLookupService userPublicIdLookupService) {
 		this.userService = userService;
+		this.userPublicIdLookupService = userPublicIdLookupService;
 	}
 
 	@Operation(summary = "Create an admin user", description = "Allows an existing admin to create a new administrative account.")
@@ -77,10 +80,10 @@ public class UserController {
 			@ApiResponse(responseCode = "401", description = "Unauthorized - invalid token", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden - lack of permissions", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "404", description = "Not Found - USER_NOT_FOUND", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
-	@GetMapping("/{id}")
-	@PreAuthorize("hasRole('ADMIN') or @securityService.isOwner(authentication, #id) or (hasRole('TEACHER') and @securityService.isTeacherOfStudent(authentication, #id))")
-	public Mono<UserResponse> getUser(@PathVariable Integer id) {
-		return userService.getUser(id);
+	@GetMapping("/{publicId}")
+	@PreAuthorize("hasRole('ADMIN') or @securityService.isOwnerByPublicId(authentication, #publicId) or (hasRole('TEACHER') and @securityService.isTeacherOfStudentByPublicId(authentication, #publicId))")
+	public Mono<UserResponse> getUser(@PathVariable String publicId) {
+		return userPublicIdLookupService.getInternalId(publicId).flatMap(userService::getUser);
 	}
 
 	@Operation(summary = "Get current user profile", description = "Retrieve the profile details of the currently authenticated user.")
@@ -101,11 +104,11 @@ public class UserController {
 			@ApiResponse(responseCode = "403", description = "Forbidden - lack of permissions", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "404", description = "Not Found - USER_NOT_FOUND", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "409", description = "Conflict - EMAIL_ALREADY_TAKEN or USERNAME_ALREADY_TAKEN", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
-	@PutMapping("/{id}")
-	@PreAuthorize("hasRole('ADMIN') or @securityService.isOwner(authentication, #id)")
-	public Mono<UserResponse> updateUser(@PathVariable Integer id,
+	@PutMapping("/{publicId}")
+	@PreAuthorize("hasRole('ADMIN') or @securityService.isOwnerByPublicId(authentication, #publicId)")
+	public Mono<UserResponse> updateUser(@PathVariable String publicId,
 			@Valid @RequestBody Mono<UpdateUserRequest> request) {
-		return userService.updateUser(id, request);
+		return userPublicIdLookupService.getInternalId(publicId).flatMap(id -> userService.updateUser(id, request));
 	}
 
 	@Operation(summary = "Change user password", description = "Change a user's password. Requires the old password. Only available to the account owner or an admin.")
@@ -114,12 +117,12 @@ public class UserController {
 			@ApiResponse(responseCode = "401", description = "Unauthorized - INVALID_OLD_PASSWORD, UNAUTHORIZED or TOKEN_EXPIRED", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden - lack of permissions", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "404", description = "Not Found - USER_NOT_FOUND", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
-	@PutMapping("/{id}/password")
-	@PreAuthorize("hasRole('ADMIN') or @securityService.isOwner(authentication, #id)")
+	@PutMapping("/{publicId}/password")
+	@PreAuthorize("hasRole('ADMIN') or @securityService.isOwnerByPublicId(authentication, #publicId)")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public Mono<Void> changePassword(@PathVariable Integer id,
+	public Mono<Void> changePassword(@PathVariable String publicId,
 			@Valid @RequestBody Mono<ChangePasswordRequest> request) {
-		return userService.changePassword(id, request);
+		return userPublicIdLookupService.getInternalId(publicId).flatMap(id -> userService.changePassword(id, request));
 	}
 
 	@Operation(summary = "Delete an account", description = "Deletes a user account. Only available to the account owner or an admin.")
@@ -127,11 +130,11 @@ public class UserController {
 			@ApiResponse(responseCode = "401", description = "Unauthorized - invalid token", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden - lack of permissions", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "404", description = "Not Found - USER_NOT_FOUND", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
-	@DeleteMapping("/{id}")
-	@PreAuthorize("hasRole('ADMIN') or @securityService.isOwner(authentication, #id)")
+	@DeleteMapping("/{publicId}")
+	@PreAuthorize("hasRole('ADMIN') or @securityService.isOwnerByPublicId(authentication, #publicId)")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public Mono<Void> deleteUser(@PathVariable Integer id) {
-		return userService.deleteUser(id);
+	public Mono<Void> deleteUser(@PathVariable String publicId) {
+		return userPublicIdLookupService.getInternalId(publicId).flatMap(userService::deleteUser);
 	}
 
 	@Operation(summary = "Upload avatar", description = "Upload a custom avatar image (JPEG/PNG, max 2 MB). Only the account owner or admin can change the avatar.")
@@ -140,10 +143,10 @@ public class UserController {
 			@ApiResponse(responseCode = "401", description = "Unauthorized - invalid token", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden - lack of permissions", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "404", description = "Not Found - USER_NOT_FOUND", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
-	@PostMapping(value = "/{id}/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	@PreAuthorize("hasRole('ADMIN') or @securityService.isOwner(authentication, #id)")
-	public Mono<UserResponse> uploadAvatar(@PathVariable Integer id, @RequestPart("file") FilePart filePart) {
-		return userService.uploadAvatar(id, filePart);
+	@PostMapping(value = "/{publicId}/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	@PreAuthorize("hasRole('ADMIN') or @securityService.isOwnerByPublicId(authentication, #publicId)")
+	public Mono<UserResponse> uploadAvatar(@PathVariable String publicId, @RequestPart("file") FilePart filePart) {
+		return userPublicIdLookupService.getInternalId(publicId).flatMap(id -> userService.uploadAvatar(id, filePart));
 	}
 
 	@Operation(summary = "Set preset avatar", description = "Select one of the built-in avatar presets. Only the account owner or admin can change the avatar.")
@@ -152,10 +155,11 @@ public class UserController {
 			@ApiResponse(responseCode = "401", description = "Unauthorized - invalid token", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden - lack of permissions", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "404", description = "Not Found - USER_NOT_FOUND", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
-	@PutMapping("/{id}/avatar/preset")
-	@PreAuthorize("hasRole('ADMIN') or @securityService.isOwner(authentication, #id)")
-	public Mono<UserResponse> setPresetAvatar(@PathVariable Integer id,
+	@PutMapping("/{publicId}/avatar/preset")
+	@PreAuthorize("hasRole('ADMIN') or @securityService.isOwnerByPublicId(authentication, #publicId)")
+	public Mono<UserResponse> setPresetAvatar(@PathVariable String publicId,
 			@Valid @RequestBody Mono<SetPresetAvatarRequest> requestMono) {
-		return requestMono.flatMap(req -> userService.setPresetAvatar(id, req.getPresetName()));
+		return userPublicIdLookupService.getInternalId(publicId)
+				.flatMap(id -> requestMono.flatMap(req -> userService.setPresetAvatar(id, req.getPresetName())));
 	}
 }

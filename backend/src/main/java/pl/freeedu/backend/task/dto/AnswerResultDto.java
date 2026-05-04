@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AnswerResultDto {
 
-	private Integer taskId;
+	private String taskPublicId;
 	private String taskType;
 	private Boolean isCorrect;
 	private String correctAnswer;

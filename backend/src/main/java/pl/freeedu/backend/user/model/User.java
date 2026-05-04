@@ -17,6 +17,9 @@ public class User {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Integer id;
 
+	@Column(name = "public_id", nullable = false, unique = true, updatable = false)
+	private String publicId;
+
 	@Column(nullable = false, unique = true)
 	private String email;
 
@@ -39,4 +42,11 @@ public class User {
 
 	@Column(name = "avatar_url")
 	private String avatarUrl;
+
+	@PrePersist
+	void ensurePublicId() {
+		if (publicId == null || publicId.isBlank()) {
+			publicId = java.util.UUID.randomUUID().toString();
+		}
+	}
 }

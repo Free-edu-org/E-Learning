@@ -8,19 +8,17 @@ import pl.freeedu.backend.admin.dto.AdminCreateStudentRequest;
 import pl.freeedu.backend.admin.dto.AdminStudentResponse;
 import pl.freeedu.backend.admin.dto.AdminStatsResponse;
 import pl.freeedu.backend.admin.dto.AdminUpdateStudentRequest;
-import pl.freeedu.backend.user.dto.UserResponse;
 import pl.freeedu.backend.user.model.Role;
 import pl.freeedu.backend.user.model.User;
 import pl.freeedu.backend.user.exception.UserErrorCode;
 import pl.freeedu.backend.user.exception.UserException;
 import pl.freeedu.backend.user.repository.UserRepository;
 import pl.freeedu.backend.user.service.UserMapper;
-import pl.freeedu.backend.usergroup.exception.UserGroupErrorCode;
-import pl.freeedu.backend.usergroup.exception.UserGroupException;
 import pl.freeedu.backend.usergroup.model.UserGroup;
 import pl.freeedu.backend.usergroup.repository.UserGroupRepository;
 import pl.freeedu.backend.usergroup.repository.UserInGroupRepository;
 import pl.freeedu.backend.usergroup.model.UserInGroup;
+import pl.freeedu.backend.usergroup.service.UserGroupPublicIdLookupService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -40,16 +38,18 @@ public class AdminService {
 	private final UserMapper userMapper;
 	private final PasswordEncoder passwordEncoder;
 	private final TransactionTemplate transactionTemplate;
+	private final UserGroupPublicIdLookupService userGroupPublicIdLookupService;
 
 	public AdminService(UserRepository userRepository, UserGroupRepository userGroupRepository,
 			UserInGroupRepository userInGroupRepository, UserMapper userMapper, PasswordEncoder passwordEncoder,
-			TransactionTemplate transactionTemplate) {
+			TransactionTemplate transactionTemplate, UserGroupPublicIdLookupService userGroupPublicIdLookupService) {
 		this.userRepository = userRepository;
 		this.userGroupRepository = userGroupRepository;
 		this.userInGroupRepository = userInGroupRepository;
 		this.userMapper = userMapper;
 		this.passwordEncoder = passwordEncoder;
 		this.transactionTemplate = transactionTemplate;
+		this.userGroupPublicIdLookupService = userGroupPublicIdLookupService;
 	}
 
 	public Mono<AdminStatsResponse> getStats() {
@@ -60,7 +60,7 @@ public class AdminService {
 				.build()).subscribeOn(Schedulers.boundedElastic());
 	}
 
-	public Flux<UserResponse> getTeachers() {
+	public Flux<pl.freeedu.backend.user.dto.UserResponse> getTeachers() {
 		return getUsersByRole(Role.TEACHER);
 	}
 
@@ -77,7 +77,7 @@ public class AdminService {
 		}).subscribeOn(Schedulers.boundedElastic()).flatMapMany(Flux::fromIterable);
 	}
 
-	public Mono<UserResponse> createStudent(AdminCreateStudentRequest request) {
+	public Mono<AdminStudentResponse> createStudent(AdminCreateStudentRequest request) {
 		return Mono.fromCallable(() -> transactionTemplate.execute(status -> {
 			log.info("Admin creating new student account: '{}'", request.getUsername());
 			if (userRepository.existsByEmail(request.getEmail())) {
@@ -90,11 +90,8 @@ public class AdminService {
 			}
 
 			UserGroup group = null;
-			if (request.getGroupId() != null) {
-				group = userGroupRepository.findById(request.getGroupId()).orElseThrow(() -> {
-					log.warn("Student creation failed: Group ID: {} not found", request.getGroupId());
-					return new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND);
-				});
+			if (request.getGroupPublicId() != null) {
+				group = userGroupPublicIdLookupService.getRequiredGroup(request.getGroupPublicId());
 			}
 
 			User student = User.builder().email(request.getEmail()).username(request.getUsername())
@@ -108,7 +105,11 @@ public class AdminService {
 							.save(UserInGroup.builder().userId(savedStudent.getId()).groupId(group.getId()).build());
 				}
 				log.info("Student account created successfully by admin. Student ID: {}", savedStudent.getId());
-				return userMapper.toUserResponse(savedStudent);
+				return AdminStudentResponse.builder().publicId(savedStudent.getPublicId())
+						.email(savedStudent.getEmail()).username(savedStudent.getUsername())
+						.role(savedStudent.getRole()).groupPublicId(group != null ? group.getPublicId() : null)
+						.groupName(group != null ? group.getName() : null).createdAt(savedStudent.getCreatedAt())
+						.avatarUrl(savedStudent.getAvatarUrl()).build();
 			} catch (DataIntegrityViolationException ex) {
 				log.warn("Student creation failed: Data integrity violation");
 				if (userRepository.existsByEmail(request.getEmail())) {
@@ -145,11 +146,8 @@ public class AdminService {
 			}
 
 			UserGroup group = null;
-			if (request.getGroupId() != null) {
-				group = userGroupRepository.findById(request.getGroupId()).orElseThrow(() -> {
-					log.warn("Student update failed: Group ID: {} not found", request.getGroupId());
-					return new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND);
-				});
+			if (request.getGroupPublicId() != null) {
+				group = userGroupPublicIdLookupService.getRequiredGroup(request.getGroupPublicId());
 			}
 
 			student.setUsername(request.getUsername());
@@ -158,7 +156,6 @@ public class AdminService {
 
 			UserInGroup existingMembership = userInGroupRepository.findByUserId(savedStudent.getId()).orElse(null);
 
-			Integer finalGroupId = null;
 			String finalGroupName = null;
 
 			if (group == null) {
@@ -177,19 +174,18 @@ public class AdminService {
 					existingMembership.setGroupId(group.getId());
 					userInGroupRepository.save(existingMembership);
 				}
-				finalGroupId = group.getId();
 				finalGroupName = group.getName();
 			}
 
 			log.info("Student ID: {} updated successfully by admin", id);
-			return AdminStudentResponse.builder().id(savedStudent.getId()).email(savedStudent.getEmail())
-					.username(savedStudent.getUsername()).role(savedStudent.getRole()).groupId(finalGroupId)
-					.groupName(finalGroupName).createdAt(savedStudent.getCreatedAt())
-					.avatarUrl(savedStudent.getAvatarUrl()).build();
+			return AdminStudentResponse.builder().publicId(savedStudent.getPublicId()).email(savedStudent.getEmail())
+					.username(savedStudent.getUsername()).role(savedStudent.getRole())
+					.groupPublicId(group != null ? group.getPublicId() : null).groupName(finalGroupName)
+					.createdAt(savedStudent.getCreatedAt()).avatarUrl(savedStudent.getAvatarUrl()).build();
 		})).subscribeOn(Schedulers.boundedElastic());
 	}
 
-	private Flux<UserResponse> getUsersByRole(Role role) {
+	private Flux<pl.freeedu.backend.user.dto.UserResponse> getUsersByRole(Role role) {
 		return Mono
 				.fromCallable(() -> userRepository.findByRoleOrderByCreatedAtDesc(role).stream()
 						.map(userMapper::toUserResponse).toList())
@@ -201,8 +197,9 @@ public class AdminService {
 		Integer groupId = membershipMap.get(student.getId());
 		UserGroup group = groupId != null ? groupMap.get(groupId) : null;
 
-		return AdminStudentResponse.builder().id(student.getId()).email(student.getEmail())
-				.username(student.getUsername()).role(student.getRole()).groupId(groupId)
+		return AdminStudentResponse.builder().publicId(student.getPublicId()).email(student.getEmail())
+				.username(student.getUsername()).role(student.getRole())
+				.groupPublicId(group != null ? group.getPublicId() : null)
 				.groupName(group != null ? group.getName() : null).createdAt(student.getCreatedAt())
 				.avatarUrl(student.getAvatarUrl()).build();
 	}

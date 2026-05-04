@@ -8,6 +8,7 @@ import pl.freeedu.backend.lesson.model.LessonAttachment;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface LessonAttachmentRepository extends JpaRepository<LessonAttachment, Integer> {
@@ -15,6 +16,8 @@ public interface LessonAttachmentRepository extends JpaRepository<LessonAttachme
 	List<LessonAttachment> findAllByLessonId(Integer lessonId);
 
 	List<LessonAttachment> findByLessonIdIn(Collection<Integer> lessonIds);
+
+	Optional<LessonAttachment> findByPublicId(String publicId);
 
 	@Modifying
 	@Transactional

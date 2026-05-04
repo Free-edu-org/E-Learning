@@ -16,12 +16,12 @@ export interface StudentProgress {
 }
 
 export interface StudentLessonGroup {
-  id: number;
+  publicId: string;
   name: string;
 }
 
 export interface StudentLessonAttachment {
-  id: number;
+  publicId: string;
   originalFileName: string;
   contentType: string;
   fileSize: number;
@@ -29,11 +29,11 @@ export interface StudentLessonAttachment {
 }
 
 export interface StudentLesson {
-  id: number;
+  publicId: string;
   title: string;
   theme: string;
   isActive: boolean;
-  teacherId: number;
+  teacherPublicId: string;
   teacherName: string;
   teacherAvatarUrl?: string | null;
   createdAt: string;
@@ -46,7 +46,7 @@ export interface StudentLesson {
 }
 
 export interface SubmitAnswerItem {
-  taskId: number;
+  taskPublicId: string;
   taskType: "choose" | "write" | "scatter" | "speak";
   answer: string;
 }
@@ -56,7 +56,7 @@ export interface SubmitAnswersRequest {
 }
 
 export interface SubmitAnswerDetail {
-  taskId: number;
+  taskPublicId: string;
   taskType: string;
   isCorrect: boolean;
   correctAnswer: string;
@@ -69,7 +69,7 @@ export interface SubmitAnswersResponse {
 }
 
 export interface LessonResultTaskDetail {
-  taskId: number;
+  taskPublicId: string;
   taskType: "choose" | "write" | "scatter" | "speak";
   section: string | null;
   taskText: string;
@@ -82,9 +82,9 @@ export interface LessonResultTaskDetail {
 }
 
 export interface LessonResultDetailsResponse {
-  lessonId: number;
+  lessonPublicId: string;
   lessonTitle: string;
-  userId: number;
+  userPublicId: string;
   username: string;
   score: number;
   maxScore: number;
@@ -97,13 +97,16 @@ export const studentService = {
   getStats: () => fetchApi<StudentStats>("/api/v1/student/stats"),
   getLessons: () => fetchApi<StudentLesson[]>("/api/v1/student/lessons"),
   getProgress: () => fetchApi<StudentProgress>("/api/v1/student/progress"),
-  getLessonResultDetails: (lessonId: number) =>
+  getLessonResultDetails: (lessonPublicId: string) =>
     fetchApi<LessonResultDetailsResponse>(
-      `/api/v1/student/lessons/${lessonId}/result`,
+      `/api/v1/student/lessons/${lessonPublicId}/result`,
     ),
-  submitAnswers: (lessonId: number, payload: SubmitAnswersRequest) =>
-    fetchApi<SubmitAnswersResponse>(`/api/v1/lessons/${lessonId}/submit`, {
-      method: "POST",
-      body: JSON.stringify(payload),
-    }),
+  submitAnswers: (lessonPublicId: string, payload: SubmitAnswersRequest) =>
+    fetchApi<SubmitAnswersResponse>(
+      `/api/v1/lessons/${lessonPublicId}/submit`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    ),
 };

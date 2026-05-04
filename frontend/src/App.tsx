@@ -108,15 +108,15 @@ function App() {
                     element={<TeacherLessonCreateView />}
                   />
                   <Route
-                    path="/teacher/lessons/:lessonId/edit"
+                    path="/teacher/lessons/:lessonPublicId/edit"
                     element={<TeacherLessonEditView />}
                   />
                   <Route
-                    path="/teacher/lessons/:lessonId/stats"
+                    path="/teacher/lessons/:lessonPublicId/stats"
                     element={<LessonStatsView />}
                   />
                   <Route
-                    path="/teacher/lessons/:lessonId/students/:userId/result"
+                    path="/teacher/lessons/:lessonPublicId/students/:studentPublicId/result"
                     element={<TeacherLessonResultView />}
                   />
                 </Route>
@@ -132,11 +132,11 @@ function App() {
                     element={<StudentProgressView />}
                   />
                   <Route
-                    path="/student/lessons/:lessonId"
+                    path="/student/lessons/:lessonPublicId"
                     element={<LessonSolver />}
                   />
                   <Route
-                    path="/student/lessons/:lessonId/result"
+                    path="/student/lessons/:lessonPublicId/result"
                     element={<StudentLessonResultView />}
                   />
                 </Route>

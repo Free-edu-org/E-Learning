@@ -5,7 +5,7 @@ Panel nauczyciela sluzy do pracy na lekcjach, zadaniach, grupach i uczniach.
 Widoki:
 - **TeacherDashboard** — glowny panel z kartami statystyk, listą lekcji i przyciskami akcji
 - **LessonCard** — karta lekcji z przyciskami Edytuj, Wyniki, Usuń
-- **LessonStatsView** — widok wynikow lekcji (osobna strona, route `/teacher/lessons/:lessonId/stats`)
+- **LessonStatsView** — widok wynikow lekcji (osobna strona, route `/teacher/lessons/:lessonPublicId/stats`)
 
 Polaczenia:
 - [[Rola - Teacher]]

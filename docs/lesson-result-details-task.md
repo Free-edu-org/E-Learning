@@ -6,8 +6,8 @@
 - **Co jest (obecny stan):**
   - Backend zapisuje odpowiedzi użytkownika per zadanie w tabeli `user_answers` (`task_id`, `task_type`, `user_id`, `lesson_id`, `answer`, `is_correct`, `created_at`).
   - Backend zapisuje agregat wyniku lekcji w tabeli `user_lessons` (`status`, `score`, `max_score`, `finished_at`).
-  - Endpoint `POST /api/v1/lessons/{lessonId}/submit` zwraca jednorazowo wynik bieżącego submitu z listą `details`, ale tylko w kontekście kończenia lekcji.
-  - Endpoint `GET /api/v1/teacher/lessons/{lessonId}/stats` zwraca nauczycielowi wyłącznie agregaty per uczeń: `score`, `maxScore`, `resultPercent`, `completedAt`.
+  - Endpoint `POST /api/v1/lessons/{lessonPublicId}/submit` zwraca jednorazowo wynik bieżącego submitu z listą `details`, ale tylko w kontekście kończenia lekcji.
+  - Endpoint `GET /api/v1/teacher/lessons/{lessonPublicId}/stats` zwraca nauczycielowi wyłącznie agregaty per uczeń: `score`, `maxScore`, `resultPercent`, `completedAt`.
   - Frontend nauczyciela pokazuje listę uczniów i procenty w `LessonStatsView`, bez wejścia w szczegóły odpowiedzi dla danej lekcji.
   - Frontend ucznia pokazuje po submit jedynie prosty dialog wyniku, bez trwałego ekranu historii ukończonej lekcji.
 - **Czego brakuje:**
@@ -17,7 +17,7 @@
   - Brakuje widoku ucznia pozwalającego po czasie wrócić do ukończonej lekcji i zobaczyć szczegółowy wynik.
   - Brakuje rozdzielenia uprawnień dla odczytu takich danych: nauczyciel-owner lekcji, sam uczeń, admin.
 - **Ryzyka / ograniczenia:**
-  - Aktualnie `GET /api/v1/lessons/{lessonId}/tasks` dla ucznia zwraca `LESSON_ALREADY_COMPLETED`, więc nie nadaje się do wyświetlenia read-only ukończonej próby.
+  - Aktualnie `GET /api/v1/lessons/{lessonPublicId}/tasks` dla ucznia zwraca `LESSON_ALREADY_COMPLETED`, więc nie nadaje się do wyświetlenia read-only ukończonej próby.
   - Sam zapis `user_answers.answer` przechowuje odpowiedź użytkownika, ale obecne DTO submitu nie zwraca jej w odpowiedzi.
   - Dane zadania są rozproszone po tabelach `choose_tasks`, `write_tasks`, `scatter_tasks`, `speak_tasks`, więc szczegóły wyniku wymagają złożenia odpowiedzi z definicją zadania per typ.
   - Należy pilnować ownership, aby nauczyciel nie widział wyników cudzej lekcji ani cudzych uczniów spoza swojej relacji domenowej.
@@ -36,22 +36,22 @@
 
 #### 2. API / kontrakt
 - **Endpointy:**
-  - Dodać endpoint do pobrania szczegółowego wyniku lekcji dla nauczyciela, np. `GET /api/v1/teacher/lessons/{lessonId}/students/{userId}/result`.
-  - Dodać endpoint do pobrania szczegółowego wyniku ukończonej lekcji dla ucznia, np. `GET /api/v1/student/lessons/{lessonId}/result`.
+  - Dodać endpoint do pobrania szczegółowego wyniku lekcji dla nauczyciela, np. `GET /api/v1/teacher/lessons/{lessonPublicId}/students/{userPublicId}/result`.
+  - Dodać endpoint do pobrania szczegółowego wyniku ukończonej lekcji dla ucznia, np. `GET /api/v1/student/lessons/{lessonPublicId}/result`.
   - Alternatywnie można dodać jeden wspólny endpoint na warstwie `lessons`, ale z precyzyjną autoryzacją i rozróżnieniem perspektywy. Preferowane są jednak dwa jawne entrypointy BFF.
 - **Request / response:**
   - Response powinien zawierać dane nagłówkowe lekcji i użytkownika oraz listę szczegółów per zadanie.
   - Proponowany response:
-    - `lessonId`
+    - `lessonPublicId`
     - `lessonTitle`
-    - `userId`
+    - `userPublicId`
     - `username`
     - `score`
     - `maxScore`
     - `resultPercent`
     - `completedAt`
     - `tasks[]`, gdzie każdy element zawiera:
-      - `taskId`
+      - `taskPublicId`
       - `taskType`
       - `section`
       - `taskText`

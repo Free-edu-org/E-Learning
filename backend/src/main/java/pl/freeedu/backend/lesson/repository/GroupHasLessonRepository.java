@@ -19,7 +19,7 @@ public interface GroupHasLessonRepository extends JpaRepository<GroupHasLesson, 
 	@Transactional
 	void deleteByLessonId(Integer lessonId);
 
-	@Query("SELECT new pl.freeedu.backend.lesson.dto.GroupDto(g.id, g.name) "
+	@Query("SELECT new pl.freeedu.backend.lesson.dto.GroupDto(g.publicId, g.name) "
 			+ "FROM pl.freeedu.backend.usergroup.model.UserGroup g JOIN pl.freeedu.backend.lesson.model.GroupHasLesson ghl ON g.id = ghl.groupId "
 			+ "WHERE ghl.lessonId = :lessonId")
 	List<GroupDto> findGroupsForLesson(Integer lessonId);

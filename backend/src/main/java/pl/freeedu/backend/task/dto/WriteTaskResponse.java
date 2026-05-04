@@ -13,8 +13,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class WriteTaskResponse {
 
-	private Integer id;
-	private Integer lessonId;
+	private String publicId;
+	private String lessonPublicId;
 	private String task;
 	private String correctAnswer;
 	private String hint;

@@ -13,14 +13,14 @@ export interface DialogFeedbackState {
 export interface LessonDraft {
   title: string;
   theme: string;
-  groupIds: Group[];
+  groups: Group[];
   tasks: LessonTaskDraft[];
 }
 
 export const emptyLessonDraft: LessonDraft = {
   title: "",
   theme: "",
-  groupIds: [],
+  groups: [],
   tasks: [],
 };
 
@@ -149,14 +149,14 @@ export function getTaskValidationError(
 }
 
 export async function createLessonTask(
-  lessonId: number,
+  lessonPublicId: string,
   task: LessonTaskDraft,
 ) {
   const hint = task.hint.trim() || undefined;
   const section = task.section.trim() || undefined;
 
   if (task.type === "choose") {
-    return taskService.createChooseTask(lessonId, {
+    return taskService.createChooseTask(lessonPublicId, {
       task: task.task.trim(),
       possibleAnswers: task.possibleAnswers.trim(),
       correctAnswer: Number(task.correctAnswer.trim()),
@@ -166,7 +166,7 @@ export async function createLessonTask(
   }
 
   if (task.type === "write") {
-    return taskService.createWriteTask(lessonId, {
+    return taskService.createWriteTask(lessonPublicId, {
       task: task.task.trim(),
       correctAnswer: task.correctAnswer.trim(),
       hint,
@@ -175,7 +175,7 @@ export async function createLessonTask(
   }
 
   if (task.type === "scatter") {
-    return taskService.createScatterTask(lessonId, {
+    return taskService.createScatterTask(lessonPublicId, {
       task: task.task.trim(),
       words: task.words.trim(),
       correctAnswer: task.correctAnswer.trim(),
@@ -184,7 +184,7 @@ export async function createLessonTask(
     });
   }
 
-  return taskService.createSpeakTask(lessonId, {
+  return taskService.createSpeakTask(lessonPublicId, {
     task: task.task.trim(),
     expectedText: task.correctAnswer.trim(),
     hint,
@@ -193,15 +193,15 @@ export async function createLessonTask(
 }
 
 export async function updateLessonTask(
-  lessonId: number,
-  backendId: number,
+  lessonPublicId: string,
+  taskPublicId: string,
   task: LessonTaskDraft,
 ) {
   const hint = task.hint.trim() || undefined;
   const section = task.section.trim() || undefined;
 
   if (task.type === "choose") {
-    return taskService.updateChooseTask(lessonId, backendId, {
+    return taskService.updateChooseTask(lessonPublicId, taskPublicId, {
       task: task.task.trim(),
       possibleAnswers: task.possibleAnswers.trim(),
       correctAnswer: Number(task.correctAnswer.trim()),
@@ -211,7 +211,7 @@ export async function updateLessonTask(
   }
 
   if (task.type === "write") {
-    return taskService.updateWriteTask(lessonId, backendId, {
+    return taskService.updateWriteTask(lessonPublicId, taskPublicId, {
       task: task.task.trim(),
       correctAnswer: task.correctAnswer.trim(),
       hint,
@@ -220,7 +220,7 @@ export async function updateLessonTask(
   }
 
   if (task.type === "scatter") {
-    return taskService.updateScatterTask(lessonId, backendId, {
+    return taskService.updateScatterTask(lessonPublicId, taskPublicId, {
       task: task.task.trim(),
       words: task.words.trim(),
       correctAnswer: task.correctAnswer.trim(),
@@ -229,7 +229,7 @@ export async function updateLessonTask(
     });
   }
 
-  return taskService.updateSpeakTask(lessonId, backendId, {
+  return taskService.updateSpeakTask(lessonPublicId, taskPublicId, {
     task: task.task.trim(),
     expectedText: task.correctAnswer.trim(),
     hint,
@@ -247,7 +247,7 @@ export function tasksResponseToDrafts(
 
     for (const task of section.chooseTasks) {
       drafts.push({
-        id: `backendId:choose:${task.id}`,
+        id: `backendTask:choose:${task.publicId}`,
         type: "choose",
         task: task.task,
         possibleAnswers: task.possibleAnswers,
@@ -261,7 +261,7 @@ export function tasksResponseToDrafts(
 
     for (const task of section.writeTasks) {
       drafts.push({
-        id: `backendId:write:${task.id}`,
+        id: `backendTask:write:${task.publicId}`,
         type: "write",
         task: task.task,
         possibleAnswers: "",
@@ -274,7 +274,7 @@ export function tasksResponseToDrafts(
 
     for (const task of section.scatterTasks) {
       drafts.push({
-        id: `backendId:scatter:${task.id}`,
+        id: `backendTask:scatter:${task.publicId}`,
         type: "scatter",
         task: task.task,
         possibleAnswers: "",
@@ -287,7 +287,7 @@ export function tasksResponseToDrafts(
 
     for (const task of section.speakTasks) {
       drafts.push({
-        id: `backendId:speak:${task.id}`,
+        id: `backendTask:speak:${task.publicId}`,
         type: "speak",
         task: task.task,
         possibleAnswers: "",
@@ -304,11 +304,11 @@ export function tasksResponseToDrafts(
 
 export function parseBackendDraftId(
   draftId: string,
-): { type: string; backendId: number } | null {
-  const match = /^backendId:(\w+):(\d+)$/.exec(draftId);
+): { type: string; taskPublicId: string } | null {
+  const match = /^backendTask:(\w+):(.+)$/.exec(draftId);
   if (!match) {
     return null;
   }
 
-  return { type: match[1], backendId: Number(match[2]) };
+  return { type: match[1], taskPublicId: match[2] };
 }

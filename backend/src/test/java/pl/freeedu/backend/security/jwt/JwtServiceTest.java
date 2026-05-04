@@ -28,14 +28,15 @@ class JwtServiceTest {
 	void shouldGenerateAndValidateToken() {
 		// given
 		Integer userId = 123;
-		User user = User.builder().id(userId).tokenVersion(4).build();
+		String userPublicId = "user-public-id";
+		User user = User.builder().id(userId).publicId(userPublicId).tokenVersion(4).build();
 
 		// when
-		String token = jwtService.generateToken(userId, 4);
+		String token = jwtService.generateToken(userPublicId, 4);
 
 		// then
 		assertNotNull(token);
-		assertEquals(userId, jwtService.extractUserId(token));
+		assertEquals(userPublicId, jwtService.extractUserPublicId(token));
 		assertEquals(4, jwtService.extractTokenVersion(token));
 		assertTrue(jwtService.isTokenValid(token, user));
 	}
@@ -43,9 +44,9 @@ class JwtServiceTest {
 	@Test
 	void shouldReturnFalseForInvalidUser() {
 		// given
-		Integer userId = 123;
-		String token = jwtService.generateToken(userId, 1);
-		User user = User.builder().id(999).tokenVersion(1).build();
+		String userPublicId = "user-public-id";
+		String token = jwtService.generateToken(userPublicId, 1);
+		User user = User.builder().id(999).publicId("other-public-id").tokenVersion(1).build();
 
 		// when
 		boolean result = jwtService.isTokenValid(token, user);
@@ -56,8 +57,8 @@ class JwtServiceTest {
 
 	@Test
 	void shouldReturnFalseWhenTokenVersionDoesNotMatch() {
-		String token = jwtService.generateToken(123, 1);
-		User user = User.builder().id(123).tokenVersion(2).build();
+		String token = jwtService.generateToken("user-public-id", 1);
+		User user = User.builder().id(123).publicId("user-public-id").tokenVersion(2).build();
 
 		assertFalse(jwtService.isTokenValid(token, user));
 	}
@@ -65,14 +66,17 @@ class JwtServiceTest {
 	@Test
 	void shouldInvalidateOldJwtAfterPasswordResetIncrementsTokenVersion() {
 		Integer userId = 123;
+		String userPublicId = "user-public-id";
 		Integer originalTokenVersion = 3;
-		User userBeforeReset = User.builder().id(userId).tokenVersion(originalTokenVersion).build();
-		String jwt = jwtService.generateToken(userId, originalTokenVersion);
+		User userBeforeReset = User.builder().id(userId).publicId(userPublicId).tokenVersion(originalTokenVersion)
+				.build();
+		String jwt = jwtService.generateToken(userPublicId, originalTokenVersion);
 
 		assertEquals(originalTokenVersion, jwtService.extractTokenVersion(jwt));
 		assertTrue(jwtService.isTokenValid(jwt, userBeforeReset));
 
-		User userAfterReset = User.builder().id(userId).tokenVersion(originalTokenVersion + 1).build();
+		User userAfterReset = User.builder().id(userId).publicId(userPublicId).tokenVersion(originalTokenVersion + 1)
+				.build();
 
 		assertFalse(jwtService.isTokenValid(jwt, userAfterReset));
 	}
@@ -81,11 +85,11 @@ class JwtServiceTest {
 	void shouldReturnExpiredIfTokenIsOld() {
 		// given
 		ReflectionTestUtils.setField(jwtService, "jwtExpiration", -10000L); // Expired 10s ago
-		String token = jwtService.generateToken(456);
+		String token = jwtService.generateToken("user-public-id");
 
 		// when
 		try {
-			boolean isValid = jwtService.isTokenValid(token, 456);
+			boolean isValid = jwtService.isTokenValidForPublicId(token, "user-public-id");
 
 			// then
 			assertFalse(isValid, "Token should be invalid if expired");

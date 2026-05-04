@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "lesson_attachments")
@@ -16,6 +17,10 @@ public class LessonAttachment {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Integer id;
+
+	@Column(name = "public_id", unique = true, nullable = false)
+	@Builder.Default
+	private String publicId = UUID.randomUUID().toString();
 
 	@Column(name = "lesson_id", nullable = false)
 	private Integer lessonId;
@@ -34,4 +39,11 @@ public class LessonAttachment {
 
 	@Column(name = "created_at", insertable = false, updatable = false)
 	private LocalDateTime createdAt;
+
+	@PrePersist
+	private void ensurePublicId() {
+		if (publicId == null || publicId.isBlank()) {
+			publicId = UUID.randomUUID().toString();
+		}
+	}
 }
