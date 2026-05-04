@@ -16,7 +16,6 @@ spring:
     baseline-on-migrate: true
     baseline-description: "init"
     baseline-version: "0"
-    out-of-order: true
     locations:
       - classpath:db/migration
       - classpath:db/seed
