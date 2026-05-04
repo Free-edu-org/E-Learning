@@ -33,6 +33,7 @@ import {
 } from "recharts";
 import {
   studentService,
+  type StudentProgressPoint,
   type StudentSkillStats,
   type StudentStats,
 } from "@/api/studentService";
@@ -46,10 +47,7 @@ import {
 import { StatCard } from "@/components/ui/panel/StatCard";
 import { useAuth } from "@/context/AuthContext";
 import { getErrorMessage } from "@/utils/dashboardUtils";
-import {
-  generateAchievements,
-  generateProgressChartData,
-} from "@/utils/progressMockData";
+import { generateAchievements } from "@/utils/progressMockData";
 
 type NormalizedSkill = StudentSkillStats & {
   correctPct: number;
@@ -62,13 +60,26 @@ export function StudentProgressView() {
   const theme = useTheme();
 
   const [stats, setStats] = useState<StudentStats | null>(null);
+  const [progressHistory, setProgressHistory] = useState<
+    StudentProgressPoint[]
+  >([]);
   const [skillsData, setSkillsData] = useState<StudentSkillStats[]>([]);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const progressChartData = useMemo(() => generateProgressChartData(), []);
   const achievements = useMemo(() => generateAchievements(), []);
+  const progressChartData = useMemo(
+    () =>
+      progressHistory.map((item) => ({
+        ...item,
+        date: new Date(item.date).toLocaleDateString("pl-PL", {
+          month: "numeric",
+          day: "numeric",
+        }),
+      })),
+    [progressHistory],
+  );
 
   const normalizedSkillsData = useMemo<NormalizedSkill[]>(() => {
     return skillsData.map((s) => {
@@ -109,9 +120,10 @@ export function StudentProgressView() {
       studentService.getProgress(),
       studentService.getSkills(),
     ])
-      .then(([currentUser, nextStats, , nextSkills]) => {
+      .then(([currentUser, nextStats, nextProgressHistory, nextSkills]) => {
         setUser(currentUser);
         setStats(nextStats);
+        setProgressHistory(nextProgressHistory);
         setSkillsData(nextSkills);
       })
       .catch((err: unknown) => {
@@ -220,6 +232,11 @@ export function StudentProgressView() {
 
                 {loading ? (
                   <Skeleton variant="rounded" height={280} />
+                ) : progressChartData.length === 0 ? (
+                  <Alert severity="info" sx={{ borderRadius: 2 }}>
+                    Historia sredniego wyniku pojawi sie po ukonczeniu pierwszej
+                    lekcji.
+                  </Alert>
                 ) : (
                   <ResponsiveContainer width="100%" height={280}>
                     <LineChart data={progressChartData}>
@@ -231,12 +248,16 @@ export function StudentProgressView() {
                         dataKey="date"
                         stroke={theme.palette.text.secondary}
                         style={{ fontSize: 12 }}
-                        interval={Math.floor(progressChartData.length / 5)}
+                        interval={Math.max(
+                          0,
+                          Math.floor(progressChartData.length / 5) - 1,
+                        )}
                       />
                       <YAxis
                         stroke={theme.palette.text.secondary}
                         style={{ fontSize: 12 }}
                         domain={[0, 100]}
+                        tickFormatter={(value) => `${value}%`}
                       />
                       <Tooltip
                         contentStyle={{
@@ -248,6 +269,16 @@ export function StudentProgressView() {
                         labelStyle={{
                           color: theme.palette.text.primary,
                         }}
+                        formatter={(
+                          value:
+                            | number
+                            | string
+                            | readonly (number | string)[]
+                            | undefined,
+                        ) => [
+                          `${Array.isArray(value) ? value[0] : (value ?? 0)}%`,
+                          "Wynik",
+                        ]}
                       />
                       <Line
                         type="monotone"

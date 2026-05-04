@@ -2,13 +2,7 @@
  * Mock data generator for StudentProgressView
  * TODO: Replace with real API calls when backends endpoints are available:
  * - GET /api/v1/student/achievements
- * - GET /api/v1/student/progress (for progress chart)
  */
-
-export interface ProgressChartPoint {
-  date: string;
-  progress: number;
-}
 
 export interface Achievement {
   id: string;
@@ -18,33 +12,6 @@ export interface Achievement {
   color: "warning" | "success" | "info" | "primary";
   unlocked: boolean;
   unlockedAt?: string;
-}
-
-/**
- * Generates mock progress chart data
- * Simulates a student's progress over time
- */
-export function generateProgressChartData(): ProgressChartPoint[] {
-  const today = new Date();
-  const data: ProgressChartPoint[] = [];
-
-  for (let i = 20; i >= 0; i--) {
-    const date = new Date(today);
-    date.setDate(date.getDate() - i);
-
-    const baseProgress = (20 - i) * 3 + Math.random() * 10;
-    const progress = Math.min(Math.max(baseProgress, 0), 100);
-
-    data.push({
-      date: date.toLocaleDateString("pl-PL", {
-        month: "numeric",
-        day: "numeric",
-      }),
-      progress: Math.round(progress),
-    });
-  }
-
-  return data;
 }
 
 /**

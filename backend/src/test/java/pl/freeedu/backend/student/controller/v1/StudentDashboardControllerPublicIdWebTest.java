@@ -21,6 +21,7 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 
 import pl.freeedu.backend.exception.GlobalExceptionHandler;
 import pl.freeedu.backend.lesson.service.LessonPublicIdLookupService;
+import pl.freeedu.backend.student.dto.StudentProgressHistoryResponse;
 import pl.freeedu.backend.student.dto.StudentSkillStatsResponse;
 import pl.freeedu.backend.security.service.SecurityService;
 import pl.freeedu.backend.student.service.StudentService;
@@ -28,6 +29,7 @@ import pl.freeedu.backend.support.ControllerTestSecurityConfig;
 import pl.freeedu.backend.task.dto.LessonResultDetailsResponse;
 import pl.freeedu.backend.task.exception.TaskErrorCode;
 import pl.freeedu.backend.task.exception.TaskException;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @SpringJUnitConfig(classes = {StudentDashboardControllerPublicIdWebTest.TestConfig.class, GlobalExceptionHandler.class,
@@ -79,6 +81,24 @@ class StudentDashboardControllerPublicIdWebTest {
 		// then
 		result.expectStatus().isNotFound();
 		verify(studentService, never()).getLessonResultDetails(any());
+	}
+
+	@Test
+	void shouldReturnStudentProgressHistoryForCurrentStudent() {
+		// given
+		when(studentService.getProgress()).thenReturn(Flux.fromIterable(
+				List.of(StudentProgressHistoryResponse.builder().date("2026-04-09").progress(50.0).build(),
+						StudentProgressHistoryResponse.builder().date("2026-04-10").progress(76.0).build())));
+
+		// when
+		WebTestClient.ResponseSpec result = webTestClient.mutateWith(mockUser("student").roles("STUDENT")).get()
+				.uri("/api/v1/student/progress").exchange();
+
+		// then
+		result.expectStatus().isOk().expectBody().jsonPath("$[0].date").isEqualTo("2026-04-09")
+				.jsonPath("$[0].progress").isEqualTo(50.0).jsonPath("$[1].date").isEqualTo("2026-04-10")
+				.jsonPath("$[1].progress").isEqualTo(76.0);
+		verify(studentService).getProgress();
 	}
 
 	@Test
