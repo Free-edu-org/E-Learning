@@ -9,11 +9,9 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class StudentProgressResponse {
+public class StudentProgressHistoryResponse {
 
-	private String summary;
-	private Integer completedLessons;
-	private Integer totalLessons;
-	private Integer inProgressLessons;
-	private Double averageScore;
+	private String date;
+
+	private double progress;
 }

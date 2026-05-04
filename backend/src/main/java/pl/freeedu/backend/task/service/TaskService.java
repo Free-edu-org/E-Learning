@@ -7,6 +7,8 @@ import org.springframework.http.codec.multipart.FilePart;
 import pl.freeedu.backend.lesson.model.Lesson;
 import pl.freeedu.backend.lesson.repository.LessonRepository;
 import pl.freeedu.backend.security.service.SecurityService;
+import pl.freeedu.backend.student.model.StudentProgressHistory;
+import pl.freeedu.backend.student.repository.StudentProgressHistoryRepository;
 import pl.freeedu.backend.task.dto.*;
 import pl.freeedu.backend.task.exception.TaskErrorCode;
 import pl.freeedu.backend.task.exception.TaskException;
@@ -18,6 +20,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -36,6 +39,7 @@ public class TaskService {
 	private final UserInGroupRepository userInGroupRepository;
 	private final SttClient sttClient;
 	private final TaskPublicIdLookupService taskPublicIdLookupService;
+	private final StudentProgressHistoryRepository studentProgressHistoryRepository;
 	private final double sttMinScore;
 
 	public TaskService(ChooseTaskRepository chooseTaskRepository, WriteTaskRepository writeTaskRepository,
@@ -44,6 +48,7 @@ public class TaskService {
 			LessonRepository lessonRepository, SecurityService securityService,
 			UserInGroupRepository userInGroupRepository, SttClient sttClient,
 			TaskPublicIdLookupService taskPublicIdLookupService,
+			StudentProgressHistoryRepository studentProgressHistoryRepository,
 			@Value("${application.stt.min-score}") double sttMinScore) {
 		this.chooseTaskRepository = chooseTaskRepository;
 		this.writeTaskRepository = writeTaskRepository;
@@ -56,6 +61,7 @@ public class TaskService {
 		this.userInGroupRepository = userInGroupRepository;
 		this.sttClient = sttClient;
 		this.taskPublicIdLookupService = taskPublicIdLookupService;
+		this.studentProgressHistoryRepository = studentProgressHistoryRepository;
 		this.sttMinScore = sttMinScore;
 	}
 
@@ -383,6 +389,7 @@ public class TaskService {
 					userLesson.setStatus(UserLessonStatus.COMPLETED);
 					userLesson.setFinishedAt(LocalDateTime.now());
 					userLessonRepository.save(userLesson);
+					saveProgressHistorySnapshot(userId);
 
 					log.info("Lesson ID: {} submitted successfully by student ID: {}. Score: {}/{}", lessonId, userId,
 							score, maxScore);
@@ -411,6 +418,24 @@ public class TaskService {
 			case "speak" -> "speak_tasks";
 			default -> throw new TaskException(TaskErrorCode.INVALID_TASK_TYPE);
 		};
+	}
+
+	private void saveProgressHistorySnapshot(Integer userId) {
+		double averageScore = Optional
+				.ofNullable(
+						userLessonRepository.findAveragePercentByUserIdAndStatus(userId, UserLessonStatus.COMPLETED))
+				.orElse(0.0);
+		LocalDate progressDate = LocalDate.now();
+
+		StudentProgressHistory snapshot = studentProgressHistoryRepository
+				.findByUserIdAndProgressDate(userId, progressDate)
+				.orElseGet(() -> StudentProgressHistory.builder().userId(userId).progressDate(progressDate).build());
+		snapshot.setAvgScore(roundToOneDecimal(averageScore));
+		studentProgressHistoryRepository.save(snapshot);
+	}
+
+	private double roundToOneDecimal(double value) {
+		return Math.round(value * 10.0) / 10.0;
 	}
 
 	private ChooseTask getChooseTaskForLesson(Integer lessonId, String taskPublicId) {

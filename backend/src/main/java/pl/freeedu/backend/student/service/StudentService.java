@@ -17,9 +17,10 @@ import pl.freeedu.backend.lesson.repository.LessonRepository;
 import pl.freeedu.backend.lesson.service.LessonAttachmentService;
 import pl.freeedu.backend.security.service.SecurityService;
 import pl.freeedu.backend.student.dto.StudentLessonResponse;
-import pl.freeedu.backend.student.dto.StudentProgressResponse;
+import pl.freeedu.backend.student.dto.StudentProgressHistoryResponse;
 import pl.freeedu.backend.student.dto.StudentSkillStatsResponse;
 import pl.freeedu.backend.student.dto.StudentStatsResponse;
+import pl.freeedu.backend.student.repository.StudentProgressHistoryRepository;
 import pl.freeedu.backend.task.dto.LessonResultDetailsResponse;
 import pl.freeedu.backend.task.exception.TaskErrorCode;
 import pl.freeedu.backend.task.exception.TaskException;
@@ -47,12 +48,14 @@ public class StudentService {
 	private final LessonAttachmentService lessonAttachmentService;
 	private final UserGroupRepository userGroupRepository;
 	private final UserAnswerRepository userAnswerRepository;
+	private final StudentProgressHistoryRepository studentProgressHistoryRepository;
 
 	public StudentService(SecurityService securityService, UserInGroupRepository userInGroupRepository,
 			GroupHasLessonRepository groupHasLessonRepository, LessonRepository lessonRepository,
 			UserLessonRepository userLessonRepository, LessonMapper lessonMapper,
 			LessonResultDetailsService lessonResultDetailsService, LessonAttachmentService lessonAttachmentService,
-			UserGroupRepository userGroupRepository, UserAnswerRepository userAnswerRepository) {
+			UserGroupRepository userGroupRepository, UserAnswerRepository userAnswerRepository,
+			StudentProgressHistoryRepository studentProgressHistoryRepository) {
 		this.securityService = securityService;
 		this.userInGroupRepository = userInGroupRepository;
 		this.groupHasLessonRepository = groupHasLessonRepository;
@@ -63,6 +66,7 @@ public class StudentService {
 		this.lessonAttachmentService = lessonAttachmentService;
 		this.userGroupRepository = userGroupRepository;
 		this.userAnswerRepository = userAnswerRepository;
+		this.studentProgressHistoryRepository = studentProgressHistoryRepository;
 	}
 
 	public Mono<StudentStatsResponse> getStats() {
@@ -73,8 +77,13 @@ public class StudentService {
 		return loadDashboardSnapshot().flatMapMany(snapshot -> Flux.fromIterable(snapshot.lessons()));
 	}
 
-	public Mono<StudentProgressResponse> getProgress() {
-		return loadDashboardSnapshot().map(StudentDashboardSnapshot::progress);
+	public Flux<StudentProgressHistoryResponse> getProgress() {
+		return securityService.getCurrentUserId().flatMapMany(userId -> Mono
+				.fromCallable(() -> studentProgressHistoryRepository.findByUserIdOrderByProgressDateAsc(userId).stream()
+						.map(entry -> StudentProgressHistoryResponse.builder().date(entry.getProgressDate().toString())
+								.progress(roundToWhole(entry.getAvgScore())).build())
+						.toList())
+				.subscribeOn(Schedulers.boundedElastic()).flatMapMany(Flux::fromIterable));
 	}
 
 	public Flux<StudentSkillStatsResponse> getSkillStats() {
@@ -168,22 +177,14 @@ public class StudentService {
 				.completedLessons(completedLessons).inProgressLessons(inProgressLessons)
 				.averageScore(roundToOneDecimal(averageScore)).build();
 
-		StudentProgressResponse progress = StudentProgressResponse.builder()
-				.summary(buildSummary(totalLessons, completedLessons, inProgressLessons, stats.getAverageScore()))
-				.totalLessons(totalLessons).completedLessons(completedLessons).inProgressLessons(inProgressLessons)
-				.averageScore(stats.getAverageScore()).build();
-
-		return new StudentDashboardSnapshot(studentLessons, stats, progress);
+		return new StudentDashboardSnapshot(studentLessons, stats);
 	}
 
 	private StudentDashboardSnapshot emptySnapshot(String summary) {
 		StudentStatsResponse stats = StudentStatsResponse.builder().totalLessons(0).completedLessons(0)
 				.inProgressLessons(0).averageScore(0.0).build();
 
-		StudentProgressResponse progress = StudentProgressResponse.builder().summary(summary).totalLessons(0)
-				.completedLessons(0).inProgressLessons(0).averageScore(0.0).build();
-
-		return new StudentDashboardSnapshot(List.of(), stats, progress);
+		return new StudentDashboardSnapshot(List.of(), stats);
 	}
 
 	private String buildSummary(int totalLessons, int completedLessons, int inProgressLessons, double averageScore) {
@@ -211,6 +212,10 @@ public class StudentService {
 
 	private double roundToOneDecimal(double value) {
 		return Math.round(value * 10.0) / 10.0;
+	}
+
+	private double roundToWhole(double value) {
+		return Math.round(value);
 	}
 
 	private List<StudentSkillStatsResponse> buildSkillStats(Integer userId) {
@@ -241,7 +246,6 @@ public class StudentService {
 		return userLesson != null && userLesson.getStatus() == UserLessonStatus.COMPLETED;
 	}
 
-	private record StudentDashboardSnapshot(List<StudentLessonResponse> lessons, StudentStatsResponse stats,
-			StudentProgressResponse progress) {
+	private record StudentDashboardSnapshot(List<StudentLessonResponse> lessons, StudentStatsResponse stats) {
 	}
 }
