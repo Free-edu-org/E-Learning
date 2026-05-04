@@ -1275,7 +1275,34 @@ Warstwa BFF dla uczniow.
 
 ---
 
-### 7.3. Get Personal Progress
+### 7.3. Get Student Skills Breakdown
+- **URL**: `/api/v1/student/skills`
+- **Method**: `GET`
+- **Description**: Zwraca rozbicie odpowiedzi aktualnego ucznia na kategorie zadan z liczba poprawnych i blednych odpowiedzi. Wymaga `STUDENT`.
+
+**Success (200 OK):**
+```json
+[
+  { "category": "Wybór", "correct": 6, "wrong": 2 },
+  { "category": "Pisanie", "correct": 1, "wrong": 1 },
+  { "category": "Rozsypanka", "correct": 1, "wrong": 3 },
+  { "category": "Mówienie", "correct": 2, "wrong": 0 }
+]
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `category` | String | Typ zadania. Jedna z wartosci: `Wybór`, `Pisanie`, `Rozsypanka`, `Mówienie`. |
+| `correct` | Integer | Suma poprawnych odpowiedzi aktualnego ucznia dla tej kategorii. |
+| `wrong` | Integer | Suma blednych odpowiedzi aktualnego ucznia dla tej kategorii. |
+
+**Known Errors:**
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
+
+---
+
+### 7.4. Get Personal Progress
 - **URL**: `/api/v1/student/progress`
 - **Method**: `GET`
 - **Description**: Zwraca podsumowanie postepu ucznia w formie DTO. Wymaga `STUDENT`.

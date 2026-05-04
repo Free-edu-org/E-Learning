@@ -1,52 +1,60 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  Alert,
   Box,
+  Button,
   Container,
   Grid,
   Paper,
   Skeleton,
   Stack,
   Typography,
-  Alert,
-  Button,
 } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
 import {
-  CheckCircleOutlined as CompletedIcon,
-  TrendingUpOutlined as TrendIcon,
-  EmojiEventsOutlined as AchievementIcon,
   ArrowBackOutlined as BackIcon,
+  CheckCircleOutlined as CompletedIcon,
+  EmojiEventsOutlined as AchievementIcon,
   StarsOutlined as PointsIcon,
+  TrendingUpOutlined as TrendIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import {
-  LineChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
   Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  Legend,
 } from "recharts";
-import { studentService, type StudentStats } from "@/api/studentService";
-import { userService, type UserProfile } from "@/api/userService";
 import {
-  panelGridCardSx,
+  studentService,
+  type StudentSkillStats,
+  type StudentStats,
+} from "@/api/studentService";
+import { userService, type UserProfile } from "@/api/userService";
+import { DashboardHeader } from "@/components/ui/panel/DashboardHeader";
+import { DashboardTopBar } from "@/components/ui/panel/DashboardTopBar";
+import {
   panelGridCardContentSx,
+  panelGridCardSx,
 } from "@/components/ui/panel/panelStyles";
 import { StatCard } from "@/components/ui/panel/StatCard";
-import { DashboardTopBar } from "@/components/ui/panel/DashboardTopBar";
-import { DashboardHeader } from "@/components/ui/panel/DashboardHeader";
 import { useAuth } from "@/context/AuthContext";
 import { getErrorMessage } from "@/utils/dashboardUtils";
 import {
-  generateProgressChartData,
-  generateSkillsData,
   generateAchievements,
+  generateProgressChartData,
 } from "@/utils/progressMockData";
+
+type NormalizedSkill = StudentSkillStats & {
+  correctPct: number;
+  wrongPct: number;
+};
 
 export function StudentProgressView() {
   const { logout } = useAuth();
@@ -54,17 +62,15 @@ export function StudentProgressView() {
   const theme = useTheme();
 
   const [stats, setStats] = useState<StudentStats | null>(null);
+  const [skillsData, setSkillsData] = useState<StudentSkillStats[]>([]);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Mock data — will be replaced with API calls when backend is ready
   const progressChartData = useMemo(() => generateProgressChartData(), []);
-  const skillsData = useMemo(() => generateSkillsData(), []);
   const achievements = useMemo(() => generateAchievements(), []);
 
-  // Normalize skills data so each category sums to 100% (shows relative correct/wrong)
-  const normalizedSkillsData = useMemo(() => {
+  const normalizedSkillsData = useMemo<NormalizedSkill[]>(() => {
     return skillsData.map((s) => {
       const total = (s.correct ?? 0) + (s.wrong ?? 0);
       if (total <= 0) {
@@ -72,11 +78,24 @@ export function StudentProgressView() {
       }
       const correctRaw = (s.correct / total) * 100;
       const correctPct = Math.round(correctRaw);
-      // ensure sums to 100 to avoid tiny rounding gaps
       const wrongPct = 100 - correctPct;
       return { ...s, correctPct, wrongPct };
     });
   }, [skillsData]);
+
+  const totalPoints = useMemo(
+    () => skillsData.reduce((sum, item) => sum + (item.correct ?? 0), 0),
+    [skillsData],
+  );
+
+  const totalAnswers = useMemo(
+    () =>
+      skillsData.reduce(
+        (sum, item) => sum + (item.correct ?? 0) + (item.wrong ?? 0),
+        0,
+      ),
+    [skillsData],
+  );
 
   const handleLogout = () => {
     logout();
@@ -88,10 +107,12 @@ export function StudentProgressView() {
       userService.getCurrentUser(),
       studentService.getStats(),
       studentService.getProgress(),
+      studentService.getSkills(),
     ])
-      .then(([currentUser, nextStats]) => {
+      .then(([currentUser, nextStats, , nextSkills]) => {
         setUser(currentUser);
         setStats(nextStats);
+        setSkillsData(nextSkills);
       })
       .catch((err: unknown) => {
         setError(getErrorMessage(err, "Nie udało się pobrać danych postępu."));
@@ -107,10 +128,8 @@ export function StudentProgressView() {
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: pageBg, pb: 6 }}>
       <Container maxWidth="xl" sx={{ pt: 4, position: "relative" }}>
-        {/* ── Top bar ── */}
         <DashboardTopBar onLogout={handleLogout} />
 
-        {/* ── Header (profile) ── */}
         <DashboardHeader
           loading={loading}
           username={user?.username}
@@ -120,7 +139,6 @@ export function StudentProgressView() {
           onUserUpdated={setUser}
         />
 
-        {/* ── Back button (placed under profile/header) ── */}
         <Box
           sx={{ display: "flex", alignItems: "center", gap: 1.5, mt: 1, mb: 3 }}
         >
@@ -147,7 +165,6 @@ export function StudentProgressView() {
           </Alert>
         )}
 
-        {/* ── Stats cards row ── */}
         {loading ? (
           <Grid container spacing={2} sx={{ mb: 4 }}>
             {[...Array(3)].map((_, i) => (
@@ -180,17 +197,15 @@ export function StudentProgressView() {
               <StatCard
                 icon={PointsIcon}
                 title="Punkty"
-                value={0} // TODO: System punktów i ich pobieranie z backendu
-                subtitle="pkt"
+                value={totalPoints}
+                subtitle={`${totalAnswers} odpowiedzi łącznie`}
                 color="info"
               />
             </Grid>
           </Grid>
         )}
 
-        {/* ── Charts row: Progress line chart + Skills radar ── */}
         <Grid container spacing={2} sx={{ mb: 4 }}>
-          {/* Progress over time */}
           <Grid size={{ xs: 12, md: 6 }}>
             <Paper elevation={0} sx={{ ...panelGridCardSx, minHeight: 350 }}>
               <Box sx={panelGridCardContentSx}>
@@ -249,7 +264,6 @@ export function StudentProgressView() {
             </Paper>
           </Grid>
 
-          {/* Skills radar chart */}
           <Grid size={{ xs: 12, md: 6 }}>
             <Paper elevation={0} sx={{ ...panelGridCardSx, minHeight: 350 }}>
               <Box sx={panelGridCardContentSx}>
@@ -268,7 +282,7 @@ export function StudentProgressView() {
                   <ResponsiveContainer width="100%" height={280}>
                     <BarChart
                       data={normalizedSkillsData}
-                      margin={{ top: 20, right: 30, bottom: 20, left: 30 }}
+                      margin={{ top: 12, right: 20, bottom: 8, left: 20 }}
                     >
                       <CartesianGrid
                         strokeDasharray="3 3"
@@ -293,10 +307,24 @@ export function StudentProgressView() {
                         }}
                         labelStyle={{
                           color: theme.palette.text.primary,
+                          fontWeight: 600,
                         }}
-                        formatter={(value: unknown) => {
-                          const v = value as number | undefined;
-                          return v == null ? "" : `${v}%`;
+                        formatter={(value: unknown, name: unknown, item) => {
+                          const entry = item.payload as
+                            | NormalizedSkill
+                            | undefined;
+                          const percentage =
+                            typeof value === "number" ? `${value}%` : "";
+                          if (name === "Dobrze") {
+                            return [
+                              `${percentage} (${entry?.correct ?? 0})`,
+                              "Dobrze",
+                            ];
+                          }
+                          return [
+                            `${percentage} (${entry?.wrong ?? 0})`,
+                            "Źle",
+                          ];
                         }}
                       />
                       <Legend />
@@ -305,6 +333,7 @@ export function StudentProgressView() {
                         stackId="a"
                         name="Dobrze"
                         fill={theme.palette.success.main}
+                        radius={[0, 0, 4, 4]}
                         isAnimationActive={false}
                       />
                       <Bar
@@ -312,6 +341,7 @@ export function StudentProgressView() {
                         stackId="a"
                         name="Źle"
                         fill={theme.palette.error.main}
+                        radius={[4, 4, 0, 0]}
                         isAnimationActive={false}
                       />
                     </BarChart>
@@ -322,7 +352,6 @@ export function StudentProgressView() {
           </Grid>
         </Grid>
 
-        {/* ── Achievements section ── */}
         <Box sx={{ mb: 4 }}>
           <Paper elevation={0} sx={{ ...panelGridCardSx }}>
             <Box sx={panelGridCardContentSx}>
@@ -386,7 +415,7 @@ export function StudentProgressView() {
                               fontWeight: 600,
                             }}
                           >
-                            ✓ Zdobyte
+                            Zdobyte
                           </Typography>
                         )}
                       </Paper>

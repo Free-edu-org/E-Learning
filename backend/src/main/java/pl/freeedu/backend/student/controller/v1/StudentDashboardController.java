@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import pl.freeedu.backend.lesson.service.LessonPublicIdLookupService;
 import pl.freeedu.backend.student.dto.StudentLessonResponse;
 import pl.freeedu.backend.student.dto.StudentProgressResponse;
+import pl.freeedu.backend.student.dto.StudentSkillStatsResponse;
 import pl.freeedu.backend.student.dto.StudentStatsResponse;
 import pl.freeedu.backend.task.dto.LessonResultDetailsResponse;
 import pl.freeedu.backend.student.service.StudentService;
@@ -59,6 +60,15 @@ public class StudentDashboardController {
 	@ResponseStatus(HttpStatus.OK)
 	public Mono<StudentProgressResponse> getMyProgress() {
 		return studentService.getProgress();
+	}
+
+	@Operation(summary = "Get student skill breakdown")
+	@ApiResponse(responseCode = "200", description = "Correct and wrong answers grouped by task category for current student")
+	@GetMapping("/skills")
+	@PreAuthorize("hasRole('STUDENT')")
+	@ResponseStatus(HttpStatus.OK)
+	public Flux<StudentSkillStatsResponse> getSkillStats() {
+		return studentService.getSkillStats();
 	}
 
 	@Operation(summary = "Get detailed result of student's completed lesson")
