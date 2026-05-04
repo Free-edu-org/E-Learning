@@ -105,12 +105,21 @@ public class StudentService {
 					"Twoja grupa nie ma jeszcze przypisanych lekcji. Wroc pozniej lub skontaktuj sie z nauczycielem.");
 		}
 
-		List<Lesson> lessons = lessonRepository.findByIdIn(lessonIds);
-		Map<Integer, UserLesson> userLessonsByLessonId = userLessonRepository
+		Map<Integer, UserLesson> allUserLessonsByLessonId = userLessonRepository
 				.findByUserIdAndLessonIdIn(userId, lessonIds).stream()
 				.collect(Collectors.toMap(UserLesson::getLessonId, Function.identity()));
+		List<Lesson> lessons = lessonRepository.findByIdIn(lessonIds).stream()
+				.filter(lesson -> shouldBeVisibleForStudent(lesson, allUserLessonsByLessonId.get(lesson.getId())))
+				.toList();
+		if (lessons.isEmpty()) {
+			return emptySnapshot(
+					"Twoja grupa nie ma jeszcze aktywnych ani ukonczonych lekcji. Wroc pozniej lub skontaktuj sie z nauczycielem.");
+		}
+		Map<Integer, UserLesson> userLessonsByLessonId = allUserLessonsByLessonId.entrySet().stream()
+				.filter(entry -> lessons.stream().anyMatch(lesson -> lesson.getId().equals(entry.getKey())))
+				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 		Map<Integer, List<pl.freeedu.backend.lesson.dto.LessonAttachmentResponse>> attachmentsMap = lessonAttachmentService
-				.findByLessonIds(lessonIds);
+				.findByLessonIds(lessons.stream().map(Lesson::getId).toList());
 
 		List<StudentLessonResponse> studentLessons = new ArrayList<>();
 		for (Lesson lesson : lessons) {
@@ -192,6 +201,13 @@ public class StudentService {
 
 	private double roundToOneDecimal(double value) {
 		return Math.round(value * 10.0) / 10.0;
+	}
+
+	private boolean shouldBeVisibleForStudent(Lesson lesson, UserLesson userLesson) {
+		if (Boolean.TRUE.equals(lesson.getIsActive())) {
+			return true;
+		}
+		return userLesson != null && userLesson.getStatus() == UserLessonStatus.COMPLETED;
 	}
 
 	private record StudentDashboardSnapshot(List<StudentLessonResponse> lessons, StudentStatsResponse stats,

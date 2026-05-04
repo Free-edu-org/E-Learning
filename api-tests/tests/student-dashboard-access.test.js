@@ -16,6 +16,8 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
     let otherGroupId;
     let sharedLessonPublicId;
     let sharedLessonTaskPublicId;
+    let inactiveSharedLessonPublicId;
+    let inactiveSharedLessonTaskPublicId;
 
     // Attachment test resources
     let attachmentLessonPublicId;
@@ -143,6 +145,7 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
         setAuthToken(teacherToken);
         for (const [lessonPublicId, taskPublicId] of [
             [sharedLessonPublicId, sharedLessonTaskPublicId],
+            [inactiveSharedLessonPublicId, inactiveSharedLessonTaskPublicId],
             [attachmentLessonPublicId, attachmentLessonTaskPublicId]
         ]) {
             if (lessonPublicId && taskPublicId) {
@@ -159,6 +162,10 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
         setAuthToken(teacherToken);
         if (sharedLessonPublicId) {
             const response = await apiClient.delete(`/lessons/${sharedLessonPublicId}`);
+            expect([204, 404]).toContain(response.status);
+        }
+        if (inactiveSharedLessonPublicId) {
+            const response = await apiClient.delete(`/lessons/${inactiveSharedLessonPublicId}`);
             expect([204, 404]).toContain(response.status);
         }
         if (attachmentLessonPublicId) {
@@ -210,6 +217,15 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
         sharedLessonPublicId = res.data.publicId;
         expect(res.data).not.toHaveProperty('id');
 
+        res = await apiClient.post('/lessons', {
+            title: `Inactive ${uniqueId}`,
+            theme: 'Student Dashboard Regression',
+            groupPublicIds: [isolatedGroupId]
+        });
+        expect(res.status).toBe(201);
+        inactiveSharedLessonPublicId = res.data.publicId;
+        expect(res.data).not.toHaveProperty('id');
+
         setAuthToken(teacherToken);
         res = await apiClient.post(`/lessons/${sharedLessonPublicId}/tasks/choose`, {
             task: 'Shared lesson setup task',
@@ -219,7 +235,18 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
         expect(res.status).toBe(201);
         sharedLessonTaskPublicId = res.data.publicId;
 
+        res = await apiClient.post(`/lessons/${inactiveSharedLessonPublicId}/tasks/choose`, {
+            task: 'Inactive lesson setup task',
+            possibleAnswers: 'a|b',
+            correctAnswer: 0
+        });
+        expect(res.status).toBe(201);
+        inactiveSharedLessonTaskPublicId = res.data.publicId;
+
         res = await apiClient.patch(`/lessons/${sharedLessonPublicId}/status`, {isActive: true});
+        expect(res.status).toBe(204);
+
+        res = await apiClient.patch(`/lessons/${inactiveSharedLessonPublicId}/status`, {isActive: true});
         expect(res.status).toBe(204);
 
         setAuthToken(adminToken);
@@ -338,6 +365,54 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
             expect(lesson.groups).toHaveLength(1);
             expect(lesson.groups[0].publicId).toBe(isolatedGroupId);
             expect(lesson.groups.map((group) => group.publicId)).not.toContain(otherGroupId);
+        });
+
+        it('should not expose inactive lessons assigned to the current student group when the student has not completed them', async () => {
+            await setupSharedLessonForGroupLeakTest();
+
+            setAuthToken(teacherToken);
+            let response = await apiClient.patch(`/lessons/${inactiveSharedLessonPublicId}/status`, {isActive: false});
+            expect(response.status).toBe(204);
+
+            setAuthToken(isolatedStudentToken);
+            response = await apiClient.get('/student/lessons');
+
+            expect(response.status).toBe(200);
+            expect(response.data.some((item) => item.publicId === sharedLessonPublicId)).toBe(true);
+            expect(response.data.some((item) => item.publicId === inactiveSharedLessonPublicId)).toBe(false);
+        });
+
+        it('should keep completed lessons visible after teacher deactivates them', async () => {
+            await setupSharedLessonForGroupLeakTest();
+
+            setAuthToken(teacherToken);
+            let response = await apiClient.patch(`/lessons/${inactiveSharedLessonPublicId}/status`, {isActive: true});
+            expect(response.status).toBe(204);
+
+            setAuthToken(isolatedStudentToken);
+            response = await apiClient.get(`/lessons/${inactiveSharedLessonPublicId}/tasks`);
+            expect(response.status).toBe(200);
+
+            response = await apiClient.post(`/lessons/${inactiveSharedLessonPublicId}/submit`, {
+                answers: [
+                    {taskPublicId: inactiveSharedLessonTaskPublicId, taskType: 'choose', answer: '0'}
+                ]
+            });
+            expect(response.status).toBe(200);
+
+            setAuthToken(teacherToken);
+            response = await apiClient.patch(`/lessons/${inactiveSharedLessonPublicId}/status`, {isActive: false});
+            expect(response.status).toBe(204);
+
+            setAuthToken(isolatedStudentToken);
+            response = await apiClient.get('/student/lessons');
+            expect(response.status).toBe(200);
+
+            const lesson = response.data.find((item) => item.publicId === inactiveSharedLessonPublicId);
+            expect(lesson).toBeDefined();
+            expect(lesson.isActive).toBe(false);
+            expect(lesson.status).toBe('COMPLETED');
+            expect(lesson.resultPercent).toBe(100);
         });
 
         it('should deny TEACHER (403)', async () => {
