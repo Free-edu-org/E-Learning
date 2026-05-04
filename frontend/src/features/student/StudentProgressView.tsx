@@ -310,7 +310,9 @@ export function StudentProgressView() {
                           fontWeight: 600,
                         }}
                         formatter={(value: unknown, name: unknown, item) => {
-                          const entry = item.payload as NormalizedSkill | undefined;
+                          const entry = item.payload as
+                            | NormalizedSkill
+                            | undefined;
                           const percentage =
                             typeof value === "number" ? `${value}%` : "";
                           if (name === "Dobrze") {
