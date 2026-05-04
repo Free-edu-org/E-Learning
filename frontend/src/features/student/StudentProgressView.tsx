@@ -109,7 +109,7 @@ export function StudentProgressView() {
       studentService.getProgress(),
       studentService.getSkills(),
     ])
-      .then(([currentUser, nextStats, _progress, nextSkills]) => {
+      .then(([currentUser, nextStats, , nextSkills]) => {
         setUser(currentUser);
         setStats(nextStats);
         setSkillsData(nextSkills);
