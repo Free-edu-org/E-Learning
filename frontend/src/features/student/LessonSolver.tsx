@@ -1014,7 +1014,9 @@ export function LessonSolver() {
                                 transition: "opacity 0.15s ease",
                               }}
                             >
-                              <ZoomInIcon sx={{ color: "#fff", fontSize: 32 }} />
+                              <ZoomInIcon
+                                sx={{ color: "#fff", fontSize: 32 }}
+                              />
                             </Box>
                           </Box>
 
@@ -1062,21 +1064,25 @@ export function LessonSolver() {
                         </>
                       )}
 
-                      {!currentTask.hint && !currentTask.hintImageUrl && currentTask.section && (
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{ lineHeight: 1.7 }}
-                        >
-                          Sekcja: {currentTask.section}
-                        </Typography>
-                      )}
+                      {!currentTask.hint &&
+                        !currentTask.hintImageUrl &&
+                        currentTask.section && (
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{ lineHeight: 1.7 }}
+                          >
+                            Sekcja: {currentTask.section}
+                          </Typography>
+                        )}
 
-                      {!currentTask.hint && !currentTask.hintImageUrl && !currentTask.section && (
-                        <Typography variant="body2" color="text.secondary">
-                          Rozwiąż zadanie po lewej stronie.
-                        </Typography>
-                      )}
+                      {!currentTask.hint &&
+                        !currentTask.hintImageUrl &&
+                        !currentTask.section && (
+                          <Typography variant="body2" color="text.secondary">
+                            Rozwiąż zadanie po lewej stronie.
+                          </Typography>
+                        )}
 
                       {/* Task type badge */}
                       <Box

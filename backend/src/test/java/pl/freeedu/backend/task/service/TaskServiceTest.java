@@ -64,7 +64,8 @@ class TaskServiceTest {
 	void setUp() {
 		taskService = new TaskService(chooseTaskRepository, writeTaskRepository, scatterTaskRepository,
 				speakTaskRepository, userAnswerRepository, userLessonRepository, lessonRepository, securityService,
-				userInGroupRepository, sttClient, taskPublicIdLookupService, taskHintImageService, studentProgressHistoryRepository, 0.85);
+				userInGroupRepository, sttClient, taskPublicIdLookupService, taskHintImageService,
+				studentProgressHistoryRepository, 0.85);
 	}
 
 	@Test

@@ -26,7 +26,14 @@ import {
 import { keyframes } from "@emotion/react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { memo, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import type { DraggableAttributes } from "@dnd-kit/core";
 import type { TaskType } from "@/api/taskService";
 import { taskService } from "@/api/taskService";
@@ -577,8 +584,7 @@ const TaskCardFields = memo(function TaskCardFields({
                       borderRadius: uiTokens.radius.control,
                       overflow: "hidden",
                       border: "1px solid",
-                      borderColor: (theme) =>
-                        alpha(theme.palette.divider, 0.3),
+                      borderColor: (theme) => alpha(theme.palette.divider, 0.3),
                       maxWidth: 200,
                     }}
                   >
@@ -615,18 +621,20 @@ const TaskCardFields = memo(function TaskCardFields({
                         </Typography>
                       </Box>
                     )}
-                    {!isHintImageLoading && !hintImageError && hintImageBlobUrl && (
-                      <img
-                        src={hintImageBlobUrl}
-                        alt="Podpowiedź"
-                        style={{
-                          display: "block",
-                          maxWidth: 200,
-                          maxHeight: 160,
-                          objectFit: "contain",
-                        }}
-                      />
-                    )}
+                    {!isHintImageLoading &&
+                      !hintImageError &&
+                      hintImageBlobUrl && (
+                        <img
+                          src={hintImageBlobUrl}
+                          alt="Podpowiedź"
+                          style={{
+                            display: "block",
+                            maxWidth: 200,
+                            maxHeight: 160,
+                            objectFit: "contain",
+                          }}
+                        />
+                      )}
                   </Box>
                   <Box sx={{ display: "flex", gap: 1 }}>
                     <Tooltip title="Zamień zdjęcie" arrow>
