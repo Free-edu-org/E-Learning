@@ -1202,7 +1202,7 @@ Warstwa BFF dla uczniow.
 ### 7.2. Get Student Lessons
 - **URL**: `/api/v1/student/lessons`
 - **Method**: `GET`
-- **Description**: Zwraca lekcje przypisane do aktualnego ucznia przez jego grupe wraz ze statusem postepu i wynikiem. Wymaga `STUDENT`.
+- **Description**: Zwraca tylko aktywne lekcje przypisane do aktualnego ucznia przez jego grupe wraz ze statusem postepu i wynikiem. Wymaga `STUDENT`.
 
 **Success (200 OK):**
 ```json
@@ -1241,7 +1241,7 @@ Warstwa BFF dla uczniow.
 | `publicId` | String | Public ID lekcji. |
 | `title` | String | Tytul lekcji. |
 | `theme` | String | Temat lekcji. |
-| `isActive` | Boolean | Flaga aktywnosci lekcji. |
+| `isActive` | Boolean | Flaga aktywnosci lekcji. Endpoint zwraca tylko lekcje z `isActive=true`. |
 | `teacherPublicId` | String | Public ID nauczyciela prowadzacego. |
 | `teacherName` | String | Username nauczyciela prowadzacego. |
 | `createdAt` | String (ISO datetime) | Data utworzenia lekcji. |

@@ -16,6 +16,7 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
     let otherGroupId;
     let sharedLessonPublicId;
     let sharedLessonTaskPublicId;
+    let inactiveSharedLessonPublicId;
 
     // Attachment test resources
     let attachmentLessonPublicId;
@@ -161,6 +162,10 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
             const response = await apiClient.delete(`/lessons/${sharedLessonPublicId}`);
             expect([204, 404]).toContain(response.status);
         }
+        if (inactiveSharedLessonPublicId) {
+            const response = await apiClient.delete(`/lessons/${inactiveSharedLessonPublicId}`);
+            expect([204, 404]).toContain(response.status);
+        }
         if (attachmentLessonPublicId) {
             const response = await apiClient.delete(`/lessons/${attachmentLessonPublicId}`);
             expect([204, 404]).toContain(response.status);
@@ -208,6 +213,15 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
         });
         expect(res.status).toBe(201);
         sharedLessonPublicId = res.data.publicId;
+        expect(res.data).not.toHaveProperty('id');
+
+        res = await apiClient.post('/lessons', {
+            title: `Inactive ${uniqueId}`,
+            theme: 'Student Dashboard Regression',
+            groupPublicIds: [isolatedGroupId]
+        });
+        expect(res.status).toBe(201);
+        inactiveSharedLessonPublicId = res.data.publicId;
         expect(res.data).not.toHaveProperty('id');
 
         setAuthToken(teacherToken);
@@ -338,6 +352,17 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
             expect(lesson.groups).toHaveLength(1);
             expect(lesson.groups[0].publicId).toBe(isolatedGroupId);
             expect(lesson.groups.map((group) => group.publicId)).not.toContain(otherGroupId);
+        });
+
+        it('should not expose inactive lessons assigned to the current student group', async () => {
+            await setupSharedLessonForGroupLeakTest();
+
+            setAuthToken(isolatedStudentToken);
+            const response = await apiClient.get('/student/lessons');
+
+            expect(response.status).toBe(200);
+            expect(response.data.some((item) => item.publicId === sharedLessonPublicId)).toBe(true);
+            expect(response.data.some((item) => item.publicId === inactiveSharedLessonPublicId)).toBe(false);
         });
 
         it('should deny TEACHER (403)', async () => {
