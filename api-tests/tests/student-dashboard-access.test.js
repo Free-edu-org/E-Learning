@@ -423,6 +423,62 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
         });
     });
 
+    describe('GET /student/skills', () => {
+        it('should allow STUDENT and return category breakdown', async () => {
+            await setupSharedLessonForGroupLeakTest();
+
+            setAuthToken(isolatedStudentToken);
+            let response = await apiClient.get(`/lessons/${sharedLessonPublicId}/tasks`);
+            expect(response.status).toBe(200);
+
+            const chooseTask = response.data.sections.flatMap((section) => section.chooseTasks ?? [])[0];
+            expect(chooseTask).toBeDefined();
+
+            response = await apiClient.post(`/lessons/${sharedLessonPublicId}/submit`, {
+                answers: [
+                    { taskPublicId: chooseTask.publicId, taskType: 'choose', answer: '0' }
+                ]
+            });
+            expect(response.status).toBe(200);
+
+            response = await apiClient.get('/student/skills');
+            expect(response.status).toBe(200);
+            expect(Array.isArray(response.data)).toBe(true);
+            expect(response.data).toHaveLength(4);
+
+            response.data.forEach((item) => {
+                expect(item).toHaveProperty('category');
+                expect(item).toHaveProperty('correct');
+                expect(item).toHaveProperty('wrong');
+                expect(typeof item.category).toBe('string');
+                expect(typeof item.correct).toBe('number');
+                expect(typeof item.wrong).toBe('number');
+            });
+
+            const choose = response.data.find((item) => item.category === 'Wybór');
+            expect(choose).toBeDefined();
+            expect(choose.correct + choose.wrong).toBeGreaterThanOrEqual(1);
+        });
+
+        it('should deny TEACHER (403)', async () => {
+            setAuthToken(teacherToken);
+            const response = await apiClient.get('/student/skills');
+            expect(response.status).toBe(403);
+        });
+
+        it('should deny ADMIN (403)', async () => {
+            setAuthToken(adminToken);
+            const response = await apiClient.get('/student/skills');
+            expect(response.status).toBe(403);
+        });
+
+        it('should deny unauthenticated (401)', async () => {
+            setAuthToken(null);
+            const response = await apiClient.get('/student/skills');
+            expect(response.status).toBe(401);
+        });
+    });
+
     describe('GET /student/lessons — attachments field', () => {
         it('should include attachments array in each lesson', async () => {
             setAuthToken(studentToken);

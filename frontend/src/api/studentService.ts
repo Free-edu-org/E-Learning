@@ -15,6 +15,12 @@ export interface StudentProgress {
   averageScore: number;
 }
 
+export interface StudentSkillStats {
+  category: string;
+  correct: number;
+  wrong: number;
+}
+
 export interface StudentLessonGroup {
   publicId: string;
   name: string;
@@ -97,6 +103,7 @@ export const studentService = {
   getStats: () => fetchApi<StudentStats>("/api/v1/student/stats"),
   getLessons: () => fetchApi<StudentLesson[]>("/api/v1/student/lessons"),
   getProgress: () => fetchApi<StudentProgress>("/api/v1/student/progress"),
+  getSkills: () => fetchApi<StudentSkillStats[]>("/api/v1/student/skills"),
   getLessonResultDetails: (lessonPublicId: string) =>
     fetchApi<LessonResultDetailsResponse>(
       `/api/v1/student/lessons/${lessonPublicId}/result`,

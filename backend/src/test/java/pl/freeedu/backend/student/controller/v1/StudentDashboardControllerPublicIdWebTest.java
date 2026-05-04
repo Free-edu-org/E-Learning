@@ -21,6 +21,7 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 
 import pl.freeedu.backend.exception.GlobalExceptionHandler;
 import pl.freeedu.backend.lesson.service.LessonPublicIdLookupService;
+import pl.freeedu.backend.student.dto.StudentSkillStatsResponse;
 import pl.freeedu.backend.security.service.SecurityService;
 import pl.freeedu.backend.student.service.StudentService;
 import pl.freeedu.backend.support.ControllerTestSecurityConfig;
@@ -78,6 +79,23 @@ class StudentDashboardControllerPublicIdWebTest {
 		// then
 		result.expectStatus().isNotFound();
 		verify(studentService, never()).getLessonResultDetails(any());
+	}
+
+	@Test
+	void shouldReturnStudentSkillBreakdownForCurrentStudent() {
+		// given
+		when(studentService.getSkillStats()).thenReturn(reactor.core.publisher.Flux
+				.fromIterable(List.of(StudentSkillStatsResponse.builder().category("Wybór").correct(6).wrong(2).build(),
+						StudentSkillStatsResponse.builder().category("Pisanie").correct(1).wrong(1).build())));
+
+		// when
+		WebTestClient.ResponseSpec result = webTestClient.mutateWith(mockUser("student").roles("STUDENT")).get()
+				.uri("/api/v1/student/skills").exchange();
+
+		// then
+		result.expectStatus().isOk().expectBody().jsonPath("$[0].category").isEqualTo("Wybór").jsonPath("$[0].correct")
+				.isEqualTo(6).jsonPath("$[0].wrong").isEqualTo(2);
+		verify(studentService).getSkillStats();
 	}
 
 	@Configuration
