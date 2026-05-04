@@ -51,6 +51,11 @@ import {
   generateProgressChartData,
 } from "@/utils/progressMockData";
 
+type NormalizedSkill = StudentSkillStats & {
+  correctPct: number;
+  wrongPct: number;
+};
+
 export function StudentProgressView() {
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -65,7 +70,7 @@ export function StudentProgressView() {
   const progressChartData = useMemo(() => generateProgressChartData(), []);
   const achievements = useMemo(() => generateAchievements(), []);
 
-  const normalizedSkillsData = useMemo(() => {
+  const normalizedSkillsData = useMemo<NormalizedSkill[]>(() => {
     return skillsData.map((s) => {
       const total = (s.correct ?? 0) + (s.wrong ?? 0);
       if (total <= 0) {
@@ -80,6 +85,15 @@ export function StudentProgressView() {
 
   const totalPoints = useMemo(
     () => skillsData.reduce((sum, item) => sum + (item.correct ?? 0), 0),
+    [skillsData],
+  );
+
+  const totalAnswers = useMemo(
+    () =>
+      skillsData.reduce(
+        (sum, item) => sum + (item.correct ?? 0) + (item.wrong ?? 0),
+        0,
+      ),
     [skillsData],
   );
 
@@ -184,7 +198,7 @@ export function StudentProgressView() {
                 icon={PointsIcon}
                 title="Punkty"
                 value={totalPoints}
-                subtitle="pkt"
+                subtitle={`${totalAnswers} odpowiedzi łącznie`}
                 color="info"
               />
             </Grid>
@@ -268,7 +282,7 @@ export function StudentProgressView() {
                   <ResponsiveContainer width="100%" height={280}>
                     <BarChart
                       data={normalizedSkillsData}
-                      margin={{ top: 20, right: 30, bottom: 20, left: 30 }}
+                      margin={{ top: 12, right: 20, bottom: 8, left: 20 }}
                     >
                       <CartesianGrid
                         strokeDasharray="3 3"
@@ -293,10 +307,22 @@ export function StudentProgressView() {
                         }}
                         labelStyle={{
                           color: theme.palette.text.primary,
+                          fontWeight: 600,
                         }}
-                        formatter={(value: unknown) => {
-                          const v = value as number | undefined;
-                          return v == null ? "" : `${v}%`;
+                        formatter={(value: unknown, name: unknown, item) => {
+                          const entry = item.payload as NormalizedSkill | undefined;
+                          const percentage =
+                            typeof value === "number" ? `${value}%` : "";
+                          if (name === "Dobrze") {
+                            return [
+                              `${percentage} (${entry?.correct ?? 0})`,
+                              "Dobrze",
+                            ];
+                          }
+                          return [
+                            `${percentage} (${entry?.wrong ?? 0})`,
+                            "Źle",
+                          ];
                         }}
                       />
                       <Legend />
@@ -305,6 +331,7 @@ export function StudentProgressView() {
                         stackId="a"
                         name="Dobrze"
                         fill={theme.palette.success.main}
+                        radius={[0, 0, 4, 4]}
                         isAnimationActive={false}
                       />
                       <Bar
@@ -312,6 +339,7 @@ export function StudentProgressView() {
                         stackId="a"
                         name="Źle"
                         fill={theme.palette.error.main}
+                        radius={[4, 4, 0, 0]}
                         isAnimationActive={false}
                       />
                     </BarChart>

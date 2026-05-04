@@ -112,7 +112,7 @@ class StudentServiceTest {
 	}
 
 	@Test
-	void shouldHideInactiveLessonsFromStudentDashboard() {
+	void shouldHideInactiveLessonsThatWereNotCompletedFromStudentDashboard() {
 		// given
 		Integer userId = 10;
 		Integer groupId = 5;
@@ -128,7 +128,7 @@ class StudentServiceTest {
 				.thenReturn(Optional.of(UserGroup.builder().id(groupId).publicId("group-public-id").build()));
 		when(groupHasLessonRepository.findLessonIdsByGroupId(groupId)).thenReturn(List.of(1, 2));
 		when(lessonRepository.findByIdIn(List.of(1, 2))).thenReturn(List.of(activeLesson, inactiveLesson));
-		when(userLessonRepository.findByUserIdAndLessonIdIn(userId, List.of(1))).thenReturn(List.of());
+		when(userLessonRepository.findByUserIdAndLessonIdIn(userId, List.of(1, 2))).thenReturn(List.of());
 		when(lessonMapper.toResponse(activeLesson))
 				.thenReturn(LessonResponse.builder().publicId("lesson-active").title("Active").isActive(true).build());
 		when(groupHasLessonRepository.findGroupsForLesson(1))
@@ -144,6 +144,49 @@ class StudentServiceTest {
 		}).verifyComplete();
 		verify(lessonMapper, never()).toResponse(inactiveLesson);
 		verify(groupHasLessonRepository, never()).findGroupsForLesson(2);
+	}
+
+	@Test
+	void shouldKeepCompletedInactiveLessonsVisibleOnStudentDashboard() {
+		// given
+		Integer userId = 10;
+		Integer groupId = 5;
+		Lesson activeLesson = Lesson.builder().id(1).title("Active").isActive(true).createdAt(LocalDateTime.now())
+				.build();
+		Lesson completedInactiveLesson = Lesson.builder().id(2).title("Completed inactive").isActive(false)
+				.createdAt(LocalDateTime.now().minusDays(1)).build();
+
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(userId));
+		when(userInGroupRepository.findByUserId(userId))
+				.thenReturn(Optional.of(UserInGroup.builder().userId(userId).groupId(groupId).build()));
+		when(userGroupRepository.findById(groupId))
+				.thenReturn(Optional.of(UserGroup.builder().id(groupId).publicId("group-public-id").build()));
+		when(groupHasLessonRepository.findLessonIdsByGroupId(groupId)).thenReturn(List.of(1, 2));
+		when(lessonRepository.findByIdIn(List.of(1, 2))).thenReturn(List.of(activeLesson, completedInactiveLesson));
+		when(userLessonRepository.findByUserIdAndLessonIdIn(userId, List.of(1, 2))).thenReturn(List
+				.of(UserLesson.builder().lessonId(2).status(UserLessonStatus.COMPLETED).score(8).maxScore(10).build()));
+		when(lessonMapper.toResponse(activeLesson))
+				.thenReturn(LessonResponse.builder().publicId("lesson-active").title("Active").isActive(true).build());
+		when(lessonMapper.toResponse(completedInactiveLesson)).thenReturn(LessonResponse.builder()
+				.publicId("lesson-completed-inactive").title("Completed inactive").isActive(false).build());
+		when(groupHasLessonRepository.findGroupsForLesson(1))
+				.thenReturn(List.of(new GroupDto("group-public-id", "G1")));
+		when(groupHasLessonRepository.findGroupsForLesson(2))
+				.thenReturn(List.of(new GroupDto("group-public-id", "G1")));
+
+		// when
+		Flux<StudentLessonResponse> result = studentService.getLessons();
+
+		// then
+		StepVerifier.create(result).assertNext(resp -> {
+			assertEquals("lesson-active", resp.getPublicId());
+			assertEquals("NOT_STARTED", resp.getStatus());
+		}).assertNext(resp -> {
+			assertEquals("lesson-completed-inactive", resp.getPublicId());
+			assertFalse(resp.getIsActive());
+			assertEquals("COMPLETED", resp.getStatus());
+			assertEquals(80.0, resp.getResultPercent());
+		}).verifyComplete();
 	}
 
 	@Test

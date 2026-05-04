@@ -114,15 +114,20 @@ public class StudentService {
 					"Twoja grupa nie ma jeszcze przypisanych lekcji. Wroc pozniej lub skontaktuj sie z nauczycielem.");
 		}
 
+		Map<Integer, UserLesson> allUserLessonsByLessonId = userLessonRepository
+				.findByUserIdAndLessonIdIn(userId, lessonIds).stream()
+				.collect(Collectors.toMap(UserLesson::getLessonId, Function.identity()));
 		List<Lesson> lessons = lessonRepository.findByIdIn(lessonIds).stream()
-				.filter(lesson -> Boolean.TRUE.equals(lesson.getIsActive())).toList();
+				.filter(lesson -> shouldBeVisibleForStudent(lesson, allUserLessonsByLessonId.get(lesson.getId())))
+				.toList();
 		if (lessons.isEmpty()) {
 			return emptySnapshot(
-					"Twoja grupa nie ma jeszcze aktywnych lekcji. Wroc pozniej lub skontaktuj sie z nauczycielem.");
+					"Twoja grupa nie ma jeszcze aktywnych ani ukonczonych lekcji. Wroc pozniej lub skontaktuj sie z nauczycielem.");
 		}
-		Map<Integer, UserLesson> userLessonsByLessonId = userLessonRepository
-				.findByUserIdAndLessonIdIn(userId, lessons.stream().map(Lesson::getId).toList()).stream()
-				.collect(Collectors.toMap(UserLesson::getLessonId, Function.identity()));
+
+		Map<Integer, UserLesson> userLessonsByLessonId = allUserLessonsByLessonId.entrySet().stream()
+				.filter(entry -> lessons.stream().anyMatch(lesson -> lesson.getId().equals(entry.getKey())))
+				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 		Map<Integer, List<pl.freeedu.backend.lesson.dto.LessonAttachmentResponse>> attachmentsMap = lessonAttachmentService
 				.findByLessonIds(lessons.stream().map(Lesson::getId).toList());
 
@@ -227,6 +232,13 @@ public class StudentService {
 
 		return List.of(statsByTaskType.get("choose_tasks"), statsByTaskType.get("write_tasks"),
 				statsByTaskType.get("scatter_tasks"), statsByTaskType.get("speak_tasks"));
+	}
+
+	private boolean shouldBeVisibleForStudent(Lesson lesson, UserLesson userLesson) {
+		if (Boolean.TRUE.equals(lesson.getIsActive())) {
+			return true;
+		}
+		return userLesson != null && userLesson.getStatus() == UserLessonStatus.COMPLETED;
 	}
 
 	private record StudentDashboardSnapshot(List<StudentLessonResponse> lessons, StudentStatsResponse stats,
