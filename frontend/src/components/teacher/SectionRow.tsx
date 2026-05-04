@@ -1,4 +1,12 @@
-import { Box, Chip, Collapse, IconButton, TextField, Tooltip, Typography } from "@mui/material";
+import {
+  Box,
+  Chip,
+  Collapse,
+  IconButton,
+  TextField,
+  Tooltip,
+  Typography,
+} from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import {
   DragIndicator as DragIcon,
@@ -8,7 +16,10 @@ import {
   LayersOutlined as LayersIcon,
 } from "@mui/icons-material";
 import { useSortable } from "@dnd-kit/sortable";
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useState } from "react";
 import { uiTokens } from "@/theme/uiTokens";
@@ -89,8 +100,13 @@ export function SectionRow({
   };
 
   const handleEditKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") { e.preventDefault(); commitEdit(); }
-    if (e.key === "Escape") { setIsEditing(false); }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      commitEdit();
+    }
+    if (e.key === "Escape") {
+      setIsEditing(false);
+    }
   };
 
   if (isDragging) {
@@ -191,7 +207,9 @@ export function SectionRow({
           <DragIcon sx={{ fontSize: 16 }} />
         </Box>
 
-        <LayersIcon sx={{ fontSize: 14, color: "primary.main", flexShrink: 0 }} />
+        <LayersIcon
+          sx={{ fontSize: 14, color: "primary.main", flexShrink: 0 }}
+        />
 
         {isEditing ? (
           <TextField
@@ -269,7 +287,11 @@ export function SectionRow({
 
       {/* Drop preview — shown when a task hovers over a collapsed section.
           Slides open below the header to signal "task will land here". */}
-      <Collapse in={isOver && !expanded} timeout={{ enter: 150, exit: 0 }} unmountOnExit>
+      <Collapse
+        in={isOver && !expanded}
+        timeout={{ enter: 150, exit: 0 }}
+        unmountOnExit
+      >
         <Box
           sx={{
             mt: 0.5,
@@ -308,7 +330,9 @@ export function SectionRow({
           items={tasks.map((t) => t.id)}
           strategy={verticalListSortingStrategy}
         >
-          <Box sx={{ mt: 1, display: "flex", flexDirection: "column", gap: 1.5 }}>
+          <Box
+            sx={{ mt: 1, display: "flex", flexDirection: "column", gap: 1.5 }}
+          >
             {tasks.map((task, localIdx) => (
               <TaskCard
                 key={task.id}

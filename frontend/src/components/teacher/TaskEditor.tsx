@@ -28,7 +28,7 @@ import { TaskCard, TaskCardOverlay } from "./TaskCard";
 import type { LessonTaskDraft } from "./TaskCard";
 import { SectionRow, SectionOverlay } from "./SectionRow";
 import { TaskTypeSelector } from "./TaskTypeSelector";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -110,9 +110,12 @@ export function TaskEditor({
     new Set(),
   );
 
-  // Ref keeps handlers free of stale closures — always reads latest tasks
+  // Ref keeps handlers free of stale closures — always reads latest tasks.
+  // Updated in an effect (not during render) to satisfy the no-ref-write-in-render rule.
   const tasksRef = useRef(tasks);
-  tasksRef.current = tasks;
+  useEffect(() => {
+    tasksRef.current = tasks;
+  });
 
   // Snapshot at drag-start so onDragCancel can restore the original state
   const clonedTasksRef = useRef<LessonTaskDraft[] | null>(null);
@@ -255,7 +258,8 @@ export function TaskEditor({
     } else if (overType === "section") {
       targetSectionId = overId;
       targetSectionName =
-        (over.data.current as { sectionName?: string })?.sectionName?.trim() ?? "";
+        (over.data.current as { sectionName?: string })?.sectionName?.trim() ??
+        "";
       // Show "Upuść tutaj" preview only for collapsed sections
       setOverSectionId(expandedSections.has(overId) ? null : overId);
     } else {
@@ -269,7 +273,9 @@ export function TaskEditor({
 
     // Cross-section: optimistically move task into the target section
     const currentGroups = groupTasks(current);
-    const srcGroup = currentGroups.find((g) => g.sectionName === activeSectionName);
+    const srcGroup = currentGroups.find(
+      (g) => g.sectionName === activeSectionName,
+    );
     const tgtGroup = currentGroups.find((g) => g.sectionId === targetSectionId);
     if (!srcGroup || !tgtGroup) return;
 
@@ -567,7 +573,8 @@ export function TaskEditor({
             dropAnimation={null}
             modifiers={[snapCenterToCursor, restrictToVerticalAxis]}
           >
-            {activeId && activeType === "section" &&
+            {activeId &&
+              activeType === "section" &&
               (() => {
                 const group = groups.find((g) => g.sectionId === activeId);
                 return group ? (
@@ -577,7 +584,8 @@ export function TaskEditor({
                   />
                 ) : null;
               })()}
-            {activeId && activeType === "task" &&
+            {activeId &&
+              activeType === "task" &&
               (() => {
                 const idx = tasks.findIndex((t) => t.id === activeId);
                 const task = tasks[idx];

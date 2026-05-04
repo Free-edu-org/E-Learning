@@ -23,7 +23,8 @@ import {
 import { keyframes } from "@emotion/react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { memo, useCallback, useEffect, useState, type ReactNode } from "react";
+import { memo, useCallback, useState, type ReactNode } from "react";
+import type { DraggableAttributes } from "@dnd-kit/core";
 import type { TaskType } from "@/api/taskService";
 import { uiTokens } from "@/theme/uiTokens";
 import { INPUT_LIMITS } from "@/utils/inputLimits";
@@ -95,7 +96,7 @@ function TaskCardHeader({
   dragHandleProps?: {
     ref: React.Ref<HTMLElement>;
     listeners: Record<string, unknown>;
-    attributes: Record<string, unknown>;
+    attributes: DraggableAttributes;
   };
 }) {
   const meta = taskTypeMeta[task.type];
@@ -105,7 +106,9 @@ function TaskCardHeader({
       ref={dragHandleProps?.ref}
       {...dragHandleProps?.attributes}
       {...dragHandleProps?.listeners}
-      onClick={() => { if (!isDragOverlay) onToggle?.(); }}
+      onClick={() => {
+        if (!isDragOverlay) onToggle?.();
+      }}
       sx={{
         display: "flex",
         alignItems: "center",
@@ -255,12 +258,12 @@ const TaskCardFields = memo(function TaskCardFields({
     [task, onChangeById],
   );
 
-  // Local state for section input — only committed to parent on blur or dropdown select.
-  // Without this, every keystroke creates a new section group immediately.
+  // Local state for the section input — committed to parent only on blur or dropdown
+  // select, so typing doesn't create a new section on every keystroke.
+  // Initialised from task.section on focus (not via effect/ref), which also handles
+  // external changes (e.g. drag-based reassignment) naturally.
   const [sectionInput, setSectionInput] = useState(task.section);
-  useEffect(() => {
-    setSectionInput(task.section);
-  }, [task.section]);
+  const [sectionFocused, setSectionFocused] = useState(false);
 
   const handleChooseChange = useCallback(
     (pa: string, ca: string) =>
@@ -388,16 +391,22 @@ const TaskCardFields = memo(function TaskCardFields({
             freeSolo
             options={existingSections}
             value={task.section}
-            inputValue={sectionInput}
+            inputValue={sectionFocused ? sectionInput : task.section}
+            onFocus={() => {
+              setSectionInput(task.section);
+              setSectionFocused(true);
+            }}
             onInputChange={(_, value, reason) => {
               const clamped = value.slice(0, INPUT_LIMITS.taskSection);
               setSectionInput(clamped);
-              // Commit immediately when selecting from dropdown, not while typing
               if (reason !== "input") {
                 updateField("section", clamped);
               }
             }}
-            onBlur={() => updateField("section", sectionInput)}
+            onBlur={() => {
+              setSectionFocused(false);
+              updateField("section", sectionInput);
+            }}
             size="small"
             renderInput={(params) => (
               <TextField
@@ -447,7 +456,10 @@ export function TaskCard({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: task.id, data: { type: "task", sectionName: task.section } });
+  } = useSortable({
+    id: task.id,
+    data: { type: "task", sectionName: task.section },
+  });
 
   const style = {
     transform: CSS.Transform.toString(
@@ -516,7 +528,7 @@ export function TaskCard({
         dragHandleProps={{
           ref: setActivatorNodeRef,
           listeners: listeners as Record<string, unknown>,
-          attributes: attributes as Record<string, unknown>,
+          attributes: attributes,
         }}
       />
 
