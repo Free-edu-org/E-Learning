@@ -270,7 +270,11 @@ export function StudentProgressView() {
                           color: theme.palette.text.primary,
                         }}
                         formatter={(
-                          value: number | string | readonly (number | string)[] | undefined,
+                          value:
+                            | number
+                            | string
+                            | readonly (number | string)[]
+                            | undefined,
                         ) => [
                           `${Array.isArray(value) ? value[0] : (value ?? 0)}%`,
                           "Wynik",
