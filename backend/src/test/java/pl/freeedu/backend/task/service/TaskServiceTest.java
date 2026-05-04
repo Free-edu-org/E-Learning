@@ -10,6 +10,7 @@ import pl.freeedu.backend.lesson.model.Lesson;
 import pl.freeedu.backend.lesson.repository.LessonRepository;
 import pl.freeedu.backend.security.principal.CustomUserDetails;
 import pl.freeedu.backend.security.service.SecurityService;
+import pl.freeedu.backend.student.repository.StudentProgressHistoryRepository;
 import pl.freeedu.backend.task.dto.*;
 import pl.freeedu.backend.task.exception.TaskErrorCode;
 import pl.freeedu.backend.task.exception.TaskException;
@@ -54,6 +55,8 @@ class TaskServiceTest {
 	private TaskPublicIdLookupService taskPublicIdLookupService;
 	@Mock
 	private TaskHintImageService taskHintImageService;
+	@Mock
+	private StudentProgressHistoryRepository studentProgressHistoryRepository;
 
 	private TaskService taskService;
 
@@ -61,7 +64,7 @@ class TaskServiceTest {
 	void setUp() {
 		taskService = new TaskService(chooseTaskRepository, writeTaskRepository, scatterTaskRepository,
 				speakTaskRepository, userAnswerRepository, userLessonRepository, lessonRepository, securityService,
-				userInGroupRepository, sttClient, taskPublicIdLookupService, taskHintImageService, 0.85);
+				userInGroupRepository, sttClient, taskPublicIdLookupService, taskHintImageService, studentProgressHistoryRepository, 0.85);
 	}
 
 	@Test
@@ -434,6 +437,8 @@ class TaskServiceTest {
 				Optional.of(ScatterTask.builder().id(3).lessonId(lessonId).correctAnswer("word1 word2").build()));
 		when(speakTaskRepository.findByPublicId("tp4"))
 				.thenReturn(Optional.of(SpeakTask.builder().id(4).lessonId(lessonId).expectedText("expected").build()));
+		when(userLessonRepository.findAveragePercentByUserIdAndStatus(userId, UserLessonStatus.COMPLETED))
+				.thenReturn(100.0);
 
 		// when
 		Mono<SubmitResponse> result = taskService.submitLesson(lessonId, Mono.just(request));
@@ -444,6 +449,7 @@ class TaskServiceTest {
 			assertEquals(4, resp.getMaxScore());
 			assertEquals(UserLessonStatus.COMPLETED, userLesson.getStatus());
 		}).verifyComplete();
+		verify(studentProgressHistoryRepository).save(any());
 	}
 
 	@Test

@@ -1,75 +1,17 @@
 /**
  * Mock data generator for StudentProgressView
  * TODO: Replace with real API calls when backends endpoints are available:
- * - GET /api/v1/student/skills (break down by category)
  * - GET /api/v1/student/achievements
- * - GET /api/v1/student/progress (for progress chart)
  */
-
-export interface ProgressChartPoint {
-  date: string;
-  progress: number;
-}
-
-export interface SkillData {
-  category: string;
-  // absolute count of correctly answered items in this category
-  correct: number;
-  // absolute count of incorrectly answered items in this category
-  wrong: number;
-}
 
 export interface Achievement {
   id: string;
   label: string;
   description: string;
-  icon: string; // icon name from MUI or emoji
+  icon: string;
   color: "warning" | "success" | "info" | "primary";
   unlocked: boolean;
   unlockedAt?: string;
-}
-
-/**
- * Generates mock progress chart data
- * Simulates a student's progress over time
- */
-export function generateProgressChartData(): ProgressChartPoint[] {
-  const today = new Date();
-  const data: ProgressChartPoint[] = [];
-
-  for (let i = 20; i >= 0; i--) {
-    const date = new Date(today);
-    date.setDate(date.getDate() - i);
-
-    // Mock: irregular progress with some flat periods
-    const baseProgress = (20 - i) * 3 + Math.random() * 10;
-    const progress = Math.min(Math.max(baseProgress, 0), 100);
-
-    data.push({
-      date: date.toLocaleDateString("pl-PL", {
-        month: "numeric",
-        day: "numeric",
-      }),
-      progress: Math.round(progress),
-    });
-  }
-
-  return data;
-}
-
-/**
- * Generates mock skills breakdown data
- * TODO: Integrate with backend when skill-per-category endpoint is ready
- */
-export function generateSkillsData(): SkillData[] {
-  // Return correct/wrong breakdown per category (sums don't have to be exactly 100,
-  // but using percentages here for mock clarity)
-  return [
-    { category: "Wybór", correct: 6, wrong: 2 },
-    { category: "Pisanie", correct: 1, wrong: 1 },
-    { category: "Rozsypanka", correct: 1, wrong: 3 },
-    { category: "Mówienie", correct: 2, wrong: 0 },
-  ];
 }
 
 /**

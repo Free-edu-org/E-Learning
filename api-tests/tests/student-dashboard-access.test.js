@@ -18,6 +18,8 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
     let sharedLessonTaskPublicId;
     let inactiveSharedLessonPublicId;
     let inactiveSharedLessonTaskPublicId;
+    let progressLessonPublicId;
+    let progressLessonTaskPublicId;
 
     // Attachment test resources
     let attachmentLessonPublicId;
@@ -146,6 +148,7 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
         for (const [lessonPublicId, taskPublicId] of [
             [sharedLessonPublicId, sharedLessonTaskPublicId],
             [inactiveSharedLessonPublicId, inactiveSharedLessonTaskPublicId],
+            [progressLessonPublicId, progressLessonTaskPublicId],
             [attachmentLessonPublicId, attachmentLessonTaskPublicId]
         ]) {
             if (lessonPublicId && taskPublicId) {
@@ -166,6 +169,10 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
         }
         if (inactiveSharedLessonPublicId) {
             const response = await apiClient.delete(`/lessons/${inactiveSharedLessonPublicId}`);
+            expect([204, 404]).toContain(response.status);
+        }
+        if (progressLessonPublicId) {
+            const response = await apiClient.delete(`/lessons/${progressLessonPublicId}`);
             expect([204, 404]).toContain(response.status);
         }
         if (attachmentLessonPublicId) {
@@ -272,6 +279,31 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
 
         setAuthToken(adminToken);
         res = await apiClient.post(`/user-groups/${isolatedGroupId}/members/${isolatedStudentPublicId}`);
+        expect(res.status).toBe(204);
+    }
+
+    async function createFreshProgressLesson() {
+        await setupSharedLessonForGroupLeakTest();
+
+        setAuthToken(teacherToken);
+        let res = await apiClient.post('/lessons', {
+            title: `Prog ${uniqueId}`,
+            theme: 'Student Progress History',
+            groupPublicIds: [isolatedGroupId]
+        });
+        expect(res.status).toBe(201);
+        progressLessonPublicId = res.data.publicId;
+        expect(res.data).not.toHaveProperty('id');
+
+        res = await apiClient.post(`/lessons/${progressLessonPublicId}/tasks/choose`, {
+            task: 'Progress history setup task',
+            possibleAnswers: 'a|b',
+            correctAnswer: 0
+        });
+        expect(res.status).toBe(201);
+        progressLessonTaskPublicId = res.data.publicId;
+
+        res = await apiClient.patch(`/lessons/${progressLessonPublicId}/status`, {isActive: true});
         expect(res.status).toBe(204);
     }
 
@@ -439,19 +471,37 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
             setAuthToken(studentToken);
             const response = await apiClient.get('/student/progress');
             expect(response.status).toBe(200);
+            expect(Array.isArray(response.data)).toBe(true);
         });
 
-        it('should return structured progress summary', async () => {
-            setAuthToken(studentToken);
-            const response = await apiClient.get('/student/progress');
+        it('should return historical average progress points after lesson completion', async () => {
+            await createFreshProgressLesson();
 
-            expect(response.data).toHaveProperty('summary');
-            expect(response.data).toHaveProperty('completedLessons');
-            expect(response.data).toHaveProperty('totalLessons');
-            expect(response.data).toHaveProperty('inProgressLessons');
-            expect(response.data).toHaveProperty('averageScore');
-            expect(typeof response.data.summary).toBe('string');
-            expect(response.data.summary.length).toBeGreaterThan(0);
+            setAuthToken(isolatedStudentToken);
+            let response = await apiClient.get(`/lessons/${progressLessonPublicId}/tasks`);
+            expect(response.status).toBe(200);
+
+            const chooseTask = response.data.sections.flatMap((section) => section.chooseTasks ?? [])[0];
+            expect(chooseTask).toBeDefined();
+
+            response = await apiClient.post(`/lessons/${progressLessonPublicId}/submit`, {
+                answers: [
+                    { taskPublicId: chooseTask.publicId, taskType: 'choose', answer: '0' }
+                ]
+            });
+            expect(response.status).toBe(200);
+
+            response = await apiClient.get('/student/progress');
+            expect(response.status).toBe(200);
+            expect(Array.isArray(response.data)).toBe(true);
+            expect(response.data.length).toBeGreaterThanOrEqual(1);
+
+            response.data.forEach((item) => {
+                expect(item).toHaveProperty('date');
+                expect(item).toHaveProperty('progress');
+                expect(typeof item.date).toBe('string');
+                expect(typeof item.progress).toBe('number');
+            });
         });
 
         it('should deny TEACHER (403)', async () => {
@@ -469,6 +519,62 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
         it('should deny unauthenticated (401)', async () => {
             setAuthToken(null);
             const response = await apiClient.get('/student/progress');
+            expect(response.status).toBe(401);
+        });
+    });
+
+    describe('GET /student/skills', () => {
+        it('should allow STUDENT and return category breakdown', async () => {
+            await setupSharedLessonForGroupLeakTest();
+
+            setAuthToken(isolatedStudentToken);
+            let response = await apiClient.get(`/lessons/${sharedLessonPublicId}/tasks`);
+            expect(response.status).toBe(200);
+
+            const chooseTask = response.data.sections.flatMap((section) => section.chooseTasks ?? [])[0];
+            expect(chooseTask).toBeDefined();
+
+            response = await apiClient.post(`/lessons/${sharedLessonPublicId}/submit`, {
+                answers: [
+                    { taskPublicId: chooseTask.publicId, taskType: 'choose', answer: '0' }
+                ]
+            });
+            expect(response.status).toBe(200);
+
+            response = await apiClient.get('/student/skills');
+            expect(response.status).toBe(200);
+            expect(Array.isArray(response.data)).toBe(true);
+            expect(response.data).toHaveLength(4);
+
+            response.data.forEach((item) => {
+                expect(item).toHaveProperty('category');
+                expect(item).toHaveProperty('correct');
+                expect(item).toHaveProperty('wrong');
+                expect(typeof item.category).toBe('string');
+                expect(typeof item.correct).toBe('number');
+                expect(typeof item.wrong).toBe('number');
+            });
+
+            const choose = response.data.find((item) => item.category === 'Wybór');
+            expect(choose).toBeDefined();
+            expect(choose.correct + choose.wrong).toBeGreaterThanOrEqual(1);
+        });
+
+        it('should deny TEACHER (403)', async () => {
+            setAuthToken(teacherToken);
+            const response = await apiClient.get('/student/skills');
+            expect(response.status).toBe(403);
+        });
+
+        it('should deny ADMIN (403)', async () => {
+            setAuthToken(adminToken);
+            const response = await apiClient.get('/student/skills');
+            expect(response.status).toBe(403);
+        });
+
+        it('should deny unauthenticated (401)', async () => {
+            setAuthToken(null);
+            const response = await apiClient.get('/student/skills');
             expect(response.status).toBe(401);
         });
     });

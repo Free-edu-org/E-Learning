@@ -1,8 +1,8 @@
 package pl.freeedu.backend.student.service;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.freeedu.backend.lesson.dto.GroupDto;
@@ -14,13 +14,16 @@ import pl.freeedu.backend.lesson.repository.LessonRepository;
 import pl.freeedu.backend.lesson.service.LessonAttachmentService;
 import pl.freeedu.backend.security.service.SecurityService;
 import pl.freeedu.backend.student.dto.StudentLessonResponse;
-import pl.freeedu.backend.student.dto.StudentProgressResponse;
+import pl.freeedu.backend.student.dto.StudentProgressHistoryResponse;
 import pl.freeedu.backend.student.dto.StudentStatsResponse;
+import pl.freeedu.backend.student.model.StudentProgressHistory;
+import pl.freeedu.backend.student.repository.StudentProgressHistoryRepository;
 import pl.freeedu.backend.task.dto.LessonResultDetailsResponse;
 import pl.freeedu.backend.task.exception.TaskErrorCode;
 import pl.freeedu.backend.task.exception.TaskException;
 import pl.freeedu.backend.task.model.UserLesson;
 import pl.freeedu.backend.task.model.UserLessonStatus;
+import pl.freeedu.backend.task.repository.UserAnswerRepository;
 import pl.freeedu.backend.task.repository.UserLessonRepository;
 import pl.freeedu.backend.task.service.LessonResultDetailsService;
 import pl.freeedu.backend.usergroup.model.UserGroup;
@@ -32,6 +35,7 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -52,6 +56,8 @@ class StudentServiceTest {
 	@Mock
 	private UserLessonRepository userLessonRepository;
 	@Mock
+	private UserAnswerRepository userAnswerRepository;
+	@Mock
 	private LessonMapper lessonMapper;
 	@Mock
 	private LessonResultDetailsService lessonResultDetailsService;
@@ -61,23 +67,51 @@ class StudentServiceTest {
 
 	@Mock
 	private UserGroupRepository userGroupRepository;
+	@Mock
+	private StudentProgressHistoryRepository studentProgressHistoryRepository;
 
-	@InjectMocks
 	private StudentService studentService;
 
+	@BeforeEach
+	void setUp() {
+		studentService = new StudentService(securityService, userInGroupRepository, groupHasLessonRepository,
+				lessonRepository, userLessonRepository, lessonMapper, lessonResultDetailsService,
+				lessonAttachmentService, userGroupRepository, userAnswerRepository, studentProgressHistoryRepository);
+	}
+
 	@Test
-	void shouldReturnEmptyProgressWhenNoGroup() {
+	void shouldReturnEmptyProgressHistoryWhenNoSnapshotsExist() {
 		// given
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
-		when(userInGroupRepository.findByUserId(10)).thenReturn(Optional.empty());
+		when(studentProgressHistoryRepository.findByUserIdOrderByProgressDateAsc(10)).thenReturn(List.of());
 
 		// when
-		Mono<StudentProgressResponse> result = studentService.getProgress();
+		Flux<StudentProgressHistoryResponse> result = studentService.getProgress();
+
+		// then
+		StepVerifier.create(result).verifyComplete();
+	}
+
+	@Test
+	void shouldReturnOrderedProgressHistory() {
+		// given
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
+		when(studentProgressHistoryRepository.findByUserIdOrderByProgressDateAsc(10)).thenReturn(List.of(
+				StudentProgressHistory.builder().userId(10).progressDate(LocalDate.parse("2026-04-09")).avgScore(50.0)
+						.build(),
+				StudentProgressHistory.builder().userId(10).progressDate(LocalDate.parse("2026-04-10")).avgScore(66.6)
+						.build()));
+
+		// when
+		Flux<StudentProgressHistoryResponse> result = studentService.getProgress();
 
 		// then
 		StepVerifier.create(result).assertNext(resp -> {
-			assertTrue(resp.getSummary().contains("Nie masz jeszcze przypisanej grupy"));
-			assertEquals(0, resp.getTotalLessons());
+			assertEquals("2026-04-09", resp.getDate());
+			assertEquals(50.0, resp.getProgress());
+		}).assertNext(resp -> {
+			assertEquals("2026-04-10", resp.getDate());
+			assertEquals(67.0, resp.getProgress());
 		}).verifyComplete();
 	}
 

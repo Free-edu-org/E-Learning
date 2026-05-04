@@ -17,13 +17,16 @@ import pl.freeedu.backend.lesson.repository.LessonRepository;
 import pl.freeedu.backend.lesson.service.LessonAttachmentService;
 import pl.freeedu.backend.security.service.SecurityService;
 import pl.freeedu.backend.student.dto.StudentLessonResponse;
-import pl.freeedu.backend.student.dto.StudentProgressResponse;
+import pl.freeedu.backend.student.dto.StudentProgressHistoryResponse;
+import pl.freeedu.backend.student.dto.StudentSkillStatsResponse;
 import pl.freeedu.backend.student.dto.StudentStatsResponse;
+import pl.freeedu.backend.student.repository.StudentProgressHistoryRepository;
 import pl.freeedu.backend.task.dto.LessonResultDetailsResponse;
 import pl.freeedu.backend.task.exception.TaskErrorCode;
 import pl.freeedu.backend.task.exception.TaskException;
 import pl.freeedu.backend.task.model.UserLesson;
 import pl.freeedu.backend.task.model.UserLessonStatus;
+import pl.freeedu.backend.task.repository.UserAnswerRepository;
 import pl.freeedu.backend.task.repository.UserLessonRepository;
 import pl.freeedu.backend.task.service.LessonResultDetailsService;
 import pl.freeedu.backend.usergroup.repository.UserGroupRepository;
@@ -44,12 +47,15 @@ public class StudentService {
 	private final LessonResultDetailsService lessonResultDetailsService;
 	private final LessonAttachmentService lessonAttachmentService;
 	private final UserGroupRepository userGroupRepository;
+	private final UserAnswerRepository userAnswerRepository;
+	private final StudentProgressHistoryRepository studentProgressHistoryRepository;
 
 	public StudentService(SecurityService securityService, UserInGroupRepository userInGroupRepository,
 			GroupHasLessonRepository groupHasLessonRepository, LessonRepository lessonRepository,
 			UserLessonRepository userLessonRepository, LessonMapper lessonMapper,
 			LessonResultDetailsService lessonResultDetailsService, LessonAttachmentService lessonAttachmentService,
-			UserGroupRepository userGroupRepository) {
+			UserGroupRepository userGroupRepository, UserAnswerRepository userAnswerRepository,
+			StudentProgressHistoryRepository studentProgressHistoryRepository) {
 		this.securityService = securityService;
 		this.userInGroupRepository = userInGroupRepository;
 		this.groupHasLessonRepository = groupHasLessonRepository;
@@ -59,6 +65,8 @@ public class StudentService {
 		this.lessonResultDetailsService = lessonResultDetailsService;
 		this.lessonAttachmentService = lessonAttachmentService;
 		this.userGroupRepository = userGroupRepository;
+		this.userAnswerRepository = userAnswerRepository;
+		this.studentProgressHistoryRepository = studentProgressHistoryRepository;
 	}
 
 	public Mono<StudentStatsResponse> getStats() {
@@ -69,8 +77,18 @@ public class StudentService {
 		return loadDashboardSnapshot().flatMapMany(snapshot -> Flux.fromIterable(snapshot.lessons()));
 	}
 
-	public Mono<StudentProgressResponse> getProgress() {
-		return loadDashboardSnapshot().map(StudentDashboardSnapshot::progress);
+	public Flux<StudentProgressHistoryResponse> getProgress() {
+		return securityService.getCurrentUserId().flatMapMany(userId -> Mono
+				.fromCallable(() -> studentProgressHistoryRepository.findByUserIdOrderByProgressDateAsc(userId).stream()
+						.map(entry -> StudentProgressHistoryResponse.builder().date(entry.getProgressDate().toString())
+								.progress(roundToWhole(entry.getAvgScore())).build())
+						.toList())
+				.subscribeOn(Schedulers.boundedElastic()).flatMapMany(Flux::fromIterable));
+	}
+
+	public Flux<StudentSkillStatsResponse> getSkillStats() {
+		return securityService.getCurrentUserId().flatMapMany(userId -> Mono.fromCallable(() -> buildSkillStats(userId))
+				.subscribeOn(Schedulers.boundedElastic()).flatMapMany(Flux::fromIterable));
 	}
 
 	public Mono<LessonResultDetailsResponse> getLessonResultDetails(Integer lessonId) {
@@ -115,6 +133,7 @@ public class StudentService {
 			return emptySnapshot(
 					"Twoja grupa nie ma jeszcze aktywnych ani ukonczonych lekcji. Wroc pozniej lub skontaktuj sie z nauczycielem.");
 		}
+
 		Map<Integer, UserLesson> userLessonsByLessonId = allUserLessonsByLessonId.entrySet().stream()
 				.filter(entry -> lessons.stream().anyMatch(lesson -> lesson.getId().equals(entry.getKey())))
 				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
@@ -158,22 +177,14 @@ public class StudentService {
 				.completedLessons(completedLessons).inProgressLessons(inProgressLessons)
 				.averageScore(roundToOneDecimal(averageScore)).build();
 
-		StudentProgressResponse progress = StudentProgressResponse.builder()
-				.summary(buildSummary(totalLessons, completedLessons, inProgressLessons, stats.getAverageScore()))
-				.totalLessons(totalLessons).completedLessons(completedLessons).inProgressLessons(inProgressLessons)
-				.averageScore(stats.getAverageScore()).build();
-
-		return new StudentDashboardSnapshot(studentLessons, stats, progress);
+		return new StudentDashboardSnapshot(studentLessons, stats);
 	}
 
 	private StudentDashboardSnapshot emptySnapshot(String summary) {
 		StudentStatsResponse stats = StudentStatsResponse.builder().totalLessons(0).completedLessons(0)
 				.inProgressLessons(0).averageScore(0.0).build();
 
-		StudentProgressResponse progress = StudentProgressResponse.builder().summary(summary).totalLessons(0)
-				.completedLessons(0).inProgressLessons(0).averageScore(0.0).build();
-
-		return new StudentDashboardSnapshot(List.of(), stats, progress);
+		return new StudentDashboardSnapshot(List.of(), stats);
 	}
 
 	private String buildSummary(int totalLessons, int completedLessons, int inProgressLessons, double averageScore) {
@@ -203,6 +214,31 @@ public class StudentService {
 		return Math.round(value * 10.0) / 10.0;
 	}
 
+	private double roundToWhole(double value) {
+		return Math.round(value);
+	}
+
+	private List<StudentSkillStatsResponse> buildSkillStats(Integer userId) {
+		Map<String, StudentSkillStatsResponse> statsByTaskType = Map.of("choose_tasks",
+				StudentSkillStatsResponse.builder().category("Wybór").correct(0).wrong(0).build(), "write_tasks",
+				StudentSkillStatsResponse.builder().category("Pisanie").correct(0).wrong(0).build(), "scatter_tasks",
+				StudentSkillStatsResponse.builder().category("Rozsypanka").correct(0).wrong(0).build(), "speak_tasks",
+				StudentSkillStatsResponse.builder().category("Mówienie").correct(0).wrong(0).build());
+
+		for (Object[] row : userAnswerRepository.getSkillBreakdownByUserId(userId)) {
+			String taskType = (String) row[0];
+			StudentSkillStatsResponse base = statsByTaskType.get(taskType);
+			if (base == null) {
+				continue;
+			}
+			base.setCorrect(((Number) row[1]).intValue());
+			base.setWrong(((Number) row[2]).intValue());
+		}
+
+		return List.of(statsByTaskType.get("choose_tasks"), statsByTaskType.get("write_tasks"),
+				statsByTaskType.get("scatter_tasks"), statsByTaskType.get("speak_tasks"));
+	}
+
 	private boolean shouldBeVisibleForStudent(Lesson lesson, UserLesson userLesson) {
 		if (Boolean.TRUE.equals(lesson.getIsActive())) {
 			return true;
@@ -210,7 +246,6 @@ public class StudentService {
 		return userLesson != null && userLesson.getStatus() == UserLessonStatus.COMPLETED;
 	}
 
-	private record StudentDashboardSnapshot(List<StudentLessonResponse> lessons, StudentStatsResponse stats,
-			StudentProgressResponse progress) {
+	private record StudentDashboardSnapshot(List<StudentLessonResponse> lessons, StudentStatsResponse stats) {
 	}
 }

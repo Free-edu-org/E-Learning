@@ -7,12 +7,15 @@ export interface StudentStats {
   averageScore: number;
 }
 
-export interface StudentProgress {
-  summary: string;
-  completedLessons: number;
-  totalLessons: number;
-  inProgressLessons: number;
-  averageScore: number;
+export interface StudentProgressPoint {
+  date: string;
+  progress: number;
+}
+
+export interface StudentSkillStats {
+  category: string;
+  correct: number;
+  wrong: number;
 }
 
 export interface StudentLessonGroup {
@@ -96,7 +99,9 @@ export interface LessonResultDetailsResponse {
 export const studentService = {
   getStats: () => fetchApi<StudentStats>("/api/v1/student/stats"),
   getLessons: () => fetchApi<StudentLesson[]>("/api/v1/student/lessons"),
-  getProgress: () => fetchApi<StudentProgress>("/api/v1/student/progress"),
+  getProgress: () =>
+    fetchApi<StudentProgressPoint[]>("/api/v1/student/progress"),
+  getSkills: () => fetchApi<StudentSkillStats[]>("/api/v1/student/skills"),
   getLessonResultDetails: (lessonPublicId: string) =>
     fetchApi<LessonResultDetailsResponse>(
       `/api/v1/student/lessons/${lessonPublicId}/result`,

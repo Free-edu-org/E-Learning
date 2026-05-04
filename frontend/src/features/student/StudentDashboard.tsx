@@ -39,7 +39,6 @@ import {
   studentService,
   type StudentLesson,
   type StudentLessonAttachment,
-  type StudentProgress,
   type StudentStats,
 } from "@/api/studentService";
 import { lessonService } from "@/api/lessonService";
@@ -123,6 +122,21 @@ function getLessonStatusTag(lesson: StudentLesson) {
       }}
     />
   );
+}
+
+function buildProgressSummary(stats: StudentStats | null) {
+  if (!stats || stats.totalLessons === 0) {
+    return "Nie masz jeszcze przypisanych lekcji.";
+  }
+  if (stats.completedLessons === 0 && stats.inProgressLessons === 0) {
+    return `Masz przypisane ${stats.totalLessons} lekcje. Rozpocznij pierwsza, aby zaczac budowac historie wynikow.`;
+  }
+  if (stats.completedLessons === 0) {
+    return `Masz ${stats.inProgressLessons} rozpoczete lekcje. Dokoncz je, aby zobaczyc pierwszy wynik procentowy.`;
+  }
+  return `Ukonczono ${stats.completedLessons} z ${stats.totalLessons} lekcji. Sredni wynik wynosi ${
+    Math.round((stats.averageScore ?? 0) * 10) / 10
+  }%.`;
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -371,7 +385,6 @@ export function StudentDashboard() {
 
   const [user, setUser] = useState<UserProfile | null>(null);
   const [stats, setStats] = useState<StudentStats | null>(null);
-  const [progress, setProgress] = useState<StudentProgress | null>(null);
   const [lessons, setLessons] = useState<StudentLesson[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -421,13 +434,11 @@ export function StudentDashboard() {
     Promise.all([
       userService.getCurrentUser(),
       studentService.getStats(),
-      studentService.getProgress(),
       studentService.getLessons(),
     ])
-      .then(([currentUser, nextStats, nextProgress, nextLessons]) => {
+      .then(([currentUser, nextStats, nextLessons]) => {
         setUser(currentUser);
         setStats(nextStats);
-        setProgress(nextProgress);
         setLessons(nextLessons);
       })
       .catch((err: unknown) => {
@@ -532,9 +543,9 @@ export function StudentDashboard() {
                     ? "Świetnie! Ukończyłeś wszystkie przypisane lekcje 🎉"
                     : `Ukończyłeś ${formatPercent(progressPercent)} przypisanych lekcji — tak trzymaj!`}
               </Typography>
-              {progress && (
+              {stats && (
                 <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                  {progress.summary}
+                  {buildProgressSummary(stats)}
                 </Typography>
               )}
             </Box>
@@ -580,7 +591,7 @@ export function StudentDashboard() {
                     <Skeleton variant="rounded" height={24} width="85%" />
                     <Skeleton variant="rounded" height={24} width="55%" />
                   </Stack>
-                ) : progress ? (
+                ) : stats ? (
                   <Stack spacing={1.5}>
                     <Stack
                       direction={{ xs: "column", sm: "row" }}
@@ -589,7 +600,7 @@ export function StudentDashboard() {
                     >
                       <Chip
                         icon={<CompletedIcon />}
-                        label={`Ukończono: ${progress.completedLessons}`}
+                        label={`Ukończono: ${stats.completedLessons}`}
                         color="success"
                         variant="outlined"
                       />
@@ -599,7 +610,7 @@ export function StudentDashboard() {
                       color="text.secondary"
                       sx={{ lineHeight: 1.7 }}
                     >
-                      {progress.summary}
+                      {buildProgressSummary(stats)}
                     </Typography>
                     <Box sx={{ mt: "auto", pt: 1 }}>
                       <Button
