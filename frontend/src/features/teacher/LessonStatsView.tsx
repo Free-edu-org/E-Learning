@@ -521,7 +521,13 @@ export function LessonStatsView() {
                         </Typography>
                       </Box>
 
-                      <Box sx={{ width: 28, display: "flex", justifyContent: "center" }}>
+                      <Box
+                        sx={{
+                          width: 28,
+                          display: "flex",
+                          justifyContent: "center",
+                        }}
+                      >
                         {student.totalTabSwitchCount > 0 && (
                           <MuiTooltip
                             title={`Uczen wychodzil z zakladek: ${student.totalTabSwitchCount}`}

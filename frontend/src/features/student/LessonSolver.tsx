@@ -1225,18 +1225,15 @@ export function LessonSolver() {
         onClose={() => setTabSwitchNoticeOpen(false)}
         maxWidth="xs"
       >
-        <AppDialogHeader
-          icon={<WarningIcon />}
-          title="Opuszczono zakładkę"
-        />
+        <AppDialogHeader icon={<WarningIcon />} title="Opuszczono zakładkę" />
         <AppDialogBody>
           <Typography
             variant="body2"
             color="text.secondary"
             sx={{ lineHeight: 1.7 }}
           >
-            W trakcie lekcji wykryto przejście do innej zakładki lub okna.
-            Wróć do zadania i kontynuuj rozwiązywanie.
+            W trakcie lekcji wykryto przejście do innej zakładki lub okna. Wróć
+            do zadania i kontynuuj rozwiązywanie.
           </Typography>
         </AppDialogBody>
         <AppDialogFooter>
