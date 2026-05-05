@@ -86,6 +86,18 @@ describe('Teacher Lesson Stats API (GET /api/v1/teacher/lessons/{lessonPublicId}
         expect(res.data.lessonPublicId).toBe(isolatedLessonPublicId);
         expect(res.data).not.toHaveProperty('lessonId');
 
+        res = await apiClient.post(`/lessons/${isolatedLessonPublicId}/tab-switches`, {
+            taskPublicId: chooseTaskPublicId,
+            taskType: 'choose'
+        });
+        expect(res.status).toBe(204);
+
+        res = await apiClient.post(`/lessons/${isolatedLessonPublicId}/tab-switches`, {
+            taskPublicId: chooseTaskPublicId,
+            taskType: 'choose'
+        });
+        expect(res.status).toBe(204);
+
         res = await apiClient.post(`/lessons/${isolatedLessonPublicId}/submit`, {
             answers: [{ taskPublicId: chooseTaskPublicId, taskType: 'choose', answer: '1' }]
         });
@@ -218,6 +230,7 @@ describe('Teacher Lesson Stats API (GET /api/v1/teacher/lessons/{lessonPublicId}
             expect(result).toHaveProperty('score');
             expect(result).toHaveProperty('maxScore');
             expect(result).toHaveProperty('resultPercent');
+            expect(result).toHaveProperty('totalTabSwitchCount');
         });
     });
 
@@ -268,6 +281,7 @@ describe('Teacher Lesson Stats API (GET /api/v1/teacher/lessons/{lessonPublicId}
             expect(found.score).toBe(1);
             expect(found.maxScore).toBe(1);
             expect(found.resultPercent).toBe(100);
+            expect(found.totalTabSwitchCount).toBe(2);
         });
 
         it('bestScore should be 100 when at least one student scored perfectly', () => {

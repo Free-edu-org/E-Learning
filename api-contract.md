@@ -829,7 +829,8 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
       "completedAt": "2026-01-20T12:00:00",
       "score": 8,
       "maxScore": 10,
-      "resultPercent": 80.0
+      "resultPercent": 80.0,
+      "totalTabSwitchCount": 3
     }
   ]
 }
@@ -841,6 +842,13 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
 | `studentsCompleted` | Integer | Liczba uczniów z zapisanymi odpowiedziami. |
 | `bestScore` | Double | Najwyższy indywidualny wynik procentowy. |
 | `studentResults` | List | Lista wyników per uczeń, posortowana malejąco po `resultPercent`. |
+| `studentResults[].userPublicId` | String | Public ID ucznia. |
+| `studentResults[].username` | String | Nazwa użytkownika ucznia. |
+| `studentResults[].completedAt` | String (ISO datetime) or null | Czas ukończenia lekcji. |
+| `studentResults[].score` | Integer | Liczba zdobytych punktów. |
+| `studentResults[].maxScore` | Integer | Maksymalna liczba punktów. |
+| `studentResults[].resultPercent` | Double | Wynik procentowy ucznia. |
+| `studentResults[].totalTabSwitchCount` | Integer | Suma zarejestrowanych przejść ucznia do innych zakładek podczas całej lekcji. |
 
 **Known Errors:**
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
@@ -892,7 +900,6 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
 | `score` | Integer | Zdobyte punkty. |
 | `maxScore` | Integer | Maksymalna liczba punktow. |
 | `resultPercent` | Double | Wynik procentowy zaokraglony do jednego miejsca po przecinku. |
-| `totalTabSwitchCount` | Integer | Suma zarejestrowanych przejsc ucznia do innych zakladek podczas calej lekcji. |
 | `completedAt` | String (ISO datetime) | Czas zakonczenia lekcji. |
 | `tasks` | List | Lista zadan w stabilnej kolejnosci prezentacyjnej. |
 | `tasks[].taskPublicId` | String | Public ID zadania w aktualnej lekcji. |
