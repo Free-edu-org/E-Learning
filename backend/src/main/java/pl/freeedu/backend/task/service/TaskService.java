@@ -40,6 +40,7 @@ public class TaskService {
 	private final SttClient sttClient;
 	private final TaskPublicIdLookupService taskPublicIdLookupService;
 	private final StudentProgressHistoryRepository studentProgressHistoryRepository;
+	private final UserTaskAttentionEventRepository userTaskAttentionEventRepository;
 	private final double sttMinScore;
 
 	public TaskService(ChooseTaskRepository chooseTaskRepository, WriteTaskRepository writeTaskRepository,
@@ -49,6 +50,7 @@ public class TaskService {
 			UserInGroupRepository userInGroupRepository, SttClient sttClient,
 			TaskPublicIdLookupService taskPublicIdLookupService,
 			StudentProgressHistoryRepository studentProgressHistoryRepository,
+			UserTaskAttentionEventRepository userTaskAttentionEventRepository,
 			@Value("${application.stt.min-score}") double sttMinScore) {
 		this.chooseTaskRepository = chooseTaskRepository;
 		this.writeTaskRepository = writeTaskRepository;
@@ -62,6 +64,7 @@ public class TaskService {
 		this.sttClient = sttClient;
 		this.taskPublicIdLookupService = taskPublicIdLookupService;
 		this.studentProgressHistoryRepository = studentProgressHistoryRepository;
+		this.userTaskAttentionEventRepository = userTaskAttentionEventRepository;
 		this.sttMinScore = sttMinScore;
 	}
 
@@ -397,12 +400,60 @@ public class TaskService {
 				}).subscribeOn(Schedulers.boundedElastic())));
 	}
 
+	public Mono<Void> recordTabSwitch(Integer lessonId, Mono<TaskAttentionEventRequest> requestMono) {
+		return requestMono
+				.flatMap(request -> securityService.getCurrentUserId().flatMap(userId -> Mono.fromCallable(() -> {
+					log.info("Recording tab switch. Lesson ID: {}, Student ID: {}, Task publicId: {}, Task type: {}",
+							lessonId, userId, request.getTaskPublicId(), request.getTaskType());
+					lessonRepository.findById(lessonId).orElseThrow(() -> {
+						log.warn("Tab switch record failed: Lesson with ID: {} not found", lessonId);
+						return new TaskException(TaskErrorCode.LESSON_NOT_FOUND);
+					});
+					if (!userInGroupRepository.hasAccessToLesson(userId, lessonId)) {
+						log.warn("Tab switch record denied: Student ID: {} has no access to lesson ID: {}", userId,
+								lessonId);
+						throw new TaskException(TaskErrorCode.STUDENT_NO_ACCESS);
+					}
+
+					UserLesson userLesson = userLessonRepository.findByUserIdAndLessonId(userId, lessonId)
+							.orElseThrow(() -> {
+								log.warn("Tab switch record failed: Lesson ID: {} not started by student ID: {}",
+										lessonId, userId);
+								return new TaskException(TaskErrorCode.LESSON_NOT_STARTED);
+							});
+					if (userLesson.getStatus() == UserLessonStatus.COMPLETED) {
+						log.warn("Tab switch record ignored: Lesson ID: {} already completed by student ID: {}",
+								lessonId, userId);
+						throw new TaskException(TaskErrorCode.LESSON_ALREADY_COMPLETED);
+					}
+
+					Integer taskId = taskPublicIdLookupService.getInternalId(request.getTaskPublicId(),
+							request.getTaskType());
+					String dbTaskType = resolveDbTaskType(request.getTaskType());
+
+					requireTaskBelongsToLesson(lessonId, request.getTaskPublicId(), request.getTaskType());
+
+					UserTaskAttentionEvent attentionEvent = userTaskAttentionEventRepository
+							.findByUserIdAndLessonIdAndTaskIdAndTaskType(userId, lessonId, taskId, dbTaskType)
+							.orElseGet(() -> UserTaskAttentionEvent.builder().userId(userId).lessonId(lessonId)
+									.taskId(taskId).taskType(dbTaskType).switchCount(0).build());
+					attentionEvent.setSwitchCount(attentionEvent.getSwitchCount() + 1);
+					attentionEvent.setLastSwitchedAt(LocalDateTime.now());
+					userTaskAttentionEventRepository.save(attentionEvent);
+
+					log.info("Tab switch recorded. Lesson ID: {}, Student ID: {}, Task ID: {}, Count: {}", lessonId,
+							userId, taskId, attentionEvent.getSwitchCount());
+					return (Void) null;
+				}).subscribeOn(Schedulers.boundedElastic()))).then();
+	}
+
 	// --- Reset ---
 
 	public Mono<Void> resetUserProgress(Integer lessonId, Integer userId) {
 		return Mono.fromCallable(() -> {
 			lessonRepository.findById(lessonId).orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_FOUND));
 			userAnswerRepository.deleteByUserIdAndLessonId(userId, lessonId);
+			userTaskAttentionEventRepository.deleteByUserIdAndLessonId(userId, lessonId);
 			userLessonRepository.deleteByUserIdAndLessonId(userId, lessonId);
 			return (Void) null;
 		}).subscribeOn(Schedulers.boundedElastic()).then();
@@ -418,6 +469,16 @@ public class TaskService {
 			case "speak" -> "speak_tasks";
 			default -> throw new TaskException(TaskErrorCode.INVALID_TASK_TYPE);
 		};
+	}
+
+	private void requireTaskBelongsToLesson(Integer lessonId, String taskPublicId, String taskType) {
+		switch (taskType) {
+			case "choose" -> getChooseTaskForLesson(lessonId, taskPublicId);
+			case "write" -> getWriteTaskForLesson(lessonId, taskPublicId);
+			case "scatter" -> getScatterTaskForLesson(lessonId, taskPublicId);
+			case "speak" -> getSpeakTaskForLesson(lessonId, taskPublicId);
+			default -> throw new TaskException(TaskErrorCode.INVALID_TASK_TYPE);
+		}
 	}
 
 	private void saveProgressHistorySnapshot(Integer userId) {

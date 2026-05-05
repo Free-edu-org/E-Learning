@@ -132,6 +132,8 @@ export function AppDialogHeader({
   subtitle,
   badge,
 }: AppDialogHeaderProps) {
+  const hasSubtitle = Boolean(subtitle);
+
   return (
     <DialogTitle sx={dialogHeaderSx}>
       <Stack
@@ -143,7 +145,7 @@ export function AppDialogHeader({
         <Stack
           direction="row"
           spacing={1.25}
-          alignItems="flex-start"
+          alignItems={hasSubtitle ? "flex-start" : "center"}
           sx={{ minWidth: 0, flex: 1 }}
         >
           <Box
@@ -171,7 +173,7 @@ export function AppDialogHeader({
             <Typography variant="h6" fontWeight={800} sx={{ lineHeight: 1.15 }}>
               {title}
             </Typography>
-            {subtitle && (
+            {hasSubtitle && (
               <Typography
                 variant="body2"
                 color="text.secondary"

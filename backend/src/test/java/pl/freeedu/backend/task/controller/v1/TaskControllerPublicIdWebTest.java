@@ -95,6 +95,25 @@ class TaskControllerPublicIdWebTest {
 	}
 
 	@Test
+	void shouldRecordTabSwitchByPublicIdWhenStudentHasAccess() {
+		// given
+		when(lessonPublicIdLookupService.getRequiredInternalId("lesson-public-id")).thenReturn(9);
+		when(taskService.recordTabSwitch(eq(9), any())).thenReturn(Mono.empty());
+
+		// when
+		WebTestClient.ResponseSpec result = webTestClient.mutateWith(mockUser("student").roles("STUDENT")).post()
+				.uri("/api/v1/lessons/lesson-public-id/tab-switches").contentType(MediaType.APPLICATION_JSON)
+				.bodyValue("""
+						{"taskPublicId":"task-public-id","taskType":"choose"}
+						""").exchange();
+
+		// then
+		result.expectStatus().isNoContent();
+		verify(lessonPublicIdLookupService).getRequiredInternalId("lesson-public-id");
+		verify(taskService).recordTabSwitch(eq(9), any());
+	}
+
+	@Test
 	void shouldReturnNotFoundWhenLessonPublicIdDoesNotExistForLessonTasks() {
 		// given
 		when(lessonPublicIdLookupService.getRequiredInternalId("missing-public-id"))

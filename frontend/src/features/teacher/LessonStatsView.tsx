@@ -7,6 +7,7 @@ import {
   CircularProgress,
   Container,
   Divider,
+  Tooltip as MuiTooltip,
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
@@ -16,6 +17,7 @@ import {
   Replay as ReplayIcon,
   TrendingUp as TrendingUpIcon,
   Visibility as VisibilityIcon,
+  WarningAmberOutlined as WarningIcon,
 } from "@mui/icons-material";
 import {
   Bar,
@@ -517,6 +519,18 @@ export function LessonStatsView() {
                         >
                           {formatPercent(student.resultPercent)}
                         </Typography>
+                      </Box>
+
+                      <Box sx={{ width: 28, display: "flex", justifyContent: "center" }}>
+                        {student.totalTabSwitchCount > 0 && (
+                          <MuiTooltip
+                            title={`Uczen wychodzil z zakladek: ${student.totalTabSwitchCount}`}
+                          >
+                            <WarningIcon
+                              sx={{ color: "warning.main", fontSize: 20 }}
+                            />
+                          </MuiTooltip>
+                        )}
                       </Box>
 
                       <Box

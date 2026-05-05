@@ -21,4 +21,5 @@ public class LessonResultTaskDetailDto {
 	private Boolean isCorrect;
 	private String possibleAnswers;
 	private String words;
+	private Integer tabSwitchCount;
 }

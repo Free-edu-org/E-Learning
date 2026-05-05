@@ -141,6 +141,16 @@ Authorization: Bearer {{auth_token}}
   ]
 }
 
+### Record task tab switch (STUDENT only)
+POST http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/tab-switches
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "taskPublicId": "{{task_public_id}}",
+  "taskType": "choose"
+}
+
 ### Reset user progress (ADMIN or lesson owner TEACHER)
 POST http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/users/{{user_public_id}}/reset
 Authorization: Bearer {{auth_token}}

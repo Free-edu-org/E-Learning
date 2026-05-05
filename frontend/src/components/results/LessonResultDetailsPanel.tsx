@@ -13,6 +13,7 @@ import {
   CheckCircleOutlined as CorrectIcon,
   CancelOutlined as IncorrectIcon,
   ExpandMoreOutlined as ExpandMoreIcon,
+  VisibilityOffOutlined as VisibilityOffIcon,
 } from "@mui/icons-material";
 import type { LessonResultDetailsResponse } from "@/api/studentService";
 import { panelSurfaceSx } from "@/components/ui/panel/panelStyles";
@@ -21,6 +22,7 @@ import { formatPercent } from "@/utils/dashboardUtils";
 interface LessonResultDetailsPanelProps {
   result: LessonResultDetailsResponse;
   performerLabel?: string;
+  showTabSwitchInfo?: boolean;
 }
 
 function getTaskTypeLabel(
@@ -51,6 +53,7 @@ function splitPipeList(value: string | null | undefined): string[] {
 export function LessonResultDetailsPanel({
   result,
   performerLabel,
+  showTabSwitchInfo = false,
 }: LessonResultDetailsPanelProps) {
   const correctCount = result.tasks.filter((task) => task.isCorrect).length;
   const incorrectCount = result.tasks.length - correctCount;
@@ -203,6 +206,22 @@ export function LessonResultDetailsPanel({
                   <Typography variant="body1" fontWeight={600} sx={{ mb: 2 }}>
                     {task.taskText}
                   </Typography>
+
+                  {showTabSwitchInfo && (
+                    <Box sx={{ mb: 2 }}>
+                      <Chip
+                        icon={<VisibilityOffIcon />}
+                        label={
+                          task.tabSwitchCount > 0
+                            ? `Zmiana zakladki: ${task.tabSwitchCount}`
+                            : "Bez zmiany zakladki"
+                        }
+                        color={task.tabSwitchCount > 0 ? "warning" : "default"}
+                        variant="outlined"
+                        size="small"
+                      />
+                    </Box>
+                  )}
 
                   {task.hint && (
                     <Alert severity="info" sx={{ mb: 2 }}>
