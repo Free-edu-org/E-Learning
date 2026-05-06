@@ -407,7 +407,7 @@ export function SpeakTaskSolver({
           gap: 1,
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
           <MicVisualizer recording={recording} analyserRef={analyserRef} />
           {recordingBlobUrl && !recording && (
             <Tooltip
@@ -418,6 +418,7 @@ export function SpeakTaskSolver({
                 color={playing ? "error" : "default"}
                 disabled={processing}
                 sx={{
+                  ml: 0.5,
                   border: "1px solid",
                   borderColor: playing ? "error.main" : "divider",
                   bgcolor: playing
@@ -480,35 +481,6 @@ export function SpeakTaskSolver({
                   : "Spróbuj ponownie"}
             </Button>
           )}
-
-          {recordingBlobUrl && !recording && (
-            <Tooltip
-              title={playing ? "Zatrzymaj odsłuch" : "Odsłuchaj nagranie"}
-            >
-              <IconButton
-                onClick={togglePlayback}
-                color={playing ? "error" : "default"}
-                disabled={processing}
-                sx={{
-                  border: "1px solid",
-                  borderColor: playing ? "error.main" : "divider",
-                  bgcolor: playing
-                    ? alpha(theme.palette.error.main, 0.08)
-                    : "transparent",
-                  transition: "all 0.2s",
-                  "&:hover": {
-                    borderColor: playing ? "error.dark" : "primary.main",
-                  },
-                }}
-              >
-                {playing ? (
-                  <PauseIcon fontSize="small" />
-                ) : (
-                  <PlayIcon fontSize="small" />
-                )}
-              </IconButton>
-            </Tooltip>
-          )}
         </Stack>
 
         {attempts > 0 &&
@@ -520,28 +492,6 @@ export function SpeakTaskSolver({
             </Typography>
           )}
 
-        {attempts >= maxAttempts - 1 &&
-          (transcriptionResult?.score ?? 0) < 1 &&
-          !recording &&
-          !processing && (
-            <Alert
-              severity="warning"
-              sx={{ borderRadius: 2, mt: 0.5, width: "100%", maxWidth: 400 }}
-            >
-              {attempts >= maxAttempts
-                ? "Wykorzystano wszystkie próby."
-                : "Możesz nagrać jeszcze jedną próbę."}
-            </Alert>
-          )}
-
-        {recordingError && (
-          <Alert
-            severity="error"
-            sx={{ borderRadius: 2, mt: 0.5, width: "100%", maxWidth: 400 }}
-          >
-            {recordingError}
-          </Alert>
-        )}
       </Box>
 
       {result && (
