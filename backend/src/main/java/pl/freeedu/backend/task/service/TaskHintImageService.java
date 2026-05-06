@@ -164,6 +164,21 @@ public class TaskHintImageService {
 		deleteFileQuietly(Paths.get(HINT_IMAGE_DIR).resolve(fileName));
 	}
 
+	/**
+	 * Called from LessonService before a lesson is deleted — cleans up hint image
+	 * files for all tasks in the lesson. DB rows are removed by cascade so only the
+	 * files need explicit cleanup here.
+	 */
+	public void deleteHintImageFilesByLessonId(Integer lessonId) {
+		java.util.stream.Stream
+				.of(chooseTaskRepository.findByLessonId(lessonId).stream().map(ChooseTask::getHintImageFileName),
+						writeTaskRepository.findByLessonId(lessonId).stream().map(WriteTask::getHintImageFileName),
+						scatterTaskRepository.findByLessonId(lessonId).stream().map(ScatterTask::getHintImageFileName),
+						speakTaskRepository.findByLessonId(lessonId).stream().map(SpeakTask::getHintImageFileName))
+				.flatMap(s -> s).filter(f -> f != null && !f.isBlank())
+				.forEach(f -> deleteFileQuietly(Paths.get(HINT_IMAGE_DIR).resolve(f)));
+	}
+
 	// ─── Private helpers ─────────────────────────────────────────────────────────
 
 	/**
