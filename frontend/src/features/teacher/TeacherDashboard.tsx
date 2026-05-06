@@ -105,7 +105,7 @@ function getTaskValidationError(
 ): string | null {
   const position = `Zadanie ${index + 1}`;
 
-  if (!task.task.trim()) {
+  if (task.type !== "speak" && !task.task.trim()) {
     return `${position}: treść zadania jest wymagana.`;
   }
 

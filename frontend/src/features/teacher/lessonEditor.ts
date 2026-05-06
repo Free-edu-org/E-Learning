@@ -47,11 +47,11 @@ export function getTaskValidationError(
 ): string | null {
   const position = `Zadanie ${index + 1}`;
 
-  if (!task.task.trim()) {
+  if (task.type !== "speak" && !task.task.trim()) {
     return `${position}: treść zadania jest wymagana.`;
   }
 
-  if (task.task.trim().length > INPUT_LIMITS.taskText) {
+  if (task.type !== "speak" && task.task.trim().length > INPUT_LIMITS.taskText) {
     return `${position}: treść zadania może mieć maksymalnie ${INPUT_LIMITS.taskText} znaków.`;
   }
 
