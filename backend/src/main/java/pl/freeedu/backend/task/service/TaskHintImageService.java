@@ -10,7 +10,8 @@ import pl.freeedu.backend.task.repository.WriteTaskRepository;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.stream.Stream;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -54,11 +55,16 @@ public class TaskHintImageService {
 	 * the database so that the task records can still be queried.
 	 */
 	public void deleteHintImageFilesByLessonId(Integer lessonId) {
-		Stream.of(chooseTaskRepository.findByLessonId(lessonId).stream().map(t -> t.getHintImageFileName()),
-				writeTaskRepository.findByLessonId(lessonId).stream().map(t -> t.getHintImageFileName()),
-				scatterTaskRepository.findByLessonId(lessonId).stream().map(t -> t.getHintImageFileName()),
-				speakTaskRepository.findByLessonId(lessonId).stream().map(t -> t.getHintImageFileName()))
-				.flatMap(s -> s).forEach(this::deleteHintImageFileIfPresent);
+		collectHintImageFileNames(lessonId).forEach(this::deleteHintImageFileIfPresent);
 		log.debug("Finished cleaning up hint image files for lesson ID: {}", lessonId);
+	}
+
+	private List<String> collectHintImageFileNames(Integer lessonId) {
+		List<String> fileNames = new ArrayList<>();
+		chooseTaskRepository.findByLessonId(lessonId).forEach(t -> fileNames.add(t.getHintImageFileName()));
+		writeTaskRepository.findByLessonId(lessonId).forEach(t -> fileNames.add(t.getHintImageFileName()));
+		scatterTaskRepository.findByLessonId(lessonId).forEach(t -> fileNames.add(t.getHintImageFileName()));
+		speakTaskRepository.findByLessonId(lessonId).forEach(t -> fileNames.add(t.getHintImageFileName()));
+		return fileNames;
 	}
 }
