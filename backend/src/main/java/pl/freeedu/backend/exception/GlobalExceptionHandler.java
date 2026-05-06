@@ -9,6 +9,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.server.MethodNotAllowedException;
 import org.springframework.web.server.ServerWebExchange;
 import pl.freeedu.backend.auth.exception.AuthException;
+import pl.freeedu.backend.invitation.exception.InvitationException;
 import pl.freeedu.backend.lesson.exception.LessonException;
 import pl.freeedu.backend.task.exception.TaskException;
 import pl.freeedu.backend.user.exception.UserException;
@@ -60,6 +61,13 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(TaskException.class)
 	public Mono<ProblemDetail> handleTaskException(TaskException ex, ServerWebExchange exchange) {
 		log.warn("TaskException [{} {}]: {}", exchange.getRequest().getMethod(), exchange.getRequest().getPath(),
+				ex.getMessage());
+		return buildProblemDetail(ex.getErrorCode().getStatus(), ex.getMessage(), ex.getErrorCode().name(), exchange);
+	}
+
+	@ExceptionHandler(InvitationException.class)
+	public Mono<ProblemDetail> handleInvitationException(InvitationException ex, ServerWebExchange exchange) {
+		log.warn("InvitationException [{} {}]: {}", exchange.getRequest().getMethod(), exchange.getRequest().getPath(),
 				ex.getMessage());
 		return buildProblemDetail(ex.getErrorCode().getStatus(), ex.getMessage(), ex.getErrorCode().name(), exchange);
 	}

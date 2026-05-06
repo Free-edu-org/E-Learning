@@ -17,6 +17,7 @@ import { ErrorPage } from "./components/error/ErrorPage";
 import { useApiErrorHandler } from "./utils/apiErrorEvents";
 import { ForgotPassword } from "./features/auth/ForgotPassword";
 import { Login } from "./features/auth/Login";
+import { RegisterWithInvitation } from "./features/auth/RegisterWithInvitation";
 import { ResetPassword } from "./features/auth/ResetPassword";
 import { TeacherDashboard } from "./features/teacher/TeacherDashboard";
 import { TeacherLessonCreateView } from "./features/teacher/TeacherLessonCreateView";
@@ -24,6 +25,7 @@ import { TeacherLessonEditView } from "./features/teacher/TeacherLessonEditView"
 import { LessonStatsView } from "./features/teacher/LessonStatsView";
 import { TeacherLessonResultView } from "./features/teacher/TeacherLessonResultView";
 import { TeacherStudentsView } from "./features/teacher/TeacherStudentsView";
+import { TeacherStudentProgressView } from "./features/teacher/TeacherStudentProgressView";
 import { AdminDashboard } from "./features/admin/AdminDashboard";
 import { StudentDashboard } from "./features/student/StudentDashboard";
 import { StudentProgressView } from "./features/student/StudentProgressView";
@@ -91,6 +93,7 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/register" element={<RegisterWithInvitation />} />
 
                 <Route element={<ProtectedRoute />}>
                   <Route path="/" element={<RoleBasedRedirect />} />
@@ -102,6 +105,10 @@ function App() {
                   <Route
                     path="/teacher/students"
                     element={<TeacherStudentsView />}
+                  />
+                  <Route
+                    path="/teacher/students/:studentPublicId/progress"
+                    element={<TeacherStudentProgressView />}
                   />
                   <Route
                     path="/teacher/lessons/new"

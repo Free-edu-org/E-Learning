@@ -2,6 +2,7 @@ package pl.freeedu.backend.teacher.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
+import lombok.extern.slf4j.Slf4j;
 import pl.freeedu.backend.lesson.dto.LessonAttachmentResponse;
 import pl.freeedu.backend.lesson.dto.LessonResponse;
 import pl.freeedu.backend.lesson.mapper.LessonMapper;
@@ -24,7 +25,11 @@ import pl.freeedu.backend.usergroup.repository.UserInGroupRepository;
 import pl.freeedu.backend.teacher.dto.TeacherCreateStudentRequest;
 import pl.freeedu.backend.teacher.dto.LessonStatsResponse;
 import pl.freeedu.backend.teacher.dto.LessonStatsStudentResult;
+import pl.freeedu.backend.teacher.dto.TeacherStudentStatsResponse;
 import pl.freeedu.backend.lesson.exception.LessonException;
+import pl.freeedu.backend.student.repository.StudentProgressHistoryRepository;
+import pl.freeedu.backend.task.repository.UserAnswerRepository;
+import java.util.LinkedHashMap;
 import pl.freeedu.backend.lesson.exception.LessonErrorCode;
 import pl.freeedu.backend.task.dto.LessonResultDetailsResponse;
 import pl.freeedu.backend.task.exception.TaskErrorCode;
@@ -42,6 +47,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+@Slf4j
 @Service
 public class TeacherService {
 
@@ -58,6 +64,8 @@ public class TeacherService {
 	private final LessonResultDetailsService lessonResultDetailsService;
 	private final LessonAttachmentService lessonAttachmentService;
 	private final UserGroupPublicIdLookupService userGroupPublicIdLookupService;
+	private final StudentProgressHistoryRepository studentProgressHistoryRepository;
+	private final UserAnswerRepository userAnswerRepository;
 
 	public TeacherService(TeacherStatsRepository teacherStatsRepository, LessonRepository lessonRepository,
 			GroupHasLessonRepository groupHasLessonRepository, LessonMapper lessonMapper,
@@ -65,7 +73,9 @@ public class TeacherService {
 			PasswordEncoder passwordEncoder, UserInGroupRepository userInGroupRepository,
 			TransactionTemplate transactionTemplate, LessonResultDetailsService lessonResultDetailsService,
 			LessonAttachmentService lessonAttachmentService,
-			UserGroupPublicIdLookupService userGroupPublicIdLookupService) {
+			UserGroupPublicIdLookupService userGroupPublicIdLookupService,
+			StudentProgressHistoryRepository studentProgressHistoryRepository,
+			UserAnswerRepository userAnswerRepository) {
 		this.teacherStatsRepository = teacherStatsRepository;
 		this.lessonRepository = lessonRepository;
 		this.groupHasLessonRepository = groupHasLessonRepository;
@@ -79,6 +89,8 @@ public class TeacherService {
 		this.lessonResultDetailsService = lessonResultDetailsService;
 		this.lessonAttachmentService = lessonAttachmentService;
 		this.userGroupPublicIdLookupService = userGroupPublicIdLookupService;
+		this.studentProgressHistoryRepository = studentProgressHistoryRepository;
+		this.userAnswerRepository = userAnswerRepository;
 	}
 
 	public Mono<TeacherStatsResponse> getStats() {
@@ -196,6 +208,58 @@ public class TeacherService {
 					}
 				})).subscribeOn(Schedulers.boundedElastic())));
 	}
+	public Mono<TeacherStudentStatsResponse> getStudentStats(Integer studentId) {
+		return securityService.getCurrentUserId().flatMap(teacherId -> Mono.fromCallable(() -> {
+			log.info("Fetching student stats: studentId={}, teacherId={}", studentId, teacherId);
+			User student = userRepository.findById(studentId)
+					.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
+			String groupPublicId = userRepository.findStudentsWithGroupByTeacherId(teacherId, Role.STUDENT).stream()
+					.filter(p -> p.getPublicId().equals(student.getPublicId()))
+					.map(pl.freeedu.backend.teacher.dto.TeacherStudentProjection::getGroupPublicId).findFirst()
+					.orElse(null);
+			TeacherStudentResponse studentResponse = TeacherStudentResponse.builder().publicId(student.getPublicId())
+					.username(student.getUsername()).email(student.getEmail()).role(student.getRole().name())
+					.createdAt(student.getCreatedAt()).groupPublicId(groupPublicId).avatarUrl(student.getAvatarUrl())
+					.build();
+			long totalLessons = teacherStatsRepository.countStudentTotalLessons(studentId, teacherId);
+			List<TeacherStudentStatsResponse.StudentLessonResult> lessonResults = teacherStatsRepository
+					.getStudentLessonResults(studentId, teacherId);
+			double avgScore = lessonResults.stream()
+					.mapToDouble(TeacherStudentStatsResponse.StudentLessonResult::getResultPercent).average()
+					.orElse(0.0);
+
+			List<TeacherStudentStatsResponse.ProgressPoint> progressHistory = studentProgressHistoryRepository
+					.findByUserIdOrderByProgressDateAsc(studentId).stream()
+					.map(e -> TeacherStudentStatsResponse.ProgressPoint.builder().date(e.getProgressDate().toString())
+							.progress(Math.round(e.getAvgScore())).build())
+					.toList();
+
+			java.util.Map<String, TeacherStudentStatsResponse.SkillStat> skillMap = new LinkedHashMap<>();
+			skillMap.put("choose_tasks",
+					TeacherStudentStatsResponse.SkillStat.builder().category("Wybór").correct(0).wrong(0).build());
+			skillMap.put("write_tasks",
+					TeacherStudentStatsResponse.SkillStat.builder().category("Pisanie").correct(0).wrong(0).build());
+			skillMap.put("scatter_tasks",
+					TeacherStudentStatsResponse.SkillStat.builder().category("Rozsypanka").correct(0).wrong(0).build());
+			skillMap.put("speak_tasks",
+					TeacherStudentStatsResponse.SkillStat.builder().category("Mówienie").correct(0).wrong(0).build());
+			for (Object[] row : userAnswerRepository.getSkillBreakdownByUserId(studentId)) {
+				TeacherStudentStatsResponse.SkillStat stat = skillMap.get((String) row[0]);
+				if (stat != null) {
+					stat.setCorrect(((Number) row[1]).intValue());
+					stat.setWrong(((Number) row[2]).intValue());
+				}
+			}
+			List<TeacherStudentStatsResponse.SkillStat> skillStats = List.copyOf(skillMap.values());
+
+			log.info("Student stats ready: studentId={}, totalLessons={}, completedLessons={}", studentId, totalLessons,
+					lessonResults.size());
+			return TeacherStudentStatsResponse.builder().student(studentResponse).totalLessons((int) totalLessons)
+					.completedLessons(lessonResults.size()).avgScore(avgScore).lessonResults(lessonResults)
+					.progressHistory(progressHistory).skillStats(skillStats).build();
+		}).subscribeOn(Schedulers.boundedElastic()));
+	}
+
 	public Mono<TeacherStudentResponse> updateStudent(Integer studentId,
 			Mono<pl.freeedu.backend.teacher.dto.TeacherUpdateStudentRequest> requestMono) {
 		return requestMono.flatMap(request -> securityService.getCurrentUserId()

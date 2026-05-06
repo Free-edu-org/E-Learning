@@ -34,6 +34,7 @@ import {
   EmailOutlined as EmailIcon,
   ExpandMoreOutlined as ExpandMoreIcon,
   GroupOutlined as GroupIcon,
+  PersonOutlined as PersonIcon,
   PersonAddOutlined as PersonAddIcon,
   RefreshOutlined as RefreshIcon,
   SaveOutlined as SaveIcon,
@@ -72,6 +73,7 @@ import { UserAvatar } from "@/components/ui/avatar/UserAvatar";
 import { uiTokens } from "@/theme/uiTokens";
 import { getApiErrorMessage } from "@/utils/dashboardUtils";
 import { INPUT_LIMITS } from "@/utils/inputLimits";
+import { GroupInvitationsSection } from "./GroupInvitationsSection";
 
 type DialogFeedbackState = {
   severity: "success" | "error" | "warning" | "info";
@@ -149,6 +151,7 @@ export function TeacherStudentsView() {
   const [editStudentOpen, setEditStudentOpen] = useState(false);
   const [editingStudent, seteditingStudent] =
     useState<TeacherStudentResponse | null>(null);
+
   const [editStudentDraft, setEditStudentDraft] = useState({
     username: "",
     email: "",
@@ -885,6 +888,14 @@ export function TeacherStudentsView() {
                               >
                                 {isMoving && <CircularProgress size={18} />}
                                 <IconButton
+                                  aria-label="Profil ucznia"
+                                  size="small"
+                                  onClick={() => navigate(`/teacher/students/${student.publicId}/progress`)}
+                                  disabled={isMoving}
+                                >
+                                  <PersonIcon fontSize="small" />
+                                </IconButton>
+                                <IconButton
                                   aria-label="Edytuj ucznia"
                                   size="small"
                                   color="primary"
@@ -899,6 +910,11 @@ export function TeacherStudentsView() {
                         })}
                       </Stack>
                     )}
+
+                    <Divider />
+                    <Box sx={{ p: 2 }}>
+                      <GroupInvitationsSection groupPublicId={group.publicId} />
+                    </Box>
                   </Collapse>
                 </Box>
               );

@@ -90,11 +90,7 @@ export function TeacherLessonResultView() {
         <Button
           startIcon={<BackIcon />}
           onClick={() =>
-            navigate(
-              routeError
-                ? "/teacher"
-                : `/teacher/lessons/${lessonPublicId}/stats`,
-            )
+            routeError ? navigate("/teacher") : navigate(-1)
           }
           sx={{
             textTransform: "none",
@@ -103,7 +99,7 @@ export function TeacherLessonResultView() {
             mt: { xs: 0.5, sm: 1 },
           }}
         >
-          {routeError ? "Powrót do panelu" : "Powrót do wyników lekcji"}
+          {routeError ? "Powrót do panelu" : "Wstecz"}
         </Button>
 
         {!routeError && loading && <CircularProgress />}
