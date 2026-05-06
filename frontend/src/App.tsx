@@ -46,8 +46,8 @@ function RoleBasedRedirect() {
 }
 
 /**
- * Wrapper that listens for global API errors (500, 503, 403, 404, network)
- * dispatched by the apiClient and shows a full-screen ErrorPage overlay.
+ * Wrapper that listens for global API errors indicating that the whole app
+ * should yield to a full-screen fallback (maintenance, denied, not-found).
  */
 function ErrorGuard() {
   const { apiError, clearApiError } = useApiErrorHandler();
