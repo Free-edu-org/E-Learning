@@ -283,19 +283,24 @@ const TaskCardFields = memo(function TaskCardFields({
   return (
     <Box sx={{ p: 2 }}>
       <Stack spacing={2}>
-        <TextField
-          label="Treść zadania"
-          value={task.task}
-          onChange={(e) =>
-            updateField("task", e.target.value.slice(0, INPUT_LIMITS.taskText))
-          }
-          inputProps={{ maxLength: INPUT_LIMITS.taskText }}
-          helperText={`${task.task.length}/${INPUT_LIMITS.taskText}`}
-          multiline
-          minRows={2}
-          fullWidth
-          placeholder="Wpisz treść pytania lub polecenia..."
-        />
+        {task.type !== "speak" && (
+          <TextField
+            label="Treść zadania"
+            value={task.task}
+            onChange={(e) =>
+              updateField(
+                "task",
+                e.target.value.slice(0, INPUT_LIMITS.taskText),
+              )
+            }
+            inputProps={{ maxLength: INPUT_LIMITS.taskText }}
+            helperText={`${task.task.length}/${INPUT_LIMITS.taskText}`}
+            multiline
+            minRows={2}
+            fullWidth
+            placeholder="Wpisz treść pytania lub polecenia..."
+          />
+        )}
 
         {task.type === "choose" && (
           <ChooseAnswerBuilder

@@ -1559,7 +1559,6 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 **Request Body (JSON):**
 ```json
 {
-  "task": "Say the sentence: 'Hello, how are you?'",
   "expectedText": "Hello, how are you?",
   "hint": "Focus on pronunciation",
   "section": "Speaking"
@@ -1569,7 +1568,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 **Success (201 Created):**
 ```json
 {
-  "publicId": "33333333-3333-3333-3333-333333333333", "lessonPublicId": "44444444-4444-4444-4444-444444444444", "task": "...", "expectedText": "...", "hint": "...",
+  "publicId": "33333333-3333-3333-3333-333333333333", "lessonPublicId": "44444444-4444-4444-4444-444444444444", "expectedText": "...", "hint": "...",
   "section": "...", "createdAt": "..."
 }
 ```
@@ -1619,7 +1618,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
   "text": "Hello how are you",
   "expectedText": "Hello, how are you?",
   "correct": true,
-  "score": 0.95,
+  "score": 1.0,
   "words": [
     { "expected": "hello", "actual": "hello", "correct": true },
     { "expected": "how", "actual": "how", "correct": true },
@@ -1628,6 +1627,8 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
   ]
 }
 ```
+
+`score` is the fraction of expected words matched in the correct position after normalization, in range `0.0-1.0`.
 
 **Known Errors:**
 - `STT_AUDIO_REQUIRED` (400): Audio file is missing or empty.
@@ -1669,7 +1670,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 **Grading logic:**
 - `choose`: exact string match on correctAnswer index
 - `write` / `scatter`: case-insensitive, trimmed comparison
-- `speak`: normalized transcription compared with `expectedText`; accepted when similarity is at least `application.stt.min-score` (default `0.85`)
+- `speak`: normalized answer is split into words and compared position-by-position with `expectedText`; `score` equals `correctWords / expectedWords`, and the answer is accepted when this score is at least `application.stt.min-score` (default `0.85`)
 
 **Known Errors:**
 - `LESSON_NOT_FOUND` (404 Not Found)

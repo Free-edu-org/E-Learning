@@ -291,11 +291,17 @@ export function LessonSolver() {
     setSpeakAttempts((prev) => {
       const key = answerKey("speak", taskPublicId);
       const current = prev[key] ?? { attempts: 0, result: null };
+      const bestResult =
+        current.result === null || result.score >= current.result.score
+          ? result
+          : current.result;
+      // Keep answer in sync with the best transcription text
+      handleAnswer(taskPublicId, "speak", bestResult.text);
       return {
         ...prev,
         [key]: {
           attempts: current.attempts + 1,
-          result,
+          result: bestResult,
         },
       };
     });
@@ -675,137 +681,263 @@ export function LessonSolver() {
                   gap: 0.5,
                 }}
               >
-                {flatTasks.map((ft, idx) => {
-                  const key = answerKey(ft.taskType, ft.taskPublicId);
-                  const isAnswered = (answers[key]?.answer ?? "") !== "";
-                  const isCurrent = idx === currentStep;
-                  const meta = taskTypeMeta[ft.taskType];
-                  const taskResult = resultsMap?.get(key) ?? null;
+                {(() => {
+                  // Group flatTasks by section preserving order
+                  type GroupEntry = { ft: (typeof flatTasks)[0]; idx: number };
+                  const groups: Array<{
+                    section: string | null;
+                    tasks: GroupEntry[];
+                  }> = [];
+                  flatTasks.forEach((ft, idx) => {
+                    const last = groups[groups.length - 1];
+                    if (last && last.section === ft.section) {
+                      last.tasks.push({ ft, idx });
+                    } else {
+                      groups.push({
+                        section: ft.section,
+                        tasks: [{ ft, idx }],
+                      });
+                    }
+                  });
 
-                  // Show section divider before first task of a new section
-                  const prevSection =
-                    idx > 0 ? flatTasks[idx - 1].section : null;
-                  const showDivider = idx > 0 && ft.section !== prevSection;
-
-                  return (
+                  return groups.map((group, gIdx) => (
                     <Box
-                      key={key}
+                      key={gIdx}
                       sx={{
                         display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
+                        width: "100%",
+                        alignItems: "stretch",
+                        mt: gIdx > 0 ? 1.5 : 0,
                       }}
                     >
-                      {showDivider && (
+                      {/* Left: vertical label + bracket line — only when section exists */}
+                      {group.section && (
                         <Box
                           sx={{
-                            width: 20,
-                            height: 1,
-                            bgcolor: "divider",
-                            my: 0.5,
-                          }}
-                        />
-                      )}
-                      <Tooltip
-                        title={
-                          <Box>
-                            <Typography variant="caption" fontWeight={700}>
-                              {`${idx + 1}. ${meta.label}`}
-                            </Typography>
-                            {isAnswered && !isSubmitted && (
-                              <Typography
-                                variant="caption"
-                                display="block"
-                                sx={{ opacity: 0.8 }}
-                              >
-                                Odpowiedziano
-                              </Typography>
-                            )}
-                            {taskResult && (
-                              <Typography
-                                variant="caption"
-                                display="block"
-                                sx={{ opacity: 0.8 }}
-                              >
-                                {taskResult.isCorrect ? "Poprawne" : "Błędne"}
-                              </Typography>
-                            )}
-                          </Box>
-                        }
-                        placement="right"
-                        arrow
-                      >
-                        <Box
-                          onClick={() => setCurrentStep(idx)}
-                          sx={{
-                            ...taskNavDotBaseSx,
-                            ...(isCurrent
-                              ? {
-                                  bgcolor: meta.color,
-                                  color: "#fff",
-                                  borderColor: meta.color,
-                                  boxShadow: `0 0 0 3px ${alpha(meta.color, 0.25)}`,
-                                  transform: "scale(1.1)",
-                                }
-                              : taskResult
-                                ? {
-                                    bgcolor: alpha(
-                                      taskResult.isCorrect
-                                        ? theme.palette.success.main
-                                        : theme.palette.error.main,
-                                      0.12,
-                                    ),
-                                    color: taskResult.isCorrect
-                                      ? theme.palette.success.main
-                                      : theme.palette.error.main,
-                                    borderColor: alpha(
-                                      taskResult.isCorrect
-                                        ? theme.palette.success.main
-                                        : theme.palette.error.main,
-                                      0.4,
-                                    ),
-                                  }
-                                : isAnswered
-                                  ? {
-                                      bgcolor: alpha(meta.color, 0.12),
-                                      color: meta.color,
-                                      borderColor: alpha(meta.color, 0.35),
-                                    }
-                                  : {
-                                      bgcolor: (t: Theme) =>
-                                        alpha(
-                                          t.palette.text.primary,
-                                          t.palette.mode === "dark"
-                                            ? 0.06
-                                            : 0.05,
-                                        ),
-                                      color: "text.secondary",
-                                      borderColor: (t: Theme) =>
-                                        alpha(t.palette.divider, 0.3),
-                                      "&:hover": {
-                                        borderColor: alpha(meta.color, 0.5),
-                                        bgcolor: alpha(meta.color, 0.08),
-                                        color: meta.color,
-                                      },
-                                    }),
+                            width: 28,
+                            flexShrink: 0,
+                            display: "flex",
+                            alignItems: "stretch",
+                            gap: 0.5,
+                            mr: 0.5,
                           }}
                         >
-                          {taskResult ? (
-                            taskResult.isCorrect ? (
-                              <AnsweredIcon sx={{ fontSize: 18 }} />
-                            ) : (
-                              idx + 1
-                            )
-                          ) : isAnswered ? (
-                            <AnsweredIcon sx={{ fontSize: 18 }} />
-                          ) : (
-                            idx + 1
-                          )}
+                          <Typography
+                            sx={{
+                              writingMode: "vertical-rl",
+                              transform: "rotate(180deg)",
+                              fontSize: "0.52rem",
+                              fontWeight: 700,
+                              textTransform: "uppercase",
+                              letterSpacing: "0.08em",
+                              color: "text.disabled",
+                              lineHeight: 1,
+                              flex: 1,
+                              overflow: "hidden",
+                              textAlign: "center",
+                            }}
+                          >
+                            {group.section}
+                          </Typography>
+                          {/* Bracket line */}
+                          <Box
+                            sx={{
+                              width: 2,
+                              alignSelf: "stretch",
+                              borderRadius: 2,
+                              bgcolor: "divider",
+                              opacity: 0.6,
+                            }}
+                          />
                         </Box>
-                      </Tooltip>
+                      )}
+
+                      {/* Right: dots */}
+                      <Box
+                        sx={{
+                          flex: 1,
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          gap: 0.75,
+                        }}
+                      >
+                        {group.tasks.map(({ ft, idx }) => {
+                          const key = answerKey(ft.taskType, ft.taskPublicId);
+                          const isAnswered =
+                            (answers[key]?.answer ?? "") !== "";
+                          const isCurrent = idx === currentStep;
+                          const meta = taskTypeMeta[ft.taskType];
+                          const taskResult = resultsMap?.get(key) ?? null;
+
+                          return (
+                            <Tooltip
+                              key={key}
+                              title={
+                                <Box>
+                                  <Typography
+                                    variant="caption"
+                                    fontWeight={700}
+                                  >
+                                    {`${idx + 1}. ${meta.label}`}
+                                  </Typography>
+                                  {group.section && (
+                                    <Typography
+                                      variant="caption"
+                                      display="block"
+                                      sx={{ opacity: 0.7 }}
+                                    >
+                                      {group.section}
+                                    </Typography>
+                                  )}
+                                  {isAnswered && !isSubmitted && (
+                                    <Typography
+                                      variant="caption"
+                                      display="block"
+                                      sx={{ opacity: 0.8 }}
+                                    >
+                                      Odpowiedziano
+                                    </Typography>
+                                  )}
+                                  {taskResult && (
+                                    <Typography
+                                      variant="caption"
+                                      display="block"
+                                      sx={{ opacity: 0.8 }}
+                                    >
+                                      {taskResult.isCorrect
+                                        ? "Poprawne"
+                                        : "Błędne"}
+                                    </Typography>
+                                  )}
+                                </Box>
+                              }
+                              placement="right"
+                              arrow
+                            >
+                              <Box
+                                onClick={() => setCurrentStep(idx)}
+                                sx={{
+                                  ...taskNavDotBaseSx,
+                                  ...(isCurrent
+                                    ? {
+                                        bgcolor: meta.color,
+                                        color: "#fff",
+                                        borderColor: meta.color,
+                                        boxShadow: `0 0 0 3px ${alpha(meta.color, 0.25)}`,
+                                        transform: "scale(1.1)",
+                                      }
+                                    : taskResult
+                                      ? {
+                                          bgcolor: alpha(
+                                            taskResult.isCorrect
+                                              ? theme.palette.success.main
+                                              : theme.palette.error.main,
+                                            0.12,
+                                          ),
+                                          color: taskResult.isCorrect
+                                            ? theme.palette.success.main
+                                            : theme.palette.error.main,
+                                          borderColor: alpha(
+                                            taskResult.isCorrect
+                                              ? theme.palette.success.main
+                                              : theme.palette.error.main,
+                                            0.4,
+                                          ),
+                                        }
+                                      : isAnswered
+                                        ? {
+                                            bgcolor: alpha(meta.color, 0.12),
+                                            color: meta.color,
+                                            borderColor: alpha(
+                                              meta.color,
+                                              0.35,
+                                            ),
+                                          }
+                                        : {
+                                            bgcolor: (t: Theme) =>
+                                              alpha(
+                                                t.palette.text.primary,
+                                                t.palette.mode === "dark"
+                                                  ? 0.06
+                                                  : 0.05,
+                                              ),
+                                            color: "text.secondary",
+                                            borderColor: (t: Theme) =>
+                                              alpha(t.palette.divider, 0.3),
+                                            "&:hover": {
+                                              borderColor: alpha(
+                                                meta.color,
+                                                0.5,
+                                              ),
+                                              bgcolor: alpha(meta.color, 0.08),
+                                              color: meta.color,
+                                            },
+                                          }),
+                                }}
+                              >
+                                {taskResult ? (
+                                  taskResult.isCorrect ? (
+                                    <AnsweredIcon sx={{ fontSize: 18 }} />
+                                  ) : (
+                                    <Typography
+                                      component="span"
+                                      sx={{
+                                        fontSize: "0.85rem",
+                                        fontWeight: 800,
+                                        lineHeight: 1,
+                                      }}
+                                    >
+                                      {idx + 1}
+                                    </Typography>
+                                  )
+                                ) : isAnswered ? (
+                                  <AnsweredIcon sx={{ fontSize: 18 }} />
+                                ) : (
+                                  <Typography
+                                    component="span"
+                                    sx={{
+                                      fontSize: "0.85rem",
+                                      fontWeight: 800,
+                                      lineHeight: 1,
+                                    }}
+                                  >
+                                    {idx + 1}
+                                  </Typography>
+                                )}
+                                {/* Type icon badge */}
+                                <Box
+                                  component="span"
+                                  sx={{
+                                    position: "absolute",
+                                    bottom: -4,
+                                    right: -4,
+                                    width: 18,
+                                    height: 18,
+                                    borderRadius: "50%",
+                                    bgcolor: "background.paper",
+                                    border: "1px solid",
+                                    borderColor: "divider",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    fontSize: "0.5rem",
+                                    color: meta.color,
+                                    lineHeight: 1,
+                                    pointerEvents: "none",
+                                    "& svg": { fontSize: "12px !important" },
+                                  }}
+                                >
+                                  {meta.icon}
+                                </Box>
+                              </Box>
+                            </Tooltip>
+                          );
+                        })}
+                      </Box>
                     </Box>
-                  );
-                })}
+                  ));
+                })()}
               </Box>
 
               {/* Right: Task + hint columns */}
@@ -815,26 +947,7 @@ export function LessonSolver() {
                   <Grid size={{ xs: 12, md: 8, lg: 9 }}>
                     <Paper elevation={0} sx={{ ...taskCardSx, p: 3 }}>
                       {/* Inner task card */}
-                      <Box
-                        sx={{
-                          p: 2.5,
-                          mb: 3,
-                          borderRadius: 3,
-                          bgcolor: (t) =>
-                            alpha(
-                              t.palette.common.white,
-                              t.palette.mode === "dark" ? 0.02 : 0.6,
-                            ),
-                          border: "1px solid",
-                          borderColor: (t) =>
-                            alpha(
-                              t.palette.divider,
-                              t.palette.mode === "dark" ? 0.15 : 0.2,
-                            ),
-                        }}
-                      >
-                        {renderCurrentTask()}
-                      </Box>
+                      <Box sx={{ mb: 3 }}>{renderCurrentTask()}</Box>
 
                       {/* Navigation buttons */}
                       <Stack
@@ -943,12 +1056,10 @@ export function LessonSolver() {
                         fontWeight={700}
                         sx={{ mb: 2 }}
                       >
-                        {currentTask.hint
-                          ? "Podpowiedź"
-                          : (currentTask.section ?? "Informacja")}
+                        Podpowiedź
                       </Typography>
 
-                      {currentTask.hint && (
+                      {currentTask.hint ? (
                         <Stack
                           direction="row"
                           spacing={1}
@@ -970,50 +1081,13 @@ export function LessonSolver() {
                             {currentTask.hint}
                           </Typography>
                         </Stack>
-                      )}
-
-                      {!currentTask.hint && currentTask.section && (
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{ lineHeight: 1.7 }}
-                        >
-                          Sekcja: {currentTask.section}
-                        </Typography>
-                      )}
-
-                      {!currentTask.hint && !currentTask.section && (
-                        <Typography variant="body2" color="text.secondary">
-                          Rozwiąż zadanie po lewej stronie.
+                      ) : (
+                        <Typography variant="body2" color="text.disabled">
+                          Brak podpowiedzi dla tego zadania.
                         </Typography>
                       )}
 
                       {/* Task type badge */}
-                      <Box
-                        sx={{
-                          mt: 2,
-                          pt: 2,
-                          borderTop: "1px solid",
-                          borderColor: "divider",
-                        }}
-                      >
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <Box
-                            sx={{
-                              color: taskTypeMeta[currentTask.taskType].color,
-                            }}
-                          >
-                            {taskTypeMeta[currentTask.taskType].icon}
-                          </Box>
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            fontWeight={600}
-                          >
-                            Typ: {taskTypeMeta[currentTask.taskType].label}
-                          </Typography>
-                        </Stack>
-                      </Box>
 
                       {/* Attachment section */}
                       {attachments.length > 0 && (

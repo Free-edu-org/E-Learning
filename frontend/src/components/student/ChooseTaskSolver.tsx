@@ -7,6 +7,7 @@ import {
 import type { ChooseTaskResponse } from "@/api/taskService";
 import type { SubmitAnswerDetail } from "@/api/studentService";
 import {
+  taskCardSx,
   taskHeaderSx,
   taskFeedbackCorrectSx,
   taskFeedbackIncorrectSx,
@@ -49,7 +50,7 @@ export function ChooseTaskSolver({
   };
 
   return (
-    <Box>
+    <Box sx={taskCardSx}>
       <Box sx={taskHeaderSx}>
         <Chip
           icon={<>{meta.icon}</>}

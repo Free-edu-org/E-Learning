@@ -95,7 +95,6 @@ Content-Type: application/json
 Authorization: Bearer {{auth_token}}
 
 {
-  "task": "Say hello in English",
   "expectedText": "Hello",
   "hint": "Greeting",
   "section": "Speaking"
@@ -107,7 +106,6 @@ Content-Type: application/json
 Authorization: Bearer {{auth_token}}
 
 {
-  "task": "Say goodbye in English",
   "expectedText": "Goodbye",
   "hint": "Farewell"
 }

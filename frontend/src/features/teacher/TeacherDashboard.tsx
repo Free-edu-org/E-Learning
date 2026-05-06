@@ -188,7 +188,6 @@ async function createLessonTask(lessonPublicId: string, task: LessonTaskDraft) {
   }
 
   return taskService.createSpeakTask(lessonPublicId, {
-    task: task.task.trim(),
     expectedText: task.correctAnswer.trim(),
     hint,
     section,
@@ -230,7 +229,6 @@ async function updateLessonTask(
     });
   }
   return taskService.updateSpeakTask(lessonPublicId, taskPublicId, {
-    task: task.task.trim(),
     expectedText: task.correctAnswer.trim(),
     hint,
     section,

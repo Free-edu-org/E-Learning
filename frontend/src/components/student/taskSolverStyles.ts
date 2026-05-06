@@ -14,14 +14,14 @@ import type { TaskType } from "@/api/taskService";
 export const taskCardSx: SxProps<Theme> = {
   p: 2.5,
   borderRadius: uiTokens.radius.card,
-  border: "1px solid",
-  borderColor: (theme) =>
-    alpha(theme.palette.divider, theme.palette.mode === "dark" ? 0.22 : 0.32),
   bgcolor: (theme) =>
-    alpha(
-      theme.palette.common.white,
-      theme.palette.mode === "dark" ? 0.02 : 0.86,
-    ),
+    theme.palette.mode === "dark"
+      ? alpha(theme.palette.common.white, 0.03)
+      : theme.palette.background.paper,
+  boxShadow: (theme) =>
+    theme.palette.mode === "dark"
+      ? "0 1px 8px rgba(0,0,0,0.35)"
+      : "0 2px 12px rgba(15,23,42,0.07), 0 1px 3px rgba(15,23,42,0.04)",
 };
 
 export const taskHeaderSx: SxProps<Theme> = {
@@ -40,79 +40,83 @@ export const taskHintSx: SxProps<Theme> = {
 
 export const taskFeedbackCorrectSx: SxProps<Theme> = {
   mt: 2,
-  p: 1.5,
+  px: 1.5,
+  py: 1.25,
   borderRadius: 2,
-  bgcolor: (theme) => alpha(theme.palette.success.main, 0.08),
-  border: "1px solid",
-  borderColor: (theme) => alpha(theme.palette.success.main, 0.2),
+  bgcolor: (theme) => alpha(theme.palette.success.main, 0.06),
+  boxShadow: (theme) => `inset 3px 0 0 ${theme.palette.success.main}`,
 };
 
 export const taskFeedbackIncorrectSx: SxProps<Theme> = {
   mt: 2,
-  p: 1.5,
+  px: 1.5,
+  py: 1.25,
   borderRadius: 2,
-  bgcolor: (theme) => alpha(theme.palette.error.main, 0.08),
-  border: "1px solid",
-  borderColor: (theme) => alpha(theme.palette.error.main, 0.2),
+  bgcolor: (theme) => alpha(theme.palette.error.main, 0.06),
+  boxShadow: (theme) => `inset 3px 0 0 ${theme.palette.error.main}`,
 };
 
 export const chooseOptionCardSx: SxProps<Theme> = {
   display: "flex",
   alignItems: "center",
-  gap: 2,
-  p: 2,
-  borderRadius: 3,
-  border: "1px solid",
-  borderColor: (theme) =>
-    alpha(theme.palette.divider, theme.palette.mode === "dark" ? 0.22 : 0.3),
+  gap: 1.5,
+  px: 1.75,
+  py: 1.25,
+  borderRadius: 2.5,
   bgcolor: (theme) =>
-    alpha(
-      theme.palette.common.white,
-      theme.palette.mode === "dark" ? 0.03 : 0.92,
-    ),
+    theme.palette.mode === "dark"
+      ? alpha(theme.palette.common.white, 0.04)
+      : theme.palette.background.paper,
+  boxShadow: (theme) =>
+    theme.palette.mode === "dark"
+      ? "0 1px 4px rgba(0,0,0,0.3)"
+      : "0 1px 4px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04)",
   cursor: "pointer",
-  transition: "border-color 0.15s, box-shadow 0.15s, background-color 0.15s",
+  transition: "box-shadow 0.15s, background-color 0.15s",
   "&:hover": {
-    borderColor: (theme) => alpha(theme.palette.primary.main, 0.35),
-    boxShadow: "0 4px 12px rgba(15, 23, 42, 0.08)",
+    boxShadow: (theme) =>
+      theme.palette.mode === "dark"
+        ? `0 2px 10px rgba(0,0,0,0.4), 0 0 0 1px ${alpha(theme.palette.primary.main, 0.3)}`
+        : `0 4px 14px rgba(15,23,42,0.1), 0 0 0 1px ${alpha(theme.palette.primary.main, 0.2)}`,
   },
 };
 
 export const chooseOptionSelectedSx: SxProps<Theme> = {
   ...chooseOptionCardSx,
-  borderColor: (theme) => alpha(theme.palette.primary.main, 0.5),
   bgcolor: (theme) =>
     alpha(
       theme.palette.primary.main,
-      theme.palette.mode === "dark" ? 0.08 : 0.06,
+      theme.palette.mode === "dark" ? 0.1 : 0.06,
     ),
-  boxShadow: (theme) => `0 0 0 1px ${alpha(theme.palette.primary.main, 0.25)}`,
+  boxShadow: (theme) =>
+    `0 2px 10px rgba(15,23,42,0.08), 0 0 0 2px ${alpha(theme.palette.primary.main, 0.45)}`,
   "&:hover": {
-    borderColor: (theme) => alpha(theme.palette.primary.main, 0.6),
     boxShadow: (theme) =>
-      `0 0 0 1px ${alpha(theme.palette.primary.main, 0.35)}`,
+      `0 2px 10px rgba(15,23,42,0.08), 0 0 0 2px ${alpha(theme.palette.primary.main, 0.55)}`,
   },
 };
 
 export const chooseOptionCorrectSx: SxProps<Theme> = {
   ...chooseOptionCardSx,
-  borderColor: (theme) => alpha(theme.palette.success.main, 0.5),
-  bgcolor: (theme) => alpha(theme.palette.success.main, 0.08),
+  bgcolor: (theme) => alpha(theme.palette.success.main, 0.07),
+  boxShadow: (theme) =>
+    `0 1px 4px rgba(15,23,42,0.05), 0 0 0 2px ${alpha(theme.palette.success.main, 0.45)}`,
   cursor: "default",
   "&:hover": {},
 };
 
 export const chooseOptionIncorrectSx: SxProps<Theme> = {
   ...chooseOptionCardSx,
-  borderColor: (theme) => alpha(theme.palette.error.main, 0.5),
-  bgcolor: (theme) => alpha(theme.palette.error.main, 0.08),
+  bgcolor: (theme) => alpha(theme.palette.error.main, 0.07),
+  boxShadow: (theme) =>
+    `0 1px 4px rgba(15,23,42,0.05), 0 0 0 2px ${alpha(theme.palette.error.main, 0.45)}`,
   cursor: "default",
   "&:hover": {},
 };
 
 export const chooseOptionNumberSx: SxProps<Theme> = {
-  width: 40,
-  height: 40,
+  width: 28,
+  height: 28,
   borderRadius: "50%",
   display: "flex",
   alignItems: "center",
@@ -121,11 +125,11 @@ export const chooseOptionNumberSx: SxProps<Theme> = {
   bgcolor: (theme) =>
     alpha(
       theme.palette.text.primary,
-      theme.palette.mode === "dark" ? 0.08 : 0.06,
+      theme.palette.mode === "dark" ? 0.07 : 0.05,
     ),
   color: "text.secondary",
   fontWeight: 700,
-  fontSize: "0.9rem",
+  fontSize: "0.75rem",
 };
 
 /* ── Task navigation sidebar (left rail) ─────────────────────────────────── */
@@ -133,7 +137,7 @@ export const chooseOptionNumberSx: SxProps<Theme> = {
 export const taskNavRailSx: SxProps<Theme> = {
   position: "sticky",
   top: 24,
-  width: 52,
+  width: 92,
   flexShrink: 0,
   maxHeight: "calc(100vh - 48px)",
   overflowY: "auto",
@@ -153,7 +157,7 @@ export const taskNavDotBaseSx: SxProps<Theme> = {
   justifyContent: "center",
   cursor: "pointer",
   fontWeight: 700,
-  fontSize: "0.78rem",
+  fontSize: "0.85rem",
   transition: "all 0.15s ease",
   border: "2px solid",
   borderColor: "transparent",
@@ -163,14 +167,14 @@ export const taskNavDotBaseSx: SxProps<Theme> = {
 export const sidebarCardSx: SxProps<Theme> = {
   p: 2.5,
   borderRadius: uiTokens.radius.card,
-  border: "1px solid",
-  borderColor: (theme) =>
-    alpha(theme.palette.divider, theme.palette.mode === "dark" ? 0.22 : 0.3),
   bgcolor: (theme) =>
-    alpha(
-      theme.palette.common.white,
-      theme.palette.mode === "dark" ? 0.02 : 0.92,
-    ),
+    theme.palette.mode === "dark"
+      ? alpha(theme.palette.common.white, 0.03)
+      : theme.palette.background.paper,
+  boxShadow: (theme) =>
+    theme.palette.mode === "dark"
+      ? "0 1px 8px rgba(0,0,0,0.35)"
+      : "0 2px 12px rgba(15,23,42,0.07), 0 1px 3px rgba(15,23,42,0.04)",
 };
 
 export const taskTypeMeta: Record<
