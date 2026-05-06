@@ -14,6 +14,7 @@ import pl.freeedu.backend.lesson.repository.LessonRepository;
 import pl.freeedu.backend.lesson.service.LessonAttachmentService;
 import pl.freeedu.backend.security.service.SecurityService;
 import pl.freeedu.backend.student.dto.StudentLessonResponse;
+import pl.freeedu.backend.student.dto.StudentSkillStatsResponse;
 import pl.freeedu.backend.student.dto.StudentProgressHistoryResponse;
 import pl.freeedu.backend.student.dto.StudentStatsResponse;
 import pl.freeedu.backend.student.model.StudentProgressHistory;
@@ -377,5 +378,77 @@ class StudentServiceTest {
 		}).verify();
 		verify(userInGroupRepository, never()).hasAccessToLesson(anyInt(), anyInt());
 		verify(lessonResultDetailsService, never()).getCompletedLessonResult(anyInt(), anyInt());
+	}
+
+	@Test
+	void shouldReturnSkillStatsWithCorrectCategoryNamesAndCounts() {
+		// given
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
+		when(userAnswerRepository.getSkillBreakdownByUserId(10))
+				.thenReturn(List.of(new Object[]{"choose_tasks", 8L, 2L}, new Object[]{"write_tasks", 5L, 3L},
+						new Object[]{"scatter_tasks", 7L, 1L}, new Object[]{"speak_tasks", 4L, 6L}));
+
+		// when
+		Flux<StudentSkillStatsResponse> result = studentService.getSkillStats();
+
+		// then — all 4 categories returned in fixed order with correct counts
+		StepVerifier.create(result).assertNext(s -> {
+			assertEquals("Wybór", s.getCategory());
+			assertEquals(8, s.getCorrect());
+			assertEquals(2, s.getWrong());
+		}).assertNext(s -> {
+			assertEquals("Pisanie", s.getCategory());
+			assertEquals(5, s.getCorrect());
+			assertEquals(3, s.getWrong());
+		}).assertNext(s -> {
+			assertEquals("Rozsypanka", s.getCategory());
+			assertEquals(7, s.getCorrect());
+			assertEquals(1, s.getWrong());
+		}).assertNext(s -> {
+			assertEquals("Mówienie", s.getCategory());
+			assertEquals(4, s.getCorrect());
+			assertEquals(6, s.getWrong());
+		}).verifyComplete();
+	}
+
+	@Test
+	void shouldReturnZeroCountsForAllCategoriesWhenUserHasNoAnswers() {
+		// given
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
+		when(userAnswerRepository.getSkillBreakdownByUserId(10)).thenReturn(List.of());
+
+		// when
+		Flux<StudentSkillStatsResponse> result = studentService.getSkillStats();
+
+		// then — all 4 categories present, all counts zero
+		StepVerifier.create(result).assertNext(s -> {
+			assertEquals("Wybór", s.getCategory());
+			assertEquals(0, s.getCorrect());
+			assertEquals(0, s.getWrong());
+		}).assertNext(s -> assertEquals("Pisanie", s.getCategory()))
+				.assertNext(s -> assertEquals("Rozsypanka", s.getCategory()))
+				.assertNext(s -> assertEquals("Mówienie", s.getCategory())).verifyComplete();
+	}
+
+	@Test
+	void shouldIgnoreUnknownTaskTypesReturnedBySkillBreakdownQuery() {
+		// given
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
+		when(userAnswerRepository.getSkillBreakdownByUserId(10))
+				.thenReturn(List.of(new Object[]{"unknown_type", 3L, 1L}, new Object[]{"choose_tasks", 6L, 2L}));
+
+		// when
+		Flux<StudentSkillStatsResponse> result = studentService.getSkillStats();
+
+		// then — unknown type silently ignored; choose_tasks mapped, rest zero
+		StepVerifier.create(result).assertNext(s -> {
+			assertEquals("Wybór", s.getCategory());
+			assertEquals(6, s.getCorrect());
+			assertEquals(2, s.getWrong());
+		}).assertNext(s -> {
+			assertEquals("Pisanie", s.getCategory());
+			assertEquals(0, s.getCorrect());
+		}).assertNext(s -> assertEquals("Rozsypanka", s.getCategory()))
+				.assertNext(s -> assertEquals("Mówienie", s.getCategory())).verifyComplete();
 	}
 }

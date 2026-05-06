@@ -18,6 +18,7 @@ import pl.freeedu.backend.task.repository.ChooseTaskRepository;
 import pl.freeedu.backend.task.repository.ScatterTaskRepository;
 import pl.freeedu.backend.task.repository.SpeakTaskRepository;
 import pl.freeedu.backend.task.repository.WriteTaskRepository;
+import pl.freeedu.backend.task.service.TaskHintImageService;
 import pl.freeedu.backend.user.model.User;
 import pl.freeedu.backend.user.repository.UserRepository;
 import pl.freeedu.backend.user.exception.UserException;
@@ -49,12 +50,14 @@ public class LessonService {
 	private final SpeakTaskRepository speakTaskRepository;
 	private final UserGroupPublicIdLookupService userGroupPublicIdLookupService;
 	private final UserRepository userRepository;
+	private final TaskHintImageService taskHintImageService;
 
 	public LessonService(LessonRepository lessonRepository, GroupHasLessonRepository groupHasLessonRepository,
 			LessonMapper lessonMapper, SecurityService securityService, LessonAttachmentService lessonAttachmentService,
 			ChooseTaskRepository chooseTaskRepository, WriteTaskRepository writeTaskRepository,
 			SpeakTaskRepository speakTaskRepository, ScatterTaskRepository scatterTaskRepository,
-			UserGroupPublicIdLookupService userGroupPublicIdLookupService, UserRepository userRepository) {
+			UserGroupPublicIdLookupService userGroupPublicIdLookupService, UserRepository userRepository,
+			TaskHintImageService taskHintImageService) {
 		this.lessonRepository = lessonRepository;
 		this.groupHasLessonRepository = groupHasLessonRepository;
 		this.lessonMapper = lessonMapper;
@@ -66,6 +69,7 @@ public class LessonService {
 		this.speakTaskRepository = speakTaskRepository;
 		this.userGroupPublicIdLookupService = userGroupPublicIdLookupService;
 		this.userRepository = userRepository;
+		this.taskHintImageService = taskHintImageService;
 	}
 
 	public Flux<LessonResponse> getLessons(String search, Integer groupId, Boolean status, String sort) {
@@ -204,6 +208,7 @@ public class LessonService {
 				return new LessonException(LessonErrorCode.LESSON_NOT_FOUND);
 			});
 		}).subscribeOn(Schedulers.boundedElastic()).flatMap(lesson -> Mono.fromCallable(() -> {
+			taskHintImageService.deleteHintImageFilesByLessonId(id);
 			lessonAttachmentService.deleteAttachmentsByLessonId(id);
 			groupHasLessonRepository.deleteByLessonId(id);
 			lessonRepository.delete(lesson);

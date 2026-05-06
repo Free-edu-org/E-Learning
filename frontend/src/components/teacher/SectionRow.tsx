@@ -42,6 +42,7 @@ interface SectionRowProps {
   onDeleteById: (id: string) => void;
   existingSections: string[];
   defaultExpanded?: boolean;
+  lessonPublicId?: string;
 }
 
 export function SectionRow({
@@ -58,6 +59,7 @@ export function SectionRow({
   onDeleteById,
   existingSections,
   defaultExpanded = false,
+  lessonPublicId,
 }: SectionRowProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState("");
@@ -342,6 +344,7 @@ export function SectionRow({
                 onDeleteById={onDeleteById}
                 existingSections={existingSections}
                 defaultExpanded={defaultExpanded}
+                lessonPublicId={lessonPublicId}
               />
             ))}
           </Box>

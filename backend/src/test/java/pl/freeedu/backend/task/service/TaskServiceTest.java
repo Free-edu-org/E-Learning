@@ -54,6 +54,8 @@ class TaskServiceTest {
 	@Mock
 	private TaskPublicIdLookupService taskPublicIdLookupService;
 	@Mock
+	private TaskHintImageService taskHintImageService;
+	@Mock
 	private StudentProgressHistoryRepository studentProgressHistoryRepository;
 	@Mock
 	private UserTaskAttentionEventRepository userTaskAttentionEventRepository;
@@ -64,8 +66,8 @@ class TaskServiceTest {
 	void setUp() {
 		taskService = new TaskService(chooseTaskRepository, writeTaskRepository, scatterTaskRepository,
 				speakTaskRepository, userAnswerRepository, userLessonRepository, lessonRepository, securityService,
-				userInGroupRepository, sttClient, taskPublicIdLookupService, studentProgressHistoryRepository,
-				userTaskAttentionEventRepository, 0.85);
+				userInGroupRepository, sttClient, taskPublicIdLookupService, taskHintImageService,
+				studentProgressHistoryRepository, userTaskAttentionEventRepository, 0.85);
 	}
 
 	@Test
@@ -304,7 +306,97 @@ class TaskServiceTest {
 
 		// then
 		StepVerifier.create(result).verifyComplete();
+		verify(taskHintImageService).deleteHintImageFileIfPresent(null); // task has no hint image
 		verify(chooseTaskRepository).delete(task);
+	}
+
+	@Test
+	void shouldDeleteHintImageFileWhenChooseTaskHasHintImageFileName() {
+		// given
+		Integer lessonId = 1;
+		String taskPublicId = "task-10";
+		ChooseTask task = ChooseTask.builder().id(10).publicId(taskPublicId).lessonId(lessonId)
+				.hintImageFileName("hint_choose.jpg").build();
+
+		when(chooseTaskRepository.findByPublicId(taskPublicId)).thenReturn(Optional.of(task));
+
+		// when
+		Mono<Void> result = taskService.deleteChooseTask(lessonId, taskPublicId);
+
+		// then
+		StepVerifier.create(result).verifyComplete();
+		verify(taskHintImageService).deleteHintImageFileIfPresent("hint_choose.jpg");
+		verify(chooseTaskRepository).delete(task);
+	}
+
+	@Test
+	void shouldDeleteHintImageFileWhenWriteTaskHasHintImageFileName() {
+		// given
+		Integer lessonId = 1;
+		String taskPublicId = "task-write-1";
+		WriteTask task = WriteTask.builder().id(5).publicId(taskPublicId).lessonId(lessonId)
+				.hintImageFileName("hint_write.png").build();
+
+		when(writeTaskRepository.findByPublicId(taskPublicId)).thenReturn(Optional.of(task));
+
+		// when
+		Mono<Void> result = taskService.deleteWriteTask(lessonId, taskPublicId);
+
+		// then
+		StepVerifier.create(result).verifyComplete();
+		verify(taskHintImageService).deleteHintImageFileIfPresent("hint_write.png");
+		verify(writeTaskRepository).delete(task);
+	}
+
+	@Test
+	void shouldIncludeHintImageUrlInChooseTaskResponseWhenHintImageFileNameIsSet() {
+		// given
+		Integer lessonId = 1;
+		CustomUserDetails teacher = new CustomUserDetails(10, "teacher", "pass", Role.TEACHER);
+		Lesson lesson = Lesson.builder().id(lessonId).publicId("lesson-abc").build();
+		ChooseTask task = ChooseTask.builder().id(1).publicId("task-xyz").lessonId(lessonId).correctAnswer(2)
+				.hintImageFileName("hint.jpg").build();
+
+		when(securityService.getCurrentUser()).thenReturn(Mono.just(teacher));
+		when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
+		when(chooseTaskRepository.findByLessonId(lessonId)).thenReturn(List.of(task));
+		when(writeTaskRepository.findByLessonId(lessonId)).thenReturn(List.of());
+		when(scatterTaskRepository.findByLessonId(lessonId)).thenReturn(List.of());
+		when(speakTaskRepository.findByLessonId(lessonId)).thenReturn(List.of());
+
+		// when
+		Mono<LessonTasksResponse> result = taskService.getLessonTasks(lessonId);
+
+		// then
+		StepVerifier.create(result).assertNext(resp -> {
+			ChooseTaskResponse chooseTask = resp.getSections().get(0).getChooseTasks().get(0);
+			assertEquals("/api/v1/lessons/lesson-abc/tasks/choose/task-xyz/hint-image", chooseTask.getHintImageUrl());
+		}).verifyComplete();
+	}
+
+	@Test
+	void shouldSetHintImageUrlNullInChooseTaskResponseWhenNoHintImageFileName() {
+		// given
+		Integer lessonId = 1;
+		CustomUserDetails teacher = new CustomUserDetails(10, "teacher", "pass", Role.TEACHER);
+		Lesson lesson = Lesson.builder().id(lessonId).publicId("lesson-abc").build();
+		ChooseTask task = ChooseTask.builder().id(1).publicId("task-xyz").lessonId(lessonId).correctAnswer(2).build();
+
+		when(securityService.getCurrentUser()).thenReturn(Mono.just(teacher));
+		when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
+		when(chooseTaskRepository.findByLessonId(lessonId)).thenReturn(List.of(task));
+		when(writeTaskRepository.findByLessonId(lessonId)).thenReturn(List.of());
+		when(scatterTaskRepository.findByLessonId(lessonId)).thenReturn(List.of());
+		when(speakTaskRepository.findByLessonId(lessonId)).thenReturn(List.of());
+
+		// when
+		Mono<LessonTasksResponse> result = taskService.getLessonTasks(lessonId);
+
+		// then
+		StepVerifier.create(result).assertNext(resp -> {
+			ChooseTaskResponse chooseTask = resp.getSections().get(0).getChooseTasks().get(0);
+			assertNull(chooseTask.getHintImageUrl());
+		}).verifyComplete();
 	}
 
 	// Tests for Write, Scatter, Speak types... (similar logic, covering branches)

@@ -455,4 +455,106 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
             expect(response.status).toBe(403);
         });
     });
+
+    // ═══════════════════════════════════════════════
+    // Hint Image
+    // ═══════════════════════════════════════════════
+    describe('Hint Image', () => {
+        // Build a minimal valid multipart/form-data body with a 1x1 JPEG image.
+        function buildImagePayload(contentType = 'image/jpeg') {
+            const boundary = '----HintImageBoundary';
+            // Minimal JPEG: SOI + EOI markers (backend validates content-type header, not pixels)
+            const imageBytes = Buffer.from([0xFF, 0xD8, 0xFF, 0xD9]);
+            const body = Buffer.concat([
+                Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="hint.jpg"\r\nContent-Type: ${contentType}\r\n\r\n`),
+                imageBytes,
+                Buffer.from(`\r\n--${boundary}--\r\n`)
+            ]);
+            return { body, headers: { 'Content-Type': `multipart/form-data; boundary=${boundary}` } };
+        }
+
+        const uploadUrl = () => `/lessons/${lessonPublicId}/tasks/choose/${chooseTaskPublicId}/hint-image`;
+
+        it('should upload hint image and return 204', async () => {
+            setAuthToken(teacherToken);
+            const { body, headers } = buildImagePayload();
+            const response = await apiClient.post(uploadUrl(), body, { headers });
+            expect(response.status).toBe(204);
+        });
+
+        it('should include hintImageUrl in GET /tasks after upload', async () => {
+            setAuthToken(teacherToken);
+            const response = await apiClient.get(`/lessons/${lessonPublicId}/tasks`);
+            expect(response.status).toBe(200);
+            const section = response.data.sections[0];
+            const task = section.chooseTasks.find(t => t.publicId === chooseTaskPublicId);
+            expect(task).toBeDefined();
+            expect(task.hintImageUrl).toMatch(/hint-image$/);
+        });
+
+        it('should serve the hint image with GET and return 200', async () => {
+            setAuthToken(teacherToken);
+            const response = await apiClient.get(uploadUrl(), { responseType: 'arraybuffer' });
+            expect(response.status).toBe(200);
+            expect(response.headers['content-type']).toMatch(/image\//);
+        });
+
+        it('should allow STUDENT to GET hint image', async () => {
+            setAuthToken(studentToken);
+            const response = await apiClient.get(uploadUrl(), { responseType: 'arraybuffer' });
+            expect(response.status).toBe(200);
+        });
+
+        it('should replace existing image on second upload (204)', async () => {
+            setAuthToken(teacherToken);
+            const { body, headers } = buildImagePayload('image/png');
+            const response = await apiClient.post(uploadUrl(), body, { headers });
+            expect(response.status).toBe(204);
+        });
+
+        it('should return 400 for invalid content type', async () => {
+            setAuthToken(teacherToken);
+            const { body, headers } = buildImagePayload('application/pdf');
+            const response = await apiClient.post(uploadUrl(), body, { headers });
+            expect(response.status).toBe(400);
+        });
+
+        it('should return 403 for STUDENT trying to upload', async () => {
+            setAuthToken(studentToken);
+            const { body, headers } = buildImagePayload();
+            const response = await apiClient.post(uploadUrl(), body, { headers });
+            expect(response.status).toBe(403);
+        });
+
+        it('should return 403 for non-owner TEACHER trying to upload', async () => {
+            setAuthToken(secondTeacherToken);
+            const { body, headers } = buildImagePayload();
+            const response = await apiClient.post(uploadUrl(), body, { headers });
+            expect(response.status).toBe(403);
+        });
+
+        it('should return 401 without auth on GET hint image', async () => {
+            setAuthToken(null);
+            const response = await apiClient.get(uploadUrl());
+            expect(response.status).toBe(401);
+        });
+
+        it('should delete hint image and return 204', async () => {
+            setAuthToken(teacherToken);
+            const response = await apiClient.delete(uploadUrl());
+            expect(response.status).toBe(204);
+        });
+
+        it('should return 404 on GET after deletion', async () => {
+            setAuthToken(teacherToken);
+            const response = await apiClient.get(uploadUrl());
+            expect(response.status).toBe(404);
+        });
+
+        it('should return 404 on DELETE when no image exists', async () => {
+            setAuthToken(teacherToken);
+            const response = await apiClient.delete(uploadUrl());
+            expect(response.status).toBe(404);
+        });
+    });
 });

@@ -151,6 +151,8 @@ export const taskNavRailSx: SxProps<Theme> = {
 export const taskNavDotBaseSx: SxProps<Theme> = {
   width: 36,
   height: 36,
+  minWidth: 36,
+  minHeight: 36,
   borderRadius: "50%",
   display: "flex",
   alignItems: "center",

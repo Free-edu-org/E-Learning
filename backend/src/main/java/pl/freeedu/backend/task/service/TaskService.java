@@ -39,6 +39,7 @@ public class TaskService {
 	private final UserInGroupRepository userInGroupRepository;
 	private final SttClient sttClient;
 	private final TaskPublicIdLookupService taskPublicIdLookupService;
+	private final TaskHintImageService taskHintImageService;
 	private final StudentProgressHistoryRepository studentProgressHistoryRepository;
 	private final UserTaskAttentionEventRepository userTaskAttentionEventRepository;
 	private final double sttMinScore;
@@ -48,7 +49,7 @@ public class TaskService {
 			UserAnswerRepository userAnswerRepository, UserLessonRepository userLessonRepository,
 			LessonRepository lessonRepository, SecurityService securityService,
 			UserInGroupRepository userInGroupRepository, SttClient sttClient,
-			TaskPublicIdLookupService taskPublicIdLookupService,
+			TaskPublicIdLookupService taskPublicIdLookupService, TaskHintImageService taskHintImageService,
 			StudentProgressHistoryRepository studentProgressHistoryRepository,
 			UserTaskAttentionEventRepository userTaskAttentionEventRepository,
 			@Value("${application.stt.min-score}") double sttMinScore) {
@@ -63,6 +64,7 @@ public class TaskService {
 		this.userInGroupRepository = userInGroupRepository;
 		this.sttClient = sttClient;
 		this.taskPublicIdLookupService = taskPublicIdLookupService;
+		this.taskHintImageService = taskHintImageService;
 		this.studentProgressHistoryRepository = studentProgressHistoryRepository;
 		this.userTaskAttentionEventRepository = userTaskAttentionEventRepository;
 		this.sttMinScore = sttMinScore;
@@ -161,6 +163,7 @@ public class TaskService {
 		return Mono.fromCallable(() -> {
 			log.info("Deleting ChooseTask publicId: {} from lesson ID: {}", taskPublicId, lessonId);
 			ChooseTask task = getChooseTaskForLesson(lessonId, taskPublicId);
+			taskHintImageService.deleteHintImageFileIfPresent(task.getHintImageFileName());
 			chooseTaskRepository.delete(task);
 			log.info("ChooseTask publicId: {} deleted successfully", taskPublicId);
 			return (Void) null;
@@ -196,6 +199,7 @@ public class TaskService {
 	public Mono<Void> deleteWriteTask(Integer lessonId, String taskPublicId) {
 		return Mono.fromCallable(() -> {
 			WriteTask task = getWriteTaskForLesson(lessonId, taskPublicId);
+			taskHintImageService.deleteHintImageFileIfPresent(task.getHintImageFileName());
 			writeTaskRepository.delete(task);
 			return (Void) null;
 		}).subscribeOn(Schedulers.boundedElastic()).then();
@@ -231,6 +235,7 @@ public class TaskService {
 	public Mono<Void> deleteScatterTask(Integer lessonId, String taskPublicId) {
 		return Mono.fromCallable(() -> {
 			ScatterTask task = getScatterTaskForLesson(lessonId, taskPublicId);
+			taskHintImageService.deleteHintImageFileIfPresent(task.getHintImageFileName());
 			scatterTaskRepository.delete(task);
 			return (Void) null;
 		}).subscribeOn(Schedulers.boundedElastic()).then();
@@ -263,6 +268,7 @@ public class TaskService {
 	public Mono<Void> deleteSpeakTask(Integer lessonId, String taskPublicId) {
 		return Mono.fromCallable(() -> {
 			SpeakTask task = getSpeakTaskForLesson(lessonId, taskPublicId);
+			taskHintImageService.deleteHintImageFileIfPresent(task.getHintImageFileName());
 			speakTaskRepository.delete(task);
 			return (Void) null;
 		}).subscribeOn(Schedulers.boundedElastic()).then();
@@ -561,27 +567,40 @@ public class TaskService {
 	}
 
 	private ChooseTaskResponse toChooseTaskResponse(ChooseTask t, boolean stripAnswer, String lessonPublicId) {
+		String hintImageUrl = t.getHintImageFileName() != null
+				? "/api/v1/lessons/" + lessonPublicId + "/tasks/choose/" + t.getPublicId() + "/hint-image"
+				: null;
 		return ChooseTaskResponse.builder().publicId(t.getPublicId()).lessonPublicId(lessonPublicId).task(t.getTask())
 				.possibleAnswers(t.getPossibleAnswers()).correctAnswer(stripAnswer ? null : t.getCorrectAnswer())
-				.hint(t.getHint()).section(t.getSection()).createdAt(t.getCreatedAt()).build();
+				.hint(t.getHint()).hintImageUrl(hintImageUrl).section(t.getSection()).createdAt(t.getCreatedAt())
+				.build();
 	}
 
 	private WriteTaskResponse toWriteTaskResponse(WriteTask t, boolean stripAnswer, String lessonPublicId) {
+		String hintImageUrl = t.getHintImageFileName() != null
+				? "/api/v1/lessons/" + lessonPublicId + "/tasks/write/" + t.getPublicId() + "/hint-image"
+				: null;
 		return WriteTaskResponse.builder().publicId(t.getPublicId()).lessonPublicId(lessonPublicId).task(t.getTask())
-				.correctAnswer(stripAnswer ? null : t.getCorrectAnswer()).hint(t.getHint()).section(t.getSection())
-				.createdAt(t.getCreatedAt()).build();
-	}
-
-	private ScatterTaskResponse toScatterTaskResponse(ScatterTask t, boolean stripAnswer, String lessonPublicId) {
-		return ScatterTaskResponse.builder().publicId(t.getPublicId()).lessonPublicId(lessonPublicId).task(t.getTask())
-				.words(t.getWords()).correctAnswer(stripAnswer ? null : t.getCorrectAnswer()).hint(t.getHint())
+				.correctAnswer(stripAnswer ? null : t.getCorrectAnswer()).hint(t.getHint()).hintImageUrl(hintImageUrl)
 				.section(t.getSection()).createdAt(t.getCreatedAt()).build();
 	}
 
+	private ScatterTaskResponse toScatterTaskResponse(ScatterTask t, boolean stripAnswer, String lessonPublicId) {
+		String hintImageUrl = t.getHintImageFileName() != null
+				? "/api/v1/lessons/" + lessonPublicId + "/tasks/scatter/" + t.getPublicId() + "/hint-image"
+				: null;
+		return ScatterTaskResponse.builder().publicId(t.getPublicId()).lessonPublicId(lessonPublicId).task(t.getTask())
+				.words(t.getWords()).correctAnswer(stripAnswer ? null : t.getCorrectAnswer()).hint(t.getHint())
+				.hintImageUrl(hintImageUrl).section(t.getSection()).createdAt(t.getCreatedAt()).build();
+	}
+
 	private SpeakTaskResponse toSpeakTaskResponse(SpeakTask t, String lessonPublicId) {
+		String hintImageUrl = t.getHintImageFileName() != null
+				? "/api/v1/lessons/" + lessonPublicId + "/tasks/speak/" + t.getPublicId() + "/hint-image"
+				: null;
 		return SpeakTaskResponse.builder().publicId(t.getPublicId()).lessonPublicId(lessonPublicId)
-				.expectedText(t.getExpectedText()).hint(t.getHint()).section(t.getSection()).createdAt(t.getCreatedAt())
-				.build();
+				.expectedText(t.getExpectedText()).hint(t.getHint()).hintImageUrl(hintImageUrl).section(t.getSection())
+				.createdAt(t.getCreatedAt()).build();
 	}
 
 	private String requireLessonPublicId(Integer lessonId) {

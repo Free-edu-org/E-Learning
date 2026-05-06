@@ -20,7 +20,13 @@ public enum TaskErrorCode implements ErrorCode {
 																	"Lesson not found",
 																	HttpStatus.NOT_FOUND), LESSON_RESULT_NOT_FOUND(
 																			"Lesson result not found",
-																			HttpStatus.NOT_FOUND);
+																			HttpStatus.NOT_FOUND), HINT_IMAGE_INVALID_FILE_TYPE(
+																					"Only JPEG, PNG, WebP and GIF images are allowed",
+																					HttpStatus.BAD_REQUEST), HINT_IMAGE_FILE_TOO_LARGE(
+																							"Hint image must be smaller than 5 MB",
+																							HttpStatus.BAD_REQUEST), HINT_IMAGE_NOT_FOUND(
+																									"Hint image not found",
+																									HttpStatus.NOT_FOUND);
 
 	private final String defaultMessage;
 	private final HttpStatus status;

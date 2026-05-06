@@ -873,6 +873,7 @@ export function TeacherLessonEditView() {
                       }))
                     }
                     defaultExpanded={false}
+                    lessonPublicId={lessonPublicId}
                   />
                 ) : (
                   <Alert severity="warning">
