@@ -18,6 +18,7 @@ import pl.freeedu.backend.task.repository.ChooseTaskRepository;
 import pl.freeedu.backend.task.repository.ScatterTaskRepository;
 import pl.freeedu.backend.task.repository.SpeakTaskRepository;
 import pl.freeedu.backend.task.repository.WriteTaskRepository;
+import pl.freeedu.backend.task.service.TaskHintImageService;
 import pl.freeedu.backend.user.model.User;
 import pl.freeedu.backend.user.repository.UserRepository;
 import pl.freeedu.backend.user.exception.UserException;
@@ -47,6 +48,7 @@ public class LessonService {
 	private final WriteTaskRepository writeTaskRepository;
 	private final ScatterTaskRepository scatterTaskRepository;
 	private final SpeakTaskRepository speakTaskRepository;
+	private final TaskHintImageService taskHintImageService;
 	private final UserGroupPublicIdLookupService userGroupPublicIdLookupService;
 	private final UserRepository userRepository;
 
@@ -54,7 +56,8 @@ public class LessonService {
 			LessonMapper lessonMapper, SecurityService securityService, LessonAttachmentService lessonAttachmentService,
 			ChooseTaskRepository chooseTaskRepository, WriteTaskRepository writeTaskRepository,
 			SpeakTaskRepository speakTaskRepository, ScatterTaskRepository scatterTaskRepository,
-			UserGroupPublicIdLookupService userGroupPublicIdLookupService, UserRepository userRepository) {
+			UserGroupPublicIdLookupService userGroupPublicIdLookupService, UserRepository userRepository,
+			TaskHintImageService taskHintImageService) {
 		this.lessonRepository = lessonRepository;
 		this.groupHasLessonRepository = groupHasLessonRepository;
 		this.lessonMapper = lessonMapper;
@@ -64,6 +67,7 @@ public class LessonService {
 		this.writeTaskRepository = writeTaskRepository;
 		this.scatterTaskRepository = scatterTaskRepository;
 		this.speakTaskRepository = speakTaskRepository;
+		this.taskHintImageService = taskHintImageService;
 		this.userGroupPublicIdLookupService = userGroupPublicIdLookupService;
 		this.userRepository = userRepository;
 	}
@@ -205,6 +209,7 @@ public class LessonService {
 			});
 		}).subscribeOn(Schedulers.boundedElastic()).flatMap(lesson -> Mono.fromCallable(() -> {
 			lessonAttachmentService.deleteAttachmentsByLessonId(id);
+			taskHintImageService.deleteHintImageFilesByLessonId(id);
 			groupHasLessonRepository.deleteByLessonId(id);
 			lessonRepository.delete(lesson);
 			log.info("Lesson ID: {} deleted successfully", id);

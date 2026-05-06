@@ -55,6 +55,8 @@ class TaskServiceTest {
 	private TaskPublicIdLookupService taskPublicIdLookupService;
 	@Mock
 	private StudentProgressHistoryRepository studentProgressHistoryRepository;
+	@Mock
+	private TaskHintImageService taskHintImageService;
 
 	private TaskService taskService;
 
@@ -62,7 +64,8 @@ class TaskServiceTest {
 	void setUp() {
 		taskService = new TaskService(chooseTaskRepository, writeTaskRepository, scatterTaskRepository,
 				speakTaskRepository, userAnswerRepository, userLessonRepository, lessonRepository, securityService,
-				userInGroupRepository, sttClient, taskPublicIdLookupService, studentProgressHistoryRepository, 0.85);
+				userInGroupRepository, sttClient, taskPublicIdLookupService, studentProgressHistoryRepository,
+				taskHintImageService, 0.85);
 	}
 
 	@Test
@@ -292,7 +295,8 @@ class TaskServiceTest {
 		// given
 		Integer lessonId = 1;
 		String taskPublicId = "task-10";
-		ChooseTask task = ChooseTask.builder().id(10).publicId(taskPublicId).lessonId(lessonId).build();
+		ChooseTask task = ChooseTask.builder().id(10).publicId(taskPublicId).lessonId(lessonId)
+				.hintImageFileName("hint_10.png").build();
 
 		when(chooseTaskRepository.findByPublicId(taskPublicId)).thenReturn(Optional.of(task));
 
@@ -301,6 +305,7 @@ class TaskServiceTest {
 
 		// then
 		StepVerifier.create(result).verifyComplete();
+		verify(taskHintImageService).deleteHintImageFileIfPresent("hint_10.png");
 		verify(chooseTaskRepository).delete(task);
 	}
 

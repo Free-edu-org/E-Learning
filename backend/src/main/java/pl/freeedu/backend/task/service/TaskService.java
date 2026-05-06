@@ -40,6 +40,7 @@ public class TaskService {
 	private final SttClient sttClient;
 	private final TaskPublicIdLookupService taskPublicIdLookupService;
 	private final StudentProgressHistoryRepository studentProgressHistoryRepository;
+	private final TaskHintImageService taskHintImageService;
 	private final double sttMinScore;
 
 	public TaskService(ChooseTaskRepository chooseTaskRepository, WriteTaskRepository writeTaskRepository,
@@ -49,7 +50,7 @@ public class TaskService {
 			UserInGroupRepository userInGroupRepository, SttClient sttClient,
 			TaskPublicIdLookupService taskPublicIdLookupService,
 			StudentProgressHistoryRepository studentProgressHistoryRepository,
-			@Value("${application.stt.min-score}") double sttMinScore) {
+			TaskHintImageService taskHintImageService, @Value("${application.stt.min-score}") double sttMinScore) {
 		this.chooseTaskRepository = chooseTaskRepository;
 		this.writeTaskRepository = writeTaskRepository;
 		this.scatterTaskRepository = scatterTaskRepository;
@@ -62,6 +63,7 @@ public class TaskService {
 		this.sttClient = sttClient;
 		this.taskPublicIdLookupService = taskPublicIdLookupService;
 		this.studentProgressHistoryRepository = studentProgressHistoryRepository;
+		this.taskHintImageService = taskHintImageService;
 		this.sttMinScore = sttMinScore;
 	}
 
@@ -158,6 +160,7 @@ public class TaskService {
 		return Mono.fromCallable(() -> {
 			log.info("Deleting ChooseTask publicId: {} from lesson ID: {}", taskPublicId, lessonId);
 			ChooseTask task = getChooseTaskForLesson(lessonId, taskPublicId);
+			taskHintImageService.deleteHintImageFileIfPresent(task.getHintImageFileName());
 			chooseTaskRepository.delete(task);
 			log.info("ChooseTask publicId: {} deleted successfully", taskPublicId);
 			return (Void) null;
@@ -193,6 +196,7 @@ public class TaskService {
 	public Mono<Void> deleteWriteTask(Integer lessonId, String taskPublicId) {
 		return Mono.fromCallable(() -> {
 			WriteTask task = getWriteTaskForLesson(lessonId, taskPublicId);
+			taskHintImageService.deleteHintImageFileIfPresent(task.getHintImageFileName());
 			writeTaskRepository.delete(task);
 			return (Void) null;
 		}).subscribeOn(Schedulers.boundedElastic()).then();
@@ -228,6 +232,7 @@ public class TaskService {
 	public Mono<Void> deleteScatterTask(Integer lessonId, String taskPublicId) {
 		return Mono.fromCallable(() -> {
 			ScatterTask task = getScatterTaskForLesson(lessonId, taskPublicId);
+			taskHintImageService.deleteHintImageFileIfPresent(task.getHintImageFileName());
 			scatterTaskRepository.delete(task);
 			return (Void) null;
 		}).subscribeOn(Schedulers.boundedElastic()).then();
@@ -262,6 +267,7 @@ public class TaskService {
 	public Mono<Void> deleteSpeakTask(Integer lessonId, String taskPublicId) {
 		return Mono.fromCallable(() -> {
 			SpeakTask task = getSpeakTaskForLesson(lessonId, taskPublicId);
+			taskHintImageService.deleteHintImageFileIfPresent(task.getHintImageFileName());
 			speakTaskRepository.delete(task);
 			return (Void) null;
 		}).subscribeOn(Schedulers.boundedElastic()).then();

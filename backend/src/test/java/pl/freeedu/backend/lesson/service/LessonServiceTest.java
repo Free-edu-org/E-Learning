@@ -19,6 +19,7 @@ import pl.freeedu.backend.task.repository.ScatterTaskRepository;
 import pl.freeedu.backend.task.repository.SpeakTaskRepository;
 import pl.freeedu.backend.task.repository.WriteTaskRepository;
 import pl.freeedu.backend.user.model.User;
+import pl.freeedu.backend.task.service.TaskHintImageService;
 import pl.freeedu.backend.usergroup.service.UserGroupPublicIdLookupService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -67,6 +68,9 @@ class LessonServiceTest {
 
 	@Mock
 	private pl.freeedu.backend.user.repository.UserRepository userRepository;
+
+	@Mock
+	private TaskHintImageService taskHintImageService;
 
 	@InjectMocks
 	private LessonService lessonService;
@@ -265,6 +269,7 @@ class LessonServiceTest {
 
 		// then
 		StepVerifier.create(result).verifyComplete();
+		verify(taskHintImageService, times(1)).deleteHintImageFilesByLessonId(10);
 		verify(groupHasLessonRepository, times(1)).deleteByLessonId(10);
 		verify(lessonRepository, times(1)).delete(lesson);
 	}
