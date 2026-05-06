@@ -763,11 +763,11 @@ export function LessonSolver() {
                             sx={{
                               writingMode: "vertical-rl",
                               transform: "rotate(180deg)",
-                              fontSize: "0.52rem",
+                              fontSize: "0.65rem",
                               fontWeight: 700,
                               textTransform: "uppercase",
                               letterSpacing: "0.08em",
-                              color: "text.disabled",
+                              color: "text.secondary",
                               lineHeight: 1,
                               flex: 1,
                               overflow: "hidden",
@@ -1093,12 +1093,10 @@ export function LessonSolver() {
                         fontWeight={700}
                         sx={{ mb: 2 }}
                       >
-                        {currentTask.hint || currentTask.hintImageUrl
-                          ? "Podpowiedź"
-                          : (currentTask.section ?? "Informacja")}
+                        Podpowiedź
                       </Typography>
 
-                      {currentTask.hint ? (
+                      {currentTask.hint && (
                         <Stack
                           direction="row"
                           spacing={1}
@@ -1210,25 +1208,11 @@ export function LessonSolver() {
                         </>
                       )}
 
-                      {!currentTask.hint &&
-                        !currentTask.hintImageUrl &&
-                        currentTask.section && (
-                          <Typography
-                            variant="body2"
-                            color="text.secondary"
-                            sx={{ lineHeight: 1.7 }}
-                          >
-                            Sekcja: {currentTask.section}
-                          </Typography>
-                        )}
-
-                      {!currentTask.hint &&
-                        !currentTask.hintImageUrl &&
-                        !currentTask.section && (
-                          <Typography variant="body2" color="text.secondary">
-                            Rozwiąż zadanie po lewej stronie.
-                          </Typography>
-                        )}
+                      {!currentTask.hint && !currentTask.hintImageUrl && (
+                        <Typography variant="body2" color="text.disabled">
+                          Brak podpowiedzi dla tego zadania.
+                        </Typography>
+                      )}
 
                       {/* Task type badge */}
 

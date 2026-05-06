@@ -1,6 +1,5 @@
--- =============================================================================
--- Initial schema — consolidated from V1_1 through V1_17
--- Represents the full database structure as of the publicId feature (EL-94)
+﻿-- =============================================================================
+-- Initial schema — consolidated
 -- =============================================================================
 
 CREATE TABLE users (
@@ -48,15 +47,16 @@ CREATE TABLE lessons (
 );
 
 CREATE TABLE choose_tasks (
-    id               INT          NOT NULL AUTO_INCREMENT,
-    lesson_id        INT          NOT NULL,
-    task             TEXT         NOT NULL,
-    possible_answers TEXT         NOT NULL,
-    correct_answer   INT          NOT NULL,
-    created_at       TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    hint             TEXT         DEFAULT NULL,
-    section          VARCHAR(255) DEFAULT NULL,
-    public_id        VARCHAR(36)  NOT NULL DEFAULT (UUID()),
+    id                    INT          NOT NULL AUTO_INCREMENT,
+    lesson_id             INT          NOT NULL,
+    task                  TEXT         NOT NULL,
+    possible_answers      TEXT         NOT NULL,
+    correct_answer        INT          NOT NULL,
+    created_at            TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    hint                  TEXT         DEFAULT NULL,
+    hint_image_file_name  VARCHAR(255) DEFAULT NULL,
+    section               VARCHAR(255) DEFAULT NULL,
+    public_id             VARCHAR(36)  NOT NULL DEFAULT (UUID()),
     PRIMARY KEY (id),
     UNIQUE KEY uk_choose_tasks_public_id (public_id),
     KEY lesson_id (lesson_id),
@@ -64,14 +64,15 @@ CREATE TABLE choose_tasks (
 );
 
 CREATE TABLE write_tasks (
-    id             INT          NOT NULL AUTO_INCREMENT,
-    lesson_id      INT          NOT NULL,
-    task           TEXT         NOT NULL,
-    correct_answer TEXT         NOT NULL,
-    created_at     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    hint           TEXT         DEFAULT NULL,
-    section        VARCHAR(255) DEFAULT NULL,
-    public_id      VARCHAR(36)  NOT NULL DEFAULT (UUID()),
+    id                    INT          NOT NULL AUTO_INCREMENT,
+    lesson_id             INT          NOT NULL,
+    task                  TEXT         NOT NULL,
+    correct_answer        TEXT         NOT NULL,
+    created_at            TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    hint                  TEXT         DEFAULT NULL,
+    hint_image_file_name  VARCHAR(255) DEFAULT NULL,
+    section               VARCHAR(255) DEFAULT NULL,
+    public_id             VARCHAR(36)  NOT NULL DEFAULT (UUID()),
     PRIMARY KEY (id),
     UNIQUE KEY uk_write_tasks_public_id (public_id),
     KEY lesson_id (lesson_id),
@@ -79,15 +80,16 @@ CREATE TABLE write_tasks (
 );
 
 CREATE TABLE scatter_tasks (
-    id             INT          NOT NULL AUTO_INCREMENT,
-    lesson_id      INT          NOT NULL,
-    task           TEXT         NOT NULL,
-    words          TEXT         NOT NULL,
-    correct_answer TEXT         NOT NULL,
-    created_at     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    hint           TEXT         DEFAULT NULL,
-    section        VARCHAR(255) DEFAULT NULL,
-    public_id      VARCHAR(36)  NOT NULL DEFAULT (UUID()),
+    id                    INT          NOT NULL AUTO_INCREMENT,
+    lesson_id             INT          NOT NULL,
+    task                  TEXT         NOT NULL,
+    words                 TEXT         NOT NULL,
+    correct_answer        TEXT         NOT NULL,
+    created_at            TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    hint                  TEXT         DEFAULT NULL,
+    hint_image_file_name  VARCHAR(255) DEFAULT NULL,
+    section               VARCHAR(255) DEFAULT NULL,
+    public_id             VARCHAR(36)  NOT NULL DEFAULT (UUID()),
     PRIMARY KEY (id),
     UNIQUE KEY uk_scatter_tasks_public_id (public_id),
     KEY lesson_id (lesson_id),
@@ -95,14 +97,14 @@ CREATE TABLE scatter_tasks (
 );
 
 CREATE TABLE speak_tasks (
-    id            INT          NOT NULL AUTO_INCREMENT,
-    lesson_id     INT          NOT NULL,
-    task          TEXT         NOT NULL,
-    expected_text TEXT         NOT NULL,
-    created_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    hint          TEXT         DEFAULT NULL,
-    section       VARCHAR(255) DEFAULT NULL,
-    public_id     VARCHAR(36)  NOT NULL DEFAULT (UUID()),
+    id                    INT          NOT NULL AUTO_INCREMENT,
+    lesson_id             INT          NOT NULL,
+    expected_text         TEXT         NOT NULL,
+    created_at            TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    hint                  TEXT         DEFAULT NULL,
+    hint_image_file_name  VARCHAR(255) DEFAULT NULL,
+    section               VARCHAR(255) DEFAULT NULL,
+    public_id             VARCHAR(36)  NOT NULL DEFAULT (UUID()),
     PRIMARY KEY (id),
     UNIQUE KEY uk_speak_tasks_public_id (public_id),
     KEY lesson_id (lesson_id),
@@ -215,3 +217,33 @@ CREATE TABLE password_reset_tokens (
     KEY idx_password_reset_tokens_expires_at (expires_at),
     CONSTRAINT fk_password_reset_tokens_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
+
+CREATE TABLE student_progress_history (
+    id            INT       NOT NULL AUTO_INCREMENT,
+    user_id       INT       NOT NULL,
+    progress_date DATE      NOT NULL,
+    avg_score     DOUBLE    NOT NULL,
+    created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_student_progress_history_user_date (user_id, progress_date),
+    KEY idx_student_progress_history_user_id (user_id),
+    CONSTRAINT fk_student_progress_history_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
+CREATE TABLE user_task_attention_events (
+    id               INT          NOT NULL AUTO_INCREMENT,
+    user_id          INT          NOT NULL,
+    lesson_id        INT          NOT NULL,
+    task_id          INT          NOT NULL,
+    task_type        VARCHAR(64)  NOT NULL,
+    switch_count     INT          NOT NULL DEFAULT 0,
+    last_switched_at TIMESTAMP    NULL,
+    created_at       TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at       TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_user_task_attention (user_id, lesson_id, task_id, task_type)
+);
+
+CREATE INDEX idx_user_task_attention_user_lesson
+    ON user_task_attention_events (user_id, lesson_id);
