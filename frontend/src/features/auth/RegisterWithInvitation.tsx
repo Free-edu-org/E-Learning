@@ -16,7 +16,11 @@ import {
   HowToRegOutlined as RegisterIcon,
   MenuBook as BookIcon,
 } from "@mui/icons-material";
-import { Link as RouterLink, useNavigate, useSearchParams } from "react-router-dom";
+import {
+  Link as RouterLink,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 import { invitationService } from "@/api/invitationService";
 import { ApiError } from "@/api/apiClient";
 import { useAuth } from "@/context/AuthContext";
@@ -124,7 +128,8 @@ export function RegisterWithInvitation() {
     } catch (err: unknown) {
       if (err instanceof ApiError && err.problem.code) {
         setErrorMsg(
-          REGISTER_ERROR_MESSAGES[err.problem.code] ?? "Wystąpił błąd rejestracji.",
+          REGISTER_ERROR_MESSAGES[err.problem.code] ??
+            "Wystąpił błąd rejestracji.",
         );
       } else {
         setErrorMsg("Wystąpił błąd rejestracji. Spróbuj ponownie.");
@@ -176,8 +181,7 @@ export function RegisterWithInvitation() {
               <CircularProgress size={20} />
             ) : groupName ? (
               <Typography variant="body2" color="text.secondary" align="center">
-                Dołączasz do grupy:{" "}
-                <strong>{groupName}</strong>
+                Dołączasz do grupy: <strong>{groupName}</strong>
               </Typography>
             ) : null}
           </Box>
@@ -245,7 +249,10 @@ export function RegisterWithInvitation() {
                     <Box className="strength-bar">
                       <Box
                         className="strength-progress"
-                        sx={{ width: `${passwordStrength}%`, backgroundColor: strengthColor }}
+                        sx={{
+                          width: `${passwordStrength}%`,
+                          backgroundColor: strengthColor,
+                        }}
                       />
                     </Box>
                     <Typography className="strength-text">
@@ -272,9 +279,7 @@ export function RegisterWithInvitation() {
                   color="primary"
                   fullWidth
                   size="large"
-                  startIcon={
-                    isLoading ? undefined : <RegisterIcon />
-                  }
+                  startIcon={isLoading ? undefined : <RegisterIcon />}
                   sx={{ mt: 3 }}
                   disabled={isLoading || !!confirmError || !confirmPassword}
                 >

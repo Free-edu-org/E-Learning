@@ -760,89 +760,89 @@ export function TeacherStudentsView() {
                   }}
                 >
                   <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <ButtonBase
-                    onClick={() => toggleGroupExpanded(group.publicId)}
-                    sx={{
-                      flex: 1,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: 2,
-                      p: 2,
-                      textAlign: "left",
-                      minHeight: 78,
-                      "&:hover": { bgcolor: "action.hover" },
-                    }}
-                  >
-                    <Stack
-                      direction="row"
-                      spacing={1.5}
-                      alignItems="center"
-                      sx={{ minWidth: 0, flex: 1 }}
+                    <ButtonBase
+                      onClick={() => toggleGroupExpanded(group.publicId)}
+                      sx={{
+                        flex: 1,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 2,
+                        p: 2,
+                        textAlign: "left",
+                        minHeight: 78,
+                        "&:hover": { bgcolor: "action.hover" },
+                      }}
                     >
-                      <Box
-                        sx={{
-                          width: 38,
-                          height: 38,
-                          borderRadius: 2,
-                          bgcolor: "action.hover",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          flexShrink: 0,
-                        }}
+                      <Stack
+                        direction="row"
+                        spacing={1.5}
+                        alignItems="center"
+                        sx={{ minWidth: 0, flex: 1 }}
                       >
-                        <GroupIcon color="primary" />
-                      </Box>
-                      <Box sx={{ minWidth: 0 }}>
-                        <Typography
-                          variant="body1"
-                          fontWeight={800}
+                        <Box
                           sx={{
-                            overflowWrap: "anywhere",
+                            width: 38,
+                            height: 38,
+                            borderRadius: 2,
+                            bgcolor: "action.hover",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0,
                           }}
                         >
-                          {group.name}
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
+                          <GroupIcon color="primary" />
+                        </Box>
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography
+                            variant="body1"
+                            fontWeight={800}
+                            sx={{
+                              overflowWrap: "anywhere",
+                            }}
+                          >
+                            {group.name}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{
+                              overflowWrap: "anywhere",
+                            }}
+                          >
+                            {group.description || "Brak opisu grupy."}
+                          </Typography>
+                        </Box>
+                      </Stack>
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        alignItems="center"
+                        sx={{ flexShrink: 0 }}
+                      >
+                        <Chip
+                          label={studentCountLabel}
+                          size="small"
+                          sx={{ fontWeight: 700 }}
+                        />
+                        <ExpandMoreIcon
                           sx={{
-                            overflowWrap: "anywhere",
+                            color: "text.secondary",
+                            transition: "transform 150ms ease",
+                            transform: isExpanded ? "rotate(180deg)" : "none",
                           }}
-                        >
-                          {group.description || "Brak opisu grupy."}
-                        </Typography>
-                      </Box>
-                    </Stack>
-                    <Stack
-                      direction="row"
-                      spacing={1}
-                      alignItems="center"
-                      sx={{ flexShrink: 0 }}
+                        />
+                      </Stack>
+                    </ButtonBase>
+                    <IconButton
+                      size="small"
+                      aria-label={`Edytuj grupę ${group.name}`}
+                      onClick={() => openEditGroupDialog(group)}
+                      sx={{ color: "text.secondary", mr: 1 }}
                     >
-                      <Chip
-                        label={studentCountLabel}
-                        size="small"
-                        sx={{ fontWeight: 700 }}
-                      />
-                      <ExpandMoreIcon
-                        sx={{
-                          color: "text.secondary",
-                          transition: "transform 150ms ease",
-                          transform: isExpanded ? "rotate(180deg)" : "none",
-                        }}
-                      />
-                    </Stack>
-                  </ButtonBase>
-                  <IconButton
-                    size="small"
-                    aria-label={`Edytuj grupę ${group.name}`}
-                    onClick={() => openEditGroupDialog(group)}
-                    sx={{ color: "text.secondary", mr: 1 }}
-                  >
-                    <EditIcon fontSize="small" />
-                  </IconButton>
+                      <EditIcon fontSize="small" />
+                    </IconButton>
                   </Box>
 
                   <Collapse in={isExpanded} timeout={180} unmountOnExit>
@@ -952,7 +952,11 @@ export function TeacherStudentsView() {
                                 <IconButton
                                   aria-label="Profil ucznia"
                                   size="small"
-                                  onClick={() => navigate(`/teacher/students/${student.publicId}/progress`)}
+                                  onClick={() =>
+                                    navigate(
+                                      `/teacher/students/${student.publicId}/progress`,
+                                    )
+                                  }
                                   disabled={isMoving}
                                 >
                                   <PersonIcon fontSize="small" />

@@ -89,9 +89,7 @@ export function TeacherLessonResultView() {
 
         <Button
           startIcon={<BackIcon />}
-          onClick={() =>
-            routeError ? navigate("/teacher") : navigate(-1)
-          }
+          onClick={() => (routeError ? navigate("/teacher") : navigate(-1))}
           sx={{
             textTransform: "none",
             fontWeight: 600,

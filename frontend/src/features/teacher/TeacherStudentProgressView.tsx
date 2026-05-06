@@ -119,7 +119,8 @@ export function TeacherStudentProgressView() {
   }, [stats]);
 
   const totalPoints = useMemo(
-    () => (stats?.skillStats ?? []).reduce((sum, s) => sum + (s.correct ?? 0), 0),
+    () =>
+      (stats?.skillStats ?? []).reduce((sum, s) => sum + (s.correct ?? 0), 0),
     [stats],
   );
 
@@ -140,7 +141,12 @@ export function TeacherStudentProgressView() {
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: pageBg, pb: 6 }}>
       <Container maxWidth="xl" sx={{ pt: 4, position: "relative" }}>
-        <DashboardTopBar onLogout={() => { logout(); navigate("/login"); }} />
+        <DashboardTopBar
+          onLogout={() => {
+            logout();
+            navigate("/login");
+          }}
+        />
 
         <DashboardHeader
           loading={loadingUser}
@@ -151,7 +157,9 @@ export function TeacherStudentProgressView() {
           onUserUpdated={setUser}
         />
 
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mt: 1, mb: 3 }}>
+        <Box
+          sx={{ display: "flex", alignItems: "center", gap: 1.5, mt: 1, mb: 3 }}
+        >
           <Button
             startIcon={<BackIcon />}
             onClick={() => navigate("/teacher/students")}
@@ -254,7 +262,9 @@ export function TeacherStudentProgressView() {
           <Grid size={{ xs: 12, md: 6 }}>
             <Paper elevation={0} sx={{ ...panelGridCardSx, minHeight: 350 }}>
               <Box sx={panelGridCardContentSx}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+                <Box
+                  sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}
+                >
                   <TrendIcon sx={{ color: "primary.main" }} />
                   <Typography variant="h6" fontWeight={700}>
                     Postęp w czasie
@@ -278,7 +288,10 @@ export function TeacherStudentProgressView() {
                         dataKey="date"
                         stroke={theme.palette.text.secondary}
                         style={{ fontSize: 12 }}
-                        interval={Math.max(0, Math.floor(progressChartData.length / 5) - 1)}
+                        interval={Math.max(
+                          0,
+                          Math.floor(progressChartData.length / 5) - 1,
+                        )}
                       />
                       <YAxis
                         stroke={theme.palette.text.secondary}
@@ -313,7 +326,9 @@ export function TeacherStudentProgressView() {
           <Grid size={{ xs: 12, md: 6 }}>
             <Paper elevation={0} sx={{ ...panelGridCardSx, minHeight: 350 }}>
               <Box sx={panelGridCardContentSx}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+                <Box
+                  sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}
+                >
                   <TrendIcon sx={{ color: "primary.main" }} />
                   <Typography variant="h6" fontWeight={700}>
                     Silne i słabe strony
@@ -349,11 +364,21 @@ export function TeacherStudentProgressView() {
                           borderColor: theme.palette.divider,
                           backgroundColor: theme.palette.background.paper,
                         }}
-                        labelStyle={{ color: theme.palette.text.primary, fontWeight: 600 }}
+                        labelStyle={{
+                          color: theme.palette.text.primary,
+                          fontWeight: 600,
+                        }}
                         formatter={(value: unknown, name: unknown, item) => {
-                          const entry = item.payload as NormalizedSkill | undefined;
-                          const pct = typeof value === "number" ? `${value}%` : "";
-                          if (name === "Dobrze") return [`${pct} (${entry?.correct ?? 0})`, "Dobrze"];
+                          const entry = item.payload as
+                            | NormalizedSkill
+                            | undefined;
+                          const pct =
+                            typeof value === "number" ? `${value}%` : "";
+                          if (name === "Dobrze")
+                            return [
+                              `${pct} (${entry?.correct ?? 0})`,
+                              "Dobrze",
+                            ];
                           return [`${pct} (${entry?.wrong ?? 0})`, "Źle"];
                         }}
                       />
@@ -387,7 +412,9 @@ export function TeacherStudentProgressView() {
           <Box sx={{ mb: 4 }}>
             <Paper elevation={0} sx={{ ...panelGridCardSx }}>
               <Box sx={panelGridCardContentSx}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 3 }}>
+                <Box
+                  sx={{ display: "flex", alignItems: "center", gap: 1, mb: 3 }}
+                >
                   <AchievementIcon sx={{ color: "warning.main" }} />
                   <Typography variant="h6" fontWeight={700}>
                     Ukończone lekcje
@@ -410,7 +437,11 @@ export function TeacherStudentProgressView() {
                       }}
                     >
                       <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography variant="body2" fontWeight={600} sx={{ overflowWrap: "anywhere" }}>
+                        <Typography
+                          variant="body2"
+                          fontWeight={600}
+                          sx={{ overflowWrap: "anywhere" }}
+                        >
                           {lesson.lessonTitle}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
@@ -420,11 +451,19 @@ export function TeacherStudentProgressView() {
                       <Typography
                         variant="body2"
                         fontWeight={700}
-                        sx={{ color: scoreColor(lesson.resultPercent), minWidth: 48, textAlign: "right" }}
+                        sx={{
+                          color: scoreColor(lesson.resultPercent),
+                          minWidth: 48,
+                          textAlign: "right",
+                        }}
                       >
                         {formatPercent(lesson.resultPercent)}
                       </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ minWidth: 60, textAlign: "right" }}>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ minWidth: 60, textAlign: "right" }}
+                      >
                         {lesson.score}/{lesson.maxScore} pkt
                       </Typography>
                       <Button
@@ -438,7 +477,10 @@ export function TeacherStudentProgressView() {
                           border: "1px solid",
                           borderColor: (t) => alpha(t.palette.divider, 0.5),
                           color: "text.secondary",
-                          "&:hover": { borderColor: "primary.main", color: "primary.main" },
+                          "&:hover": {
+                            borderColor: "primary.main",
+                            color: "primary.main",
+                          },
                         }}
                         onClick={() =>
                           navigate(

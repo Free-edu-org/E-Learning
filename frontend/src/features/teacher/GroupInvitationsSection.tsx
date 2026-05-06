@@ -38,8 +38,7 @@ interface Props {
   groupPublicId: string;
 }
 
-const DISMISSED_KEY = (groupId: string) =>
-  `dismissed_invitations_${groupId}`;
+const DISMISSED_KEY = (groupId: string) => `dismissed_invitations_${groupId}`;
 
 const loadDismissed = (groupId: string): Set<string> => {
   try {
@@ -82,9 +81,7 @@ export function GroupInvitationsSection({ groupPublicId }: Props) {
       setInvitations(data.filter((inv) => !dismissed.has(inv.token)));
     } catch (err: unknown) {
       if (err instanceof ApiError) {
-        setError(
-          getApiErrorMessage(err, "Nie udało się pobrać zaproszeń."),
-        );
+        setError(getApiErrorMessage(err, "Nie udało się pobrać zaproszeń."));
       } else {
         setError("Nie udało się pobrać zaproszeń.");
       }
@@ -279,8 +276,15 @@ export function GroupInvitationsSection({ groupPublicId }: Props) {
                 <Stack direction="row" gap={0.5} flexShrink={0}>
                   {!inactive && (
                     <>
-                      <Tooltip title={copied === inv.token ? "Skopiowano!" : "Kopiuj link"}>
-                        <IconButton size="small" onClick={() => handleCopy(inv.token)}>
+                      <Tooltip
+                        title={
+                          copied === inv.token ? "Skopiowano!" : "Kopiuj link"
+                        }
+                      >
+                        <IconButton
+                          size="small"
+                          onClick={() => handleCopy(inv.token)}
+                        >
                           <CopyIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
