@@ -8,12 +8,14 @@ import pl.freeedu.backend.task.dto.LessonResultTaskDetailDto;
 import pl.freeedu.backend.task.exception.TaskErrorCode;
 import pl.freeedu.backend.task.exception.TaskException;
 import pl.freeedu.backend.task.model.UserAnswer;
+import pl.freeedu.backend.task.model.UserTaskAttentionEvent;
 import pl.freeedu.backend.task.model.UserLesson;
 import pl.freeedu.backend.task.model.UserLessonStatus;
 import pl.freeedu.backend.task.repository.ChooseTaskRepository;
 import pl.freeedu.backend.task.repository.ScatterTaskRepository;
 import pl.freeedu.backend.task.repository.SpeakTaskRepository;
 import pl.freeedu.backend.task.repository.UserAnswerRepository;
+import pl.freeedu.backend.task.repository.UserTaskAttentionEventRepository;
 import pl.freeedu.backend.task.repository.UserLessonRepository;
 import pl.freeedu.backend.task.repository.WriteTaskRepository;
 import pl.freeedu.backend.user.model.User;
@@ -38,13 +40,15 @@ public class LessonResultDetailsService {
 	private final SpeakTaskRepository speakTaskRepository;
 	private final UserAnswerRepository userAnswerRepository;
 	private final UserLessonRepository userLessonRepository;
+	private final UserTaskAttentionEventRepository userTaskAttentionEventRepository;
 	private final LessonRepository lessonRepository;
 	private final UserRepository userRepository;
 
 	public LessonResultDetailsService(ChooseTaskRepository chooseTaskRepository,
 			WriteTaskRepository writeTaskRepository, ScatterTaskRepository scatterTaskRepository,
 			SpeakTaskRepository speakTaskRepository, UserAnswerRepository userAnswerRepository,
-			UserLessonRepository userLessonRepository, LessonRepository lessonRepository,
+			UserLessonRepository userLessonRepository,
+			UserTaskAttentionEventRepository userTaskAttentionEventRepository, LessonRepository lessonRepository,
 			UserRepository userRepository) {
 		this.chooseTaskRepository = chooseTaskRepository;
 		this.writeTaskRepository = writeTaskRepository;
@@ -52,6 +56,7 @@ public class LessonResultDetailsService {
 		this.speakTaskRepository = speakTaskRepository;
 		this.userAnswerRepository = userAnswerRepository;
 		this.userLessonRepository = userLessonRepository;
+		this.userTaskAttentionEventRepository = userTaskAttentionEventRepository;
 		this.lessonRepository = lessonRepository;
 		this.userRepository = userRepository;
 	}
@@ -77,9 +82,15 @@ public class LessonResultDetailsService {
 			Map<String, UserAnswer> answersByKey = userAnswerRepository.findByUserIdAndLessonId(userId, lessonId)
 					.stream().collect(Collectors.toMap(answer -> answerKey(answer.getTaskType(), answer.getTaskId()),
 							Function.identity(), (left, right) -> right));
+			Map<String, Integer> tabSwitchesByKey = userTaskAttentionEventRepository
+					.findByUserIdAndLessonId(userId, lessonId).stream()
+					.collect(Collectors.toMap(event -> answerKey(event.getTaskType(), event.getTaskId()),
+							UserTaskAttentionEvent::getSwitchCount, Integer::sum));
 
 			List<LessonResultTaskDetailDto> taskDetails = buildTaskDefinitions(lessonId).stream()
-					.map(task -> task.toDto(answersByKey.get(answerKey(task.dbTaskType(), task.taskId())))).toList();
+					.map(task -> task.toDto(answersByKey.get(answerKey(task.dbTaskType(), task.taskId())),
+							tabSwitchesByKey.getOrDefault(answerKey(task.dbTaskType(), task.taskId()), 0)))
+					.toList();
 
 			log.info("Result details fetched successfully for user ID: {} and lesson ID: {}", userId, lessonId);
 			return LessonResultDetailsResponse.builder().lessonPublicId(lesson.getPublicId())
@@ -154,7 +165,7 @@ public class LessonResultDetailsService {
 					null, null, 3);
 		}
 
-		private LessonResultTaskDetailDto toDto(UserAnswer answer) {
+		private LessonResultTaskDetailDto toDto(UserAnswer answer, Integer tabSwitchCount) {
 			String mappedUserAnswer = answer != null ? answer.getAnswer() : null;
 			String mappedCorrectAnswer = correctAnswer;
 
@@ -166,7 +177,7 @@ public class LessonResultDetailsService {
 			return LessonResultTaskDetailDto.builder().taskPublicId(publicId).taskType(taskType).section(section)
 					.taskText(taskText).hint(hint).userAnswer(mappedUserAnswer).correctAnswer(mappedCorrectAnswer)
 					.isCorrect(answer != null ? Boolean.TRUE.equals(answer.getIsCorrect()) : Boolean.FALSE)
-					.possibleAnswers(possibleAnswers).words(words).build();
+					.possibleAnswers(possibleAnswers).words(words).tabSwitchCount(tabSwitchCount).build();
 		}
 
 		private String mapChooseAnswer(String answer, String possibleAnswers) {

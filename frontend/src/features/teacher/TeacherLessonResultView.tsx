@@ -114,6 +114,7 @@ export function TeacherLessonResultView() {
           <LessonResultDetailsPanel
             result={result}
             performerLabel={result.username}
+            showTabSwitchInfo={true}
           />
         )}
       </Container>

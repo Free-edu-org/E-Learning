@@ -139,6 +139,24 @@ describe('Lesson Result Details API', () => {
         expect(response.data.lessonPublicId).toBe(lessonPublicId);
         expect(response.data).not.toHaveProperty('lessonId');
 
+        response = await apiClient.post(`/lessons/${lessonPublicId}/tab-switches`, {
+            taskPublicId: chooseTaskPublicId,
+            taskType: 'choose'
+        });
+        expect(response.status).toBe(204);
+
+        response = await apiClient.post(`/lessons/${lessonPublicId}/tab-switches`, {
+            taskPublicId: chooseTaskPublicId,
+            taskType: 'choose'
+        });
+        expect(response.status).toBe(204);
+
+        response = await apiClient.post(`/lessons/${lessonPublicId}/tab-switches`, {
+            taskPublicId: writeTaskPublicId,
+            taskType: 'write'
+        });
+        expect(response.status).toBe(204);
+
         response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
             answers: [
                 { taskPublicId: chooseTaskPublicId, taskType: 'choose', answer: '1' },
@@ -201,6 +219,10 @@ describe('Lesson Result Details API', () => {
             expect(response.data.score).toBe(1);
             expect(response.data.maxScore).toBe(2);
             expect(response.data.tasks).toHaveLength(2);
+            const chooseTask = response.data.tasks.find(task => task.taskPublicId === chooseTaskPublicId);
+            const writeTask = response.data.tasks.find(task => task.taskPublicId === writeTaskPublicId);
+            expect(chooseTask.tabSwitchCount).toBe(2);
+            expect(writeTask.tabSwitchCount).toBe(1);
         });
 
         it('should return 401 when unauthenticated', async () => {
@@ -276,6 +298,10 @@ describe('Lesson Result Details API', () => {
             expect(response.data.score).toBe(1);
             expect(response.data.maxScore).toBe(2);
             expect(response.data.tasks).toHaveLength(2);
+            const chooseTask = response.data.tasks.find(task => task.taskPublicId === chooseTaskPublicId);
+            const writeTask = response.data.tasks.find(task => task.taskPublicId === writeTaskPublicId);
+            expect(chooseTask.tabSwitchCount).toBe(2);
+            expect(writeTask.tabSwitchCount).toBe(1);
         });
 
         it('should return 401 when unauthenticated', async () => {

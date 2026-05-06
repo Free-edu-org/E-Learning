@@ -57,6 +57,8 @@ class TaskServiceTest {
 	private TaskHintImageService taskHintImageService;
 	@Mock
 	private StudentProgressHistoryRepository studentProgressHistoryRepository;
+	@Mock
+	private UserTaskAttentionEventRepository userTaskAttentionEventRepository;
 
 	private TaskService taskService;
 
@@ -65,7 +67,7 @@ class TaskServiceTest {
 		taskService = new TaskService(chooseTaskRepository, writeTaskRepository, scatterTaskRepository,
 				speakTaskRepository, userAnswerRepository, userLessonRepository, lessonRepository, securityService,
 				userInGroupRepository, sttClient, taskPublicIdLookupService, taskHintImageService,
-				studentProgressHistoryRepository, 0.85);
+				studentProgressHistoryRepository, userTaskAttentionEventRepository, 0.85);
 	}
 
 	@Test
@@ -544,6 +546,38 @@ class TaskServiceTest {
 	}
 
 	@Test
+	void shouldRecordTabSwitchForInProgressLesson() {
+		// given
+		Integer lessonId = 1;
+		Integer userId = 10;
+		Lesson lesson = Lesson.builder().id(lessonId).isActive(true).build();
+		UserLesson userLesson = UserLesson.builder().userId(userId).lessonId(lessonId)
+				.status(UserLessonStatus.IN_PROGRESS).build();
+		TaskAttentionEventRequest request = TaskAttentionEventRequest.builder().taskPublicId("tp1").taskType("choose")
+				.build();
+		UserTaskAttentionEvent savedEvent = UserTaskAttentionEvent.builder().userId(userId).lessonId(lessonId).taskId(1)
+				.taskType("choose_tasks").switchCount(1).build();
+
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(userId));
+		when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
+		when(userInGroupRepository.hasAccessToLesson(userId, lessonId)).thenReturn(true);
+		when(userLessonRepository.findByUserIdAndLessonId(userId, lessonId)).thenReturn(Optional.of(userLesson));
+		when(taskPublicIdLookupService.getInternalId("tp1", "choose")).thenReturn(1);
+		when(chooseTaskRepository.findByPublicId("tp1"))
+				.thenReturn(Optional.of(ChooseTask.builder().id(1).lessonId(lessonId).build()));
+		when(userTaskAttentionEventRepository.findByUserIdAndLessonIdAndTaskIdAndTaskType(userId, lessonId, 1,
+				"choose_tasks")).thenReturn(Optional.empty());
+		when(userTaskAttentionEventRepository.save(any())).thenReturn(savedEvent);
+
+		// when
+		Mono<Void> result = taskService.recordTabSwitch(lessonId, Mono.just(request));
+
+		// then
+		StepVerifier.create(result).verifyComplete();
+		verify(userTaskAttentionEventRepository).save(any());
+	}
+
+	@Test
 	void shouldReturnErrorWhenInvalidTaskTypeInSubmit() {
 		// given
 		Integer lessonId = 1;
@@ -582,6 +616,7 @@ class TaskServiceTest {
 		// then
 		StepVerifier.create(result).verifyComplete();
 		verify(userAnswerRepository).deleteByUserIdAndLessonId(studentId, lessonId);
+		verify(userTaskAttentionEventRepository).deleteByUserIdAndLessonId(studentId, lessonId);
 		verify(userLessonRepository).deleteByUserIdAndLessonId(studentId, lessonId);
 	}
 

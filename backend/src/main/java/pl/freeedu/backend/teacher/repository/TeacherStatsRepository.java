@@ -40,9 +40,10 @@ public class TeacherStatsRepository {
 	public List<LessonStatsStudentResult> getLessonStudentResults(Integer lessonId, Integer teacherId) {
 		List<Object[]> rows = entityManager.createNativeQuery("SELECT u.public_id, u.username, MAX(ua.created_at), "
 				+ "SUM(CASE WHEN ua.is_correct = TRUE THEN 1 ELSE 0 END), " + "COUNT(*), "
-				+ "(SUM(CASE WHEN ua.is_correct = TRUE THEN 1.0 ELSE 0.0 END) * 100.0 / COUNT(*)), u.avatar_url "
-				+ "FROM user_answers ua " + "INNER JOIN users u ON ua.user_id = u.id "
-				+ "INNER JOIN lessons l ON ua.lesson_id = l.id "
+				+ "(SUM(CASE WHEN ua.is_correct = TRUE THEN 1.0 ELSE 0.0 END) * 100.0 / COUNT(*)), u.avatar_url, "
+				+ "COALESCE((SELECT SUM(utae.switch_count) FROM user_task_attention_events utae "
+				+ "WHERE utae.user_id = ua.user_id AND utae.lesson_id = ua.lesson_id), 0) " + "FROM user_answers ua "
+				+ "INNER JOIN users u ON ua.user_id = u.id " + "INNER JOIN lessons l ON ua.lesson_id = l.id "
 				+ "WHERE ua.lesson_id = :lessonId AND l.teacher_id = :teacherId "
 				+ "GROUP BY u.public_id, u.username, u.avatar_url "
 				+ "ORDER BY (SUM(CASE WHEN ua.is_correct = TRUE THEN 1.0 ELSE 0.0 END) * 100.0 / COUNT(*)) DESC")
@@ -57,6 +58,7 @@ public class TeacherStatsRepository {
 								: ((java.time.LocalDateTime) row[2]).toInstant(java.time.ZoneOffset.UTC))
 						: null)
 				.score(((Number) row[3]).intValue()).maxScore(((Number) row[4]).intValue())
-				.resultPercent(((Number) row[5]).doubleValue()).avatarUrl((String) row[6]).build()).toList();
+				.resultPercent(((Number) row[5]).doubleValue()).avatarUrl((String) row[6])
+				.totalTabSwitchCount(((Number) row[7]).intValue()).build()).toList();
 	}
 }

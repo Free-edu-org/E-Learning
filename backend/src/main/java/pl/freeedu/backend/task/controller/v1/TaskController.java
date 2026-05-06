@@ -240,6 +240,21 @@ public class TaskController {
 				.flatMap(lessonId -> taskService.submitLesson(lessonId, request));
 	}
 
+	@Operation(summary = "Record a student tab switch for the active lesson task")
+	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Tab switch recorded"),
+			@ApiResponse(responseCode = "400", description = "Lesson not started or invalid input", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "403", description = "Lesson already completed or student has no access", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "404", description = "Lesson or task not found", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
+	@PostMapping("/tab-switches")
+	@PreAuthorize("hasRole('STUDENT')")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public Mono<Void> recordTabSwitch(@PathVariable String lessonPublicId,
+			@Valid @RequestBody Mono<TaskAttentionEventRequest> request) {
+		return Mono.fromCallable(() -> lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId))
+				.subscribeOn(Schedulers.boundedElastic())
+				.flatMap(lessonId -> taskService.recordTabSwitch(lessonId, request));
+	}
+
 	// --- Reset user progress ---
 
 	@Operation(summary = "Reset student progress for a lesson")

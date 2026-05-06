@@ -16,11 +16,13 @@ import pl.freeedu.backend.task.model.SpeakTask;
 import pl.freeedu.backend.task.model.UserAnswer;
 import pl.freeedu.backend.task.model.UserLesson;
 import pl.freeedu.backend.task.model.UserLessonStatus;
+import pl.freeedu.backend.task.model.UserTaskAttentionEvent;
 import pl.freeedu.backend.task.model.WriteTask;
 import pl.freeedu.backend.task.repository.ChooseTaskRepository;
 import pl.freeedu.backend.task.repository.ScatterTaskRepository;
 import pl.freeedu.backend.task.repository.SpeakTaskRepository;
 import pl.freeedu.backend.task.repository.UserAnswerRepository;
+import pl.freeedu.backend.task.repository.UserTaskAttentionEventRepository;
 import pl.freeedu.backend.task.repository.UserLessonRepository;
 import pl.freeedu.backend.task.repository.WriteTaskRepository;
 import pl.freeedu.backend.user.model.Role;
@@ -55,6 +57,8 @@ class LessonResultDetailsServiceTest {
 	@Mock
 	private UserLessonRepository userLessonRepository;
 	@Mock
+	private UserTaskAttentionEventRepository userTaskAttentionEventRepository;
+	@Mock
 	private LessonRepository lessonRepository;
 	@Mock
 	private UserRepository userRepository;
@@ -65,7 +69,7 @@ class LessonResultDetailsServiceTest {
 	void setUp() {
 		lessonResultDetailsService = new LessonResultDetailsService(chooseTaskRepository, writeTaskRepository,
 				scatterTaskRepository, speakTaskRepository, userAnswerRepository, userLessonRepository,
-				lessonRepository, userRepository);
+				userTaskAttentionEventRepository, lessonRepository, userRepository);
 	}
 
 	@Test
@@ -104,6 +108,11 @@ class LessonResultDetailsServiceTest {
 						.answer("I am here").isCorrect(true).build(),
 				UserAnswer.builder().lessonId(lessonId).userId(userId).taskId(4).taskType("speak_tasks")
 						.answer("good mourning").isCorrect(true).build()));
+		when(userTaskAttentionEventRepository.findByUserIdAndLessonId(userId, lessonId)).thenReturn(List.of(
+				UserTaskAttentionEvent.builder().userId(userId).lessonId(lessonId).taskId(3).taskType("scatter_tasks")
+						.switchCount(2).build(),
+				UserTaskAttentionEvent.builder().userId(userId).lessonId(lessonId).taskId(4).taskType("speak_tasks")
+						.switchCount(1).build()));
 
 		// when
 		Mono<LessonResultDetailsResponse> result = lessonResultDetailsService.getCompletedLessonResult(lessonId,
@@ -120,7 +129,9 @@ class LessonResultDetailsServiceTest {
 			assertEquals("dog", response.getTasks().get(0).getCorrectAnswer());
 			assertEquals("tp3", response.getTasks().get(2).getTaskPublicId());
 			assertEquals("I|am|here", response.getTasks().get(2).getWords());
+			assertEquals(2, response.getTasks().get(2).getTabSwitchCount());
 			assertEquals("good mourning", response.getTasks().get(3).getUserAnswer());
+			assertEquals(1, response.getTasks().get(3).getTabSwitchCount());
 		}).verifyComplete();
 	}
 
@@ -170,6 +181,7 @@ class LessonResultDetailsServiceTest {
 						.isCorrect(false).build(),
 				UserAnswer.builder().lessonId(lessonId).userId(userId).taskId(15).taskType("choose_tasks").answer("2")
 						.isCorrect(true).build()));
+		when(userTaskAttentionEventRepository.findByUserIdAndLessonId(userId, lessonId)).thenReturn(List.of());
 
 		// when
 		Mono<LessonResultDetailsResponse> result = lessonResultDetailsService.getCompletedLessonResult(lessonId,
@@ -254,6 +266,7 @@ class LessonResultDetailsServiceTest {
 						.isCorrect(false).build(),
 				UserAnswer.builder().lessonId(lessonId).userId(userId).taskId(33).taskType("choose_tasks")
 						.answer("green").isCorrect(false).build()));
+		when(userTaskAttentionEventRepository.findByUserIdAndLessonId(userId, lessonId)).thenReturn(List.of());
 
 		// when
 		Mono<LessonResultDetailsResponse> result = lessonResultDetailsService.getCompletedLessonResult(lessonId,

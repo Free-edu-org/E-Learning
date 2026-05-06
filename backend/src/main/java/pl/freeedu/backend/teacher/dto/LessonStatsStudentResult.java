@@ -20,4 +20,5 @@ public class LessonStatsStudentResult {
 	private Integer maxScore;
 	private Double resultPercent;
 	private String avatarUrl;
+	private Integer totalTabSwitchCount;
 }

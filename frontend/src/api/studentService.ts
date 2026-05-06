@@ -71,6 +71,11 @@ export interface SubmitAnswersResponse {
   details: SubmitAnswerDetail[];
 }
 
+export interface TaskAttentionEventRequest {
+  taskPublicId: string;
+  taskType: "choose" | "write" | "scatter" | "speak";
+}
+
 export interface LessonResultTaskDetail {
   taskPublicId: string;
   taskType: "choose" | "write" | "scatter" | "speak";
@@ -82,6 +87,7 @@ export interface LessonResultTaskDetail {
   isCorrect: boolean;
   possibleAnswers: string | null;
   words: string | null;
+  tabSwitchCount: number;
 }
 
 export interface LessonResultDetailsResponse {
@@ -114,4 +120,12 @@ export const studentService = {
         body: JSON.stringify(payload),
       },
     ),
+  recordTaskTabSwitch: (
+    lessonPublicId: string,
+    payload: TaskAttentionEventRequest,
+  ) =>
+    fetchApi<void>(`/api/v1/lessons/${lessonPublicId}/tab-switches`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
 };

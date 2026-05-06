@@ -829,7 +829,8 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
       "completedAt": "2026-01-20T12:00:00",
       "score": 8,
       "maxScore": 10,
-      "resultPercent": 80.0
+      "resultPercent": 80.0,
+      "totalTabSwitchCount": 3
     }
   ]
 }
@@ -841,6 +842,13 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
 | `studentsCompleted` | Integer | Liczba uczniów z zapisanymi odpowiedziami. |
 | `bestScore` | Double | Najwyższy indywidualny wynik procentowy. |
 | `studentResults` | List | Lista wyników per uczeń, posortowana malejąco po `resultPercent`. |
+| `studentResults[].userPublicId` | String | Public ID ucznia. |
+| `studentResults[].username` | String | Nazwa użytkownika ucznia. |
+| `studentResults[].completedAt` | String (ISO datetime) or null | Czas ukończenia lekcji. |
+| `studentResults[].score` | Integer | Liczba zdobytych punktów. |
+| `studentResults[].maxScore` | Integer | Maksymalna liczba punktów. |
+| `studentResults[].resultPercent` | Double | Wynik procentowy ucznia. |
+| `studentResults[].totalTabSwitchCount` | Integer | Suma zarejestrowanych przejść ucznia do innych zakładek podczas całej lekcji. |
 
 **Known Errors:**
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
@@ -876,7 +884,8 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
       "correctAnswer": "goes",
       "isCorrect": false,
       "possibleAnswers": "go|goes|going",
-      "words": null
+      "words": null,
+      "tabSwitchCount": 2
     }
   ]
 }
@@ -893,7 +902,7 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
 | `resultPercent` | Double | Wynik procentowy zaokraglony do jednego miejsca po przecinku. |
 | `completedAt` | String (ISO datetime) | Czas zakonczenia lekcji. |
 | `tasks` | List | Lista zadan w stabilnej kolejnosci prezentacyjnej. |
-| `tasks[].taskId` | Integer | Public ID zadania w aktualnej lekcji. |
+| `tasks[].taskPublicId` | String | Public ID zadania w aktualnej lekcji. |
 | `tasks[].taskType` | String | `choose`, `write`, `scatter` albo `speak`. |
 | `tasks[].section` | String or null | Sekcja zadania, jesli jest ustawiona. |
 | `tasks[].taskText` | String | Tresc zadania. |
@@ -903,6 +912,7 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
 | `tasks[].isCorrect` | Boolean | Status poprawnosci odpowiedzi. |
 | `tasks[].possibleAnswers` | String or null | Lista mozliwych odpowiedzi rozdzielona `|` dla `choose`. |
 | `tasks[].words` | String or null | Lista slow rozdzielona `|` dla `scatter`. |
+| `tasks[].tabSwitchCount` | Integer | Liczba zarejestrowanych przejsc ucznia do innej zakladki podczas rozwiazywania tego zadania. |
 
 **Known Errors:**
 - `LESSON_NOT_FOUND` (404 Not Found)
@@ -1628,7 +1638,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 ---
 
 ### 8.15. Submit Lesson Answers
-- **URL**: `/api/v1/lessons/{lessonId}/submit`
+- **URL**: `/api/v1/lessons/{lessonPublicId}/submit`
 - **Method**: `POST`
 - **Description**: Submits all answers for an active lesson at once. Grades each answer and marks lesson as `COMPLETED`. One-shot — cannot re-submit.
 - **Authorization**: `STUDENT` only
@@ -1673,10 +1683,37 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 
 ---
 
-### 8.15. Reset User Progress
-- **URL**: `/api/v1/lessons/{lessonId}/users/{userId}/reset`
+### 8.16. Record Task Tab Switch
+- **URL**: `/api/v1/lessons/{lessonPublicId}/tab-switches`
 - **Method**: `POST`
-- **Description**: Deletes all UserAnswer and UserLesson records for a user+lesson, allowing re-attempt.
+- **Description**: Rejestruje przejscie ucznia do innej zakladki lub okna podczas rozwiazywania aktualnego zadania. Backend agreguje licznik per `lesson + user + task`.
+- **Authorization**: `STUDENT` only
+
+**Request Body (JSON):**
+```json
+{
+  "taskPublicId": "66666666-6666-6666-6666-666666666666",
+  "taskType": "choose"
+}
+```
+
+**Success (204 No Content):** *(Empty Response Body)*
+
+**Known Errors:**
+- `LESSON_NOT_FOUND` (404 Not Found)
+- `LESSON_NOT_STARTED` (400 Bad Request): Lesson not started yet.
+- `LESSON_ALREADY_COMPLETED` (403 Forbidden): Lesson already submitted.
+- `STUDENT_NO_ACCESS` (403 Forbidden): Student's group does not have access.
+- `TASK_NOT_FOUND` (404 Not Found): Referenced task does not exist or does not belong to the lesson from the path.
+- `INVALID_TASK_TYPE` (400 Bad Request): Unknown task type.
+- `UNAUTHORIZED` (401), `FORBIDDEN` (403)
+
+---
+
+### 8.17. Reset User Progress
+- **URL**: `/api/v1/lessons/{lessonPublicId}/users/{userPublicId}/reset`
+- **Method**: `POST`
+- **Description**: Deletes all UserAnswer, UserLesson and recorded tab-switch telemetry for a user+lesson, allowing re-attempt.
 - **Authorization**: `ADMIN` or lesson owner (`TEACHER`)
 
 **Success (204 No Content):** *(Empty Response Body)*

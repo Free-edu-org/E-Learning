@@ -402,6 +402,97 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonPublicId}/submit)', () 
         });
     });
 
+    describe('POST /tab-switches', () => {
+        beforeEach(async () => {
+            await resetAndStartLesson();
+        });
+
+        it('should return 204 and allow recording tab switch for started lesson', async () => {
+            setAuthToken(studentToken);
+            const response = await apiClient.post(`/lessons/${lessonPublicId}/tab-switches`, {
+                taskPublicId: chooseTaskPublicId,
+                taskType: 'choose'
+            });
+            expect(response.status).toBe(204);
+        });
+
+        it('should return 401 without token', async () => {
+            setAuthToken(null);
+            const response = await apiClient.post(`/lessons/${lessonPublicId}/tab-switches`, {
+                taskPublicId: chooseTaskPublicId,
+                taskType: 'choose'
+            });
+            expect(response.status).toBe(401);
+        });
+
+        it('should return 403 for TEACHER role', async () => {
+            setAuthToken(teacherToken);
+            const response = await apiClient.post(`/lessons/${lessonPublicId}/tab-switches`, {
+                taskPublicId: chooseTaskPublicId,
+                taskType: 'choose'
+            });
+            expect(response.status).toBe(403);
+        });
+
+        it('should return 403 STUDENT_NO_ACCESS for student not in group', async () => {
+            setAuthToken(student2Token);
+            const response = await apiClient.post(`/lessons/${lessonPublicId}/tab-switches`, {
+                taskPublicId: chooseTaskPublicId,
+                taskType: 'choose'
+            });
+            expect(response.status).toBe(403);
+            expect(response.data.code).toBe('STUDENT_NO_ACCESS');
+        });
+
+        it('should return 400 LESSON_NOT_STARTED when lesson was not started', async () => {
+            setAuthToken(teacherToken);
+            await apiClient.post(`/lessons/${lessonPublicId}/users/${studentPublicId}/reset`);
+
+            setAuthToken(studentToken);
+            const response = await apiClient.post(`/lessons/${lessonPublicId}/tab-switches`, {
+                taskPublicId: chooseTaskPublicId,
+                taskType: 'choose'
+            });
+            expect(response.status).toBe(400);
+            expect(response.data.code).toBe('LESSON_NOT_STARTED');
+        });
+
+        it('should return 403 LESSON_ALREADY_COMPLETED after lesson submission', async () => {
+            setAuthToken(studentToken);
+            const submitResponse = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
+                answers: allCorrectAnswers()
+            });
+            expect(submitResponse.status).toBe(200);
+
+            const response = await apiClient.post(`/lessons/${lessonPublicId}/tab-switches`, {
+                taskPublicId: chooseTaskPublicId,
+                taskType: 'choose'
+            });
+            expect(response.status).toBe(403);
+            expect(response.data.code).toBe('LESSON_ALREADY_COMPLETED');
+        });
+
+        it('should return 400 INVALID_TASK_TYPE for unknown task type', async () => {
+            setAuthToken(studentToken);
+            const response = await apiClient.post(`/lessons/${lessonPublicId}/tab-switches`, {
+                taskPublicId: chooseTaskPublicId,
+                taskType: 'unknown_type'
+            });
+            expect(response.status).toBe(400);
+            expect(response.data.code).toBe('INVALID_TASK_TYPE');
+        });
+
+        it('should return 404 TASK_NOT_FOUND for non-existent taskPublicId', async () => {
+            setAuthToken(studentToken);
+            const response = await apiClient.post(`/lessons/${lessonPublicId}/tab-switches`, {
+                taskPublicId: 'non-existent-task',
+                taskType: 'choose'
+            });
+            expect(response.status).toBe(404);
+            expect(response.data.code).toBe('TASK_NOT_FOUND');
+        });
+    });
+
     // ═══════════════════════════════════════════════
     // Error scenarios
     // ═══════════════════════════════════════════════

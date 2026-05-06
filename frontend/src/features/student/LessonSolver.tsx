@@ -214,6 +214,7 @@ export function LessonSolver() {
     useState<SubmitAnswersResponse | null>(null);
   const [resultDialogOpen, setResultDialogOpen] = useState(false);
   const [exitDialogOpen, setExitDialogOpen] = useState(false);
+  const [tabSwitchNoticeOpen, setTabSwitchNoticeOpen] = useState(false);
 
   // Step-based navigation
   const [currentStep, setCurrentStep] = useState(0);
@@ -503,6 +504,39 @@ export function LessonSolver() {
         (answers[answerKey(t.taskType, t.taskPublicId)]?.answer ?? "") === "",
     )
     .map(({ idx }) => idx);
+
+  useEffect(() => {
+    if (!lessonPublicId || !currentTask || isSubmitted) {
+      return;
+    }
+
+    let lastHiddenAt = 0;
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== "hidden") {
+        return;
+      }
+
+      const now = Date.now();
+      if (now - lastHiddenAt < 750) {
+        return;
+      }
+      lastHiddenAt = now;
+
+      void studentService
+        .recordTaskTabSwitch(lessonPublicId, {
+          taskPublicId: currentTask.taskPublicId,
+          taskType: currentTask.taskType,
+        })
+        .then(() => setTabSwitchNoticeOpen(true))
+        .catch(() => undefined);
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [currentTask, isSubmitted, lessonPublicId]);
 
   // ── Render current task solver ─────────────────────────────────────────────
 
@@ -1315,6 +1349,34 @@ export function LessonSolver() {
         onBackToDashboard={goBack}
         onOpenDetails={openResultDetails}
       />
+
+      <AppDialog
+        open={tabSwitchNoticeOpen}
+        onClose={() => setTabSwitchNoticeOpen(false)}
+        maxWidth="xs"
+      >
+        <AppDialogHeader icon={<WarningIcon />} title="Opuszczono zakładkę" />
+        <AppDialogBody>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ lineHeight: 1.7 }}
+          >
+            W trakcie lekcji wykryto przejście do innej zakładki lub okna. Wróć
+            do zadania i kontynuuj rozwiązywanie.
+          </Typography>
+        </AppDialogBody>
+        <AppDialogFooter>
+          <Button
+            variant="contained"
+            color="warning"
+            onClick={() => setTabSwitchNoticeOpen(false)}
+            sx={{ textTransform: "none", fontWeight: 700, borderRadius: 2 }}
+          >
+            Rozumiem
+          </Button>
+        </AppDialogFooter>
+      </AppDialog>
     </Box>
   );
 }

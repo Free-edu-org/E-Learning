@@ -118,6 +118,34 @@ class TeacherServiceTest {
 	}
 
 	@Test
+	void shouldGetLessonStatsWithTabSwitchTotals() {
+		// given
+		User teacher = User.builder().id(10).build();
+		Lesson lesson = Lesson.builder().id(7).teacher(teacher).build();
+		LessonStatsStudentResult firstStudent = LessonStatsStudentResult.builder().userPublicId("student-1")
+				.username("ania").score(4).maxScore(5).resultPercent(80.0).totalTabSwitchCount(3).build();
+		LessonStatsStudentResult secondStudent = LessonStatsStudentResult.builder().userPublicId("student-2")
+				.username("bartek").score(5).maxScore(5).resultPercent(100.0).totalTabSwitchCount(0).build();
+
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
+		when(lessonRepository.findById(7)).thenReturn(Optional.of(lesson));
+		when(teacherStatsRepository.getLessonStudentResults(7, 10)).thenReturn(List.of(firstStudent, secondStudent));
+
+		// when
+		Mono<LessonStatsResponse> result = teacherService.getLessonStats(7);
+
+		// then
+		StepVerifier.create(result).assertNext(stats -> {
+			assertEquals(2, stats.getStudentsCompleted());
+			assertEquals(90.0, stats.getAvgScore());
+			assertEquals(100.0, stats.getBestScore());
+			assertEquals(2, stats.getStudentResults().size());
+			assertEquals(3, stats.getStudentResults().get(0).getTotalTabSwitchCount());
+			assertEquals(0, stats.getStudentResults().get(1).getTotalTabSwitchCount());
+		}).verifyComplete();
+	}
+
+	@Test
 	void shouldGetLessons() {
 		// given
 		User teacher = User.builder().id(10).build();
