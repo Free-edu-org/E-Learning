@@ -47,20 +47,20 @@ export function getTaskValidationError(
 ): string | null {
   const position = `Zadanie ${index + 1}`;
 
-  if (task.type !== "speak" && !task.task.trim()) {
+  if (task.type !== "speak" && !(task.task ?? "").trim()) {
     return `${position}: treść zadania jest wymagana.`;
   }
 
   if (
     task.type !== "speak" &&
-    task.task.trim().length > INPUT_LIMITS.taskText
+    (task.task ?? "").trim().length > INPUT_LIMITS.taskText
   ) {
     return `${position}: treść zadania może mieć maksymalnie ${INPUT_LIMITS.taskText} znaków.`;
   }
 
   if (task.type === "choose") {
     if (!task.possibleAnswers.trim()) {
-      return `${position}: podaj odpowiedzi oddzielone znakiem |.`;
+      return `${position}: Podaj odpowiedzi.`;
     }
 
     const answers = task.possibleAnswers
@@ -80,7 +80,7 @@ export function getTaskValidationError(
 
     const trimmedCorrect = task.correctAnswer.trim();
     if (trimmedCorrect === "") {
-      return `${position}: podaj indeks poprawnej odpowiedzi (np. 0).`;
+      return `${position}: Podaj indeks poprawnej odpowiedzi (np. 0).`;
     }
 
     const correctIndex = Number(trimmedCorrect);
@@ -160,7 +160,7 @@ export async function createLessonTask(
 
   if (task.type === "choose") {
     return taskService.createChooseTask(lessonPublicId, {
-      task: task.task.trim(),
+      task: (task.task ?? "").trim(),
       possibleAnswers: task.possibleAnswers.trim(),
       correctAnswer: Number(task.correctAnswer.trim()),
       hint,
@@ -170,7 +170,7 @@ export async function createLessonTask(
 
   if (task.type === "write") {
     return taskService.createWriteTask(lessonPublicId, {
-      task: task.task.trim(),
+      task: (task.task ?? "").trim(),
       correctAnswer: task.correctAnswer.trim(),
       hint,
       section,
@@ -179,7 +179,7 @@ export async function createLessonTask(
 
   if (task.type === "scatter") {
     return taskService.createScatterTask(lessonPublicId, {
-      task: task.task.trim(),
+      task: (task.task ?? "").trim(),
       words: task.words.trim(),
       correctAnswer: task.correctAnswer.trim(),
       hint,
@@ -204,7 +204,7 @@ export async function updateLessonTask(
 
   if (task.type === "choose") {
     return taskService.updateChooseTask(lessonPublicId, taskPublicId, {
-      task: task.task.trim(),
+      task: (task.task ?? "").trim(),
       possibleAnswers: task.possibleAnswers.trim(),
       correctAnswer: Number(task.correctAnswer.trim()),
       hint,
@@ -214,7 +214,7 @@ export async function updateLessonTask(
 
   if (task.type === "write") {
     return taskService.updateWriteTask(lessonPublicId, taskPublicId, {
-      task: task.task.trim(),
+      task: (task.task ?? "").trim(),
       correctAnswer: task.correctAnswer.trim(),
       hint,
       section,
@@ -223,7 +223,7 @@ export async function updateLessonTask(
 
   if (task.type === "scatter") {
     return taskService.updateScatterTask(lessonPublicId, taskPublicId, {
-      task: task.task.trim(),
+      task: (task.task ?? "").trim(),
       words: task.words.trim(),
       correctAnswer: task.correctAnswer.trim(),
       hint,
@@ -293,7 +293,6 @@ export function tasksResponseToDrafts(
       drafts.push({
         id: `backendTask:speak:${task.publicId}`,
         type: "speak",
-        task: "",
         possibleAnswers: "",
         correctAnswer: task.expectedText,
         words: "",
