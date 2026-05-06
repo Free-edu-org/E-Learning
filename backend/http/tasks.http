@@ -145,6 +145,26 @@ Authorization: Bearer {{auth_token}}
 POST http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/users/{{user_public_id}}/reset
 Authorization: Bearer {{auth_token}}
 
+### Upload hint image for a choose task (ADMIN or lesson owner TEACHER)
+POST http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/tasks/choose/{{task_public_id}}/hint-image
+Authorization: Bearer {{auth_token}}
+Content-Type: multipart/form-data; boundary=----boundary
+
+------boundary
+Content-Disposition: form-data; name="file"; filename="hint.jpg"
+Content-Type: image/jpeg
+
+< ./hint.jpg
+------boundary--
+
+### Get hint image for a task (STUDENT/TEACHER/ADMIN)
+GET http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/tasks/choose/{{task_public_id}}/hint-image
+Authorization: Bearer {{auth_token}}
+
+### Delete hint image for a task (ADMIN or lesson owner TEACHER)
+DELETE http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/tasks/choose/{{task_public_id}}/hint-image
+Authorization: Bearer {{auth_token}}
+
 ### Create choose task without auth (expect 401)
 POST http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/tasks/choose
 Content-Type: application/json

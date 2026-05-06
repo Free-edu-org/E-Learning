@@ -258,6 +258,7 @@ function tasksResponseToDrafts(
         words: "",
         hint: t.hint ?? "",
         section: sec,
+        hintImageUrl: t.hintImageUrl ?? null,
       });
     }
     for (const t of section.writeTasks) {
@@ -270,6 +271,7 @@ function tasksResponseToDrafts(
         words: "",
         hint: t.hint ?? "",
         section: sec,
+        hintImageUrl: t.hintImageUrl ?? null,
       });
     }
     for (const t of section.scatterTasks) {
@@ -282,6 +284,7 @@ function tasksResponseToDrafts(
         words: t.words,
         hint: t.hint ?? "",
         section: sec,
+        hintImageUrl: t.hintImageUrl ?? null,
       });
     }
     for (const t of section.speakTasks) {
@@ -294,6 +297,7 @@ function tasksResponseToDrafts(
         words: "",
         hint: t.hint ?? "",
         section: sec,
+        hintImageUrl: t.hintImageUrl ?? null,
       });
     }
   }

@@ -5,6 +5,7 @@ import {
   Button,
   CircularProgress,
   Container,
+  Dialog,
   Grid,
   IconButton,
   LinearProgress,
@@ -19,10 +20,12 @@ import {
   ArrowBackOutlined as BackIcon,
   ArrowForwardOutlined as NextIcon,
   AttachFileOutlined as AttachFileIcon,
+  CloseOutlined as CloseIcon,
   DownloadOutlined as DownloadIcon,
   LightbulbOutlined as HintIcon,
   SendOutlined as SubmitIcon,
   WarningAmberOutlined as WarningIcon,
+  ZoomInOutlined as ZoomInIcon,
 } from "@mui/icons-material";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
@@ -43,6 +46,7 @@ import {
 import { lessonService } from "@/api/lessonService";
 import type { LessonAttachment } from "@/api/lessonService";
 import { ApiError } from "@/api/apiClient";
+import { fetchApiBlob } from "@/api/apiClient";
 import { DashboardTopBar } from "@/components/ui/panel/DashboardTopBar";
 import { useAuth } from "@/context/AuthContext";
 import { getErrorMessage } from "@/utils/dashboardUtils";
@@ -73,6 +77,7 @@ interface FlatTask {
   taskType: SubmitAnswerItem["taskType"];
   section: string | null;
   hint: string | null;
+  hintImageUrl: string | null;
   taskData:
     | ChooseTaskResponse
     | WriteTaskResponse
@@ -101,6 +106,7 @@ function flattenTasks(lessonData: LessonTasksResponse): FlatTask[] {
         taskType: "choose",
         section: section.section,
         hint: t.hint ?? null,
+        hintImageUrl: t.hintImageUrl ?? null,
         taskData: t,
       });
     for (const t of section.writeTasks)
@@ -109,6 +115,7 @@ function flattenTasks(lessonData: LessonTasksResponse): FlatTask[] {
         taskType: "write",
         section: section.section,
         hint: t.hint ?? null,
+        hintImageUrl: t.hintImageUrl ?? null,
         taskData: t,
       });
     for (const t of section.scatterTasks)
@@ -117,6 +124,7 @@ function flattenTasks(lessonData: LessonTasksResponse): FlatTask[] {
         taskType: "scatter",
         section: section.section,
         hint: t.hint ?? null,
+        hintImageUrl: t.hintImageUrl ?? null,
         taskData: t,
       });
     for (const t of section.speakTasks)
@@ -125,6 +133,7 @@ function flattenTasks(lessonData: LessonTasksResponse): FlatTask[] {
         taskType: "speak",
         section: section.section,
         hint: t.hint ?? null,
+        hintImageUrl: t.hintImageUrl ?? null,
         taskData: t,
       });
   }
@@ -210,6 +219,10 @@ export function LessonSolver() {
   const [currentStep, setCurrentStep] = useState(0);
   const [showUnansweredAlert, setShowUnansweredAlert] = useState(false);
 
+  // Hint image — loaded as blob because endpoint requires auth
+  const [hintImageBlobUrl, setHintImageBlobUrl] = useState<string | null>(null);
+  const [hintImageExpanded, setHintImageExpanded] = useState(false);
+
   const pageBg =
     theme.palette.mode === "light"
       ? "#e8eef7"
@@ -257,6 +270,30 @@ export function LessonSolver() {
   const isSubmitted = submitResult != null;
   const shouldBlockExit =
     lessonData != null && totalTaskCount > 0 && !isSubmitted;
+
+  // Load hint image blob URL whenever the current task's hintImageUrl changes
+  useEffect(() => {
+    setHintImageExpanded(false);
+    if (!currentTask?.hintImageUrl) {
+      setHintImageBlobUrl(null);
+      return;
+    }
+    let cancelled = false;
+    let objectUrl: string | null = null;
+    fetchApiBlob(currentTask.hintImageUrl)
+      .then((blob) => {
+        if (cancelled) return;
+        objectUrl = URL.createObjectURL(blob);
+        setHintImageBlobUrl(objectUrl);
+      })
+      .catch(() => {
+        if (!cancelled) setHintImageBlobUrl(null);
+      });
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [currentTask?.hintImageUrl]);
 
   const answeredCount = Object.values(answers).filter(
     (a) => a.answer !== "",
@@ -660,6 +697,7 @@ export function LessonSolver() {
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center",
+                        flexShrink: 0,
                       }}
                     >
                       {showDivider && (
@@ -909,7 +947,7 @@ export function LessonSolver() {
                         fontWeight={700}
                         sx={{ mb: 2 }}
                       >
-                        {currentTask.hint
+                        {currentTask.hint || currentTask.hintImageUrl
                           ? "Podpowiedź"
                           : (currentTask.section ?? "Informacja")}
                       </Typography>
@@ -938,21 +976,113 @@ export function LessonSolver() {
                         </Stack>
                       )}
 
-                      {!currentTask.hint && currentTask.section && (
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{ lineHeight: 1.7 }}
-                        >
-                          Sekcja: {currentTask.section}
-                        </Typography>
+                      {hintImageBlobUrl && (
+                        <>
+                          <Box
+                            onClick={() => setHintImageExpanded(true)}
+                            sx={{
+                              mt: currentTask.hint ? 1.5 : 0,
+                              borderRadius: 1,
+                              overflow: "hidden",
+                              cursor: "zoom-in",
+                              position: "relative",
+                              display: "inline-block",
+                              width: "100%",
+                              "&:hover .zoom-overlay": { opacity: 1 },
+                            }}
+                          >
+                            <img
+                              src={hintImageBlobUrl}
+                              alt="Podpowiedź"
+                              style={{
+                                display: "block",
+                                width: "100%",
+                                maxHeight: 240,
+                                objectFit: "contain",
+                              }}
+                            />
+                            <Box
+                              className="zoom-overlay"
+                              sx={{
+                                position: "absolute",
+                                inset: 0,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                bgcolor: "rgba(0,0,0,0.35)",
+                                opacity: 0,
+                                transition: "opacity 0.15s ease",
+                              }}
+                            >
+                              <ZoomInIcon
+                                sx={{ color: "#fff", fontSize: 32 }}
+                              />
+                            </Box>
+                          </Box>
+
+                          <Dialog
+                            open={hintImageExpanded}
+                            onClose={() => setHintImageExpanded(false)}
+                            maxWidth={false}
+                            PaperProps={{
+                              sx: {
+                                bgcolor: "transparent",
+                                boxShadow: "none",
+                                m: 2,
+                              },
+                            }}
+                          >
+                            <Box sx={{ position: "relative" }}>
+                              <IconButton
+                                onClick={() => setHintImageExpanded(false)}
+                                size="small"
+                                sx={{
+                                  position: "absolute",
+                                  top: 8,
+                                  right: 8,
+                                  bgcolor: "rgba(0,0,0,0.55)",
+                                  color: "#fff",
+                                  "&:hover": { bgcolor: "rgba(0,0,0,0.75)" },
+                                  zIndex: 1,
+                                }}
+                              >
+                                <CloseIcon fontSize="small" />
+                              </IconButton>
+                              <img
+                                src={hintImageBlobUrl}
+                                alt="Podpowiedź"
+                                style={{
+                                  display: "block",
+                                  maxWidth: "90vw",
+                                  maxHeight: "90vh",
+                                  objectFit: "contain",
+                                  borderRadius: 8,
+                                }}
+                              />
+                            </Box>
+                          </Dialog>
+                        </>
                       )}
 
-                      {!currentTask.hint && !currentTask.section && (
-                        <Typography variant="body2" color="text.secondary">
-                          Rozwiąż zadanie po lewej stronie.
-                        </Typography>
-                      )}
+                      {!currentTask.hint &&
+                        !currentTask.hintImageUrl &&
+                        currentTask.section && (
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{ lineHeight: 1.7 }}
+                          >
+                            Sekcja: {currentTask.section}
+                          </Typography>
+                        )}
+
+                      {!currentTask.hint &&
+                        !currentTask.hintImageUrl &&
+                        !currentTask.section && (
+                          <Typography variant="body2" color="text.secondary">
+                            Rozwiąż zadanie po lewej stronie.
+                          </Typography>
+                        )}
 
                       {/* Task type badge */}
                       <Box
