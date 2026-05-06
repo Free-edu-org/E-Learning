@@ -51,7 +51,10 @@ export function getTaskValidationError(
     return `${position}: treść zadania jest wymagana.`;
   }
 
-  if (task.type !== "speak" && task.task.trim().length > INPUT_LIMITS.taskText) {
+  if (
+    task.type !== "speak" &&
+    task.task.trim().length > INPUT_LIMITS.taskText
+  ) {
     return `${position}: treść zadania może mieć maksymalnie ${INPUT_LIMITS.taskText} znaków.`;
   }
 
