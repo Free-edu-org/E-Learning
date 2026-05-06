@@ -24,7 +24,6 @@ import { ApiError } from "@/api/apiClient";
 import type { SubmitAnswerDetail } from "@/api/studentService";
 import {
   taskCardSx,
-  taskHeaderSx,
   taskFeedbackCorrectSx,
   taskTypeMeta,
 } from "./taskSolverStyles";
