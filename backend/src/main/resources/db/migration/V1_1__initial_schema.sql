@@ -185,11 +185,20 @@ CREATE TABLE user_answers (
 );
 
 CREATE TABLE achievements (
-    id          INT       NOT NULL AUTO_INCREMENT,
-    name        TEXT      NOT NULL,
-    description TEXT      NOT NULL,
-    created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (id)
+    id          INT          NOT NULL AUTO_INCREMENT,
+    code        VARCHAR(64)  NOT NULL,
+    name        VARCHAR(255) NOT NULL,
+    description VARCHAR(255) NOT NULL,
+    icon        VARCHAR(32)  NOT NULL DEFAULT '',
+    color       VARCHAR(32)  NOT NULL DEFAULT 'warning',
+    type        VARCHAR(64)  NOT NULL,
+    threshold   INT          DEFAULT NULL,
+    active      TINYINT(1)   NOT NULL DEFAULT 1,
+    sort_order  INT          DEFAULT NULL,
+    created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_achievements_code (code)
 );
 
 CREATE TABLE user_get_achievement (
@@ -198,6 +207,7 @@ CREATE TABLE user_get_achievement (
     achievement_id INT       NOT NULL,
     created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
+    UNIQUE KEY uk_user_get_achievement_user_achievement (user_id, achievement_id),
     KEY user_id (user_id),
     KEY achievement_id (achievement_id),
     CONSTRAINT user_get_achievement_ibfk_1 FOREIGN KEY (user_id)        REFERENCES users (id)        ON DELETE CASCADE,

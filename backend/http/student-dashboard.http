@@ -14,6 +14,10 @@ Authorization: Bearer {{student_token}}
 GET http://localhost:8080/api/v1/student/skills
 Authorization: Bearer {{student_token}}
 
+### Get Student achievements (Requires STUDENT)
+GET http://localhost:8080/api/v1/student/achievements
+Authorization: Bearer {{student_token}}
+
 ### Get detailed result of completed lesson (Requires STUDENT)
 GET http://localhost:8080/api/v1/student/lessons/1/result
 Authorization: Bearer {{student_token}}

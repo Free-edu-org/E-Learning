@@ -1312,7 +1312,41 @@ Warstwa BFF dla uczniow.
 
 ---
 
-### 7.4. Get Personal Progress History
+### 7.4. Get Student Achievements
+- **URL**: `/api/v1/student/achievements`
+- **Method**: `GET`
+- **Description**: Zwraca tylko aktywne achievementy ucznia. Flaga `unlocked` jest liczona dynamicznie na podstawie typu reguly achievementu i statystyk aktualnie zalogowanego ucznia. Wymaga `STUDENT`.
+
+**Success (200 OK):**
+```json
+[
+  {
+    "id": 1,
+    "title": "Pierwsza lekcja",
+    "description": "Ukończyłeś swoją pierwszą lekcję",
+    "icon": "",
+    "color": "warning",
+    "unlocked": true
+  }
+]
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | Integer | ID achievementu. |
+| `title` | String | Nazwa achievementu. |
+| `description` | String | Opis achievementu. |
+| `icon` | String | Ikona lub symbol achievementu. |
+| `color` | String | Kolor prezentacyjny achievementu. |
+| `unlocked` | Boolean | Czy achievement jest aktualnie odblokowany dla zalogowanego ucznia. |
+
+**Known Errors:**
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
+
+---
+
+### 7.5. Get Personal Progress History
 - **URL**: `/api/v1/student/progress`
 - **Method**: `GET`
 - **Description**: Zwraca historyczny sredni wynik lekcji aktualnego ucznia. Snapshot jest aktualizowany przy ukonczeniu lekcji. Wymaga `STUDENT`.

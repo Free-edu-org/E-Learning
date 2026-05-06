@@ -579,6 +579,91 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
         });
     });
 
+    describe('GET /student/achievements', () => {
+        it('should allow STUDENT and return all achievement definitions with unlocked flag', async () => {
+            setAuthToken(studentToken);
+            const response = await apiClient.get('/student/achievements');
+
+            expect(response.status).toBe(200);
+            expect(Array.isArray(response.data)).toBe(true);
+            expect(response.data).toHaveLength(3);
+
+            response.data.forEach((item) => {
+                expect(item).toHaveProperty('id');
+                expect(item).toHaveProperty('title');
+                expect(item).toHaveProperty('description');
+                expect(item).toHaveProperty('icon');
+                expect(item).toHaveProperty('color');
+                expect(item).toHaveProperty('unlocked');
+                expect(typeof item.id).toBe('number');
+                expect(typeof item.title).toBe('string');
+                expect(typeof item.description).toBe('string');
+                expect(typeof item.icon).toBe('string');
+                expect(typeof item.color).toBe('string');
+                expect(typeof item.unlocked).toBe('boolean');
+            });
+        });
+
+        it('should calculate unlocked flags from the current student progress and avatar state', async () => {
+            await setupSharedLessonForGroupLeakTest();
+
+            setAuthToken(isolatedStudentToken);
+            let response = await apiClient.get(`/lessons/${sharedLessonPublicId}/tasks`);
+            expect(response.status).toBe(200);
+            const chooseTask = response.data.sections.flatMap((section) => section.chooseTasks ?? [])[0];
+            expect(chooseTask).toBeDefined();
+
+            response = await apiClient.post(`/lessons/${sharedLessonPublicId}/submit`, {
+                answers: [
+                    { taskPublicId: chooseTask.publicId, taskType: 'choose', answer: '0' }
+                ]
+            });
+            expect(response.status).toBe(200);
+
+            response = await apiClient.put(`/users/${isolatedStudentPublicId}/avatar/preset`, {
+                presetName: 'avatar_1'
+            });
+            expect(response.status).toBe(200);
+
+            response = await apiClient.get('/student/achievements');
+            expect(response.status).toBe(200);
+
+            const firstLesson = response.data.find((item) => item.title === 'Pierwsza lekcja');
+            const avatarChanged = response.data.find((item) => item.title === 'Nowy avatar');
+            const tenPoints = response.data.find((item) => item.title === '10 punktów');
+
+            expect(firstLesson).toBeDefined();
+            expect(avatarChanged).toBeDefined();
+            expect(tenPoints).toBeDefined();
+            expect(firstLesson.unlocked).toBe(true);
+            expect(avatarChanged.unlocked).toBe(true);
+            expect(tenPoints.unlocked).toBe(false);
+        });
+
+        it('should ignore studentId query param and still scope data to current user', async () => {
+            await setupSharedLessonForGroupLeakTest();
+
+            setAuthToken(isolatedStudentToken);
+            const studentWithProgress = await apiClient.get('/student/achievements');
+            const queryResponse = await apiClient.get('/student/achievements?studentId=999999');
+
+            setAuthToken(noAccessStudentToken);
+            const noProgressStudent = await apiClient.get('/student/achievements');
+
+            expect(studentWithProgress.status).toBe(200);
+            expect(queryResponse.status).toBe(200);
+            expect(noProgressStudent.status).toBe(200);
+            expect(queryResponse.data).toEqual(studentWithProgress.data);
+            expect(noProgressStudent.data).not.toEqual(studentWithProgress.data);
+        });
+
+        it('should deny TEACHER (403)', async () => {
+            setAuthToken(teacherToken);
+            const response = await apiClient.get('/student/achievements');
+            expect(response.status).toBe(403);
+        });
+    });
+
     describe('GET /student/lessons — attachments field', () => {
         it('should include attachments array in each lesson', async () => {
             setAuthToken(studentToken);

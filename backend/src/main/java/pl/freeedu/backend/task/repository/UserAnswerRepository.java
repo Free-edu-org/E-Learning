@@ -14,6 +14,8 @@ public interface UserAnswerRepository extends JpaRepository<UserAnswer, Integer>
 
 	List<UserAnswer> findByUserIdAndLessonId(Integer userId, Integer lessonId);
 
+	long countByUserId(Integer userId);
+
 	@Query(value = """
 			SELECT ua.task_type,
 			       SUM(CASE WHEN ua.is_correct = TRUE THEN 1 ELSE 0 END) AS correct_count,
