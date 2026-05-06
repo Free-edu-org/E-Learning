@@ -13,6 +13,9 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
     let secondTeacherPublicId;
     let studentPublicId;
     let lessonPublicId;
+    let groupPublicId;
+    let dedicatedStudentToken;
+    let dedicatedStudentPublicId;
     let chooseTaskPublicId;
     let writeTaskPublicId;
     let scatterTaskPublicId;
@@ -50,12 +53,32 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
         res = await apiClient.get('/users/me');
         secondTeacherPublicId = res.data.publicId;
 
-        // Create lesson as teacher
+        // Create a group for the lesson
+        setAuthToken(adminToken);
+        res = await apiClient.post('/user-groups', { name: `Task Group ${uniqueId}`, description: 'Group for task hint image tests' });
+        groupPublicId = res.data.publicId;
+
+        // Create dedicated student in that group
+        const dedicatedStudent = {
+            email: `task.student.${uniqueId}@example.com`,
+            username: `task_student_${uniqueId}`,
+            password: 'password123',
+            groupPublicId: groupPublicId
+        };
+        res = await apiClient.post('/admin/students', dedicatedStudent);
+        dedicatedStudentPublicId = res.data.publicId;
+        res = await apiClient.post('/auth/login', {
+            identifier: dedicatedStudent.username,
+            password: dedicatedStudent.password
+        });
+        dedicatedStudentToken = res.data.token;
+
+        // Create lesson as teacher with the group assigned
         setAuthToken(teacherToken);
         res = await apiClient.post('/lessons', {
             title: `Task Lesson ${uniqueId}`,
             theme: 'Testing',
-            groupPublicIds: []
+            groupPublicIds: [groupPublicId]
         });
         lessonPublicId = res.data.publicId;
     });
@@ -80,6 +103,18 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
         if (secondTeacherPublicId) {
             setAuthToken(adminToken);
             const response = await apiClient.delete(`/users/${secondTeacherPublicId}`);
+            expect([204, 404]).toContain(response.status);
+        }
+
+        if (dedicatedStudentPublicId) {
+            setAuthToken(adminToken);
+            const response = await apiClient.delete(`/users/${dedicatedStudentPublicId}`);
+            expect([204, 404]).toContain(response.status);
+        }
+
+        if (groupPublicId) {
+            setAuthToken(adminToken);
+            const response = await apiClient.delete(`/user-groups/${groupPublicId}`);
             expect([204, 404]).toContain(response.status);
         }
 
@@ -486,8 +521,10 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
             setAuthToken(teacherToken);
             const response = await apiClient.get(`/lessons/${lessonPublicId}/tasks`);
             expect(response.status).toBe(200);
-            const section = response.data.sections[0];
-            const task = section.chooseTasks.find(t => t.publicId === chooseTaskPublicId);
+            const allSections = response.data.sections;
+            const task = allSections
+                .flatMap(s => s.chooseTasks || [])
+                .find(t => t.publicId === chooseTaskPublicId);
             expect(task).toBeDefined();
             expect(task.hintImageUrl).toMatch(/hint-image$/);
         });
@@ -500,7 +537,7 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
         });
 
         it('should allow STUDENT to GET hint image', async () => {
-            setAuthToken(studentToken);
+            setAuthToken(dedicatedStudentToken);
             const response = await apiClient.get(uploadUrl(), { responseType: 'arraybuffer' });
             expect(response.status).toBe(200);
         });
