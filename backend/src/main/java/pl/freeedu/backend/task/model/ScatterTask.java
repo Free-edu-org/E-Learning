@@ -40,6 +40,9 @@ public class ScatterTask {
 	@Column(name = "section")
 	private String section;
 
+	@Column(name = "hint_image_file_name")
+	private String hintImageFileName;
+
 	@Column(name = "created_at", insertable = false, updatable = false)
 	private LocalDateTime createdAt;
 

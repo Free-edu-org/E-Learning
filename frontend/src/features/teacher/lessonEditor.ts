@@ -256,6 +256,7 @@ export function tasksResponseToDrafts(
         words: "",
         hint: task.hint ?? "",
         section: sectionName,
+        hintImageUrl: task.hintImageUrl ?? null,
       });
     }
 
@@ -269,6 +270,7 @@ export function tasksResponseToDrafts(
         words: "",
         hint: task.hint ?? "",
         section: sectionName,
+        hintImageUrl: task.hintImageUrl ?? null,
       });
     }
 
@@ -282,6 +284,7 @@ export function tasksResponseToDrafts(
         words: task.words,
         hint: task.hint ?? "",
         section: sectionName,
+        hintImageUrl: task.hintImageUrl ?? null,
       });
     }
 
@@ -295,6 +298,7 @@ export function tasksResponseToDrafts(
         words: "",
         hint: task.hint ?? "",
         section: sectionName,
+        hintImageUrl: task.hintImageUrl ?? null,
       });
     }
   }

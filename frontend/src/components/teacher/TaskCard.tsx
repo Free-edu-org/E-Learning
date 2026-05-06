@@ -2,6 +2,7 @@ import {
   Autocomplete,
   Box,
   Chip,
+  CircularProgress,
   Collapse,
   IconButton,
   Stack,
@@ -11,21 +12,32 @@ import {
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import {
+  AddPhotoAlternateOutlined as AddImageIcon,
   CheckCircleOutline as ChooseIcon,
   DeleteOutline as DeleteIcon,
   DragIndicator as DragIcon,
   EditNoteOutlined as WriteIcon,
   ExpandLess as CollapseIcon,
   ExpandMore as ExpandIcon,
+  ImageNotSupportedOutlined as NoImageIcon,
   MicNoneOutlined as SpeakIcon,
   ShuffleOutlined as ScatterIcon,
 } from "@mui/icons-material";
 import { keyframes } from "@emotion/react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { memo, useCallback, useState, type ReactNode } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import type { DraggableAttributes } from "@dnd-kit/core";
 import type { TaskType } from "@/api/taskService";
+import { taskService } from "@/api/taskService";
+import { fetchApiBlob } from "@/api/apiClient";
 import { uiTokens } from "@/theme/uiTokens";
 import { INPUT_LIMITS } from "@/utils/inputLimits";
 import { ChooseAnswerBuilder } from "./ChooseAnswerBuilder";
@@ -40,6 +52,7 @@ export interface LessonTaskDraft {
   words: string;
   hint: string;
   section: string;
+  hintImageUrl: string | null;
 }
 
 // Defined at module level — not recreated on re-render
@@ -246,10 +259,12 @@ const TaskCardFields = memo(function TaskCardFields({
   task,
   onChangeById,
   existingSections,
+  lessonPublicId,
 }: {
   task: LessonTaskDraft;
   onChangeById: (id: string, updated: LessonTaskDraft) => void;
   existingSections: string[];
+  lessonPublicId?: string;
 }) {
   const updateField = useCallback(
     <K extends keyof LessonTaskDraft>(field: K, value: LessonTaskDraft[K]) => {
@@ -264,6 +279,119 @@ const TaskCardFields = memo(function TaskCardFields({
   // external changes (e.g. drag-based reassignment) naturally.
   const [sectionInput, setSectionInput] = useState(task.section);
   const [sectionFocused, setSectionFocused] = useState(false);
+
+  // ── Hint image state ────────────────────────────────────────────────────────
+
+  const [hintImageBlobUrl, setHintImageBlobUrl] = useState<string | null>(null);
+  const [isHintImageLoading, setIsHintImageLoading] = useState(false);
+  const [hintImageError, setHintImageError] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isRemovingImage, setIsRemovingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load authenticated blob URL whenever hintImageUrl changes
+  useEffect(() => {
+    if (!task.hintImageUrl) {
+      setHintImageBlobUrl(null);
+      setHintImageError(false);
+      return;
+    }
+    let cancelled = false;
+    let objectUrl: string | null = null;
+    setIsHintImageLoading(true);
+    setHintImageError(false);
+    fetchApiBlob(task.hintImageUrl)
+      .then((blob) => {
+        if (cancelled) return;
+        objectUrl = URL.createObjectURL(blob);
+        setHintImageBlobUrl(objectUrl);
+        setIsHintImageLoading(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setHintImageBlobUrl(null);
+        setHintImageError(true);
+        setIsHintImageLoading(false);
+      });
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [task.hintImageUrl]);
+
+  const parsedId = (() => {
+    const m = /^backendTask:(\w+):(.+)$/.exec(task.id);
+    return m ? { type: m[1], taskPublicId: m[2] } : null;
+  })();
+  const isBackendTask = parsedId !== null;
+
+  const handleImageUpload = useCallback(
+    async (file: File) => {
+      if (!lessonPublicId || !parsedId) return;
+      setIsUploadingImage(true);
+      try {
+        await taskService.uploadHintImage(
+          lessonPublicId,
+          parsedId.type,
+          parsedId.taskPublicId,
+          file,
+        );
+        const newUrl = `/api/v1/lessons/${lessonPublicId}/tasks/${parsedId.type}/${parsedId.taskPublicId}/hint-image`;
+        onChangeById(task.id, { ...task, hintImageUrl: newUrl });
+      } catch {
+        // silent — user sees no change
+      } finally {
+        setIsUploadingImage(false);
+      }
+    },
+    [lessonPublicId, parsedId, task, onChangeById],
+  );
+
+  const handleImageFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      // Reset input so the same file can be re-selected after a delete
+      e.target.value = "";
+      void handleImageUpload(file);
+    },
+    [handleImageUpload],
+  );
+
+  const handleHintPaste = useCallback(
+    (e: React.ClipboardEvent) => {
+      if (!isBackendTask || !lessonPublicId || !parsedId) return;
+      const items = e.clipboardData.items;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.startsWith("image/")) {
+          const file = items[i].getAsFile();
+          if (file) {
+            e.preventDefault();
+            void handleImageUpload(file);
+            return;
+          }
+        }
+      }
+    },
+    [isBackendTask, lessonPublicId, parsedId, handleImageUpload],
+  );
+
+  const handleImageRemove = useCallback(async () => {
+    if (!lessonPublicId || !parsedId) return;
+    setIsRemovingImage(true);
+    try {
+      await taskService.deleteHintImage(
+        lessonPublicId,
+        parsedId.type,
+        parsedId.taskPublicId,
+      );
+      onChangeById(task.id, { ...task, hintImageUrl: null });
+    } catch {
+      // silent
+    } finally {
+      setIsRemovingImage(false);
+    }
+  }, [lessonPublicId, parsedId, task, onChangeById]);
 
   const handleChooseChange = useCallback(
     (pa: string, ca: string) =>
@@ -378,6 +506,7 @@ const TaskCardFields = memo(function TaskCardFields({
                 e.target.value.slice(0, INPUT_LIMITS.taskHint),
               )
             }
+            onPaste={handleHintPaste}
             inputProps={{ maxLength: INPUT_LIMITS.taskHint }}
             helperText={`${task.hint.length}/${INPUT_LIMITS.taskHint}`}
             fullWidth
@@ -422,6 +551,181 @@ const TaskCardFields = memo(function TaskCardFields({
             )}
           />
         </Box>
+
+        {/* ── Hint image ─────────────────────────────────────────────────────── */}
+        <Box>
+          <Typography variant="caption" color="text.secondary" fontWeight={600}>
+            Zdjęcie jako podpowiedź (opcjonalnie)
+          </Typography>
+
+          {!isBackendTask ? (
+            <Typography
+              variant="caption"
+              color="text.disabled"
+              sx={{ display: "block", mt: 0.5 }}
+            >
+              Najpierw zapisz zadanie, aby móc dodać zdjęcie.
+            </Typography>
+          ) : (
+            <Box sx={{ mt: 0.75 }}>
+              {task.hintImageUrl ? (
+                /* Preview + remove */
+                <Box
+                  sx={{
+                    display: "inline-flex",
+                    flexDirection: "column",
+                    gap: 0.75,
+                    alignItems: "flex-start",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      position: "relative",
+                      borderRadius: uiTokens.radius.control,
+                      overflow: "hidden",
+                      border: "1px solid",
+                      borderColor: (theme) => alpha(theme.palette.divider, 0.3),
+                      maxWidth: 200,
+                    }}
+                  >
+                    {isHintImageLoading && (
+                      <Box
+                        sx={{
+                          width: 120,
+                          height: 80,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <CircularProgress size={20} />
+                      </Box>
+                    )}
+                    {!isHintImageLoading && hintImageError && (
+                      <Box
+                        sx={{
+                          width: 120,
+                          height: 80,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          bgcolor: "action.hover",
+                          gap: 0.5,
+                        }}
+                      >
+                        <NoImageIcon
+                          sx={{ fontSize: 18, color: "text.disabled" }}
+                        />
+                        <Typography variant="caption" color="text.disabled">
+                          Błąd
+                        </Typography>
+                      </Box>
+                    )}
+                    {!isHintImageLoading &&
+                      !hintImageError &&
+                      hintImageBlobUrl && (
+                        <img
+                          src={hintImageBlobUrl}
+                          alt="Podpowiedź"
+                          style={{
+                            display: "block",
+                            maxWidth: 200,
+                            maxHeight: 160,
+                            objectFit: "contain",
+                          }}
+                        />
+                      )}
+                  </Box>
+                  <Box sx={{ display: "flex", gap: 1 }}>
+                    <Tooltip title="Zamień zdjęcie" arrow>
+                      <span>
+                        <IconButton
+                          size="small"
+                          disabled={isUploadingImage || isRemovingImage}
+                          onClick={() => fileInputRef.current?.click()}
+                          sx={{ color: "primary.main" }}
+                        >
+                          {isUploadingImage ? (
+                            <CircularProgress size={16} />
+                          ) : (
+                            <AddImageIcon fontSize="small" />
+                          )}
+                        </IconButton>
+                      </span>
+                    </Tooltip>
+                    <Tooltip title="Usuń zdjęcie" arrow>
+                      <span>
+                        <IconButton
+                          size="small"
+                          disabled={isUploadingImage || isRemovingImage}
+                          onClick={handleImageRemove}
+                          sx={{
+                            color: "text.secondary",
+                            "&:hover": { color: "error.main" },
+                          }}
+                        >
+                          {isRemovingImage ? (
+                            <CircularProgress size={16} />
+                          ) : (
+                            <DeleteIcon fontSize="small" />
+                          )}
+                        </IconButton>
+                      </span>
+                    </Tooltip>
+                  </Box>
+                </Box>
+              ) : (
+                /* Upload button */
+                <Tooltip
+                  title="JPEG, PNG, WebP lub GIF • maks. 5 MB"
+                  placement="right"
+                  arrow
+                >
+                  <span>
+                    <IconButton
+                      size="small"
+                      disabled={isUploadingImage}
+                      onClick={() => fileInputRef.current?.click()}
+                      sx={{
+                        mt: 0.25,
+                        color: "text.secondary",
+                        border: "1px dashed",
+                        borderColor: "divider",
+                        borderRadius: uiTokens.radius.control,
+                        px: 1.5,
+                        py: 0.5,
+                        gap: 0.5,
+                        "&:hover": {
+                          color: "primary.main",
+                          borderColor: "primary.main",
+                          bgcolor: (theme) =>
+                            alpha(theme.palette.primary.main, 0.04),
+                        },
+                      }}
+                    >
+                      {isUploadingImage ? (
+                        <CircularProgress size={16} />
+                      ) : (
+                        <AddImageIcon fontSize="small" />
+                      )}
+                      <Typography variant="caption" fontWeight={600}>
+                        Dodaj zdjęcie
+                      </Typography>
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              )}
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                style={{ display: "none" }}
+                onChange={handleImageFileChange}
+              />
+            </Box>
+          )}
+        </Box>
       </Stack>
     </Box>
   );
@@ -435,6 +739,7 @@ interface TaskCardProps {
   onDeleteById: (id: string) => void;
   existingSections: string[];
   defaultExpanded?: boolean;
+  lessonPublicId?: string;
 }
 
 export function TaskCard({
@@ -444,6 +749,7 @@ export function TaskCard({
   onDeleteById,
   existingSections,
   defaultExpanded = false,
+  lessonPublicId,
 }: TaskCardProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const meta = taskTypeMeta[task.type];
@@ -537,6 +843,7 @@ export function TaskCard({
           task={task}
           onChangeById={onChangeById}
           existingSections={existingSections}
+          lessonPublicId={lessonPublicId}
         />
       </Collapse>
     </Box>

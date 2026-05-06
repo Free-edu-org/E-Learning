@@ -19,6 +19,7 @@ public class ChooseTaskResponse {
 	private String possibleAnswers;
 	private Integer correctAnswer;
 	private String hint;
+	private String hintImageUrl;
 	private String section;
 	private LocalDateTime createdAt;
 }
