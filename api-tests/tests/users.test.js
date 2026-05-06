@@ -417,7 +417,7 @@ describe('Users API (/api/v1/users)', () => {
                 setAuthToken(tempUserToken);
                 const meRes = await apiClient.get('/users/me');
                 tempUserPublicId = meRes.data.publicId;
-                tempUserIdForCleanup = tempUserId;
+                tempUserPublicIdForCleanup = tempUserPublicId;
             });
 
             it('should deny student from deleting another user profile (403 Forbidden)', async () => {

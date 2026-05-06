@@ -1,17 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  Alert,
   Box,
   Button,
   Chip,
   CircularProgress,
+  IconButton,
   Stack,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
 import {
   CheckCircleOutlined as CorrectIcon,
   MicNoneOutlined as MicIcon,
+  PauseCircleOutlined as PauseIcon,
+  PlayCircleOutlined as PlayIcon,
   ReplayOutlined as RetryIcon,
   StopCircleOutlined as StopIcon,
 } from "@mui/icons-material";
@@ -20,14 +23,13 @@ import {
   type SpeakTaskResponse,
   type SpeakTranscriptionResponse,
 } from "@/api/taskService";
-import { ApiError } from "@/api/apiClient";
 import type { SubmitAnswerDetail } from "@/api/studentService";
 import {
   taskCardSx,
   taskFeedbackCorrectSx,
   taskTypeMeta,
 } from "./taskSolverStyles";
-import { formatPercent, getApiErrorMessage } from "@/utils/dashboardUtils";
+import { formatPercent } from "@/utils/dashboardUtils";
 
 interface SpeakTaskSolverProps {
   lessonPublicId: string;
@@ -137,9 +139,19 @@ export function SpeakTaskSolver({
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const analyserRef = useRef<AnalyserNode | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [recording, setRecording] = useState(false);
   const [processing, setProcessing] = useState(false);
-  const [recordingError, setRecordingError] = useState<string | null>(null);
+  const [recordingBlobUrl, setRecordingBlobUrl] = useState<string | null>(null);
+  const [playing, setPlaying] = useState(false);
+
+  // Revoke blob URL on unmount
+  useEffect(() => {
+    return () => {
+      if (recordingBlobUrl) URL.revokeObjectURL(recordingBlobUrl);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // When accepted (correct=true): allow 1 more retry; when not accepted: 3 total
   const maxAttempts = transcriptionResult?.correct
@@ -171,7 +183,6 @@ export function SpeakTaskSolver({
         .map((w) => ({ text: w, wordResult: null }));
 
   const startRecording = async () => {
-    setRecordingError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       chunksRef.current = [];
@@ -197,15 +208,19 @@ export function SpeakTaskSolver({
         const audio = new Blob(chunksRef.current, {
           type: recorder.mimeType || "audio/webm",
         });
+        // Store for playback
+        setRecordingBlobUrl((prev) => {
+          if (prev) URL.revokeObjectURL(prev);
+          return URL.createObjectURL(audio);
+        });
+        setPlaying(false);
         void transcribe(audio);
       };
 
       recorder.start();
       setRecording(true);
     } catch {
-      setRecordingError(
-        "Nie udało się uruchomić mikrofonu. Sprawdź uprawnienia przeglądarki.",
-      );
+      // Intentionally silent: the task stays in the normal retry state.
     }
   };
 
@@ -216,13 +231,28 @@ export function SpeakTaskSolver({
     setRecording(false);
   };
 
+  const togglePlayback = () => {
+    if (!recordingBlobUrl) return;
+    if (!audioRef.current) {
+      audioRef.current = new Audio(recordingBlobUrl);
+      audioRef.current.onended = () => setPlaying(false);
+    }
+    if (playing) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      setPlaying(false);
+    } else {
+      audioRef.current.src = recordingBlobUrl;
+      void audioRef.current.play();
+      setPlaying(true);
+    }
+  };
+
   const transcribe = async (audio: Blob) => {
     if (audio.size === 0) {
-      setRecordingError("Nagranie jest puste. Spróbuj ponownie.");
       return;
     }
     setProcessing(true);
-    setRecordingError(null);
     try {
       const response = await taskService.transcribeSpeakTask(
         lessonPublicId,
@@ -231,19 +261,8 @@ export function SpeakTaskSolver({
       );
       onChange(response.text);
       onTranscriptionResult(response);
-    } catch (error) {
-      if (error instanceof ApiError) {
-        setRecordingError(
-          getApiErrorMessage(
-            error,
-            "Nie udało się rozpoznać nagrania. Spróbuj ponownie za chwilę.",
-          ),
-        );
-      } else {
-        setRecordingError(
-          "Nie udało się rozpoznać nagrania. Spróbuj ponownie za chwilę.",
-        );
-      }
+    } catch {
+      // Intentionally silent: the task keeps the user in the retry flow without extra inline errors.
     } finally {
       setProcessing(false);
     }
@@ -369,52 +388,81 @@ export function SpeakTaskSolver({
           gap: 1,
         }}
       >
-        <MicVisualizer recording={recording} analyserRef={analyserRef} />
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+          <MicVisualizer recording={recording} analyserRef={analyserRef} />
+          {recordingBlobUrl && !recording && (
+            <Tooltip
+              title={playing ? "Zatrzymaj odsłuch" : "Odsłuchaj nagranie"}
+            >
+              <IconButton
+                onClick={togglePlayback}
+                color={playing ? "error" : "default"}
+                disabled={processing}
+                sx={{
+                  ml: 0.5,
+                  border: "1px solid",
+                  borderColor: playing ? "error.main" : "divider",
+                  bgcolor: playing
+                    ? alpha(theme.palette.error.main, 0.08)
+                    : "transparent",
+                }}
+              >
+                {playing ? (
+                  <PauseIcon fontSize="small" />
+                ) : (
+                  <PlayIcon fontSize="small" />
+                )}
+              </IconButton>
+            </Tooltip>
+          )}
+        </Box>
 
-        {processing ? (
-          <Button
-            variant="outlined"
-            disabled
-            startIcon={<CircularProgress size={16} />}
-            sx={{
-              textTransform: "none",
-              fontWeight: 600,
-              borderRadius: 99,
-              px: 3,
-            }}
-          >
-            Rozpoznawanie mowy…
-          </Button>
-        ) : (
-          <Button
-            variant={recording ? "contained" : "outlined"}
-            color={recording ? "error" : "primary"}
-            startIcon={
-              recording ? (
-                <StopIcon />
-              ) : attempts > 0 ? (
-                <RetryIcon />
-              ) : (
-                <MicIcon />
-              )
-            }
-            disabled={recording ? disabled : !canRecord}
-            onClick={recording ? stopRecording : startRecording}
-            sx={{
-              textTransform: "none",
-              fontWeight: 600,
-              borderRadius: 99,
-              px: 3,
-              minWidth: 190,
-            }}
-          >
-            {recording
-              ? "Zatrzymaj nagrywanie"
-              : attempts === 0
-                ? "Nagraj odpowiedź"
-                : "Spróbuj ponownie"}
-          </Button>
-        )}
+        <Stack direction="row" spacing={1} alignItems="center">
+          {processing ? (
+            <Button
+              variant="outlined"
+              disabled
+              startIcon={<CircularProgress size={16} />}
+              sx={{
+                textTransform: "none",
+                fontWeight: 600,
+                borderRadius: 99,
+                px: 3,
+              }}
+            >
+              Rozpoznawanie mowy…
+            </Button>
+          ) : (
+            <Button
+              variant={recording ? "contained" : "outlined"}
+              color={recording ? "error" : "primary"}
+              startIcon={
+                recording ? (
+                  <StopIcon />
+                ) : attempts > 0 ? (
+                  <RetryIcon />
+                ) : (
+                  <MicIcon />
+                )
+              }
+              disabled={recording ? disabled : !canRecord}
+              onClick={recording ? stopRecording : startRecording}
+              sx={{
+                textTransform: "none",
+                fontWeight: 600,
+                borderRadius: 99,
+                px: 3,
+                minWidth: 190,
+              }}
+            >
+              {recording
+                ? "Zatrzymaj nagrywanie"
+                : attempts === 0
+                  ? "Nagraj odpowiedź"
+                  : "Spróbuj ponownie"}
+            </Button>
+          )}
+        </Stack>
 
         {attempts > 0 &&
           !recording &&
@@ -424,29 +472,6 @@ export function SpeakTaskSolver({
               Próba {attempts} z {maxAttempts}
             </Typography>
           )}
-
-        {attempts >= maxAttempts - 1 &&
-          (transcriptionResult?.score ?? 0) < 1 &&
-          !recording &&
-          !processing && (
-            <Alert
-              severity="warning"
-              sx={{ borderRadius: 2, mt: 0.5, width: "100%", maxWidth: 400 }}
-            >
-              {attempts >= maxAttempts
-                ? "Wykorzystano wszystkie próby."
-                : "Możesz nagrać jeszcze jedną próbę."}
-            </Alert>
-          )}
-
-        {recordingError && (
-          <Alert
-            severity="error"
-            sx={{ borderRadius: 2, mt: 0.5, width: "100%", maxWidth: 400 }}
-          >
-            {recordingError}
-          </Alert>
-        )}
       </Box>
 
       {result && (

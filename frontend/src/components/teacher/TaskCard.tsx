@@ -46,7 +46,7 @@ import { ScatterWordBuilder } from "./ScatterWordBuilder";
 export interface LessonTaskDraft {
   id: string;
   type: TaskType;
-  task: string;
+  task?: string;
   possibleAnswers: string;
   correctAnswer: string;
   words: string;
@@ -414,7 +414,7 @@ const TaskCardFields = memo(function TaskCardFields({
         {task.type !== "speak" && (
           <TextField
             label="Treść zadania"
-            value={task.task}
+            value={task.task ?? ""}
             onChange={(e) =>
               updateField(
                 "task",
@@ -422,7 +422,7 @@ const TaskCardFields = memo(function TaskCardFields({
               )
             }
             inputProps={{ maxLength: INPUT_LIMITS.taskText }}
-            helperText={`${task.task.length}/${INPUT_LIMITS.taskText}`}
+            helperText={`${(task.task ?? "").length}/${INPUT_LIMITS.taskText}`}
             multiline
             minRows={2}
             fullWidth
