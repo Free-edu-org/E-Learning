@@ -759,10 +759,11 @@ export function TeacherStudentsView() {
                       : "none",
                   }}
                 >
+                  <Box sx={{ display: "flex", alignItems: "center" }}>
                   <ButtonBase
                     onClick={() => toggleGroupExpanded(group.publicId)}
                     sx={{
-                      width: "100%",
+                      flex: 1,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
@@ -820,17 +821,6 @@ export function TeacherStudentsView() {
                       alignItems="center"
                       sx={{ flexShrink: 0 }}
                     >
-                      <IconButton
-                        size="small"
-                        aria-label={`Edytuj grupę ${group.name}`}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          openEditGroupDialog(group);
-                        }}
-                        sx={{ color: "text.secondary" }}
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
                       <Chip
                         label={studentCountLabel}
                         size="small"
@@ -845,6 +835,15 @@ export function TeacherStudentsView() {
                       />
                     </Stack>
                   </ButtonBase>
+                  <IconButton
+                    size="small"
+                    aria-label={`Edytuj grupę ${group.name}`}
+                    onClick={() => openEditGroupDialog(group)}
+                    sx={{ color: "text.secondary", mr: 1 }}
+                  >
+                    <EditIcon fontSize="small" />
+                  </IconButton>
+                  </Box>
 
                   <Collapse in={isExpanded} timeout={180} unmountOnExit>
                     <Divider />
