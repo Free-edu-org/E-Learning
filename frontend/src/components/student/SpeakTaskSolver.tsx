@@ -265,11 +265,7 @@ export function SpeakTaskSolver({
             flexShrink: 0,
           }}
         />
-        <Typography
-          variant="caption"
-          color="text.disabled"
-          sx={{ lineHeight: 1.4 }}
-        >
+        <Typography variant="body1" fontWeight={600}>
           Wypowiedz poniższy tekst
         </Typography>
       </Box>

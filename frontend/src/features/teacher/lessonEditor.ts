@@ -185,7 +185,6 @@ export async function createLessonTask(
   }
 
   return taskService.createSpeakTask(lessonPublicId, {
-    task: task.task.trim(),
     expectedText: task.correctAnswer.trim(),
     hint,
     section,
@@ -230,7 +229,6 @@ export async function updateLessonTask(
   }
 
   return taskService.updateSpeakTask(lessonPublicId, taskPublicId, {
-    task: task.task.trim(),
     expectedText: task.correctAnswer.trim(),
     hint,
     section,
@@ -289,7 +287,7 @@ export function tasksResponseToDrafts(
       drafts.push({
         id: `backendTask:speak:${task.publicId}`,
         type: "speak",
-        task: task.task,
+        task: "",
         possibleAnswers: "",
         correctAnswer: task.expectedText,
         words: "",

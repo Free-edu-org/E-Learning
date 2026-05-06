@@ -286,7 +286,7 @@ function tasksResponseToDrafts(
       drafts.push({
         id: `backendTask:speak:${t.publicId}`,
         type: "speak",
-        task: t.task,
+        task: "",
         possibleAnswers: "",
         correctAnswer: t.expectedText,
         words: "",
