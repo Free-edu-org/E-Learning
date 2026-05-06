@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  Alert,
   Box,
   Button,
   Chip,
@@ -24,14 +23,13 @@ import {
   type SpeakTaskResponse,
   type SpeakTranscriptionResponse,
 } from "@/api/taskService";
-import { ApiError } from "@/api/apiClient";
 import type { SubmitAnswerDetail } from "@/api/studentService";
 import {
   taskCardSx,
   taskFeedbackCorrectSx,
   taskTypeMeta,
 } from "./taskSolverStyles";
-import { formatPercent, getApiErrorMessage } from "@/utils/dashboardUtils";
+import { formatPercent } from "@/utils/dashboardUtils";
 
 interface SpeakTaskSolverProps {
   lessonPublicId: string;
@@ -144,7 +142,6 @@ export function SpeakTaskSolver({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [recording, setRecording] = useState(false);
   const [processing, setProcessing] = useState(false);
-  const [recordingError, setRecordingError] = useState<string | null>(null);
   const [recordingBlobUrl, setRecordingBlobUrl] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
 
@@ -186,7 +183,6 @@ export function SpeakTaskSolver({
         .map((w) => ({ text: w, wordResult: null }));
 
   const startRecording = async () => {
-    setRecordingError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       chunksRef.current = [];
@@ -224,9 +220,7 @@ export function SpeakTaskSolver({
       recorder.start();
       setRecording(true);
     } catch {
-      setRecordingError(
-        "Nie udało się uruchomić mikrofonu. Sprawdź uprawnienia przeglądarki.",
-      );
+      // Intentionally silent: the task stays in the normal retry state.
     }
   };
 
@@ -256,11 +250,9 @@ export function SpeakTaskSolver({
 
   const transcribe = async (audio: Blob) => {
     if (audio.size === 0) {
-      setRecordingError("Nagranie jest puste. Spróbuj ponownie.");
       return;
     }
     setProcessing(true);
-    setRecordingError(null);
     try {
       const response = await taskService.transcribeSpeakTask(
         lessonPublicId,
@@ -269,19 +261,8 @@ export function SpeakTaskSolver({
       );
       onChange(response.text);
       onTranscriptionResult(response);
-    } catch (error) {
-      if (error instanceof ApiError) {
-        setRecordingError(
-          getApiErrorMessage(
-            error,
-            "Nie udało się rozpoznać nagrania. Spróbuj ponownie za chwilę.",
-          ),
-        );
-      } else {
-        setRecordingError(
-          "Nie udało się rozpoznać nagrania. Spróbuj ponownie za chwilę.",
-        );
-      }
+    } catch {
+      // Intentionally silent: the task keeps the user in the retry flow without extra inline errors.
     } finally {
       setProcessing(false);
     }
@@ -491,7 +472,6 @@ export function SpeakTaskSolver({
               Próba {attempts} z {maxAttempts}
             </Typography>
           )}
-
       </Box>
 
       {result && (
