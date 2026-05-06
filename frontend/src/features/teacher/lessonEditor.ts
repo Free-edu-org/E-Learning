@@ -47,11 +47,14 @@ export function getTaskValidationError(
 ): string | null {
   const position = `Zadanie ${index + 1}`;
 
-  if (!task.task.trim()) {
+  if (task.type !== "speak" && !task.task.trim()) {
     return `${position}: treść zadania jest wymagana.`;
   }
 
-  if (task.task.trim().length > INPUT_LIMITS.taskText) {
+  if (
+    task.type !== "speak" &&
+    task.task.trim().length > INPUT_LIMITS.taskText
+  ) {
     return `${position}: treść zadania może mieć maksymalnie ${INPUT_LIMITS.taskText} znaków.`;
   }
 
@@ -185,7 +188,6 @@ export async function createLessonTask(
   }
 
   return taskService.createSpeakTask(lessonPublicId, {
-    task: task.task.trim(),
     expectedText: task.correctAnswer.trim(),
     hint,
     section,
@@ -230,7 +232,6 @@ export async function updateLessonTask(
   }
 
   return taskService.updateSpeakTask(lessonPublicId, taskPublicId, {
-    task: task.task.trim(),
     expectedText: task.correctAnswer.trim(),
     hint,
     section,
@@ -292,7 +293,7 @@ export function tasksResponseToDrafts(
       drafts.push({
         id: `backendTask:speak:${task.publicId}`,
         type: "speak",
-        task: task.task,
+        task: "",
         possibleAnswers: "",
         correctAnswer: task.expectedText,
         words: "",

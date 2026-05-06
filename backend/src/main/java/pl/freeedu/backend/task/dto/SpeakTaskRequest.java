@@ -13,10 +13,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class SpeakTaskRequest {
 
-	@NotBlank(message = "Task is required")
-	@Size(max = 300, message = "Task must be at most 300 characters long")
-	private String task;
-
 	@NotBlank(message = "Expected text is required")
 	@Size(max = 300, message = "Expected text must be at most 300 characters long")
 	private String expectedText;

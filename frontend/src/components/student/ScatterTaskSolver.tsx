@@ -10,7 +10,6 @@ import type { SubmitAnswerDetail } from "@/api/studentService";
 import {
   taskCardSx,
   taskHeaderSx,
-  taskHintSx,
   taskFeedbackCorrectSx,
   taskFeedbackIncorrectSx,
   taskTypeMeta,
@@ -90,81 +89,131 @@ export function ScatterTaskSolver({
         </Typography>
       </Box>
 
-      {/* Sentence area */}
+      {/* Sentence area — centered, inline words with remove on click */}
       <Box
         sx={{
-          minHeight: 48,
-          p: 1.5,
-          mb: 1.5,
-          borderRadius: 2,
-          border: "2px dashed",
-          borderColor: (theme) => alpha(theme.palette.primary.main, 0.25),
+          minHeight: 52,
+          px: 2,
+          py: 1.5,
+          mb: 2,
+          borderRadius: 2.5,
           bgcolor: (theme) =>
             alpha(
               theme.palette.primary.main,
-              theme.palette.mode === "dark" ? 0.04 : 0.03,
+              theme.palette.mode === "dark" ? 0.05 : 0.03,
             ),
+          boxShadow: (theme) =>
+            `inset 0 -2px 0 ${alpha(theme.palette.primary.main, 0.18)}`,
           display: "flex",
           flexWrap: "wrap",
-          gap: 0.75,
+          gap: "10px 14px",
           alignItems: "center",
+          justifyContent: "center",
         }}
       >
         {selectedIndices.length === 0 ? (
-          <Typography variant="body2" color="text.secondary">
-            Kliknij słowa poniżej, aby ułożyć zdanie...
+          <Typography variant="body2" color="text.disabled" fontStyle="italic">
+            Kliknij słowa poniżej, aby ułożyć zdanie…
           </Typography>
         ) : (
           selectedIndices.map((wordIndex, pos) => (
-            <Chip
+            <Box
               key={pos}
-              label={words[wordIndex]}
-              onDelete={disabled ? undefined : () => handleRemove(pos)}
-              color="primary"
-              variant="outlined"
-              size="small"
-              sx={{ fontWeight: 600 }}
-            />
+              onClick={disabled ? undefined : () => handleRemove(pos)}
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                cursor: disabled ? "default" : "pointer",
+                gap: "2px",
+              }}
+            >
+              <Typography
+                component="span"
+                variant="body1"
+                fontWeight={700}
+                sx={{
+                  color: "primary.main",
+                  borderBottom: (theme) =>
+                    `2px solid ${alpha(theme.palette.primary.main, 0.35)}`,
+                  pb: "2px",
+                  lineHeight: 1.3,
+                  transition: "opacity 0.15s",
+                  "&:hover": disabled ? {} : { opacity: 0.55 },
+                }}
+              >
+                {words[wordIndex]}
+              </Typography>
+            </Box>
           ))
         )}
       </Box>
 
-      {/* Word pool */}
-      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
+      {/* Word pool — centered */}
+      <Box
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "8px 12px",
+          justifyContent: "center",
+          mb: 1,
+        }}
+      >
         {words.map((word, index) => {
           const isUsed = selectedIndices.includes(index);
           return (
-            <Chip
+            <Typography
               key={index}
-              label={word}
+              component="span"
+              variant="body2"
+              fontWeight={600}
               onClick={
                 isUsed || disabled ? undefined : () => handleSelect(index)
               }
-              size="small"
               sx={{
-                fontWeight: 600,
+                px: 1.25,
+                py: 0.5,
+                borderRadius: 99,
+                bgcolor: (theme) =>
+                  alpha(
+                    theme.palette.text.primary,
+                    theme.palette.mode === "dark" ? 0.07 : 0.05,
+                  ),
+                color: "text.primary",
                 cursor: isUsed || disabled ? "default" : "pointer",
-                opacity: isUsed ? 0.3 : 1,
-                transition: "opacity 0.15s",
+                opacity: isUsed ? 0.22 : 1,
+                transition: "opacity 0.15s, box-shadow 0.15s",
+                userSelect: "none",
+                "&:hover":
+                  isUsed || disabled
+                    ? {}
+                    : {
+                        boxShadow: "0 2px 8px rgba(15,23,42,0.12)",
+                        opacity: 0.8,
+                      },
               }}
-            />
+            >
+              {word}
+            </Typography>
           );
         })}
       </Box>
 
       {selectedIndices.length > 0 && !disabled && (
-        <Typography
-          variant="caption"
-          color="primary"
-          onClick={handleClear}
-          sx={{ cursor: "pointer", mt: 1, display: "inline-block" }}
-        >
-          Wyczyść
-        </Typography>
-      )}
-
-      {task.hint && (
-        <Typography sx={taskHintSx}>Podpowiedź: {task.hint}</Typography>
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 0.5 }}>
+          <Typography
+            variant="caption"
+            color="text.disabled"
+            onClick={handleClear}
+            sx={{
+              cursor: "pointer",
+              "&:hover": { color: "error.main" },
+              transition: "color 0.15s",
+            }}
+          >
+            Wyczyść
+          </Typography>
+        </Box>
       )}
 
       {result && (

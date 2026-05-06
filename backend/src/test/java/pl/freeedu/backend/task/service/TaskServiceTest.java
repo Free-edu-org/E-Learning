@@ -440,10 +440,10 @@ class TaskServiceTest {
 
 		// when
 		Mono<SpeakTaskResponse> result = taskService.createSpeakTask(1,
-				Mono.just(SpeakTaskRequest.builder().task("Sp").build()));
+				Mono.just(SpeakTaskRequest.builder().expectedText("Hello world").build()));
 
 		// then
-		StepVerifier.create(result).assertNext(r -> assertEquals("Sp", r.getTask())).verifyComplete();
+		StepVerifier.create(result).assertNext(r -> assertEquals("Hello world", r.getExpectedText())).verifyComplete();
 	}
 
 	// Transcribe Speak Task tests
@@ -471,6 +471,39 @@ class TaskServiceTest {
 		StepVerifier.create(result).assertNext(resp -> {
 			assertTrue(resp.isCorrect());
 			assertEquals("Hello", resp.getText());
+			assertEquals(1.0, resp.getScore());
+			assertEquals(1, resp.getWords().size());
+			assertTrue(resp.getWords().get(0).isCorrect());
+		}).verifyComplete();
+	}
+
+	@Test
+	void shouldReturnZeroSpeakScoreWhenNoWordsMatch() {
+		// given
+		Integer lessonId = 1;
+		String taskPublicId = "task-10";
+		Lesson lesson = Lesson.builder().id(lessonId).isActive(true).build();
+		SpeakTask task = SpeakTask.builder().id(10).publicId(taskPublicId).lessonId(lessonId)
+				.expectedText("My favorite color is green").build();
+		FilePart audio = mock(FilePart.class);
+
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(1));
+		when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
+		when(userInGroupRepository.hasAccessToLesson(1, lessonId)).thenReturn(true);
+		when(speakTaskRepository.findByPublicId(taskPublicId)).thenReturn(Optional.of(task));
+		when(sttClient.transcribe(audio))
+				.thenReturn(Mono.just(new SttTranscriptionResponse("1, 2, 3, 4, 3, 4, 3, 4, 3, 4.", "en", 1.0)));
+
+		// when
+		Mono<SpeakTranscriptionResponse> result = taskService.transcribeSpeakTask(lessonId, taskPublicId,
+				Mono.just(audio));
+
+		// then
+		StepVerifier.create(result).assertNext(resp -> {
+			assertFalse(resp.isCorrect());
+			assertEquals(0.0, resp.getScore());
+			assertEquals(5, resp.getWords().size());
+			assertTrue(resp.getWords().stream().noneMatch(SpeakWordResultDto::isCorrect));
 		}).verifyComplete();
 	}
 

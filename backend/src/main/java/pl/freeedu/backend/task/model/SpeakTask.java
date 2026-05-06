@@ -25,9 +25,6 @@ public class SpeakTask {
 	@Column(name = "lesson_id", nullable = false)
 	private Integer lessonId;
 
-	@Column(nullable = false, columnDefinition = "TEXT")
-	private String task;
-
 	@Column(name = "expected_text", nullable = false, columnDefinition = "TEXT")
 	private String expectedText;
 

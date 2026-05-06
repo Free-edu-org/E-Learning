@@ -246,9 +246,8 @@ public class TaskService {
 	public Mono<SpeakTaskResponse> createSpeakTask(Integer lessonId, Mono<SpeakTaskRequest> requestMono) {
 		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
 			lessonRepository.findById(lessonId).orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_FOUND));
-			SpeakTask task = SpeakTask.builder().lessonId(lessonId).task(request.getTask())
-					.expectedText(request.getExpectedText()).hint(request.getHint()).section(request.getSection())
-					.build();
+			SpeakTask task = SpeakTask.builder().lessonId(lessonId).expectedText(request.getExpectedText())
+					.hint(request.getHint()).section(request.getSection()).build();
 			SpeakTask saved = speakTaskRepository.save(task);
 			return toSpeakTaskResponse(saved, requireLessonPublicId(lessonId));
 		}).subscribeOn(Schedulers.boundedElastic()));
@@ -258,7 +257,6 @@ public class TaskService {
 			Mono<SpeakTaskRequest> requestMono) {
 		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
 			SpeakTask task = getSpeakTaskForLesson(lessonId, taskPublicId);
-			task.setTask(request.getTask());
 			task.setExpectedText(request.getExpectedText());
 			task.setHint(request.getHint());
 			task.setSection(request.getSection());
@@ -600,7 +598,7 @@ public class TaskService {
 		String hintImageUrl = t.getHintImageFileName() != null
 				? "/api/v1/lessons/" + lessonPublicId + "/tasks/speak/" + t.getPublicId() + "/hint-image"
 				: null;
-		return SpeakTaskResponse.builder().publicId(t.getPublicId()).lessonPublicId(lessonPublicId).task(t.getTask())
+		return SpeakTaskResponse.builder().publicId(t.getPublicId()).lessonPublicId(lessonPublicId)
 				.expectedText(t.getExpectedText()).hint(t.getHint()).hintImageUrl(hintImageUrl).section(t.getSection())
 				.createdAt(t.getCreatedAt()).build();
 	}
@@ -611,28 +609,22 @@ public class TaskService {
 	}
 
 	private SpeakTranscriptionResponse buildSpeakTranscriptionResponse(SpeakTask speakTask, String transcription) {
-		double score = similarity(transcription, speakTask.getExpectedText());
+		List<SpeakWordResultDto> wordResults = buildSpeakWordResults(transcription, speakTask.getExpectedText());
+		double score = calculateSpeakScore(wordResults);
 		return SpeakTranscriptionResponse.builder().text(transcription).expectedText(speakTask.getExpectedText())
-				.correct(score >= sttMinScore).score(score)
-				.words(buildSpeakWordResults(transcription, speakTask.getExpectedText())).build();
+				.correct(score >= sttMinScore).score(score).words(wordResults).build();
 	}
 
 	private boolean isSpeakAnswerCorrect(String answer, String expectedText) {
-		return similarity(answer, expectedText) >= sttMinScore;
+		return calculateSpeakScore(buildSpeakWordResults(answer, expectedText)) >= sttMinScore;
 	}
 
-	private double similarity(String actual, String expected) {
-		String normalizedActual = normalizeSpeechText(actual);
-		String normalizedExpected = normalizeSpeechText(expected);
-		if (normalizedActual.isEmpty() || normalizedExpected.isEmpty()) {
+	private double calculateSpeakScore(List<SpeakWordResultDto> wordResults) {
+		if (wordResults.isEmpty()) {
 			return 0.0;
 		}
-		if (normalizedActual.equals(normalizedExpected)) {
-			return 1.0;
-		}
-		int distance = levenshteinDistance(normalizedActual, normalizedExpected);
-		int maxLength = Math.max(normalizedActual.length(), normalizedExpected.length());
-		return Math.max(0.0, 1.0 - ((double) distance / maxLength));
+		long correctWords = wordResults.stream().filter(SpeakWordResultDto::isCorrect).count();
+		return (double) correctWords / wordResults.size();
 	}
 
 	private String normalizeSpeechText(String value) {
@@ -663,27 +655,5 @@ public class TaskService {
 			return Collections.emptyList();
 		}
 		return Arrays.asList(normalized.split(" "));
-	}
-
-	private int levenshteinDistance(String left, String right) {
-		int[] previous = new int[right.length() + 1];
-		int[] current = new int[right.length() + 1];
-
-		for (int j = 0; j <= right.length(); j++) {
-			previous[j] = j;
-		}
-
-		for (int i = 1; i <= left.length(); i++) {
-			current[0] = i;
-			for (int j = 1; j <= right.length(); j++) {
-				int cost = left.charAt(i - 1) == right.charAt(j - 1) ? 0 : 1;
-				current[j] = Math.min(Math.min(current[j - 1] + 1, previous[j] + 1), previous[j - 1] + cost);
-			}
-			int[] tmp = previous;
-			previous = current;
-			current = tmp;
-		}
-
-		return previous[right.length()];
 	}
 }

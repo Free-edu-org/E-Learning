@@ -9,7 +9,6 @@ import type { SubmitAnswerDetail } from "@/api/studentService";
 import {
   taskCardSx,
   taskHeaderSx,
-  taskHintSx,
   taskFeedbackCorrectSx,
   taskFeedbackIncorrectSx,
   taskTypeMeta,
@@ -60,12 +59,13 @@ export function WriteTaskSolver({
         autoComplete="off"
         fullWidth
         size="small"
-        sx={{ mt: 1 }}
+        sx={{
+          mt: 0.5,
+          "& .MuiOutlinedInput-root": {
+            borderRadius: 2,
+          },
+        }}
       />
-
-      {task.hint && (
-        <Typography sx={taskHintSx}>Podpowiedź: {task.hint}</Typography>
-      )}
 
       {result && (
         <Box

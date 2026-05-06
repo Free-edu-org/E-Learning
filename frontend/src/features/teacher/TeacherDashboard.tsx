@@ -105,7 +105,7 @@ function getTaskValidationError(
 ): string | null {
   const position = `Zadanie ${index + 1}`;
 
-  if (!task.task.trim()) {
+  if (task.type !== "speak" && !task.task.trim()) {
     return `${position}: treść zadania jest wymagana.`;
   }
 
@@ -188,7 +188,6 @@ async function createLessonTask(lessonPublicId: string, task: LessonTaskDraft) {
   }
 
   return taskService.createSpeakTask(lessonPublicId, {
-    task: task.task.trim(),
     expectedText: task.correctAnswer.trim(),
     hint,
     section,
@@ -230,7 +229,6 @@ async function updateLessonTask(
     });
   }
   return taskService.updateSpeakTask(lessonPublicId, taskPublicId, {
-    task: task.task.trim(),
     expectedText: task.correctAnswer.trim(),
     hint,
     section,
@@ -291,7 +289,7 @@ function tasksResponseToDrafts(
       drafts.push({
         id: `backendTask:speak:${t.publicId}`,
         type: "speak",
-        task: t.task,
+        task: "",
         possibleAnswers: "",
         correctAnswer: t.expectedText,
         words: "",
