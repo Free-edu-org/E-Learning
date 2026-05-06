@@ -140,6 +140,23 @@ function flattenTasks(lessonData: LessonTasksResponse): FlatTask[] {
   return tasks;
 }
 
+function isTaskCompletedInUi(
+  task: FlatTask,
+  answers: Record<string, SubmitAnswerItem>,
+  speakAttempts: Record<string, SpeakAttemptState>,
+): boolean {
+  const key = answerKey(task.taskType, task.taskPublicId);
+  if ((answers[key]?.answer ?? "") !== "") {
+    return true;
+  }
+
+  if (task.taskType !== "speak") {
+    return false;
+  }
+
+  return (speakAttempts[key]?.attempts ?? 0) >= 3;
+}
+
 // ── Component ────────────────────────────────────────────────────────────────
 
 export function LessonSolver() {
@@ -296,8 +313,8 @@ export function LessonSolver() {
     };
   }, [currentTask?.hintImageUrl]);
 
-  const answeredCount = Object.values(answers).filter(
-    (a) => a.answer !== "",
+  const answeredCount = flatTasks.filter((task) =>
+    isTaskCompletedInUi(task, answers, speakAttempts),
   ).length;
 
   // Results map for per-task feedback (keyed by "taskType_taskPublicId")
@@ -368,8 +385,7 @@ export function LessonSolver() {
 
   const goToFirstUnansweredTask = (hideAlert = true) => {
     const firstUnansweredIdx = flatTasks.findIndex(
-      (t) =>
-        (answers[answerKey(t.taskType, t.taskPublicId)]?.answer ?? "") === "",
+      (t) => !isTaskCompletedInUi(t, answers, speakAttempts),
     );
     if (firstUnansweredIdx >= 0) {
       setCurrentStep(firstUnansweredIdx);
@@ -505,10 +521,7 @@ export function LessonSolver() {
     totalTaskCount > 0 ? ((currentStep + 1) / totalTaskCount) * 100 : 0;
   const unansweredIndices = flatTasks
     .map((t, i) => ({ idx: i, t }))
-    .filter(
-      ({ t }) =>
-        (answers[answerKey(t.taskType, t.taskPublicId)]?.answer ?? "") === "",
-    )
+    .filter(({ t }) => !isTaskCompletedInUi(t, answers, speakAttempts))
     .map(({ idx }) => idx);
 
   useEffect(() => {
@@ -801,8 +814,11 @@ export function LessonSolver() {
                       >
                         {group.tasks.map(({ ft, idx }) => {
                           const key = answerKey(ft.taskType, ft.taskPublicId);
-                          const isAnswered =
-                            (answers[key]?.answer ?? "") !== "";
+                          const isAnswered = isTaskCompletedInUi(
+                            ft,
+                            answers,
+                            speakAttempts,
+                          );
                           const isCurrent = idx === currentStep;
                           const meta = taskTypeMeta[ft.taskType];
                           const taskResult = resultsMap?.get(key) ?? null;

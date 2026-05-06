@@ -44,10 +44,9 @@ type ActiveType = "section" | "task" | null;
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function createEmptyTaskDraft(type: TaskType = "write"): LessonTaskDraft {
-  return {
+  const draft: Partial<LessonTaskDraft> = {
     id: window.crypto.randomUUID(),
     type,
-    task: "",
     possibleAnswers: "",
     correctAnswer: "",
     words: "",
@@ -55,6 +54,8 @@ function createEmptyTaskDraft(type: TaskType = "write"): LessonTaskDraft {
     section: "",
     hintImageUrl: null,
   };
+  if (type !== "speak") (draft as LessonTaskDraft).task = "";
+  return draft as LessonTaskDraft;
 }
 
 /**
