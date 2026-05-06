@@ -115,7 +115,7 @@ function getTaskValidationError(
     }
     const trimmedCorrect = task.correctAnswer.trim();
     if (trimmedCorrect === "") {
-      return `${position}: Podaj indeks poprawnej odpowiedzi (np. 0).`;
+      return `${position}: Zaznacz poprawną odpowiedź.`;
     }
     const correctIndex = Number(trimmedCorrect);
     if (!Number.isInteger(correctIndex)) {
