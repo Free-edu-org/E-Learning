@@ -51,9 +51,12 @@ public class TaskHintImageController {
 
 	@Operation(summary = "Get hint image for a task")
 	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Hint image returned"),
+			@ApiResponse(responseCode = "403", description = "No access to lesson", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "404", description = "Hint image not found", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@GetMapping
-	@PreAuthorize("hasRole('STUDENT') or hasRole('TEACHER') or hasRole('ADMIN')")
+	@PreAuthorize("@securityService.isAdmin(authentication) "
+			+ "or (hasRole('TEACHER') and @securityService.isLessonOwner(authentication, #lessonPublicId)) "
+			+ "or (hasRole('STUDENT') and @securityService.hasStudentAccessToLesson(authentication, #lessonPublicId))")
 	public Mono<ResponseEntity<Resource>> getHintImage(@PathVariable String lessonPublicId,
 			@PathVariable String taskType, @PathVariable String taskPublicId) {
 		return Mono.fromCallable(() -> lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId))

@@ -131,7 +131,7 @@ public class TaskHintImageService {
 			String contentType = resolveContentTypeFromFileName(fileName);
 			HttpHeaders headers = new HttpHeaders();
 			headers.setContentType(MediaType.parseMediaType(contentType));
-			headers.setCacheControl("max-age=3600, public");
+			headers.setCacheControl("max-age=3600, private");
 
 			log.debug("Serving hint image file: {}", filePath);
 			return ResponseEntity.<Resource>ok().headers(headers).body(resource);
