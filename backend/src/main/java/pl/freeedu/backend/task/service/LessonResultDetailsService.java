@@ -115,10 +115,11 @@ public class LessonResultDetailsService {
 				.findByLessonId(lessonId).stream().map(task -> TaskDefinition.scatter(task.getId(), task.getPublicId(),
 						task.getSection(), task.getTask(), task.getHint(), task.getWords(), task.getCorrectAnswer()))
 				.toList());
-		definitions.addAll(speakTaskRepository.findByLessonId(lessonId).stream()
-				.map(task -> TaskDefinition.speak(task.getId(), task.getPublicId(), task.getSection(), task.getTask(),
-						task.getHint(), task.getExpectedText()))
-				.toList());
+		definitions
+				.addAll(speakTaskRepository
+						.findByLessonId(lessonId).stream().map(task -> TaskDefinition.speak(task.getId(),
+								task.getPublicId(), task.getSection(), task.getHint(), task.getExpectedText()))
+						.toList());
 
 		definitions
 				.sort(Comparator.comparing(TaskDefinition::section, Comparator.nullsFirst(String::compareToIgnoreCase))
@@ -159,9 +160,9 @@ public class LessonResultDetailsService {
 					correctAnswer, null, words, 2);
 		}
 
-		private static TaskDefinition speak(Integer taskId, String publicId, String section, String taskText,
-				String hint, String correctAnswer) {
-			return new TaskDefinition(taskId, publicId, "speak", "speak_tasks", section, taskText, hint, correctAnswer,
+		private static TaskDefinition speak(Integer taskId, String publicId, String section, String hint,
+				String correctAnswer) {
+			return new TaskDefinition(taskId, publicId, "speak", "speak_tasks", section, null, hint, correctAnswer,
 					null, null, 3);
 		}
 

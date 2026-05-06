@@ -95,9 +95,8 @@ class LessonResultDetailsServiceTest {
 		when(scatterTaskRepository.findByLessonId(lessonId)).thenReturn(
 				List.of(ScatterTask.builder().id(3).publicId("tp3").lessonId(lessonId).section("B").task("Scatter task")
 						.hint("Hint scatter").words("I|am|here").correctAnswer("I am here").build()));
-		when(speakTaskRepository.findByLessonId(lessonId))
-				.thenReturn(List.of(SpeakTask.builder().id(4).publicId("tp4").lessonId(lessonId).section("B")
-						.task("Speak task").hint("Hint speak").expectedText("good morning").build()));
+		when(speakTaskRepository.findByLessonId(lessonId)).thenReturn(List.of(SpeakTask.builder().id(4).publicId("tp4")
+				.lessonId(lessonId).section("B").hint("Hint speak").expectedText("good morning").build()));
 
 		when(userAnswerRepository.findByUserIdAndLessonId(userId, lessonId)).thenReturn(List.of(
 				UserAnswer.builder().lessonId(lessonId).userId(userId).taskId(1).taskType("choose_tasks").answer("0")
