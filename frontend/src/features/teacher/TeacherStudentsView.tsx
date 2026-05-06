@@ -163,6 +163,12 @@ export function TeacherStudentsView() {
   const [createGroupLoading, setCreateGroupLoading] = useState(false);
   const [createGroupFeedback, setCreateGroupFeedback] =
     useState<DialogFeedbackState | null>(null);
+  const [editGroupOpen, setEditGroupOpen] = useState(false);
+  const [editingGroup, setEditingGroup] = useState<Group | null>(null);
+  const [editGroupDraft, setEditGroupDraft] = useState(emptyGroupDraft);
+  const [editGroupLoading, setEditGroupLoading] = useState(false);
+  const [editGroupFeedback, setEditGroupFeedback] =
+    useState<DialogFeedbackState | null>(null);
 
   const [draggingStudentPublicId, setDraggingStudentPublicId] = useState<
     string | null
@@ -212,12 +218,6 @@ export function TeacherStudentsView() {
 
     fetchData();
   }, [fetchData]);
-
-  useEffect(() => {
-    setExpandedGroupPublicIds(
-      new Set(availableGroups.map((group) => group.publicId)),
-    );
-  }, [availableGroups]);
 
   const groupsWithStudents = useMemo(
     () =>
@@ -421,6 +421,58 @@ export function TeacherStudentsView() {
       });
     } finally {
       setCreateGroupLoading(false);
+    }
+  };
+
+  const openEditGroupDialog = (group: Group) => {
+    setEditingGroup(group);
+    setEditGroupDraft({
+      name: group.name,
+      description: group.description ?? "",
+    });
+    setEditGroupFeedback(null);
+    setEditGroupOpen(true);
+  };
+
+  const closeEditGroupDialog = () => {
+    if (editGroupLoading) return;
+    setEditGroupOpen(false);
+    setEditingGroup(null);
+  };
+
+  const submitEditGroup = async () => {
+    if (!editingGroup || editGroupLoading) return;
+    if (!editGroupDraft.name.trim()) {
+      setEditGroupFeedback({
+        severity: "error",
+        message: "Podaj nazwę grupy.",
+      });
+      return;
+    }
+
+    setEditGroupFeedback(null);
+    setEditGroupLoading(true);
+    try {
+      await userGroupService.updateGroup(editingGroup.publicId, {
+        name: editGroupDraft.name.trim(),
+        description: editGroupDraft.description.trim(),
+      });
+      setEditGroupFeedback({
+        severity: "success",
+        message: "Dane grupy zostały zapisane.",
+      });
+      await fetchData();
+      window.setTimeout(() => closeEditGroupDialog(), 700);
+    } catch (error) {
+      setEditGroupFeedback({
+        severity: "error",
+        message: getOperationErrorMessage(
+          error,
+          "Nie udało się zapisać zmian grupy.",
+        ),
+      });
+    } finally {
+      setEditGroupLoading(false);
     }
   };
 
@@ -650,8 +702,8 @@ export function TeacherStudentsView() {
               sx={{ px: 0.5, whiteSpace: "nowrap" }}
             >
               {searchQuery.trim()
-                ? `Wyniki: ${filteredGroupsWithStudents.length} z ${groupsWithStudents.length} grup`
-                : `${groupsWithStudents.length} grup`}
+                ? `Wyniki: ${filteredGroupsWithStudents.length} z ${groupsWithStudents.length} | Liczba grup: ${groupsWithStudents.length}`
+                : `Liczba grup: ${groupsWithStudents.length}`}
             </Typography>
           </Box>
         )}
@@ -765,6 +817,17 @@ export function TeacherStudentsView() {
                       alignItems="center"
                       sx={{ flexShrink: 0 }}
                     >
+                      <IconButton
+                        size="small"
+                        aria-label={`Edytuj grupę ${group.name}`}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          openEditGroupDialog(group);
+                        }}
+                        sx={{ color: "text.secondary" }}
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
                       <Chip
                         label={studentCountLabel}
                         size="small"
@@ -1141,6 +1204,96 @@ export function TeacherStudentsView() {
                 variant="contained"
                 onClick={submitEditStudent}
                 disabled={editStudentLoading}
+                startIcon={<SaveIcon />}
+                sx={buttonSx}
+              >
+                Zapisz zmiany
+              </Button>
+            </FormActions>
+          </AppDialogFooter>
+        </AppDialog>
+
+        <AppDialog
+          open={editGroupOpen}
+          onClose={closeEditGroupDialog}
+          maxWidth="sm"
+          paperSx={{
+            width: {
+              xs: "calc(100% - 24px)",
+              sm: uiTokens.modal.comfortableWidth,
+            },
+          }}
+        >
+          <AppDialogHeader
+            icon={<EditIcon />}
+            title="Edytuj grupę"
+            subtitle="Zmiana nazwy grupy i jej opisu."
+          />
+          <AppDialogBody>
+            <FormSection title="Dane grupy">
+              {editGroupFeedback && (
+                <AppDialogStatus severity={editGroupFeedback.severity}>
+                  {editGroupFeedback.message}
+                </AppDialogStatus>
+              )}
+              <Stack spacing={2}>
+                <FormField>
+                  <TextField
+                    label="Nazwa grupy"
+                    value={editGroupDraft.name}
+                    onChange={(event) =>
+                      setEditGroupDraft((draft) => ({
+                        ...draft,
+                        name: event.target.value.slice(
+                          0,
+                          INPUT_LIMITS.groupName,
+                        ),
+                      }))
+                    }
+                    inputProps={{ maxLength: INPUT_LIMITS.groupName }}
+                    helperText={`${editGroupDraft.name.length}/${INPUT_LIMITS.groupName}`}
+                    fullWidth
+                    size="small"
+                    disabled={editGroupLoading}
+                  />
+                </FormField>
+                <FormField>
+                  <TextField
+                    label="Opis"
+                    value={editGroupDraft.description}
+                    onChange={(event) =>
+                      setEditGroupDraft((draft) => ({
+                        ...draft,
+                        description: event.target.value.slice(
+                          0,
+                          INPUT_LIMITS.groupDescription,
+                        ),
+                      }))
+                    }
+                    inputProps={{ maxLength: INPUT_LIMITS.groupDescription }}
+                    helperText={`${editGroupDraft.description.length}/${INPUT_LIMITS.groupDescription}`}
+                    fullWidth
+                    size="small"
+                    minRows={3}
+                    multiline
+                    disabled={editGroupLoading}
+                  />
+                </FormField>
+              </Stack>
+            </FormSection>
+          </AppDialogBody>
+          <AppDialogFooter>
+            <FormActions>
+              <Button
+                onClick={closeEditGroupDialog}
+                sx={{ ...buttonSx, color: "text.secondary" }}
+              >
+                Anuluj
+              </Button>
+              <Button
+                variant="contained"
+                onClick={submitEditGroup}
+                disabled={editGroupLoading}
                 startIcon={<SaveIcon />}
                 sx={buttonSx}
               >
