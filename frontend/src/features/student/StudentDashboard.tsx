@@ -41,6 +41,7 @@ import {
   type StudentLessonAttachment,
   type StudentStats,
 } from "@/api/studentService";
+import { StudentAchievementNotifications } from "@/components/achievements/StudentAchievementNotifications";
 import { lessonService } from "@/api/lessonService";
 import { userService, type UserProfile } from "@/api/userService";
 import { DashboardHeader } from "@/components/ui/panel/DashboardHeader";
@@ -513,6 +514,8 @@ export function StudentDashboard() {
             {error}
           </Alert>
         )}
+
+        <StudentAchievementNotifications />
 
         {/* ── Hero banner ── */}
         <Paper

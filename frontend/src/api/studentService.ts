@@ -19,6 +19,10 @@ export interface StudentAchievement {
   newlyUnlocked: boolean;
 }
 
+export interface AchievementNotificationsSeenResponse {
+  markedCount: number;
+}
+
 export interface StudentProgressPoint {
   date: string;
   progress: number;
@@ -118,6 +122,13 @@ export const studentService = {
   getStats: () => fetchApi<StudentStats>("/api/v1/student/stats"),
   getStudentAchievements: () =>
     fetchApi<StudentAchievement[]>("/api/v1/student/achievements"),
+  markAchievementNotificationsSeen: () =>
+    fetchApi<AchievementNotificationsSeenResponse>(
+      "/api/v1/student/achievements/notifications/seen",
+      {
+        method: "POST",
+      },
+    ),
   getLessons: () => fetchApi<StudentLesson[]>("/api/v1/student/lessons"),
   getProgress: () =>
     fetchApi<StudentProgressPoint[]>("/api/v1/student/progress"),

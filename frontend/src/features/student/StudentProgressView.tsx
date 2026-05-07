@@ -33,12 +33,12 @@ import {
 } from "recharts";
 import {
   studentService,
-  type StudentAchievement,
   type StudentProgressPoint,
   type StudentSkillStats,
   type StudentStats,
 } from "@/api/studentService";
 import { AchievementCard } from "@/components/achievements/AchievementCard";
+import { StudentAchievementNotifications } from "@/components/achievements/StudentAchievementNotifications";
 import { userService, type UserProfile } from "@/api/userService";
 import { DashboardHeader } from "@/components/ui/panel/DashboardHeader";
 import { DashboardTopBar } from "@/components/ui/panel/DashboardTopBar";
@@ -65,10 +65,12 @@ export function StudentProgressView() {
     StudentProgressPoint[]
   >([]);
   const [skillsData, setSkillsData] = useState<StudentSkillStats[]>([]);
-  const [achievements, setAchievements] = useState<StudentAchievement[]>([]);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [achievements, setAchievements] = useState(
+    [] as Awaited<ReturnType<typeof studentService.getStudentAchievements>>,
+  );
   const [achievementsLoading, setAchievementsLoading] = useState(true);
   const [achievementsError, setAchievementsError] = useState<string | null>(
     null,
@@ -112,51 +114,43 @@ export function StudentProgressView() {
       studentService.getStats(),
       studentService.getProgress(),
       studentService.getSkills(),
+      studentService.getStudentAchievements(),
     ])
-      .then(([currentUser, nextStats, nextProgressHistory, nextSkills]) => {
-        if (ignore) {
-          return;
-        }
+      .then(
+        ([
+          currentUser,
+          nextStats,
+          nextProgressHistory,
+          nextSkills,
+          nextAchievements,
+        ]) => {
+          if (ignore) {
+            return;
+          }
 
-        setUser(currentUser);
-        setStats(nextStats);
-        setProgressHistory(nextProgressHistory);
-        setSkillsData(nextSkills);
-      })
+          setUser(currentUser);
+          setStats(nextStats);
+          setProgressHistory(nextProgressHistory);
+          setSkillsData(nextSkills);
+          setAchievements(nextAchievements);
+          setAchievementsError(null);
+        },
+      )
       .catch((err: unknown) => {
         if (ignore) {
           return;
         }
 
-        setError(getErrorMessage(err, "Nie udało się pobrać danych postępu."));
+        const message = getErrorMessage(
+          err,
+          "Nie udało się pobrać danych postępu.",
+        );
+        setError(message);
+        setAchievementsError(message);
       })
       .finally(() => {
         if (!ignore) {
           setLoading(false);
-        }
-      });
-
-    studentService
-      .getStudentAchievements()
-      .then((nextAchievements) => {
-        if (ignore) {
-          return;
-        }
-
-        setAchievements(nextAchievements);
-        setAchievementsError(null);
-      })
-      .catch((err: unknown) => {
-        if (ignore) {
-          return;
-        }
-
-        setAchievementsError(
-          getErrorMessage(err, "Nie udało się pobrać listy achievementów."),
-        );
-      })
-      .finally(() => {
-        if (!ignore) {
           setAchievementsLoading(false);
         }
       });
@@ -210,6 +204,8 @@ export function StudentProgressView() {
             {error}
           </Alert>
         )}
+
+        <StudentAchievementNotifications showFetchErrorAlert={false} />
 
         {loading ? (
           <Grid container spacing={2} sx={{ mb: 4 }}>
