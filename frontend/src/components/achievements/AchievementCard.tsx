@@ -116,7 +116,7 @@ export function AchievementCard({ achievement }: AchievementCardProps) {
             </Typography>
           ) : (
             <Typography variant="caption" color="text.secondary">
-              Oczekuje na odblokowanie przez backendowy event.
+              Osiągnięcie odblokuje się po spełnieniu warunku.
             </Typography>
           )}
         </Box>

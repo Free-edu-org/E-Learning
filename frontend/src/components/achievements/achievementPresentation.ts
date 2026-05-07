@@ -33,7 +33,7 @@ export function getAchievementDescription(description?: string): string {
   const normalized = description?.trim();
   return normalized
     ? normalized
-    : "Szczegóły tego osiągnięcia pojawią się, gdy backend uzupełni opis.";
+    : "Szczegóły tego osiągnięcia pojawią się tutaj.";
 }
 
 export function getAchievementIcon(icon?: string): string {

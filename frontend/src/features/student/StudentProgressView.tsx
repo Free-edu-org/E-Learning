@@ -99,15 +99,6 @@ export function StudentProgressView() {
     });
   }, [skillsData]);
 
-  const totalAnswers = useMemo(
-    () =>
-      skillsData.reduce(
-        (sum, item) => sum + (item.correct ?? 0) + (item.wrong ?? 0),
-        0,
-      ),
-    [skillsData],
-  );
-
   const handleLogout = () => {
     logout();
     navigate("/login");
@@ -253,7 +244,7 @@ export function StudentProgressView() {
                 icon={PointsIcon}
                 title="Punkty"
                 value={stats?.points ?? 0}
-                subtitle={`${totalAnswers} odpowiedzi łącznie`}
+                subtitle="Suma punktów przyznanych z ukończonych lekcji"
                 color="info"
               />
             </Grid>
