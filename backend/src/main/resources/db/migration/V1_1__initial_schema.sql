@@ -185,11 +185,20 @@ CREATE TABLE user_answers (
 );
 
 CREATE TABLE achievements (
-    id          INT       NOT NULL AUTO_INCREMENT,
-    name        TEXT      NOT NULL,
-    description TEXT      NOT NULL,
-    created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (id)
+    id          INT          NOT NULL AUTO_INCREMENT,
+    code        VARCHAR(64)  NOT NULL,
+    name        VARCHAR(255) NOT NULL,
+    description VARCHAR(255) NOT NULL,
+    icon        VARCHAR(32)  NOT NULL DEFAULT '',
+    color       VARCHAR(32)  NOT NULL DEFAULT 'warning',
+    type        VARCHAR(64)  NOT NULL,
+    threshold   INT          DEFAULT NULL,
+    active      TINYINT(1)   NOT NULL DEFAULT 1,
+    sort_order  INT          DEFAULT NULL,
+    created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_achievements_code (code)
 );
 
 CREATE TABLE user_get_achievement (
@@ -197,7 +206,9 @@ CREATE TABLE user_get_achievement (
     user_id        INT       NOT NULL,
     achievement_id INT       NOT NULL,
     created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    notification_seen_at TIMESTAMP NULL DEFAULT NULL,
     PRIMARY KEY (id),
+    UNIQUE KEY uk_user_get_achievement_user_achievement (user_id, achievement_id),
     KEY user_id (user_id),
     KEY achievement_id (achievement_id),
     CONSTRAINT user_get_achievement_ibfk_1 FOREIGN KEY (user_id)        REFERENCES users (id)        ON DELETE CASCADE,
@@ -217,6 +228,25 @@ CREATE TABLE password_reset_tokens (
     KEY idx_password_reset_tokens_expires_at (expires_at),
     CONSTRAINT fk_password_reset_tokens_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
+
+CREATE TABLE group_invitations (
+    id INT NOT NULL AUTO_INCREMENT,
+    group_id INT NOT NULL,
+    created_by INT NOT NULL,
+    token VARCHAR(36) NOT NULL,
+    max_uses INT NOT NULL DEFAULT 1,
+    used_count INT NOT NULL DEFAULT 0,
+    expires_at DATETIME NOT NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    CONSTRAINT uq_group_invitations_token UNIQUE (token),
+    CONSTRAINT fk_group_invitations_group FOREIGN KEY (group_id) REFERENCES user_groups (id) ON DELETE CASCADE,
+    CONSTRAINT fk_group_invitations_creator FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_group_invitations_token ON group_invitations (token);
+CREATE INDEX idx_group_invitations_group_id ON group_invitations (group_id);
 
 CREATE TABLE student_progress_history (
     id            INT       NOT NULL AUTO_INCREMENT,

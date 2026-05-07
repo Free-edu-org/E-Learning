@@ -859,7 +859,7 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
 ### 5.3.1. Get Detailed Lesson Result For Selected Student
 - **URL**: `/api/v1/teacher/lessons/{lessonPublicId}/students/{userPublicId}/result`
 - **Method**: `GET`
-- **Description**: Zwraca szczegolowy wynik ukonczonej lekcji dla wskazanego ucznia. Endpoint jest scoped do nauczyciela-owner'a lekcji.
+- **Description**: Zwraca szczegółowy wynik ukończonej lekcji dla wskazanego ucznia. Endpoint jest scoped do nauczyciela-owner'a lekcji.
 - **Authorization**: `TEACHER`
 
 **Success (200 OK):**
@@ -898,26 +898,26 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
 | `userPublicId` | String | Public ID ucznia, ktorego wynik jest zwracany. |
 | `username` | String | Username ucznia. |
 | `score` | Integer | Zdobyte punkty. |
-| `maxScore` | Integer | Maksymalna liczba punktow. |
-| `resultPercent` | Double | Wynik procentowy zaokraglony do jednego miejsca po przecinku. |
-| `completedAt` | String (ISO datetime) | Czas zakonczenia lekcji. |
-| `tasks` | List | Lista zadan w stabilnej kolejnosci prezentacyjnej. |
+| `maxScore` | Integer | Maksymalna liczba punktów. |
+| `resultPercent` | Double | Wynik procentowy zaokrąglony do jednego miejsca po przecinku. |
+| `completedAt` | String (ISO datetime) | Czas zakończenia lekcji. |
+| `tasks` | List | Lista zadań w stabilnej kolejności prezentacyjnej. |
 | `tasks[].taskPublicId` | String | Public ID zadania w aktualnej lekcji. |
 | `tasks[].taskType` | String | `choose`, `write`, `scatter` albo `speak`. |
-| `tasks[].section` | String or null | Sekcja zadania, jesli jest ustawiona. |
-| `tasks[].taskText` | String | Tresc zadania. |
-| `tasks[].hint` | String or null | Podpowiedz zapisana dla zadania. |
-| `tasks[].userAnswer` | String or null | Zapisana odpowiedz ucznia. Dla `choose` zwracana jest wartosc tekstowa, nie indeks. |
-| `tasks[].correctAnswer` | String or null | Poprawna odpowiedz. |
-| `tasks[].isCorrect` | Boolean | Status poprawnosci odpowiedzi. |
-| `tasks[].possibleAnswers` | String or null | Lista mozliwych odpowiedzi rozdzielona `|` dla `choose`. |
-| `tasks[].words` | String or null | Lista slow rozdzielona `|` dla `scatter`. |
-| `tasks[].tabSwitchCount` | Integer | Liczba zarejestrowanych przejsc ucznia do innej zakladki podczas rozwiazywania tego zadania. |
+| `tasks[].section` | String or null | Sekcja zadania, jeśli jest ustawiona. |
+| `tasks[].taskText` | String | Treść zadania. |
+| `tasks[].hint` | String or null | Podpowiedź zapisana dla zadania. |
+| `tasks[].userAnswer` | String or null | Zapisana odpowiedź ucznia. Dla `choose` zwracana jest wartość tekstowa, nie indeks. |
+| `tasks[].correctAnswer` | String or null | Poprawna odpowiedź. |
+| `tasks[].isCorrect` | Boolean | Status poprawności odpowiedzi. |
+| `tasks[].possibleAnswers` | String or null | Lista możliwych odpowiedzi rozdzielona `|` dla `choose`. |
+| `tasks[].words` | String or null | Lista słów rozdzielona `|` dla `scatter`. |
+| `tasks[].tabSwitchCount` | Integer | Liczba zarejestrowanych przejść ucznia do innej zakładki podczas rozwiązywania tego zadania. |
 
 **Known Errors:**
 - `LESSON_NOT_FOUND` (404 Not Found)
-- `STUDENT_NO_ACCESS` (403 Forbidden): Wskazany uczen nie ma dostepu do tej lekcji.
-- `LESSON_RESULT_NOT_FOUND` (404 Not Found): Brak ukonczonego wyniku dla user+lesson.
+- `STUDENT_NO_ACCESS` (403 Forbidden): Wskazany uczeń nie ma dostępu do tej lekcji.
+- `LESSON_RESULT_NOT_FOUND` (404 Not Found): Brak ukończonego wyniku dla user+lesson.
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
 - `FORBIDDEN` (403 Forbidden): Token role does not permit access or nauczyciel nie jest ownerem lekcji.
 
@@ -1177,6 +1177,208 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
 - `FORBIDDEN` (403 Forbidden): Token role does not permit access.
 
 ---
+### 6.6. Get All Achievement Definitions
+- **URL**: `/api/v1/admin/achievements`
+- **Method**: `GET`
+- **Description**: Zwraca wszystkie definicje achievementow, aktywne i nieaktywne, posortowane po `sortOrder`, potem po wewnętrznym porządku zapisu. Wymaga `ADMIN`.
+
+**Success (200 OK):**
+```json
+[
+  {
+    "code": "FIRST_LESSON",
+    "title": "Pierwsza lekcja",
+    "description": "Ukończyłeś swoją pierwszą lekcję",
+    "icon": "",
+    "color": "warning",
+    "type": "LESSONS_COMPLETED",
+    "threshold": 1,
+    "active": true,
+    "sortOrder": 1,
+    "createdAt": "2026-05-06T12:30:00",
+    "updatedAt": "2026-05-06T12:30:00"
+  }
+]
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `code` | String | Immutable publiczny identyfikator achievementu. |
+| `title` | String | Nazwa achievementu. |
+| `description` | String | Opis achievementu. |
+| `icon` | String | Ikona prezentacyjna. |
+| `color` | String | Kolor prezentacyjny. |
+| `type` | Enum | Typ reguły unlocka (`LESSONS_COMPLETED`, `POINTS`, `AVATAR_CHANGED`). |
+| `threshold` | Integer \| null | Próg wymagany dla typu reguły. |
+| `active` | Boolean | Czy achievement jest widoczny dla studentów i brany pod uwagę przy unlockach. |
+| `sortOrder` | Integer | Kolejność wyświetlania. |
+| `createdAt` | String (ISO datetime) | Data utworzenia definicji. |
+| `updatedAt` | String (ISO datetime) | Data ostatniej aktualizacji definicji. |
+
+**Known Errors:**
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
+
+---
+### 6.7. Get Achievement Definition By Code
+- **URL**: `/api/v1/admin/achievements/{code}`
+- **Method**: `GET`
+- **Description**: Zwraca pojedynczą definicję achievementu po immutable `code`. Wymaga `ADMIN`.
+
+**Success (200 OK):**
+```json
+{
+  "code": "FIRST_LESSON",
+  "title": "Pierwsza lekcja",
+  "description": "Ukończyłeś swoją pierwszą lekcję",
+  "icon": "",
+  "color": "warning",
+  "type": "LESSONS_COMPLETED",
+  "threshold": 1,
+  "active": true,
+  "sortOrder": 1,
+  "createdAt": "2026-05-06T12:30:00",
+  "updatedAt": "2026-05-06T12:30:00"
+}
+```
+
+**Known Errors:**
+- `ACHIEVEMENT_NOT_FOUND` (404 Not Found): Achievement does not exist.
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
+
+---
+### 6.8. Create Achievement Definition
+- **URL**: `/api/v1/admin/achievements`
+- **Method**: `POST`
+- **Description**: Tworzy nową definicję achievementu. `code` i `type` są immutable po utworzeniu. Wymaga `ADMIN`.
+
+**Request Body (JSON):**
+```json
+{
+  "code": "FIRST_LESSON",
+  "title": "Pierwsza lekcja",
+  "description": "Ukończyłeś swoją pierwszą lekcję",
+  "icon": "",
+  "color": "warning",
+  "type": "LESSONS_COMPLETED",
+  "threshold": 1,
+  "active": true,
+  "sortOrder": 1
+}
+```
+
+**Success (201 Created):**
+```json
+{
+  "code": "FIRST_LESSON",
+  "title": "Pierwsza lekcja",
+  "description": "Ukończyłeś swoją pierwszą lekcję",
+  "icon": "",
+  "color": "warning",
+  "type": "LESSONS_COMPLETED",
+  "threshold": 1,
+  "active": true,
+  "sortOrder": 1,
+  "createdAt": "2026-05-06T12:30:00",
+  "updatedAt": "2026-05-06T12:30:00"
+}
+```
+
+**Validation Rules:**
+- `code` musi mieć format uppercase snake case, np. `FIRST_LESSON`.
+- `LESSONS_COMPLETED` i `POINTS` wymagają `threshold > 0`.
+- `AVATAR_CHANGED` wymaga `threshold = null`.
+- `active` jest wymagane.
+- `sortOrder` musi być `>= 0`.
+
+**Known Errors:**
+- `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
+- `INVALID_ACHIEVEMENT_RULE` (400 Bad Request): `type` i `threshold` nie tworzą poprawnej reguły.
+- `ACHIEVEMENT_CODE_ALREADY_EXISTS` (409 Conflict): `code` already exists.
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
+
+---
+### 6.9. Update Achievement Definition
+- **URL**: `/api/v1/admin/achievements/{code}`
+- **Method**: `PUT`
+- **Description**: Aktualizuje edytowalne pola achievementu. `code` i `type` pozostają immutable. Wymaga `ADMIN`.
+
+**Request Body (JSON):**
+```json
+{
+  "title": "Pierwsza lekcja - zaktualizowana",
+  "description": "Ukończyłeś swoją pierwszą lekcję",
+  "icon": "",
+  "color": "success",
+  "threshold": 2,
+  "active": true,
+  "sortOrder": 1
+}
+```
+
+**Success (200 OK):**
+```json
+{
+  "code": "FIRST_LESSON",
+  "title": "Pierwsza lekcja - zaktualizowana",
+  "description": "Ukończyłeś swoją pierwszą lekcję",
+  "icon": "",
+  "color": "success",
+  "type": "LESSONS_COMPLETED",
+  "threshold": 2,
+  "active": true,
+  "sortOrder": 1,
+  "createdAt": "2026-05-06T12:30:00",
+  "updatedAt": "2026-05-07T09:00:00"
+}
+```
+
+**Known Errors:**
+- `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
+- `INVALID_ACHIEVEMENT_RULE` (400 Bad Request): `type` i `threshold` nie tworzą poprawnej reguły.
+- `ACHIEVEMENT_NOT_FOUND` (404 Not Found): Achievement does not exist.
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
+
+---
+### 6.10. Activate Or Deactivate Achievement Definition
+- **URL**: `/api/v1/admin/achievements/{code}/active`
+- **Method**: `PATCH`
+- **Description**: Włącza lub wyłącza achievement. Deactivate ukrywa achievement z `GET /api/v1/student/achievements`, ale nie usuwa historycznych rekordów `user_get_achievement`. Wymaga `ADMIN`.
+
+**Request Body (JSON):**
+```json
+{
+  "active": false
+}
+```
+
+**Success (200 OK):**
+```json
+{
+  "code": "FIRST_LESSON",
+  "title": "Pierwsza lekcja",
+  "description": "Ukończyłeś swoją pierwszą lekcję",
+  "icon": "",
+  "color": "warning",
+  "type": "LESSONS_COMPLETED",
+  "threshold": 1,
+  "active": false,
+  "sortOrder": 1,
+  "createdAt": "2026-05-06T12:30:00",
+  "updatedAt": "2026-05-07T09:15:00"
+}
+```
+
+**Known Errors:**
+- `VALIDATION_FAILED` (400 Bad Request): `active` is missing.
+- `ACHIEVEMENT_NOT_FOUND` (404 Not Found): Achievement does not exist.
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
+
+---
 ## 7. Student Dashboard (`/api/v1/student`)
 
 Warstwa BFF dla uczniow.
@@ -1200,10 +1402,10 @@ Warstwa BFF dla uczniow.
 | Field | Type | Description |
 |-------|------|-------------|
 | `totalLessons` | Integer | Liczba lekcji przypisanych do grupy ucznia. |
-| `completedLessons` | Integer | Liczba lekcji ukonczonych przez ucznia. |
-| `inProgressLessons` | Integer | Liczba lekcji rozpoczetych, ale jeszcze nieukonczonych. |
-| `averageScore` | Double | Sredni wynik procentowy z lekcji, ktore maja zapisany rezultat. |
-| `points` | Integer | Aktualna suma punktów przyznanych uczniowi (1 punkt za poprawne zadanie). |
+| `completedLessons` | Integer | Liczba lekcji ukończonych przez ucznia. |
+| `inProgressLessons` | Integer | Liczba lekcji rozpoczętych, ale jeszcze nieukończonych. |
+| `averageScore` | Double | Średni wynik procentowy z lekcji, które mają zapisany rezultat. |
+| `points` | Integer | Aktualna suma punktów przyznanych uczniowi w ledgerze `student_points`; źródłem jest `PointService`, a reset lekcji zapisuje korektę ujemną. |
 
 **Known Errors:**
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
@@ -1214,7 +1416,7 @@ Warstwa BFF dla uczniow.
 ### 7.2. Get Student Lessons
 - **URL**: `/api/v1/student/lessons`
 - **Method**: `GET`
-- **Description**: Zwraca aktywne lekcje przypisane do aktualnego ucznia przez jego grupe oraz lekcje ukonczone przez ucznia, nawet jesli nauczyciel je pozniej dezaktywuje. Wymaga `STUDENT`.
+- **Description**: Zwraca aktywne lekcje przypisane do aktualnego ucznia przez jego grupę oraz lekcje ukończone przez ucznia, nawet jeśli nauczyciel je później dezaktywuje. Wymaga `STUDENT`.
 
 **Success (200 OK):**
 ```json
@@ -1251,13 +1453,13 @@ Warstwa BFF dla uczniow.
 | Field | Type | Description |
 |-------|------|-------------|
 | `publicId` | String | Public ID lekcji. |
-| `title` | String | Tytul lekcji. |
+| `title` | String | Tytuł lekcji. |
 | `theme` | String | Temat lekcji. |
-| `isActive` | Boolean | Flaga aktywnosci lekcji. Endpoint ukrywa tylko lekcje nieaktywne, ktore nie zostaly jeszcze ukonczone przez ucznia. |
-| `teacherPublicId` | String | Public ID nauczyciela prowadzacego. |
-| `teacherName` | String | Username nauczyciela prowadzacego. |
+| `isActive` | Boolean | Flaga aktywności lekcji. Endpoint ukrywa tylko lekcje nieaktywne, które nie zostały jeszcze ukończone przez ucznia. |
+| `teacherPublicId` | String | Public ID nauczyciela prowadzącego. |
+| `teacherName` | String | Username nauczyciela prowadzącego. |
 | `createdAt` | String (ISO datetime) | Data utworzenia lekcji. |
-| `groups` | List<GroupDto> | W student dashboard zwracana jest tylko grupa aktualnego ucznia, nawet jesli lekcja jest przypisana do wielu grup. |
+| `groups` | List<GroupDto> | W student dashboard zwracana jest tylko grupa aktualnego ucznia, nawet jeśli lekcja jest przypisana do wielu grup. |
 | `status` | String | `NOT_STARTED`, `IN_PROGRESS` albo `COMPLETED`. |
 | `score` | Integer or null | Zdobyta liczba punktow dla lekcji z zapisanym postepem. |
 | `maxScore` | Integer or null | Maksymalna liczba punktow dla biezacej proby. |
@@ -1273,15 +1475,15 @@ Warstwa BFF dla uczniow.
 ### 7.2.1. Get Detailed Result Of Completed Lesson
 - **URL**: `/api/v1/student/lessons/{lessonPublicId}/result`
 - **Method**: `GET`
-- **Description**: Zwraca trwaly widok szczegolowego wyniku ukonczonej lekcji dla aktualnie zalogowanego ucznia.
+- **Description**: Zwraca trwały widok szczegółowego wyniku ukończonej lekcji dla aktualnie zalogowanego ucznia.
 - **Authorization**: `STUDENT`
 
 **Success (200 OK):** Response ma ten sam shape jak `GET /api/v1/teacher/lessons/{lessonPublicId}/students/{userPublicId}/result`.
 
 **Known Errors:**
 - `LESSON_NOT_FOUND` (404 Not Found)
-- `STUDENT_NO_ACCESS` (403 Forbidden): Uczen nie ma dostepu do tej lekcji.
-- `LESSON_RESULT_NOT_FOUND` (404 Not Found): Brak ukonczonego wyniku dla tej lekcji.
+- `STUDENT_NO_ACCESS` (403 Forbidden): Uczeń nie ma dostępu do tej lekcji.
+- `LESSON_RESULT_NOT_FOUND` (404 Not Found): Brak ukończonego wyniku dla tej lekcji.
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
 - `FORBIDDEN` (403 Forbidden): Token role does not permit access.
 
@@ -1290,7 +1492,7 @@ Warstwa BFF dla uczniow.
 ### 7.3. Get Student Skills Breakdown
 - **URL**: `/api/v1/student/skills`
 - **Method**: `GET`
-- **Description**: Zwraca rozbicie odpowiedzi aktualnego ucznia na kategorie zadan z liczba poprawnych i blednych odpowiedzi. Wymaga `STUDENT`.
+- **Description**: Zwraca rozbicie odpowiedzi aktualnego ucznia na kategorie zadań z liczbą poprawnych i błędnych odpowiedzi. Wymaga `STUDENT`.
 
 **Success (200 OK):**
 ```json
@@ -1314,10 +1516,64 @@ Warstwa BFF dla uczniow.
 
 ---
 
-### 7.4. Get Personal Progress History
+### 7.4. Get Student Achievements
+- **URL**: `/api/v1/student/achievements`
+- **Method**: `GET`
+- **Description**: Zwraca tylko aktywne achievementy ucznia. Endpoint jest read-only i nie wykonuje unlocków; achievementy są odblokowywane event-driven po zapisaniu zdarzeń domenowych. Reguła `POINTS` używa aktualnego salda z ledgera `student_points`. `unlocked`, `unlockedAt` i `newlyUnlocked` wynikają z zapisanych rekordów `user_get_achievement` aktualnie zalogowanego ucznia. Wymaga `STUDENT`.
+
+**Success (200 OK):**
+```json
+[
+  {
+    "id": 1,
+    "title": "Pierwsza lekcja",
+    "description": "Ukończyłeś swoją pierwszą lekcję",
+    "icon": "",
+    "color": "warning",
+    "unlocked": true,
+    "unlockedAt": "2026-05-06T12:30:00",
+    "newlyUnlocked": true
+  }
+]
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | Integer | ID achievementu. |
+| `title` | String | Nazwa achievementu. |
+| `description` | String | Opis achievementu. |
+| `icon` | String | Ikona lub symbol achievementu. |
+| `color` | String | Kolor prezentacyjny achievementu. |
+| `unlocked` | Boolean | Czy achievement został zapisany jako odblokowany dla zalogowanego ucznia. |
+| `unlockedAt` | String \| null (ISO datetime) | Data odblokowania achievementu z `user_get_achievement.created_at`. |
+| `newlyUnlocked` | Boolean | `true`, gdy achievement jest odblokowany i `notification_seen_at IS NULL`. |
+
+**Known Errors:**
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
+
+### 7.5. Mark Achievement Notifications As Seen
+- **URL**: `/api/v1/student/achievements/notifications/seen`
+- **Method**: `POST`
+- **Description**: Oznacza jako widziane wszystkie odblokowane achievementy aktualnie zalogowanego ucznia, które mają `notification_seen_at = NULL`. Endpoint nie przyjmuje `studentId`. Wymaga `STUDENT`.
+
+**Success (200 OK):**
+```json
+{
+  "markedCount": 2
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `markedCount` | Integer | Liczba rekordów `user_get_achievement`, dla których ustawiono `notification_seen_at`. |
+
+---
+
+### 7.6. Get Personal Progress History
 - **URL**: `/api/v1/student/progress`
 - **Method**: `GET`
-- **Description**: Zwraca historyczny sredni wynik lekcji aktualnego ucznia. Snapshot jest aktualizowany przy ukonczeniu lekcji. Wymaga `STUDENT`.
+- **Description**: Zwraca historyczny średni wynik lekcji aktualnego ucznia. Snapshot jest aktualizowany przy ukończeniu lekcji. Wymaga `STUDENT`.
 
 **Success (200 OK):**
 ```json
@@ -1331,8 +1587,8 @@ Warstwa BFF dla uczniow.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `date` | String (ISO date) | Dzien snapshotu sredniego wyniku. |
-| `progress` | Double | Historyczny sredni wynik procentowy ucznia po ostatnim ukonczeniu lekcji danego dnia. |
+| `date` | String (ISO date) | Dzień snapshotu średniego wyniku. |
+| `progress` | Double | Historyczny średni wynik procentowy ucznia po ostatnim ukończeniu lekcji danego dnia. |
 
 **Known Errors:**
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.

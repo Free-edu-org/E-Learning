@@ -18,6 +18,8 @@ public interface UserLessonRepository extends JpaRepository<UserLesson, Integer>
 
 	List<UserLesson> findByUserIdAndLessonIdIn(Integer userId, List<Integer> lessonIds);
 
+	long countByUserIdAndStatus(Integer userId, UserLessonStatus status);
+
 	@Query("SELECT COALESCE(AVG((ul.score * 100.0) / ul.maxScore), 0.0) " + "FROM UserLesson ul "
 			+ "WHERE ul.userId = :userId AND ul.status = :status AND ul.maxScore > 0")
 	Double findAveragePercentByUserIdAndStatus(@Param("userId") Integer userId,

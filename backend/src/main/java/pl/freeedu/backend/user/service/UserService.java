@@ -8,9 +8,12 @@ import java.util.stream.Stream;
 import java.util.Set;
 import java.util.function.BiFunction;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
+import pl.freeedu.backend.achievement.event.AvatarChangedEvent;
 import pl.freeedu.backend.auth.exception.AuthErrorCode;
 import pl.freeedu.backend.auth.exception.AuthException;
 import pl.freeedu.backend.user.exception.UserErrorCode;
@@ -33,13 +36,18 @@ public class UserService {
 	private final UserMapper userMapper;
 	private final PasswordEncoder passwordEncoder;
 	private final SecurityService securityService;
+	private final TransactionTemplate transactionTemplate;
+	private final ApplicationEventPublisher applicationEventPublisher;
 
 	public UserService(UserRepository userRepository, UserMapper userMapper, PasswordEncoder passwordEncoder,
-			SecurityService securityService) {
+			SecurityService securityService, TransactionTemplate transactionTemplate,
+			ApplicationEventPublisher applicationEventPublisher) {
 		this.userRepository = userRepository;
 		this.userMapper = userMapper;
 		this.passwordEncoder = passwordEncoder;
 		this.securityService = securityService;
+		this.transactionTemplate = transactionTemplate;
+		this.applicationEventPublisher = applicationEventPublisher;
 	}
 
 	public Mono<Void> createAdmin(Mono<RegisterUserRequest> requestMono) {
@@ -232,8 +240,7 @@ public class UserService {
 										throw new UserException(UserErrorCode.AVATAR_FILE_TOO_LARGE);
 									}
 									String avatarUrl = "/uploads/avatars/" + path.getFileName().toString();
-									user.setAvatarUrl(avatarUrl);
-									User updatedUser = userRepository.save(user);
+									User updatedUser = updateAvatarInTransaction(user, avatarUrl);
 									log.info("Avatar uploaded successfully for user ID: {}", id);
 									return userMapper.toUserResponse(updatedUser);
 								} catch (IOException e) {
@@ -255,10 +262,18 @@ public class UserService {
 				log.warn("Failed to set preset avatar: User with ID: {} not found", id);
 				return new UserException(UserErrorCode.USER_NOT_FOUND);
 			});
-			user.setAvatarUrl("preset:" + presetName);
-			User updatedUser = userRepository.save(user);
+			User updatedUser = updateAvatarInTransaction(user, "preset:" + presetName);
 			log.info("Preset avatar set successfully for user ID: {}", id);
 			return userMapper.toUserResponse(updatedUser);
 		}).subscribeOn(Schedulers.boundedElastic());
+	}
+
+	private User updateAvatarInTransaction(User user, String avatarUrl) {
+		return transactionTemplate.execute(status -> {
+			user.setAvatarUrl(avatarUrl);
+			User updatedUser = userRepository.save(user);
+			applicationEventPublisher.publishEvent(new AvatarChangedEvent(updatedUser.getId()));
+			return updatedUser;
+		});
 	}
 }

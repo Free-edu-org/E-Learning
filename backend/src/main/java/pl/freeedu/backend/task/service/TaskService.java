@@ -3,7 +3,10 @@ package pl.freeedu.backend.task.service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.codec.multipart.FilePart;
+import org.springframework.transaction.support.TransactionTemplate;
+import pl.freeedu.backend.achievement.event.StudentStatsChangedEvent;
 import pl.freeedu.backend.lesson.model.Lesson;
 import pl.freeedu.backend.lesson.repository.LessonRepository;
 import pl.freeedu.backend.security.service.SecurityService;
@@ -44,6 +47,8 @@ public class TaskService {
 	private final StudentProgressHistoryRepository studentProgressHistoryRepository;
 	private final UserTaskAttentionEventRepository userTaskAttentionEventRepository;
 	private final PointService pointsService;
+	private final TransactionTemplate transactionTemplate;
+	private final ApplicationEventPublisher applicationEventPublisher;
 	private final double sttMinScore;
 
 	public TaskService(ChooseTaskRepository chooseTaskRepository, WriteTaskRepository writeTaskRepository,
@@ -54,6 +59,7 @@ public class TaskService {
 			TaskPublicIdLookupService taskPublicIdLookupService, TaskHintImageService taskHintImageService,
 			StudentProgressHistoryRepository studentProgressHistoryRepository,
 			UserTaskAttentionEventRepository userTaskAttentionEventRepository, PointService pointsService,
+			TransactionTemplate transactionTemplate, ApplicationEventPublisher applicationEventPublisher,
 			@Value("${application.stt.min-score}") double sttMinScore) {
 		this.chooseTaskRepository = chooseTaskRepository;
 		this.writeTaskRepository = writeTaskRepository;
@@ -70,6 +76,8 @@ public class TaskService {
 		this.studentProgressHistoryRepository = studentProgressHistoryRepository;
 		this.userTaskAttentionEventRepository = userTaskAttentionEventRepository;
 		this.pointsService = pointsService;
+		this.transactionTemplate = transactionTemplate;
+		this.applicationEventPublisher = applicationEventPublisher;
 		this.sttMinScore = sttMinScore;
 	}
 
@@ -307,112 +315,106 @@ public class TaskService {
 	// --- Submit ---
 
 	public Mono<SubmitResponse> submitLesson(Integer lessonId, Mono<SubmitRequest> requestMono) {
-		return requestMono
-				.flatMap(request -> securityService.getCurrentUserId().flatMap(userId -> Mono.fromCallable(() -> {
-					log.info("Lesson submission started for lesson ID: {} by student ID: {}", lessonId, userId);
-					Lesson lesson = lessonRepository.findById(lessonId).orElseThrow(() -> {
-						log.warn("Submission failed: Lesson with ID: {} not found", lessonId);
-						return new TaskException(TaskErrorCode.LESSON_NOT_FOUND);
-					});
-					if (!userInGroupRepository.hasAccessToLesson(userId, lessonId)) {
-						log.warn("Access denied for submission: Student ID: {} has no access to lesson ID: {}", userId,
-								lessonId);
-						throw new TaskException(TaskErrorCode.STUDENT_NO_ACCESS);
+		return requestMono.flatMap(request -> securityService.getCurrentUserId()
+				.flatMap(userId -> Mono.fromCallable(() -> submitLessonInTransaction(lessonId, userId, request))
+						.subscribeOn(Schedulers.boundedElastic())));
+	}
+
+	private SubmitResponse submitLessonInTransaction(Integer lessonId, Integer userId, SubmitRequest request) {
+		return transactionTemplate.execute(status -> {
+			log.info("Lesson submission started for lesson ID: {} by student ID: {}", lessonId, userId);
+			Lesson lesson = lessonRepository.findById(lessonId).orElseThrow(() -> {
+				log.warn("Submission failed: Lesson with ID: {} not found", lessonId);
+				return new TaskException(TaskErrorCode.LESSON_NOT_FOUND);
+			});
+			if (!userInGroupRepository.hasAccessToLesson(userId, lessonId)) {
+				log.warn("Access denied for submission: Student ID: {} has no access to lesson ID: {}", userId,
+						lessonId);
+				throw new TaskException(TaskErrorCode.STUDENT_NO_ACCESS);
+			}
+
+			Optional<UserLesson> maybeUserLesson = userLessonRepository.findByUserIdAndLessonId(userId, lessonId);
+			if (maybeUserLesson.isPresent() && maybeUserLesson.get().getStatus() == UserLessonStatus.COMPLETED) {
+				log.warn("Submission failed: Lesson ID: {} already completed by student ID: {}", lessonId, userId);
+				throw new TaskException(TaskErrorCode.LESSON_ALREADY_COMPLETED);
+			}
+			if (!Boolean.TRUE.equals(lesson.getIsActive())) {
+				log.warn("Submission failed: Lesson ID: {} is not active", lessonId);
+				throw new TaskException(TaskErrorCode.LESSON_NOT_ACTIVE);
+			}
+			UserLesson userLesson = maybeUserLesson.orElseThrow(() -> {
+				log.warn("Submission failed: Lesson ID: {} not started by student ID: {}", lessonId, userId);
+				return new TaskException(TaskErrorCode.LESSON_NOT_STARTED);
+			});
+
+			int score = 0;
+			int maxScore = 0;
+			List<AnswerResultDto> details = new ArrayList<>();
+
+			log.debug("Processing {} answers for submission (Lesson ID: {})", request.getAnswers().size(), lessonId);
+			for (AnswerItemRequest item : request.getAnswers()) {
+				String dbTaskType = resolveDbTaskType(item.getTaskType());
+				boolean correct = false;
+				String correctAnswer = null;
+
+				Integer taskId = taskPublicIdLookupService.getInternalId(item.getTaskPublicId(), item.getTaskType());
+
+				switch (item.getTaskType()) {
+					case "choose" -> {
+						ChooseTask ct = getChooseTaskForLesson(lessonId, item.getTaskPublicId());
+						correctAnswer = String.valueOf(ct.getCorrectAnswer());
+						correct = item.getAnswer().trim().equals(correctAnswer);
+						maxScore++;
 					}
-
-					Optional<UserLesson> maybeUserLesson = userLessonRepository.findByUserIdAndLessonId(userId,
-							lessonId);
-					if (maybeUserLesson.isPresent()
-							&& maybeUserLesson.get().getStatus() == UserLessonStatus.COMPLETED) {
-						log.warn("Submission failed: Lesson ID: {} already completed by student ID: {}", lessonId,
-								userId);
-						throw new TaskException(TaskErrorCode.LESSON_ALREADY_COMPLETED);
+					case "write" -> {
+						WriteTask wt = getWriteTaskForLesson(lessonId, item.getTaskPublicId());
+						correctAnswer = wt.getCorrectAnswer();
+						correct = item.getAnswer().trim().equalsIgnoreCase(correctAnswer.trim());
+						maxScore++;
 					}
-					if (!Boolean.TRUE.equals(lesson.getIsActive())) {
-						log.warn("Submission failed: Lesson ID: {} is not active", lessonId);
-						throw new TaskException(TaskErrorCode.LESSON_NOT_ACTIVE);
+					case "scatter" -> {
+						ScatterTask st = getScatterTaskForLesson(lessonId, item.getTaskPublicId());
+						correctAnswer = st.getCorrectAnswer();
+						correct = item.getAnswer().trim().equalsIgnoreCase(correctAnswer.trim());
+						maxScore++;
 					}
-					UserLesson userLesson = maybeUserLesson.orElseThrow(() -> {
-						log.warn("Submission failed: Lesson ID: {} not started by student ID: {}", lessonId, userId);
-						return new TaskException(TaskErrorCode.LESSON_NOT_STARTED);
-					});
-
-					int score = 0;
-					int maxScore = 0;
-					List<AnswerResultDto> details = new ArrayList<>();
-
-					log.debug("Processing {} answers for submission (Lesson ID: {})", request.getAnswers().size(),
-							lessonId);
-					for (AnswerItemRequest item : request.getAnswers()) {
-						String dbTaskType = resolveDbTaskType(item.getTaskType());
-						boolean correct = false;
-						String correctAnswer = null;
-
-						Integer taskId = taskPublicIdLookupService.getInternalId(item.getTaskPublicId(),
-								item.getTaskType());
-
-						switch (item.getTaskType()) {
-							case "choose" -> {
-								ChooseTask ct = getChooseTaskForLesson(lessonId, item.getTaskPublicId());
-								correctAnswer = String.valueOf(ct.getCorrectAnswer());
-								correct = item.getAnswer().trim().equals(correctAnswer);
-								maxScore++;
-							}
-							case "write" -> {
-								WriteTask wt = getWriteTaskForLesson(lessonId, item.getTaskPublicId());
-								correctAnswer = wt.getCorrectAnswer();
-								correct = item.getAnswer().trim().equalsIgnoreCase(correctAnswer.trim());
-								maxScore++;
-							}
-							case "scatter" -> {
-								ScatterTask st = getScatterTaskForLesson(lessonId, item.getTaskPublicId());
-								correctAnswer = st.getCorrectAnswer();
-								correct = item.getAnswer().trim().equalsIgnoreCase(correctAnswer.trim());
-								maxScore++;
-							}
-							case "speak" -> {
-								SpeakTask st = getSpeakTaskForLesson(lessonId, item.getTaskPublicId());
-								correctAnswer = st.getExpectedText();
-								correct = isSpeakAnswerCorrect(item.getAnswer(), correctAnswer);
-								maxScore++;
-							}
-							default -> {
-								log.error("Invalid task type encountered during submission: {}", item.getTaskType());
-								throw new TaskException(TaskErrorCode.INVALID_TASK_TYPE);
-							}
-						}
-
-						if (correct) {
-							score++;
-						}
-
-						UserAnswer ua = UserAnswer.builder().taskId(taskId).taskType(dbTaskType).userId(userId)
-								.lessonId(lessonId).answer(item.getAnswer()).isCorrect(correct).build();
-						userAnswerRepository.save(ua);
-
-						details.add(AnswerResultDto.builder().taskPublicId(item.getTaskPublicId())
-								.taskType(item.getTaskType()).isCorrect(correct).correctAnswer(correctAnswer).build());
+					case "speak" -> {
+						SpeakTask st = getSpeakTaskForLesson(lessonId, item.getTaskPublicId());
+						correctAnswer = st.getExpectedText();
+						correct = isSpeakAnswerCorrect(item.getAnswer(), correctAnswer);
+						maxScore++;
 					}
-
-					userLesson.setScore(score);
-					userLesson.setMaxScore(maxScore);
-					userLesson.setStatus(UserLessonStatus.COMPLETED);
-					userLesson.setFinishedAt(LocalDateTime.now());
-					userLessonRepository.save(userLesson);
-					saveProgressHistorySnapshot(userId);
-					// award points: 1 point per correct answer, idempotent inside PointsService
-					try {
-						pointsService.addPointsForLessonResult(userLesson.getId(), userId, score, "TASK_CORRECT",
-								userId);
-					} catch (Exception e) {
-						log.error("Failed to add points for lesson result. lessonResultId={}, userId={}",
-								userLesson.getId(), userId, e);
+					default -> {
+						log.error("Invalid task type encountered during submission: {}", item.getTaskType());
+						throw new TaskException(TaskErrorCode.INVALID_TASK_TYPE);
 					}
+				}
 
-					log.info("Lesson ID: {} submitted successfully by student ID: {}. Score: {}/{}", lessonId, userId,
-							score, maxScore);
-					return SubmitResponse.builder().score(score).maxScore(maxScore).details(details).build();
-				}).subscribeOn(Schedulers.boundedElastic())));
+				if (correct) {
+					score++;
+				}
+
+				UserAnswer ua = UserAnswer.builder().taskId(taskId).taskType(dbTaskType).userId(userId)
+						.lessonId(lessonId).answer(item.getAnswer()).isCorrect(correct).build();
+				userAnswerRepository.save(ua);
+
+				details.add(AnswerResultDto.builder().taskPublicId(item.getTaskPublicId()).taskType(item.getTaskType())
+						.isCorrect(correct).correctAnswer(correctAnswer).build());
+			}
+
+			userLesson.setScore(score);
+			userLesson.setMaxScore(maxScore);
+			userLesson.setStatus(UserLessonStatus.COMPLETED);
+			userLesson.setFinishedAt(LocalDateTime.now());
+			userLessonRepository.save(userLesson);
+			saveProgressHistorySnapshot(userId);
+			pointsService.addPointsForLessonResult(userLesson.getId(), userId, score, "TASK_CORRECT", userId);
+			applicationEventPublisher.publishEvent(new StudentStatsChangedEvent(userId, "lesson-submitted"));
+
+			log.info("Lesson ID: {} submitted successfully by student ID: {}. Score: {}/{}", lessonId, userId, score,
+					maxScore);
+			return SubmitResponse.builder().score(score).maxScore(maxScore).details(details).build();
+		});
 	}
 
 	public Mono<Void> recordTabSwitch(Integer lessonId, Mono<TaskAttentionEventRequest> requestMono) {
@@ -466,20 +468,17 @@ public class TaskService {
 
 	public Mono<Void> resetUserProgress(Integer lessonId, Integer userId) {
 		return Mono.fromCallable(() -> {
-			lessonRepository.findById(lessonId).orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_FOUND));
-			userAnswerRepository.deleteByUserIdAndLessonId(userId, lessonId);
-			userTaskAttentionEventRepository.deleteByUserIdAndLessonId(userId, lessonId);
-			// rollback points related to this lesson result (if exists) before removing the
-			// result
-			userLessonRepository.findByUserIdAndLessonId(userId, lessonId).ifPresent(ul -> {
-				try {
+			transactionTemplate.execute(status -> {
+				lessonRepository.findById(lessonId)
+						.orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_FOUND));
+				userAnswerRepository.deleteByUserIdAndLessonId(userId, lessonId);
+				userTaskAttentionEventRepository.deleteByUserIdAndLessonId(userId, lessonId);
+				userLessonRepository.findByUserIdAndLessonId(userId, lessonId).ifPresent(ul -> {
 					pointsService.rollbackPointsForLessonResult(ul.getId(), userId, null);
-				} catch (Exception e) {
-					log.error("Failed to rollback points for lesson result. lessonResultId={}, userId={}", ul.getId(),
-							userId, e);
-				}
+				});
+				userLessonRepository.deleteByUserIdAndLessonId(userId, lessonId);
+				return null;
 			});
-			userLessonRepository.deleteByUserIdAndLessonId(userId, lessonId);
 			return (Void) null;
 		}).subscribeOn(Schedulers.boundedElastic()).then();
 	}

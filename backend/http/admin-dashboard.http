@@ -75,3 +75,69 @@ Content-Type: application/json
   "username": "hacker_attempt",
   "email": "hacker@example.com"
 }
+
+### Admin achievements
+GET http://localhost:8080/api/v1/admin/achievements
+Authorization: Bearer {{admin_token}}
+
+### Admin achievement by code
+GET http://localhost:8080/api/v1/admin/achievements/FIRST_LESSON
+Authorization: Bearer {{admin_token}}
+
+### Create admin achievement
+POST http://localhost:8080/api/v1/admin/achievements
+Authorization: Bearer {{admin_token}}
+Content-Type: application/json
+
+{
+  "code": "ADMIN_TEST_ACH_SAMPLE",
+  "title": "Admin Test Achievement Sample",
+  "description": "Created manually from .http",
+  "icon": "icon",
+  "color": "warning",
+  "type": "LESSONS_COMPLETED",
+  "threshold": 1,
+  "active": true,
+  "sortOrder": 999
+}
+
+### Update admin achievement
+PUT http://localhost:8080/api/v1/admin/achievements/ADMIN_TEST_ACH_SAMPLE
+Authorization: Bearer {{admin_token}}
+Content-Type: application/json
+
+{
+  "title": "Admin Test Achievement Sample Updated",
+  "description": "Updated manually from .http",
+  "icon": "updated-icon",
+  "color": "success",
+  "threshold": 5,
+  "active": true,
+  "sortOrder": 1000
+}
+
+### Deactivate admin achievement
+PATCH http://localhost:8080/api/v1/admin/achievements/ADMIN_TEST_ACH_SAMPLE/active
+Authorization: Bearer {{admin_token}}
+Content-Type: application/json
+
+{
+  "active": false
+}
+
+### Admin achievement create - validation fail
+POST http://localhost:8080/api/v1/admin/achievements
+Authorization: Bearer {{admin_token}}
+Content-Type: application/json
+
+{
+  "code": "bad-code",
+  "title": "",
+  "description": "Invalid payload",
+  "icon": "icon",
+  "color": "warning",
+  "type": "AVATAR_CHANGED",
+  "threshold": 1,
+  "active": true,
+  "sortOrder": -1
+}

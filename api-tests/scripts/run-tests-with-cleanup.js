@@ -2,6 +2,7 @@ const { spawnSync } = require('child_process');
 const path = require('path');
 
 const rootDir = path.resolve(__dirname, '..');
+const waitForBackendScript = path.resolve(__dirname, 'wait-for-backend.js');
 const cleanupScript = path.resolve(__dirname, 'cleanup-test-data.js');
 const jestBin = path.resolve(rootDir, 'node_modules/jest/bin/jest.js');
 
@@ -20,6 +21,11 @@ function runJest(args = []) {
 }
 
 const jestArgs = process.argv.slice(2);
+
+const backendReady = runNodeScript(waitForBackendScript);
+if (backendReady.status !== 0) {
+	process.exit(backendReady.status ?? 1);
+}
 
 const preCleanup = runNodeScript(cleanupScript);
 if (preCleanup.status !== 0) {

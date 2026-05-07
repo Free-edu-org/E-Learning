@@ -4,22 +4,29 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import pl.freeedu.backend.student.dto.AchievementNotificationsSeenResponse;
 import pl.freeedu.backend.lesson.service.LessonPublicIdLookupService;
+import pl.freeedu.backend.student.dto.StudentAchievementResponse;
 import pl.freeedu.backend.student.dto.StudentLessonResponse;
 import pl.freeedu.backend.student.dto.StudentProgressHistoryResponse;
 import pl.freeedu.backend.student.dto.StudentSkillStatsResponse;
 import pl.freeedu.backend.student.dto.StudentStatsResponse;
+import pl.freeedu.backend.student.service.StudentAchievementService;
 import pl.freeedu.backend.student.service.StudentService;
 import pl.freeedu.backend.task.dto.LessonResultDetailsResponse;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/student")
@@ -27,11 +34,14 @@ import reactor.core.scheduler.Schedulers;
 public class StudentDashboardController {
 
 	private final StudentService studentService;
+	private final StudentAchievementService studentAchievementService;
 	private final LessonPublicIdLookupService lessonPublicIdLookupService;
 
 	public StudentDashboardController(StudentService studentService,
+			StudentAchievementService studentAchievementService,
 			LessonPublicIdLookupService lessonPublicIdLookupService) {
 		this.studentService = studentService;
+		this.studentAchievementService = studentAchievementService;
 		this.lessonPublicIdLookupService = lessonPublicIdLookupService;
 	}
 
@@ -69,6 +79,23 @@ public class StudentDashboardController {
 	@ResponseStatus(HttpStatus.OK)
 	public Flux<StudentSkillStatsResponse> getSkillStats() {
 		return studentService.getSkillStats();
+	}
+
+	@Operation(summary = "Get student achievements")
+	@ApiResponse(responseCode = "200", description = "Achievements scoped to current student")
+	@GetMapping("/achievements")
+	@PreAuthorize("hasRole('STUDENT')")
+	public Mono<ResponseEntity<List<StudentAchievementResponse>>> getAchievements() {
+		return studentAchievementService.getAchievementsForCurrentStudent().map(ResponseEntity::ok);
+	}
+
+	@Operation(summary = "Mark student achievement notifications as seen")
+	@ApiResponse(responseCode = "200", description = "Achievement notifications marked as seen for current student")
+	@PostMapping("/achievements/notifications/seen")
+	@PreAuthorize("hasRole('STUDENT')")
+	public Mono<ResponseEntity<AchievementNotificationsSeenResponse>> markAchievementNotificationsSeen() {
+		return studentAchievementService.markNotificationsSeenForCurrentStudent().map(markedCount -> ResponseEntity
+				.ok(AchievementNotificationsSeenResponse.builder().markedCount(markedCount).build()));
 	}
 
 	@Operation(summary = "Get detailed result of student's completed lesson")

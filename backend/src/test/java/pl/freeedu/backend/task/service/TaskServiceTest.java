@@ -5,7 +5,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.codec.multipart.FilePart;
+import org.springframework.transaction.support.TransactionCallback;
+import org.springframework.transaction.support.TransactionTemplate;
+import pl.freeedu.backend.achievement.event.StudentStatsChangedEvent;
 import pl.freeedu.backend.lesson.model.Lesson;
 import pl.freeedu.backend.lesson.repository.LessonRepository;
 import pl.freeedu.backend.security.principal.CustomUserDetails;
@@ -62,6 +66,10 @@ class TaskServiceTest {
 	private UserTaskAttentionEventRepository userTaskAttentionEventRepository;
 	@Mock
 	private PointService pointsService;
+	@Mock
+	private TransactionTemplate transactionTemplate;
+	@Mock
+	private ApplicationEventPublisher applicationEventPublisher;
 
 	private TaskService taskService;
 
@@ -70,7 +78,12 @@ class TaskServiceTest {
 		taskService = new TaskService(chooseTaskRepository, writeTaskRepository, scatterTaskRepository,
 				speakTaskRepository, userAnswerRepository, userLessonRepository, lessonRepository, securityService,
 				userInGroupRepository, sttClient, taskPublicIdLookupService, taskHintImageService,
-				studentProgressHistoryRepository, userTaskAttentionEventRepository, pointsService, 0.85);
+				studentProgressHistoryRepository, userTaskAttentionEventRepository, pointsService, transactionTemplate,
+				applicationEventPublisher, 0.85);
+		lenient().when(transactionTemplate.execute(any())).thenAnswer(invocation -> {
+			TransactionCallback<?> callback = invocation.getArgument(0);
+			return callback.doInTransaction(null);
+		});
 	}
 
 	@Test
@@ -579,6 +592,8 @@ class TaskServiceTest {
 			assertEquals(UserLessonStatus.COMPLETED, userLesson.getStatus());
 		}).verifyComplete();
 		verify(studentProgressHistoryRepository).save(any());
+		verify(pointsService).addPointsForLessonResult(userLesson.getId(), userId, 4, "TASK_CORRECT", userId);
+		verify(applicationEventPublisher).publishEvent(any(StudentStatsChangedEvent.class));
 	}
 
 	@Test
@@ -643,8 +658,10 @@ class TaskServiceTest {
 		Integer lessonId = 1;
 		Integer studentId = 20;
 		Lesson lesson = Lesson.builder().id(lessonId).build();
+		UserLesson userLesson = UserLesson.builder().id(44).lessonId(lessonId).userId(studentId).build();
 
 		when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
+		when(userLessonRepository.findByUserIdAndLessonId(studentId, lessonId)).thenReturn(Optional.of(userLesson));
 
 		// when
 		Mono<Void> result = taskService.resetUserProgress(lessonId, studentId);
@@ -653,7 +670,24 @@ class TaskServiceTest {
 		StepVerifier.create(result).verifyComplete();
 		verify(userAnswerRepository).deleteByUserIdAndLessonId(studentId, lessonId);
 		verify(userTaskAttentionEventRepository).deleteByUserIdAndLessonId(studentId, lessonId);
+		verify(pointsService).rollbackPointsForLessonResult(44, studentId, null);
 		verify(userLessonRepository).deleteByUserIdAndLessonId(studentId, lessonId);
+	}
+
+	@Test
+	void shouldExecuteResetProgressInsideTransactionTemplate() {
+		// given
+		Integer lessonId = 1;
+		Integer studentId = 20;
+		Lesson lesson = Lesson.builder().id(lessonId).build();
+		when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
+
+		// when
+		Mono<Void> result = taskService.resetUserProgress(lessonId, studentId);
+
+		// then
+		StepVerifier.create(result).verifyComplete();
+		verify(transactionTemplate).execute(any());
 	}
 
 	@Test

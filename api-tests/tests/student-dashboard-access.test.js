@@ -307,6 +307,25 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
         expect(res.status).toBe(204);
     }
 
+    async function waitForAchievements(token, predicate, attempts = 10, delayMs = 200) {
+        setAuthToken(token);
+
+        for (let attempt = 1; attempt <= attempts; attempt++) {
+            const response = await apiClient.get('/student/achievements');
+            expect(response.status).toBe(200);
+
+            if (predicate(response.data)) {
+                return response;
+            }
+
+            if (attempt < attempts) {
+                await new Promise((resolve) => setTimeout(resolve, delayMs));
+            }
+        }
+
+        throw new Error('Timed out waiting for expected achievement state');
+    }
+
     describe('GET /student/stats', () => {
         it('should allow STUDENT (200)', async () => {
             setAuthToken(studentToken);
@@ -322,14 +341,17 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
             expect(response.data).toHaveProperty('completedLessons');
             expect(response.data).toHaveProperty('inProgressLessons');
             expect(response.data).toHaveProperty('averageScore');
+            expect(response.data).toHaveProperty('points');
             expect(typeof response.data.totalLessons).toBe('number');
             expect(typeof response.data.completedLessons).toBe('number');
             expect(typeof response.data.inProgressLessons).toBe('number');
             expect(typeof response.data.averageScore).toBe('number');
+            expect(typeof response.data.points).toBe('number');
             expect(response.data.completedLessons).toBeLessThanOrEqual(response.data.totalLessons);
             expect(response.data.inProgressLessons).toBeLessThanOrEqual(response.data.totalLessons);
             expect(response.data.averageScore).toBeGreaterThanOrEqual(0);
             expect(response.data.averageScore).toBeLessThanOrEqual(100);
+            expect(response.data.points).toBeGreaterThanOrEqual(0);
         });
 
         it('should deny TEACHER (403)', async () => {
@@ -575,6 +597,152 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
         it('should deny unauthenticated (401)', async () => {
             setAuthToken(null);
             const response = await apiClient.get('/student/skills');
+            expect(response.status).toBe(401);
+        });
+    });
+
+    describe('GET /student/achievements', () => {
+        it('should allow STUDENT and return all achievement definitions with unlocked flag', async () => {
+            setAuthToken(studentToken);
+            const response = await apiClient.get('/student/achievements');
+
+            expect(response.status).toBe(200);
+            expect(Array.isArray(response.data)).toBe(true);
+            expect(response.data.length).toBeGreaterThanOrEqual(3);
+            expect(response.data.some((item) => item.title === 'Pierwsza lekcja')).toBe(true);
+            expect(response.data.some((item) => item.title === 'Nowy avatar')).toBe(true);
+            expect(response.data.some((item) => item.title === '10 punktów')).toBe(true);
+
+            response.data.forEach((item) => {
+                expect(item).toHaveProperty('id');
+                expect(item).toHaveProperty('title');
+                expect(item).toHaveProperty('description');
+                expect(item).toHaveProperty('icon');
+                expect(item).toHaveProperty('color');
+                expect(item).toHaveProperty('unlocked');
+                expect(item).toHaveProperty('unlockedAt');
+                expect(item).toHaveProperty('newlyUnlocked');
+                expect(typeof item.id).toBe('number');
+                expect(typeof item.title).toBe('string');
+                expect(typeof item.description).toBe('string');
+                expect(typeof item.icon).toBe('string');
+                expect(typeof item.color).toBe('string');
+                expect(typeof item.unlocked).toBe('boolean');
+                expect(item.unlockedAt === null || typeof item.unlockedAt === 'string').toBe(true);
+                expect(typeof item.newlyUnlocked).toBe('boolean');
+            });
+        });
+
+        it('should expose newly unlocked achievements until notifications are marked as seen', async () => {
+            await createFreshProgressLesson();
+
+            setAuthToken(isolatedStudentToken);
+            let response = await apiClient.get(`/lessons/${progressLessonPublicId}/tasks`);
+            expect(response.status).toBe(200);
+            const chooseTask = response.data.sections.flatMap((section) => section.chooseTasks ?? [])[0];
+            expect(chooseTask).toBeDefined();
+
+            response = await apiClient.post(`/lessons/${progressLessonPublicId}/submit`, {
+                answers: [
+                    { taskPublicId: chooseTask.publicId, taskType: 'choose', answer: '0' }
+                ]
+            });
+            expect(response.status).toBe(200);
+
+            response = await apiClient.put(`/users/${isolatedStudentPublicId}/avatar/preset`, {
+                presetName: 'avatar_1'
+            });
+            expect(response.status).toBe(200);
+
+            response = await waitForAchievements(isolatedStudentToken, (achievements) => {
+                const firstLesson = achievements.find((item) => item.title === 'Pierwsza lekcja');
+                const avatarChanged = achievements.find((item) => item.title === 'Nowy avatar');
+                return firstLesson?.unlocked === true && avatarChanged?.unlocked === true;
+            });
+
+            const firstLesson = response.data.find((item) => item.title === 'Pierwsza lekcja');
+            const avatarChanged = response.data.find((item) => item.title === 'Nowy avatar');
+            const tenPoints = response.data.find((item) => item.title === '10 punktów');
+
+            expect(firstLesson).toBeDefined();
+            expect(avatarChanged).toBeDefined();
+            expect(tenPoints).toBeDefined();
+            expect(firstLesson.unlocked).toBe(true);
+            expect(avatarChanged.unlocked).toBe(true);
+            expect(tenPoints.unlocked).toBe(false);
+            expect(firstLesson.unlockedAt).toBeTruthy();
+            expect(avatarChanged.unlockedAt).toBeTruthy();
+            expect(firstLesson.newlyUnlocked).toBe(true);
+            expect(avatarChanged.newlyUnlocked).toBe(true);
+
+            const firstLessonUnlockedAt = firstLesson.unlockedAt;
+
+            response = await apiClient.post('/student/achievements/notifications/seen');
+            expect(response.status).toBe(200);
+            expect(typeof response.data.markedCount).toBe('number');
+            expect(response.data.markedCount).toBeGreaterThanOrEqual(2);
+
+            response = await apiClient.get('/student/achievements');
+            expect(response.status).toBe(200);
+
+            const firstLessonAfterSeen = response.data.find((item) => item.title === 'Pierwsza lekcja');
+            const avatarChangedAfterSeen = response.data.find((item) => item.title === 'Nowy avatar');
+
+            expect(firstLessonAfterSeen.newlyUnlocked).toBe(false);
+            expect(avatarChangedAfterSeen.newlyUnlocked).toBe(false);
+            expect(firstLessonAfterSeen.unlockedAt).toBe(firstLessonUnlockedAt);
+        });
+
+        it('should ignore studentId query param and still scope data to current user', async () => {
+            await setupSharedLessonForGroupLeakTest();
+
+            setAuthToken(isolatedStudentToken);
+            let response = await apiClient.put(`/users/${isolatedStudentPublicId}/avatar/preset`, {
+                presetName: 'avatar_2'
+            });
+            expect(response.status).toBe(200);
+
+            await waitForAchievements(isolatedStudentToken, (achievements) =>
+                achievements.some((item) => item.title === 'Nowy avatar' && item.unlocked === true)
+            );
+
+            const studentWithProgress = await apiClient.get('/student/achievements');
+            const queryResponse = await apiClient.get('/student/achievements?studentId=999999');
+
+            setAuthToken(noAccessStudentToken);
+            const noProgressStudent = await apiClient.get('/student/achievements');
+            const noProgressStudentWithQuery = await apiClient.get('/student/achievements?studentId=999999');
+
+            expect(studentWithProgress.status).toBe(200);
+            expect(queryResponse.status).toBe(200);
+            expect(noProgressStudent.status).toBe(200);
+            expect(noProgressStudentWithQuery.status).toBe(200);
+            expect(queryResponse.data).toEqual(studentWithProgress.data);
+            expect(noProgressStudentWithQuery.data).toEqual(noProgressStudent.data);
+
+            const isolatedAvatar = studentWithProgress.data.find((item) => item.title === 'Nowy avatar');
+            const noAccessAvatar = noProgressStudent.data.find((item) => item.title === 'Nowy avatar');
+            expect(isolatedAvatar.unlocked).toBe(true);
+            expect(noAccessAvatar.unlocked).toBe(false);
+        });
+
+        it('should deny TEACHER (403)', async () => {
+            setAuthToken(teacherToken);
+            const response = await apiClient.get('/student/achievements');
+            expect(response.status).toBe(403);
+        });
+    });
+
+    describe('POST /student/achievements/notifications/seen', () => {
+        it('should deny TEACHER (403)', async () => {
+            setAuthToken(teacherToken);
+            const response = await apiClient.post('/student/achievements/notifications/seen');
+            expect(response.status).toBe(403);
+        });
+
+        it('should deny unauthenticated (401)', async () => {
+            setAuthToken(null);
+            const response = await apiClient.post('/student/achievements/notifications/seen');
             expect(response.status).toBe(401);
         });
     });
