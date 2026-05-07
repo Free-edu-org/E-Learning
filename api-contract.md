@@ -1180,7 +1180,7 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
 ### 6.6. Get All Achievement Definitions
 - **URL**: `/api/v1/admin/achievements`
 - **Method**: `GET`
-- **Description**: Zwraca wszystkie definicje achievementow, aktywne i nieaktywne, posortowane po `sortOrder`, potem po kolejności utworzenia. Wymaga `ADMIN`.
+- **Description**: Zwraca wszystkie definicje achievementow, aktywne i nieaktywne, posortowane po `sortOrder`, potem po wewnętrznym porządku zapisu. Wymaga `ADMIN`.
 
 **Success (200 OK):**
 ```json
