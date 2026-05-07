@@ -43,6 +43,8 @@ import {
   type SubmitAnswerDetail,
   type SubmitAnswersResponse,
 } from "@/api/studentService";
+import { StudentAchievementNotifications } from "@/components/achievements/StudentAchievementNotifications";
+import { requestAchievementNotificationsRefresh } from "@/components/achievements/achievementNotificationEvents";
 import { lessonService } from "@/api/lessonService";
 import type { LessonAttachment } from "@/api/lessonService";
 import { ApiError } from "@/api/apiClient";
@@ -422,6 +424,7 @@ export function LessonSolver() {
         answers: completeAnswers,
       });
       setSubmitResult(result);
+      requestAchievementNotificationsRefresh();
       setResultDialogOpen(!options?.navigateAfterSubmit);
       setCurrentStep(0);
       setExitDialogOpen(false);
@@ -1337,6 +1340,8 @@ export function LessonSolver() {
             </Box>
           </>
         )}
+
+        <StudentAchievementNotifications autoFetch={false} />
       </Container>
 
       {/* Result dialog */}
@@ -1432,7 +1437,6 @@ export function LessonSolver() {
       <LessonResultDialog
         open={resultDialogOpen}
         result={submitResult}
-        onClose={() => setResultDialogOpen(false)}
         onBackToDashboard={goBack}
         onOpenDetails={openResultDetails}
       />

@@ -4,6 +4,7 @@ import {
   CheckCircleOutlined as CheckCircleIcon,
   EmojiEventsOutlined as LockedAchievementIcon,
   LockOutlined as LockIcon,
+  NewReleasesOutlined as NewIcon,
 } from "@mui/icons-material";
 import type { StudentAchievement } from "@/api/studentService";
 import { formatDate } from "@/utils/dashboardUtils";
@@ -43,6 +44,22 @@ export function AchievementCard({ achievement }: AchievementCardProps) {
               theme.palette.mode === "dark" ? 0.08 : 0.05,
             ),
         opacity: achievement.unlocked ? 1 : 0.78,
+        position: "relative",
+        overflow: "hidden",
+        boxShadow: achievement.newlyUnlocked
+          ? `0 18px 36px ${alpha(visuals.accent, 0.18)}`
+          : "none",
+        "&::after": achievement.newlyUnlocked
+          ? {
+              content: '""',
+              position: "absolute",
+              inset: 0,
+              borderRadius: 3,
+              border: "1px solid",
+              borderColor: alpha(visuals.accent, 0.45),
+              pointerEvents: "none",
+            }
+          : undefined,
       }}
     >
       <Stack spacing={1.5} sx={{ height: "100%" }}>
@@ -84,6 +101,19 @@ export function AchievementCard({ achievement }: AchievementCardProps) {
               variant={achievement.unlocked ? "filled" : "outlined"}
               sx={{ fontWeight: 700 }}
             />
+            {achievement.newlyUnlocked && (
+              <Chip
+                size="small"
+                icon={<NewIcon />}
+                label="Nowe"
+                color={visuals.paletteColor}
+                variant="outlined"
+                sx={{
+                  fontWeight: 700,
+                  bgcolor: alpha(visuals.accent, 0.08),
+                }}
+              />
+            )}
           </Stack>
         </Stack>
 

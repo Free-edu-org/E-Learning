@@ -20,6 +20,7 @@ type AppDialogProps = {
   children: ReactNode;
   maxWidth?: "xs" | "sm" | "md";
   paperSx?: SxProps<Theme>;
+  backdropSx?: SxProps<Theme>;
   PaperProps?: DialogProps["PaperProps"]; // Corrected type instead of 'any'
 };
 
@@ -87,6 +88,7 @@ export function AppDialog({
   children,
   maxWidth = "sm",
   paperSx,
+  backdropSx,
   PaperProps = {},
 }: AppDialogProps) {
   const resolvedPaperSx = (
@@ -99,6 +101,11 @@ export function AppDialog({
       onClose={onClose}
       fullWidth
       maxWidth={maxWidth}
+      slotProps={{
+        backdrop: {
+          sx: backdropSx,
+        },
+      }}
       PaperProps={{
         ...PaperProps,
         sx: [

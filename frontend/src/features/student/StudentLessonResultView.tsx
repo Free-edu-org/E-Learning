@@ -6,6 +6,7 @@ import {
   studentService,
   type LessonResultDetailsResponse,
 } from "@/api/studentService";
+import { StudentAchievementNotifications } from "@/components/achievements/StudentAchievementNotifications";
 import { DashboardHeader } from "@/components/ui/panel/DashboardHeader";
 import { DashboardTopBar } from "@/components/ui/panel/DashboardTopBar";
 import { LessonResultDetailsPanel } from "@/components/results/LessonResultDetailsPanel";
@@ -99,6 +100,7 @@ export function StudentLessonResultView() {
         {(routeError || error) && (
           <Alert severity="error">{routeError ?? error}</Alert>
         )}
+        <StudentAchievementNotifications autoFetch={false} />
         {result && !loading && !routeError && (
           <LessonResultDetailsPanel result={result} />
         )}

@@ -23,6 +23,7 @@ import {
 } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
 import { userService, type UserProfile } from "@/api/userService";
+import { requestAchievementNotificationsRefresh } from "@/components/achievements/achievementNotificationEvents";
 import { AppDialog, AppDialogStatus } from "@/components/ui/dialog/AppDialog";
 import { useAuth } from "@/context/AuthContext";
 import { getErrorMessage } from "@/utils/dashboardUtils";
@@ -216,6 +217,7 @@ export function AccountSettingsDialog({
     try {
       const updatedUser = await userService.uploadAvatar(user.publicId, file);
       onUserUpdated(updatedUser);
+      requestAchievementNotificationsRefresh();
       setAvatarSnackbar(true);
     } catch {
       setFeedback({
@@ -238,6 +240,7 @@ export function AccountSettingsDialog({
         presetName,
       );
       onUserUpdated(updatedUser);
+      requestAchievementNotificationsRefresh();
       setAvatarSnackbar(true);
     } catch {
       setFeedback({

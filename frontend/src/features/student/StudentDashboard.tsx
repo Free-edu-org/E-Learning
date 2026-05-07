@@ -41,6 +41,7 @@ import {
   type StudentLessonAttachment,
   type StudentStats,
 } from "@/api/studentService";
+import { StudentAchievementNotifications } from "@/components/achievements/StudentAchievementNotifications";
 import { lessonService } from "@/api/lessonService";
 import { userService, type UserProfile } from "@/api/userService";
 import { DashboardHeader } from "@/components/ui/panel/DashboardHeader";
@@ -210,12 +211,6 @@ function ResultDialog({ lesson, onClose, onOpenDetails }: ResultDialogProps) {
         />
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button
-          onClick={onClose}
-          sx={{ textTransform: "none", fontWeight: 600 }}
-        >
-          Zamknij
-        </Button>
         <Button
           variant="contained"
           onClick={() => onOpenDetails(lesson.publicId)}
@@ -513,6 +508,8 @@ export function StudentDashboard() {
             {error}
           </Alert>
         )}
+
+        <StudentAchievementNotifications />
 
         {/* ── Hero banner ── */}
         <Paper
