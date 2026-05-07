@@ -9,7 +9,7 @@ import pl.freeedu.backend.lesson.repository.LessonRepository;
 import pl.freeedu.backend.security.service.SecurityService;
 import pl.freeedu.backend.student.model.StudentProgressHistory;
 import pl.freeedu.backend.student.repository.StudentProgressHistoryRepository;
-import pl.freeedu.backend.student.service.PointsService;
+import pl.freeedu.backend.student.service.PointService;
 import pl.freeedu.backend.task.dto.*;
 import pl.freeedu.backend.task.exception.TaskErrorCode;
 import pl.freeedu.backend.task.exception.TaskException;
@@ -43,7 +43,7 @@ public class TaskService {
 	private final TaskHintImageService taskHintImageService;
 	private final StudentProgressHistoryRepository studentProgressHistoryRepository;
 	private final UserTaskAttentionEventRepository userTaskAttentionEventRepository;
-	private final PointsService pointsService;
+	private final PointService pointsService;
 	private final double sttMinScore;
 
 	public TaskService(ChooseTaskRepository chooseTaskRepository, WriteTaskRepository writeTaskRepository,
@@ -53,7 +53,7 @@ public class TaskService {
 			UserInGroupRepository userInGroupRepository, SttClient sttClient,
 			TaskPublicIdLookupService taskPublicIdLookupService, TaskHintImageService taskHintImageService,
 			StudentProgressHistoryRepository studentProgressHistoryRepository,
-			UserTaskAttentionEventRepository userTaskAttentionEventRepository, PointsService pointsService,
+			UserTaskAttentionEventRepository userTaskAttentionEventRepository, PointService pointsService,
 			@Value("${application.stt.min-score}") double sttMinScore) {
 		this.chooseTaskRepository = chooseTaskRepository;
 		this.writeTaskRepository = writeTaskRepository;

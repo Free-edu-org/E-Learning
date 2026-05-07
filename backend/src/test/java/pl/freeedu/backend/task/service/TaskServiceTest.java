@@ -11,7 +11,7 @@ import pl.freeedu.backend.lesson.repository.LessonRepository;
 import pl.freeedu.backend.security.principal.CustomUserDetails;
 import pl.freeedu.backend.security.service.SecurityService;
 import pl.freeedu.backend.student.repository.StudentProgressHistoryRepository;
-import pl.freeedu.backend.student.service.PointsService;
+import pl.freeedu.backend.student.service.PointService;
 import pl.freeedu.backend.task.dto.*;
 import pl.freeedu.backend.task.exception.TaskErrorCode;
 import pl.freeedu.backend.task.exception.TaskException;
@@ -61,7 +61,7 @@ class TaskServiceTest {
 	@Mock
 	private UserTaskAttentionEventRepository userTaskAttentionEventRepository;
 	@Mock
-	private PointsService pointsService;
+	private PointService pointsService;
 
 	private TaskService taskService;
 
