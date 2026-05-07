@@ -174,6 +174,7 @@ async function main() {
             + await deleteByIds(pool, 'user_answers', 'lesson_id', lessonIds);
         const deletedUserLessonsCount = await deleteByIds(pool, 'user_lessons', 'user_id', userIds)
             + await deleteByIds(pool, 'user_lessons', 'lesson_id', lessonIds);
+        const deletedStudentPointsCount = await deleteByIds(pool, 'student_points', 'user_id', userIds);
         const deletedAchievementLinksCount = await deleteByIds(pool, 'user_get_achievement', 'user_id', userIds);
         const deletedMembershipsCount = await deleteByIds(pool, 'user_in_group', 'user_id', userIds)
             + await deleteByIds(pool, 'user_in_group', 'group_id', groupIds);
@@ -199,6 +200,7 @@ async function main() {
             deletedLessonAssignmentsCount,
             deletedMembershipsCount,
             deletedUserLessonsCount,
+            deletedStudentPointsCount,
             deletedUserAnswersCount,
             deletedAchievementLinksCount,
             deletedResetArtifactsCount,
