@@ -5,6 +5,11 @@ INSERT INTO users (email, username, password, role) VALUES
     ('student2@edu.pl', 'anna_nowak', '$2a$10$KisRc079EPu5z5uFOV80m.h7jxAnUsJJStyNCR.Tiq.u/Z6s1cTCq', 'STUDENT'),
     ('teacher@szkola.pl', 'pan_tomasz', '$2a$10$E76vPLy8/fTJ36cpmvYNBOGKxUB72aTb7rexqJgvHIuaQLE4vS1KC', 'TEACHER');
 
+-- Punkty uczniów (student_points)
+-- user_id: 2 = jan_kowalski, 3 = anna_nowak
+INSERT INTO student_points (user_id, lesson_result_id, delta, reason, created_by) VALUES
+    (2, NULL, 1, 'SEED_INIT', 1);
+
 -- Grupy
 INSERT INTO user_groups (name, description, teacher_id) VALUES
     ('Angielski A1', 'Grupa początkująca - semestr letni', 4),

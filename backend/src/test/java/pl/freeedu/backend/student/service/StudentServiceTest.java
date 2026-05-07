@@ -19,6 +19,7 @@ import pl.freeedu.backend.student.dto.StudentProgressHistoryResponse;
 import pl.freeedu.backend.student.dto.StudentStatsResponse;
 import pl.freeedu.backend.student.model.StudentProgressHistory;
 import pl.freeedu.backend.student.repository.StudentProgressHistoryRepository;
+import pl.freeedu.backend.student.repository.StudentPointRepository;
 import pl.freeedu.backend.task.dto.LessonResultDetailsResponse;
 import pl.freeedu.backend.task.exception.TaskErrorCode;
 import pl.freeedu.backend.task.exception.TaskException;
@@ -70,6 +71,8 @@ class StudentServiceTest {
 	private UserGroupRepository userGroupRepository;
 	@Mock
 	private StudentProgressHistoryRepository studentProgressHistoryRepository;
+	@Mock
+	private StudentPointRepository studentPointRepository;
 
 	private StudentService studentService;
 
@@ -77,7 +80,8 @@ class StudentServiceTest {
 	void setUp() {
 		studentService = new StudentService(securityService, userInGroupRepository, groupHasLessonRepository,
 				lessonRepository, userLessonRepository, lessonMapper, lessonResultDetailsService,
-				lessonAttachmentService, userGroupRepository, userAnswerRepository, studentProgressHistoryRepository);
+				lessonAttachmentService, userGroupRepository, userAnswerRepository, studentProgressHistoryRepository,
+				studentPointRepository);
 	}
 
 	@Test

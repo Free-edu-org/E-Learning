@@ -15,4 +15,5 @@ public class StudentStatsResponse {
 	private Integer completedLessons;
 	private Integer inProgressLessons;
 	private Double averageScore;
+	private Integer points;
 }

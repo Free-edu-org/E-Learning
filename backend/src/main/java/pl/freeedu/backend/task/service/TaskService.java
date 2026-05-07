@@ -9,6 +9,7 @@ import pl.freeedu.backend.lesson.repository.LessonRepository;
 import pl.freeedu.backend.security.service.SecurityService;
 import pl.freeedu.backend.student.model.StudentProgressHistory;
 import pl.freeedu.backend.student.repository.StudentProgressHistoryRepository;
+import pl.freeedu.backend.student.service.PointService;
 import pl.freeedu.backend.task.dto.*;
 import pl.freeedu.backend.task.exception.TaskErrorCode;
 import pl.freeedu.backend.task.exception.TaskException;
@@ -42,6 +43,7 @@ public class TaskService {
 	private final TaskHintImageService taskHintImageService;
 	private final StudentProgressHistoryRepository studentProgressHistoryRepository;
 	private final UserTaskAttentionEventRepository userTaskAttentionEventRepository;
+	private final PointService pointsService;
 	private final double sttMinScore;
 
 	public TaskService(ChooseTaskRepository chooseTaskRepository, WriteTaskRepository writeTaskRepository,
@@ -51,7 +53,7 @@ public class TaskService {
 			UserInGroupRepository userInGroupRepository, SttClient sttClient,
 			TaskPublicIdLookupService taskPublicIdLookupService, TaskHintImageService taskHintImageService,
 			StudentProgressHistoryRepository studentProgressHistoryRepository,
-			UserTaskAttentionEventRepository userTaskAttentionEventRepository,
+			UserTaskAttentionEventRepository userTaskAttentionEventRepository, PointService pointsService,
 			@Value("${application.stt.min-score}") double sttMinScore) {
 		this.chooseTaskRepository = chooseTaskRepository;
 		this.writeTaskRepository = writeTaskRepository;
@@ -67,6 +69,7 @@ public class TaskService {
 		this.taskHintImageService = taskHintImageService;
 		this.studentProgressHistoryRepository = studentProgressHistoryRepository;
 		this.userTaskAttentionEventRepository = userTaskAttentionEventRepository;
+		this.pointsService = pointsService;
 		this.sttMinScore = sttMinScore;
 	}
 
@@ -397,6 +400,14 @@ public class TaskService {
 					userLesson.setFinishedAt(LocalDateTime.now());
 					userLessonRepository.save(userLesson);
 					saveProgressHistorySnapshot(userId);
+					// award points: 1 point per correct answer, idempotent inside PointsService
+					try {
+						pointsService.addPointsForLessonResult(userLesson.getId(), userId, score, "TASK_CORRECT",
+								userId);
+					} catch (Exception e) {
+						log.error("Failed to add points for lesson result. lessonResultId={}, userId={}",
+								userLesson.getId(), userId, e);
+					}
 
 					log.info("Lesson ID: {} submitted successfully by student ID: {}. Score: {}/{}", lessonId, userId,
 							score, maxScore);
@@ -458,6 +469,16 @@ public class TaskService {
 			lessonRepository.findById(lessonId).orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_FOUND));
 			userAnswerRepository.deleteByUserIdAndLessonId(userId, lessonId);
 			userTaskAttentionEventRepository.deleteByUserIdAndLessonId(userId, lessonId);
+			// rollback points related to this lesson result (if exists) before removing the
+			// result
+			userLessonRepository.findByUserIdAndLessonId(userId, lessonId).ifPresent(ul -> {
+				try {
+					pointsService.rollbackPointsForLessonResult(ul.getId(), userId, null);
+				} catch (Exception e) {
+					log.error("Failed to rollback points for lesson result. lessonResultId={}, userId={}", ul.getId(),
+							userId, e);
+				}
+			});
 			userLessonRepository.deleteByUserIdAndLessonId(userId, lessonId);
 			return (Void) null;
 		}).subscribeOn(Schedulers.boundedElastic()).then();
