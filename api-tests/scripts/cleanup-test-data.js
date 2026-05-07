@@ -3,6 +3,7 @@ const path = require('path');
 const { createPool } = require('../utils/db');
 
 const USER_PREDICATES = [
+    "email LIKE 'achievement.e2e.student.%@test.com'",
     "email LIKE 'student.new.%@example.com'",
     "email LIKE 'admin.success.%@example.com'",
     "email LIKE 'temp.del.%@example.com'",
@@ -36,6 +37,7 @@ const USER_PREDICATES = [
     "email LIKE 'stud.upd.%@example.com'",
     "email LIKE 'admin.upd.%@example.com'",
     "email LIKE 'teacher.hijack.%@example.com'",
+    "username LIKE 'achievement_e2e_student_%'",
     "username LIKE 'attach_student_%'",
     "username LIKE 'noaccess_student_%'",
     "username LIKE 'student_dashboard_%'",
@@ -72,6 +74,7 @@ const USER_PREDICATES = [
 ];
 
 const GROUP_PREDICATES = [
+    "name LIKE 'Achievement E2E Group %'",
     "name LIKE 'Task Group %'",
     "name LIKE 'Submit Group %'",
     "name LIKE 'Result Group %'",
@@ -85,6 +88,10 @@ const GROUP_PREDICATES = [
 ];
 
 const LESSON_PREDICATES = [
+    "title LIKE 'Ach E2E Intro %'",
+    "title LIKE 'Ach E2E Points %'",
+    "title LIKE 'Achievement E2E Intro %'",
+    "title LIKE 'Achievement E2E Points %'",
     "title LIKE 'Attach Lesson %'",
     "title LIKE 'Attach %'",
     "title LIKE 'Task Lesson %'",
@@ -110,6 +117,8 @@ const LESSON_PREDICATES = [
 ];
 
 const ACHIEVEMENT_PREDICATES = [
+    "code LIKE 'E2E_LEDGER_POINTS_%'",
+    "name LIKE 'E2E Ledger Points %'",
     "code LIKE 'ADMIN_TEST_ACH_%'",
     "name LIKE 'Admin Test Achievement %'"
 ];

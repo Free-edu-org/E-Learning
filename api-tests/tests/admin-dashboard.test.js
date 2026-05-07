@@ -536,6 +536,22 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
             expect(response.data.threshold).toBe(5);
         });
 
+        it('should return 400 for invalid update payload on achievement edit', async () => {
+            setAuthToken(adminToken);
+            const response = await apiClient.put(`/admin/achievements/${createdAchievementCode}`, {
+                title: '',
+                description: 'Invalid update payload',
+                icon: 'updated-icon',
+                color: 'success',
+                threshold: 0,
+                active: true,
+                sortOrder: 9101
+            });
+
+            expect(response.status).toBe(400);
+            expect(['VALIDATION_FAILED', 'INVALID_ACHIEVEMENT_RULE']).toContain(response.data.code);
+        });
+
         it('should deactivate and reactivate achievement via PATCH active', async () => {
             setAuthToken(adminToken);
             deactivatedAchievementCode = createCode();
