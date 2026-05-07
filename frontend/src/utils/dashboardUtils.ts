@@ -138,6 +138,11 @@ const ERROR_CODE_TRANSLATIONS: Record<string, string> = {
     "Osiągnięto maksymalną liczbę 5 załączników dla tej lekcji.",
   LESSON_CANNOT_BE_ACTIVATED_WITHOUT_TASKS:
     "Nie można aktywować lekcji bez co najmniej jednego zadania.",
+  INVITATION_NOT_FOUND: "Nie znaleziono zaproszenia.",
+  INVITATION_EXPIRED: "Ten link zaproszenia wygasł.",
+  INVITATION_LIMIT_REACHED: "Ten link osiągnął limit użyć.",
+  INVITATION_INACTIVE: "Ten link zaproszenia nie jest już aktywny.",
+  INVITATION_ACCESS_DENIED: "Brak dostępu do tego zaproszenia.",
 };
 
 function translateValidationMessage(

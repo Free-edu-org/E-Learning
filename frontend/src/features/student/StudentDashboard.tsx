@@ -1032,6 +1032,31 @@ export function StudentDashboard() {
               ? `Czy chcesz wrócić do lekcji "${confirmStartLesson?.title}"?`
               : `Czy na pewno chcesz rozpocząć lekcję "${confirmStartLesson?.title}"? Po rozpoczęciu musisz ją ukończyć.`}
           </Typography>
+          {confirmStartLesson?.status !== "IN_PROGRESS" && (
+            <Box
+              sx={{
+                mt: 2,
+                p: 1.5,
+                borderRadius: 2,
+                bgcolor: "action.hover",
+                border: "1px solid",
+                borderColor: "divider",
+              }}
+            >
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                display="block"
+              >
+                🎙️ <strong>Zadania z mówieniem</strong> — lekcja może zawierać
+                ćwiczenia wymagające nagrania głosu. Twoja odpowiedź zostanie
+                oceniona automatycznie przez lokalny model AI{" "}
+                <strong>Whisper</strong> (faster-whisper, uruchomiony na
+                serwerze aplikacji). Nagranie nie jest wysyłane do zewnętrznych
+                usług.
+              </Typography>
+            </Box>
+          )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button

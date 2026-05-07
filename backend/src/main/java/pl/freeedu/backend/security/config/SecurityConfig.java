@@ -80,6 +80,7 @@ public class SecurityConfig {
 				.formLogin(ServerHttpSecurity.FormLoginSpec::disable)
 				.securityContextRepository(NoOpServerSecurityContextRepository.getInstance())
 				.authorizeExchange(exchanges -> exchanges.pathMatchers("/api/v1/auth/**").permitAll()
+						.pathMatchers("/api/v1/invitations/**").permitAll()
 						.pathMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**", "/webjars/**")
 						.permitAll().pathMatchers(HttpMethod.GET, "/uploads/avatars/**").permitAll()
 						.pathMatchers("/uploads/attachments/**").denyAll().pathMatchers("/uploads/task-hints/**")
