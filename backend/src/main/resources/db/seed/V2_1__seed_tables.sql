@@ -8,7 +8,7 @@ INSERT INTO users (email, username, password, role) VALUES
 -- Punkty uczniów (student_points)
 -- user_id: 2 = jan_kowalski, 3 = anna_nowak
 INSERT INTO student_points (user_id, lesson_result_id, delta, reason, created_by) VALUES
-    (2, NULL, 1, 'SEED_INIT', 1),
+    (2, NULL, 1, 'SEED_INIT', 1);
 
 -- Grupy
 INSERT INTO user_groups (name, description, teacher_id) VALUES

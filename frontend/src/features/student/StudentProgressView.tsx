@@ -206,13 +206,13 @@ export function StudentProgressView() {
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                <StatCard
-                  icon={PointsIcon}
-                  title="Punkty"
-                  value={stats?.points ?? totalPoints}
-                  subtitle={`${totalAnswers} odpowiedzi łącznie`}
-                  color="info"
-                />
+              <StatCard
+                icon={PointsIcon}
+                title="Punkty"
+                value={stats?.points ?? totalPoints}
+                subtitle={`${totalAnswers} odpowiedzi łącznie`}
+                color="info"
+              />
             </Grid>
           </Grid>
         )}
