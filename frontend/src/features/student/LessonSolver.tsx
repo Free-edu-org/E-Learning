@@ -1437,7 +1437,6 @@ export function LessonSolver() {
       <LessonResultDialog
         open={resultDialogOpen}
         result={submitResult}
-        onClose={() => setResultDialogOpen(false)}
         onBackToDashboard={goBack}
         onOpenDetails={openResultDetails}
       />

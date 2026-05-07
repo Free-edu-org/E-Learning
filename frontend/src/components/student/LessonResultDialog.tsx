@@ -1,11 +1,10 @@
-import { Box, Button, IconButton, Stack, Typography } from "@mui/material";
+import { Box, Button, Stack, Typography } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
 import {
   CheckCircleOutlined as CorrectIcon,
   CancelOutlined as IncorrectIcon,
   TrendingUpOutlined as ResultIcon,
   ArrowBackOutlined as BackIcon,
-  CloseOutlined as CloseIcon,
 } from "@mui/icons-material";
 import type { SubmitAnswersResponse } from "@/api/studentService";
 import {
@@ -20,7 +19,6 @@ import { formatRatioPercent } from "@/utils/dashboardUtils";
 interface LessonResultDialogProps {
   open: boolean;
   result: SubmitAnswersResponse | null;
-  onClose: () => void;
   onBackToDashboard: () => void;
   onOpenDetails: () => void;
 }
@@ -28,7 +26,6 @@ interface LessonResultDialogProps {
 export function LessonResultDialog({
   open,
   result,
-  onClose,
   onBackToDashboard,
   onOpenDetails,
 }: LessonResultDialogProps) {
@@ -40,22 +37,20 @@ export function LessonResultDialog({
   const incorrectCount = result.details.length - correctCount;
 
   return (
-    <AppDialog open={open} onClose={onClose} maxWidth="xs">
+    <AppDialog
+      open={open}
+      onClose={() => undefined}
+      maxWidth="xs"
+      backdropSx={{
+        backgroundColor: alpha("#0f172a", theme.palette.mode === "dark" ? 0.56 : 0.34),
+        backdropFilter: "blur(10px)",
+        WebkitBackdropFilter: "blur(10px)",
+      }}
+    >
       <AppDialogHeader
         icon={<ResultIcon />}
         title="Wynik lekcji"
-        badge={
-          <IconButton
-            size="small"
-            onClick={onClose}
-            sx={{
-              color: "text.secondary",
-              "&:hover": { color: "text.primary" },
-            }}
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        }
+        subtitle="Lekcja została zakończona. Wybierz kolejny krok, aby przejść dalej."
       />
 
       <AppDialogBody>
@@ -150,17 +145,6 @@ export function LessonResultDialog({
 
       <AppDialogFooter>
         <Button
-          variant="outlined"
-          onClick={onOpenDetails}
-          sx={{
-            textTransform: "none",
-            fontWeight: 600,
-            borderRadius: 2,
-          }}
-        >
-          Szczegóły
-        </Button>
-        <Button
           variant="contained"
           startIcon={<BackIcon />}
           onClick={onBackToDashboard}
@@ -172,6 +156,17 @@ export function LessonResultDialog({
           }}
         >
           Wróć do panelu
+        </Button>
+        <Button
+          variant="outlined"
+          onClick={onOpenDetails}
+          sx={{
+            textTransform: "none",
+            fontWeight: 600,
+            borderRadius: 2,
+          }}
+        >
+          Szczegóły
         </Button>
       </AppDialogFooter>
     </AppDialog>
