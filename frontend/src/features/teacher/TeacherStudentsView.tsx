@@ -34,6 +34,7 @@ import {
   EmailOutlined as EmailIcon,
   ExpandMoreOutlined as ExpandMoreIcon,
   GroupOutlined as GroupIcon,
+  PersonOutlined as PersonIcon,
   PersonAddOutlined as PersonAddIcon,
   RefreshOutlined as RefreshIcon,
   SaveOutlined as SaveIcon,
@@ -72,6 +73,7 @@ import { UserAvatar } from "@/components/ui/avatar/UserAvatar";
 import { uiTokens } from "@/theme/uiTokens";
 import { getApiErrorMessage } from "@/utils/dashboardUtils";
 import { INPUT_LIMITS } from "@/utils/inputLimits";
+import { GroupInvitationsSection } from "./GroupInvitationsSection";
 
 type DialogFeedbackState = {
   severity: "success" | "error" | "warning" | "info";
@@ -149,6 +151,7 @@ export function TeacherStudentsView() {
   const [editStudentOpen, setEditStudentOpen] = useState(false);
   const [editingStudent, seteditingStudent] =
     useState<TeacherStudentResponse | null>(null);
+
   const [editStudentDraft, setEditStudentDraft] = useState({
     username: "",
     email: "",
@@ -162,6 +165,12 @@ export function TeacherStudentsView() {
   const [createGroupDraft, setCreateGroupDraft] = useState(emptyGroupDraft);
   const [createGroupLoading, setCreateGroupLoading] = useState(false);
   const [createGroupFeedback, setCreateGroupFeedback] =
+    useState<DialogFeedbackState | null>(null);
+  const [editGroupOpen, setEditGroupOpen] = useState(false);
+  const [editingGroup, setEditingGroup] = useState<Group | null>(null);
+  const [editGroupDraft, setEditGroupDraft] = useState(emptyGroupDraft);
+  const [editGroupLoading, setEditGroupLoading] = useState(false);
+  const [editGroupFeedback, setEditGroupFeedback] =
     useState<DialogFeedbackState | null>(null);
 
   const [draggingStudentPublicId, setDraggingStudentPublicId] = useState<
@@ -212,12 +221,6 @@ export function TeacherStudentsView() {
 
     fetchData();
   }, [fetchData]);
-
-  useEffect(() => {
-    setExpandedGroupPublicIds(
-      new Set(availableGroups.map((group) => group.publicId)),
-    );
-  }, [availableGroups]);
 
   const groupsWithStudents = useMemo(
     () =>
@@ -421,6 +424,58 @@ export function TeacherStudentsView() {
       });
     } finally {
       setCreateGroupLoading(false);
+    }
+  };
+
+  const openEditGroupDialog = (group: Group) => {
+    setEditingGroup(group);
+    setEditGroupDraft({
+      name: group.name,
+      description: group.description ?? "",
+    });
+    setEditGroupFeedback(null);
+    setEditGroupOpen(true);
+  };
+
+  const closeEditGroupDialog = () => {
+    if (editGroupLoading) return;
+    setEditGroupOpen(false);
+    setEditingGroup(null);
+  };
+
+  const submitEditGroup = async () => {
+    if (!editingGroup || editGroupLoading) return;
+    if (!editGroupDraft.name.trim()) {
+      setEditGroupFeedback({
+        severity: "error",
+        message: "Podaj nazwę grupy.",
+      });
+      return;
+    }
+
+    setEditGroupFeedback(null);
+    setEditGroupLoading(true);
+    try {
+      await userGroupService.updateGroup(editingGroup.publicId, {
+        name: editGroupDraft.name.trim(),
+        description: editGroupDraft.description.trim(),
+      });
+      setEditGroupFeedback({
+        severity: "success",
+        message: "Dane grupy zostały zapisane.",
+      });
+      await fetchData();
+      window.setTimeout(() => closeEditGroupDialog(), 700);
+    } catch (error) {
+      setEditGroupFeedback({
+        severity: "error",
+        message: getOperationErrorMessage(
+          error,
+          "Nie udało się zapisać zmian grupy.",
+        ),
+      });
+    } finally {
+      setEditGroupLoading(false);
     }
   };
 
@@ -650,8 +705,8 @@ export function TeacherStudentsView() {
               sx={{ px: 0.5, whiteSpace: "nowrap" }}
             >
               {searchQuery.trim()
-                ? `Wyniki: ${filteredGroupsWithStudents.length} z ${groupsWithStudents.length} grup`
-                : `${groupsWithStudents.length} grup`}
+                ? `Wyniki: ${filteredGroupsWithStudents.length} z ${groupsWithStudents.length} | Liczba grup: ${groupsWithStudents.length}`
+                : `Liczba grup: ${groupsWithStudents.length}`}
             </Typography>
           </Box>
         )}
@@ -704,81 +759,91 @@ export function TeacherStudentsView() {
                       : "none",
                   }}
                 >
-                  <ButtonBase
-                    onClick={() => toggleGroupExpanded(group.publicId)}
-                    sx={{
-                      width: "100%",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: 2,
-                      p: 2,
-                      textAlign: "left",
-                      minHeight: 78,
-                      "&:hover": { bgcolor: "action.hover" },
-                    }}
-                  >
-                    <Stack
-                      direction="row"
-                      spacing={1.5}
-                      alignItems="center"
-                      sx={{ minWidth: 0, flex: 1 }}
+                  <Box sx={{ display: "flex", alignItems: "center" }}>
+                    <ButtonBase
+                      onClick={() => toggleGroupExpanded(group.publicId)}
+                      sx={{
+                        flex: 1,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 2,
+                        p: 2,
+                        textAlign: "left",
+                        minHeight: 78,
+                        "&:hover": { bgcolor: "action.hover" },
+                      }}
                     >
-                      <Box
-                        sx={{
-                          width: 38,
-                          height: 38,
-                          borderRadius: 2,
-                          bgcolor: "action.hover",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          flexShrink: 0,
-                        }}
+                      <Stack
+                        direction="row"
+                        spacing={1.5}
+                        alignItems="center"
+                        sx={{ minWidth: 0, flex: 1 }}
                       >
-                        <GroupIcon color="primary" />
-                      </Box>
-                      <Box sx={{ minWidth: 0 }}>
-                        <Typography
-                          variant="body1"
-                          fontWeight={800}
+                        <Box
                           sx={{
-                            overflowWrap: "anywhere",
+                            width: 38,
+                            height: 38,
+                            borderRadius: 2,
+                            bgcolor: "action.hover",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0,
                           }}
                         >
-                          {group.name}
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
+                          <GroupIcon color="primary" />
+                        </Box>
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography
+                            variant="body1"
+                            fontWeight={800}
+                            sx={{
+                              overflowWrap: "anywhere",
+                            }}
+                          >
+                            {group.name}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{
+                              overflowWrap: "anywhere",
+                            }}
+                          >
+                            {group.description || "Brak opisu grupy."}
+                          </Typography>
+                        </Box>
+                      </Stack>
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        alignItems="center"
+                        sx={{ flexShrink: 0 }}
+                      >
+                        <Chip
+                          label={studentCountLabel}
+                          size="small"
+                          sx={{ fontWeight: 700 }}
+                        />
+                        <ExpandMoreIcon
                           sx={{
-                            overflowWrap: "anywhere",
+                            color: "text.secondary",
+                            transition: "transform 150ms ease",
+                            transform: isExpanded ? "rotate(180deg)" : "none",
                           }}
-                        >
-                          {group.description || "Brak opisu grupy."}
-                        </Typography>
-                      </Box>
-                    </Stack>
-                    <Stack
-                      direction="row"
-                      spacing={1}
-                      alignItems="center"
-                      sx={{ flexShrink: 0 }}
+                        />
+                      </Stack>
+                    </ButtonBase>
+                    <IconButton
+                      size="small"
+                      aria-label={`Edytuj grupę ${group.name}`}
+                      onClick={() => openEditGroupDialog(group)}
+                      sx={{ color: "text.secondary", mr: 1 }}
                     >
-                      <Chip
-                        label={studentCountLabel}
-                        size="small"
-                        sx={{ fontWeight: 700 }}
-                      />
-                      <ExpandMoreIcon
-                        sx={{
-                          color: "text.secondary",
-                          transition: "transform 150ms ease",
-                          transform: isExpanded ? "rotate(180deg)" : "none",
-                        }}
-                      />
-                    </Stack>
-                  </ButtonBase>
+                      <EditIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
 
                   <Collapse in={isExpanded} timeout={180} unmountOnExit>
                     <Divider />
@@ -885,6 +950,18 @@ export function TeacherStudentsView() {
                               >
                                 {isMoving && <CircularProgress size={18} />}
                                 <IconButton
+                                  aria-label="Profil ucznia"
+                                  size="small"
+                                  onClick={() =>
+                                    navigate(
+                                      `/teacher/students/${student.publicId}/progress`,
+                                    )
+                                  }
+                                  disabled={isMoving}
+                                >
+                                  <PersonIcon fontSize="small" />
+                                </IconButton>
+                                <IconButton
                                   aria-label="Edytuj ucznia"
                                   size="small"
                                   color="primary"
@@ -899,6 +976,11 @@ export function TeacherStudentsView() {
                         })}
                       </Stack>
                     )}
+
+                    <Divider />
+                    <Box sx={{ p: 2 }}>
+                      <GroupInvitationsSection groupPublicId={group.publicId} />
+                    </Box>
                   </Collapse>
                 </Box>
               );
@@ -1141,6 +1223,96 @@ export function TeacherStudentsView() {
                 variant="contained"
                 onClick={submitEditStudent}
                 disabled={editStudentLoading}
+                startIcon={<SaveIcon />}
+                sx={buttonSx}
+              >
+                Zapisz zmiany
+              </Button>
+            </FormActions>
+          </AppDialogFooter>
+        </AppDialog>
+
+        <AppDialog
+          open={editGroupOpen}
+          onClose={closeEditGroupDialog}
+          maxWidth="sm"
+          paperSx={{
+            width: {
+              xs: "calc(100% - 24px)",
+              sm: uiTokens.modal.comfortableWidth,
+            },
+          }}
+        >
+          <AppDialogHeader
+            icon={<EditIcon />}
+            title="Edytuj grupę"
+            subtitle="Zmiana nazwy grupy i jej opisu."
+          />
+          <AppDialogBody>
+            <FormSection title="Dane grupy">
+              {editGroupFeedback && (
+                <AppDialogStatus severity={editGroupFeedback.severity}>
+                  {editGroupFeedback.message}
+                </AppDialogStatus>
+              )}
+              <Stack spacing={2}>
+                <FormField>
+                  <TextField
+                    label="Nazwa grupy"
+                    value={editGroupDraft.name}
+                    onChange={(event) =>
+                      setEditGroupDraft((draft) => ({
+                        ...draft,
+                        name: event.target.value.slice(
+                          0,
+                          INPUT_LIMITS.groupName,
+                        ),
+                      }))
+                    }
+                    inputProps={{ maxLength: INPUT_LIMITS.groupName }}
+                    helperText={`${editGroupDraft.name.length}/${INPUT_LIMITS.groupName}`}
+                    fullWidth
+                    size="small"
+                    disabled={editGroupLoading}
+                  />
+                </FormField>
+                <FormField>
+                  <TextField
+                    label="Opis"
+                    value={editGroupDraft.description}
+                    onChange={(event) =>
+                      setEditGroupDraft((draft) => ({
+                        ...draft,
+                        description: event.target.value.slice(
+                          0,
+                          INPUT_LIMITS.groupDescription,
+                        ),
+                      }))
+                    }
+                    inputProps={{ maxLength: INPUT_LIMITS.groupDescription }}
+                    helperText={`${editGroupDraft.description.length}/${INPUT_LIMITS.groupDescription}`}
+                    fullWidth
+                    size="small"
+                    minRows={3}
+                    multiline
+                    disabled={editGroupLoading}
+                  />
+                </FormField>
+              </Stack>
+            </FormSection>
+          </AppDialogBody>
+          <AppDialogFooter>
+            <FormActions>
+              <Button
+                onClick={closeEditGroupDialog}
+                sx={{ ...buttonSx, color: "text.secondary" }}
+              >
+                Anuluj
+              </Button>
+              <Button
+                variant="contained"
+                onClick={submitEditGroup}
+                disabled={editGroupLoading}
                 startIcon={<SaveIcon />}
                 sx={buttonSx}
               >

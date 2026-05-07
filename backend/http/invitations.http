@@ -1,0 +1,52 @@
+### --- Group Invitations ---
+### Requires: auth_token = TEACHER/ADMIN JWT, group_public_id = existing group
+
+### Create invitation (teacher - group owner)
+POST http://localhost:8080/api/v1/teacher/groups/{{group_public_id}}/invitations
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "maxUses": 10,
+  "expiresAt": "2027-12-31T23:59:59"
+}
+
+### List invitations for group
+GET http://localhost:8080/api/v1/teacher/groups/{{group_public_id}}/invitations
+Authorization: Bearer {{auth_token}}
+
+### Deactivate invitation by token
+DELETE http://localhost:8080/api/v1/teacher/groups/{{group_public_id}}/invitations/{{invitation_token}}
+Authorization: Bearer {{auth_token}}
+
+### --- Public endpoints (no auth) ---
+
+### Get public invitation info
+GET http://localhost:8080/api/v1/invitations/{{invitation_token}}
+
+### Register student via invitation
+POST http://localhost:8080/api/v1/invitations/register
+Content-Type: application/json
+
+{
+  "token": "{{invitation_token}}",
+  "email": "nowy.uczen@example.com",
+  "username": "nowy_uczen",
+  "password": "StrongPass123"
+}
+
+### --- Error scenarios ---
+
+### Create invitation - token expired (gone)
+GET http://localhost:8080/api/v1/invitations/expired-token-uuid
+
+### Register - email already taken
+POST http://localhost:8080/api/v1/invitations/register
+Content-Type: application/json
+
+{
+  "token": "{{invitation_token}}",
+  "email": "jan@example.com",
+  "username": "unique_username_xyz",
+  "password": "StrongPass123"
+}

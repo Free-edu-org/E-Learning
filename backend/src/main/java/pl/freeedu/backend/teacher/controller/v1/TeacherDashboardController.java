@@ -23,6 +23,7 @@ import pl.freeedu.backend.teacher.dto.TeacherStatsResponse;
 import pl.freeedu.backend.teacher.dto.TeacherStudentResponse;
 import pl.freeedu.backend.task.dto.LessonResultDetailsResponse;
 import pl.freeedu.backend.teacher.service.TeacherService;
+import pl.freeedu.backend.teacher.dto.TeacherStudentStatsResponse;
 import pl.freeedu.backend.user.service.UserPublicIdLookupService;
 import pl.freeedu.backend.usergroup.dto.UserGroupResponse;
 import reactor.core.publisher.Flux;
@@ -95,6 +96,16 @@ public class TeacherDashboardController {
 						.fromCallable(() -> lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId))
 						.subscribeOn(Schedulers.boundedElastic())
 						.flatMap(lessonId -> teacherService.getLessonResultDetails(lessonId, studentId)));
+	}
+
+	@Operation(summary = "Get statistics for a specific student")
+	@ApiResponse(responseCode = "200", description = "Student statistics scoped to current teacher")
+	@GetMapping("/students/{studentPublicId}/stats")
+	@PreAuthorize("hasRole('TEACHER') and @securityService.isTeacherOfStudentByPublicId(authentication, #studentPublicId)")
+	@ResponseStatus(HttpStatus.OK)
+	public Mono<TeacherStudentStatsResponse> getStudentStats(@PathVariable String studentPublicId) {
+		return userPublicIdLookupService.getInternalId(studentPublicId)
+				.flatMap(studentId -> teacherService.getStudentStats(studentId));
 	}
 
 	@Operation(summary = "Get teacher's students")

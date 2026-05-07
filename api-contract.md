@@ -1759,6 +1759,131 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 
 ---
 
+## 9. Group Invitations
+
+Nauczyciel generuje zaproszenia do grupy. Uczeń używa linku z tokenem do stworzenia konta i automatycznego przypisania do grupy.
+
+### 9.1. Create Invitation
+- **URL**: `/api/v1/teacher/groups/{groupPublicId}/invitations`
+- **Method**: `POST`
+- **Description**: Creates a new invitation link for a group.
+- **Authorization**: `ADMIN` or group owner (`TEACHER`)
+
+**Request Body (JSON):**
+```json
+{
+  "maxUses": 10,
+  "expiresAt": "2026-12-31T23:59:59"
+}
+```
+
+**Success (201 Created):**
+```json
+{
+  "token": "550e8400-e29b-41d4-a716-446655440000",
+  "groupPublicId": "group-uuid",
+  "groupName": "Klasa 1A",
+  "maxUses": 10,
+  "usedCount": 0,
+  "expiresAt": "2026-12-31T23:59:59",
+  "isActive": true,
+  "createdAt": "2026-05-06T10:00:00"
+}
+```
+
+**Known Errors:**
+- `USER_GROUP_NOT_FOUND` (404 Not Found)
+- `VALIDATION_FAILED` (400 Bad Request): `maxUses` < 1 or `expiresAt` not in the future.
+- `UNAUTHORIZED` (401), `FORBIDDEN` (403)
+
+---
+
+### 9.2. List Invitations for a Group
+- **URL**: `/api/v1/teacher/groups/{groupPublicId}/invitations`
+- **Method**: `GET`
+- **Description**: Returns all invitations for the group, newest first.
+- **Authorization**: `ADMIN` or group owner (`TEACHER`)
+
+**Success (200 OK):** Array of invitation objects (same shape as 9.1 response).
+
+**Known Errors:**
+- `USER_GROUP_NOT_FOUND` (404 Not Found)
+- `UNAUTHORIZED` (401), `FORBIDDEN` (403)
+
+---
+
+### 9.3. Deactivate Invitation
+- **URL**: `/api/v1/teacher/groups/{groupPublicId}/invitations/{token}`
+- **Method**: `DELETE`
+- **Description**: Sets `isActive = false` on the invitation — it can no longer be used.
+- **Authorization**: `ADMIN` or group owner (`TEACHER`)
+
+**Success (204 No Content):** *(Empty Response Body)*
+
+**Known Errors:**
+- `INVITATION_NOT_FOUND` (404 Not Found)
+- `USER_GROUP_NOT_FOUND` (404 Not Found)
+- `UNAUTHORIZED` (401), `FORBIDDEN` (403)
+
+---
+
+### 9.4. Get Public Invitation Info *(no auth required)*
+- **URL**: `/api/v1/invitations/{token}`
+- **Method**: `GET`
+- **Description**: Returns public metadata for a token (group name, limits). Used by the registration page to display the target group before the student fills in the form.
+
+**Success (200 OK):**
+```json
+{
+  "token": "550e8400-e29b-41d4-a716-446655440000",
+  "groupName": "Klasa 1A",
+  "maxUses": 10,
+  "usedCount": 3
+}
+```
+
+**Known Errors:**
+- `INVITATION_NOT_FOUND` (404)
+- `INVITATION_EXPIRED` (410 Gone)
+- `INVITATION_LIMIT_REACHED` (410 Gone)
+- `INVITATION_INACTIVE` (410 Gone)
+
+---
+
+### 9.5. Register Student via Invitation *(no auth required)*
+- **URL**: `/api/v1/invitations/register`
+- **Method**: `POST`
+- **Description**: Creates a new student account and immediately assigns it to the group associated with the invitation. Returns a JWT so the student is logged in straight away.
+
+**Request Body (JSON):**
+```json
+{
+  "token": "550e8400-e29b-41d4-a716-446655440000",
+  "email": "uczen@example.com",
+  "username": "jan_kowalski",
+  "password": "strongPassword123"
+}
+```
+
+**Success (201 Created):**
+```json
+{
+  "token": "eyJhbGci... (JWT token)",
+  "role": "STUDENT"
+}
+```
+
+**Known Errors:**
+- `INVITATION_NOT_FOUND` (404)
+- `INVITATION_EXPIRED` (410 Gone)
+- `INVITATION_LIMIT_REACHED` (410 Gone)
+- `INVITATION_INACTIVE` (410 Gone)
+- `EMAIL_ALREADY_TAKEN` (409 Conflict)
+- `USERNAME_ALREADY_TAKEN` (409 Conflict)
+- `VALIDATION_FAILED` (400 Bad Request)
+
+---
+
 ## Global Application Errors
 
 **1. Token Expiration**

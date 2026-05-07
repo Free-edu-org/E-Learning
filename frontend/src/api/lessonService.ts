@@ -87,6 +87,36 @@ export interface CreateLessonRequest {
   groupPublicIds?: string[];
 }
 
+export interface StudentLessonResult {
+  lessonPublicId: string;
+  lessonTitle: string;
+  score: number;
+  maxScore: number;
+  resultPercent: number;
+  completedAt: string | null;
+}
+
+export interface ProgressPoint {
+  date: string;
+  progress: number;
+}
+
+export interface SkillStat {
+  category: string;
+  correct: number;
+  wrong: number;
+}
+
+export interface TeacherStudentStatsResponse {
+  student: TeacherStudentResponse;
+  totalLessons: number;
+  completedLessons: number;
+  avgScore: number;
+  lessonResults: StudentLessonResult[];
+  progressHistory: ProgressPoint[];
+  skillStats: SkillStat[];
+}
+
 export const lessonService = {
   getLessons: () => fetchApi<Lesson[]>("/api/v1/lessons"),
   getTeacherLessons: () => fetchApi<Lesson[]>("/api/v1/teacher/lessons"),
@@ -133,6 +163,10 @@ export const lessonService = {
   getLessonResultDetails: (lessonPublicId: string, studentPublicId: string) =>
     fetchApi<LessonResultDetailsResponse>(
       `/api/v1/teacher/lessons/${lessonPublicId}/students/${studentPublicId}/result`,
+    ),
+  getStudentStats: (studentPublicId: string) =>
+    fetchApi<TeacherStudentStatsResponse>(
+      `/api/v1/teacher/students/${studentPublicId}/stats`,
     ),
   resetStudentLessonProgress: (lessonPublicId: string, userPublicId: string) =>
     fetchApi<void>(

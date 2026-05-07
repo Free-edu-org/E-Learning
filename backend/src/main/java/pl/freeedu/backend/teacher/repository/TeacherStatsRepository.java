@@ -4,6 +4,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Repository;
 import pl.freeedu.backend.teacher.dto.LessonStatsStudentResult;
+import pl.freeedu.backend.teacher.dto.TeacherStudentStatsResponse;
 
 import java.util.List;
 
@@ -34,6 +35,41 @@ public class TeacherStatsRepository {
 		return ((Number) entityManager.createNativeQuery(
 				"SELECT COALESCE(AVG(CASE WHEN ua.is_correct = TRUE THEN 100.0 ELSE 0.0 END), 0.0) FROM user_answers ua INNER JOIN lessons l ON ua.lesson_id = l.id WHERE l.teacher_id = :tid")
 				.setParameter("tid", teacherId).getSingleResult()).doubleValue();
+	}
+
+	public Long countStudentTotalLessons(Integer studentId, Integer teacherId) {
+		return ((Number) entityManager
+				.createNativeQuery("SELECT COUNT(DISTINCT l.id) FROM lessons l "
+						+ "INNER JOIN group_has_lesson ghl ON l.id = ghl.lesson_id "
+						+ "INNER JOIN user_in_group uig ON ghl.group_id = uig.group_id "
+						+ "WHERE uig.user_id = :studentId AND l.teacher_id = :teacherId")
+				.setParameter("studentId", studentId).setParameter("teacherId", teacherId).getSingleResult())
+				.longValue();
+	}
+
+	@SuppressWarnings("unchecked")
+	public List<TeacherStudentStatsResponse.StudentLessonResult> getStudentLessonResults(Integer studentId,
+			Integer teacherId) {
+		List<Object[]> rows = entityManager.createNativeQuery("SELECT l.public_id, l.title, ul.score, ul.max_score, "
+				+ "(ul.score * 100.0 / NULLIF(ul.max_score, 0)), ul.finished_at " + "FROM user_lessons ul "
+				+ "INNER JOIN lessons l ON ul.lesson_id = l.id "
+				+ "INNER JOIN group_has_lesson ghl ON l.id = ghl.lesson_id "
+				+ "INNER JOIN user_in_group uig ON ghl.group_id = uig.group_id "
+				+ "WHERE ul.user_id = :studentId AND ul.status = 'COMPLETED' "
+				+ "AND l.teacher_id = :teacherId AND uig.user_id = :studentId " + "ORDER BY ul.finished_at DESC")
+				.setParameter("studentId", studentId).setParameter("teacherId", teacherId).getResultList();
+		return rows.stream()
+				.map(row -> TeacherStudentStatsResponse.StudentLessonResult.builder().lessonPublicId((String) row[0])
+						.lessonTitle((String) row[1]).score(row[2] != null ? ((Number) row[2]).intValue() : 0)
+						.maxScore(row[3] != null ? ((Number) row[3]).intValue() : 0)
+						.resultPercent(row[4] != null ? ((Number) row[4]).doubleValue() : 0.0)
+						.completedAt(row[5] != null
+								? (row[5] instanceof java.sql.Timestamp ts
+										? ts.toLocalDateTime()
+										: (java.time.LocalDateTime) row[5])
+								: null)
+						.build())
+				.toList();
 	}
 
 	@SuppressWarnings("unchecked")
