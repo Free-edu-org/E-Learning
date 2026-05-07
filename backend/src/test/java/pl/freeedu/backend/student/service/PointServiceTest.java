@@ -13,6 +13,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import pl.freeedu.backend.achievement.event.PointsChangedEvent;
 import pl.freeedu.backend.student.model.StudentPoint;
@@ -37,7 +38,7 @@ class PointServiceTest {
 	void shouldSaveLedgerAndPublishEventWhenAddingPointsForLessonResult() {
 		// given
 		when(studentPointRepository.existsByLessonResultIdAndReason(11, "TASK_CORRECT")).thenReturn(false);
-		when(studentPointRepository.sumDeltaByUserId(7)).thenReturn(5);
+		when(studentPointRepository.sumDeltaByUserId(7)).thenReturn(8);
 
 		// when
 		pointService.addPointsForLessonResult(11, 7, 3, "TASK_CORRECT", 7);
@@ -49,7 +50,7 @@ class PointServiceTest {
 		assertEquals(7, captor.getValue().userId());
 		assertEquals(3, captor.getValue().delta());
 		assertEquals("TASK_CORRECT", captor.getValue().reason());
-		assertEquals(5, captor.getValue().currentPoints());
+		assertEquals(8, captor.getValue().currentPoints());
 	}
 
 	@Test
@@ -68,6 +69,7 @@ class PointServiceTest {
 	@Test
 	void shouldSaveNegativeCorrectionAndPublishEventWhenRollingBackLessonResultPoints() {
 		// given
+		when(studentPointRepository.existsByLessonResultIdAndReason(11, "LESSON_RESET")).thenReturn(false);
 		when(studentPointRepository.sumDeltaByLessonResultId(11)).thenReturn(3);
 		when(studentPointRepository.sumDeltaByUserId(7)).thenReturn(2);
 
@@ -86,6 +88,7 @@ class PointServiceTest {
 	@Test
 	void shouldNotSaveAnythingWhenRollbackHasNoPoints() {
 		// given
+		when(studentPointRepository.existsByLessonResultIdAndReason(11, "LESSON_RESET")).thenReturn(false);
 		when(studentPointRepository.sumDeltaByLessonResultId(11)).thenReturn(0);
 
 		// when
@@ -93,6 +96,35 @@ class PointServiceTest {
 
 		// then
 		verify(studentPointRepository, never()).save(any(StudentPoint.class));
+		verify(applicationEventPublisher, never()).publishEvent(any());
+	}
+
+	@Test
+	void shouldNotSaveAnythingWhenRollbackAlreadyExists() {
+		// given
+		when(studentPointRepository.existsByLessonResultIdAndReason(11, "LESSON_RESET")).thenReturn(true);
+
+		// when
+		pointService.rollbackPointsForLessonResult(11, 7, null);
+
+		// then
+		verify(studentPointRepository, never()).sumDeltaByLessonResultId(any());
+		verify(studentPointRepository, never()).save(any(StudentPoint.class));
+		verify(applicationEventPublisher, never()).publishEvent(any());
+	}
+
+	@Test
+	void shouldIgnoreDuplicateRollbackInsertRaisedByConcurrentRequest() {
+		// given
+		when(studentPointRepository.existsByLessonResultIdAndReason(11, "LESSON_RESET")).thenReturn(false);
+		when(studentPointRepository.sumDeltaByLessonResultId(11)).thenReturn(3);
+		when(studentPointRepository.save(any(StudentPoint.class)))
+				.thenThrow(new DataIntegrityViolationException("duplicate LESSON_RESET"));
+
+		// when
+		pointService.rollbackPointsForLessonResult(11, 7, null);
+
+		// then
 		verify(applicationEventPublisher, never()).publishEvent(any());
 	}
 }

@@ -468,13 +468,17 @@ public class TaskService {
 
 	public Mono<Void> resetUserProgress(Integer lessonId, Integer userId) {
 		return Mono.fromCallable(() -> {
-			lessonRepository.findById(lessonId).orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_FOUND));
-			userAnswerRepository.deleteByUserIdAndLessonId(userId, lessonId);
-			userTaskAttentionEventRepository.deleteByUserIdAndLessonId(userId, lessonId);
-			userLessonRepository.findByUserIdAndLessonId(userId, lessonId).ifPresent(ul -> {
-				pointsService.rollbackPointsForLessonResult(ul.getId(), userId, null);
+			transactionTemplate.execute(status -> {
+				lessonRepository.findById(lessonId)
+						.orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_FOUND));
+				userAnswerRepository.deleteByUserIdAndLessonId(userId, lessonId);
+				userTaskAttentionEventRepository.deleteByUserIdAndLessonId(userId, lessonId);
+				userLessonRepository.findByUserIdAndLessonId(userId, lessonId).ifPresent(ul -> {
+					pointsService.rollbackPointsForLessonResult(ul.getId(), userId, null);
+				});
+				userLessonRepository.deleteByUserIdAndLessonId(userId, lessonId);
+				return null;
 			});
-			userLessonRepository.deleteByUserIdAndLessonId(userId, lessonId);
 			return (Void) null;
 		}).subscribeOn(Schedulers.boundedElastic()).then();
 	}

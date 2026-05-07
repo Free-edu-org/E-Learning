@@ -2,8 +2,9 @@ package pl.freeedu.backend.achievement;
 
 import org.junit.jupiter.api.Test;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -11,8 +12,8 @@ class AchievementMigrationContractTest {
 
 	@Test
 	void shouldKeepFinalAchievementCoreInInitialSchemaAndSeeds() throws Exception {
-		String schema = Files.readString(Path.of("src/main/resources/db/migration/V1_1__initial_schema.sql"));
-		String seed = Files.readString(Path.of("src/main/resources/db/seed/V2_1__seed_tables.sql"));
+		String schema = readResource("db/migration/V1_1__initial_schema.sql");
+		String seed = readResource("db/seed/V2_1__seed_tables.sql");
 
 		assertTrue(schema.contains("CREATE TABLE achievements"));
 		assertTrue(schema.contains("code        VARCHAR(64)  NOT NULL"));
@@ -31,5 +32,15 @@ class AchievementMigrationContractTest {
 		assertTrue(seed.contains("'AVATAR_CHANGED', NULL"));
 		assertTrue(seed.contains("TEN_POINTS"));
 		assertTrue(seed.contains("'POINTS', 10"));
+	}
+
+	private String readResource(String path) throws IOException {
+		InputStream stream = Thread.currentThread().getContextClassLoader().getResourceAsStream(path);
+		if (stream == null) {
+			throw new IOException("Missing classpath resource: " + path);
+		}
+		try (stream) {
+			return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+		}
 	}
 }

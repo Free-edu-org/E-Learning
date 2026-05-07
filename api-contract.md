@@ -859,7 +859,7 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
 ### 5.3.1. Get Detailed Lesson Result For Selected Student
 - **URL**: `/api/v1/teacher/lessons/{lessonPublicId}/students/{userPublicId}/result`
 - **Method**: `GET`
--- **Description**: Zwraca szczegółowy wynik ukończonej lekcji dla wskazanego ucznia. Endpoint jest scoped do nauczyciela-owner'a lekcji.
+- **Description**: Zwraca szczegółowy wynik ukończonej lekcji dla wskazanego ucznia. Endpoint jest scoped do nauczyciela-owner'a lekcji.
 - **Authorization**: `TEACHER`
 
 **Success (200 OK):**
@@ -1573,7 +1573,7 @@ Warstwa BFF dla uczniow.
 ### 7.6. Get Personal Progress History
 - **URL**: `/api/v1/student/progress`
 - **Method**: `GET`
--- **Description**: Zwraca historyczny średni wynik lekcji aktualnego ucznia. Snapshot jest aktualizowany przy ukończeniu lekcji. Wymaga `STUDENT`.
+- **Description**: Zwraca historyczny średni wynik lekcji aktualnego ucznia. Snapshot jest aktualizowany przy ukończeniu lekcji. Wymaga `STUDENT`.
 
 **Success (200 OK):**
 ```json

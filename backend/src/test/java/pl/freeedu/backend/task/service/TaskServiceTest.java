@@ -675,6 +675,22 @@ class TaskServiceTest {
 	}
 
 	@Test
+	void shouldExecuteResetProgressInsideTransactionTemplate() {
+		// given
+		Integer lessonId = 1;
+		Integer studentId = 20;
+		Lesson lesson = Lesson.builder().id(lessonId).build();
+		when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
+
+		// when
+		Mono<Void> result = taskService.resetUserProgress(lessonId, studentId);
+
+		// then
+		StepVerifier.create(result).verifyComplete();
+		verify(transactionTemplate).execute(any());
+	}
+
+	@Test
 	void shouldReturnErrorWhenLessonNotFoundInReset() {
 		// given
 		when(lessonRepository.findById(1)).thenReturn(Optional.empty());

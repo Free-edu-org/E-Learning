@@ -1,6 +1,7 @@
 package pl.freeedu.backend.student.service;
 
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,13 +37,20 @@ public class PointService {
 		if (lessonResultId == null) {
 			return;
 		}
+		if (repository.existsByLessonResultIdAndReason(lessonResultId, "LESSON_RESET")) {
+			return;
+		}
 		Integer sum = repository.sumDeltaByLessonResultId(lessonResultId);
 		if (sum == null || sum == 0) {
 			return;
 		}
 		StudentPoint correction = StudentPoint.builder().userId(userId).lessonResultId(lessonResultId).delta(-sum)
 				.reason("LESSON_RESET").createdBy(performedBy).build();
-		repository.save(correction);
+		try {
+			repository.save(correction);
+		} catch (DataIntegrityViolationException ex) {
+			return;
+		}
 		publishPointsChanged(userId, -sum, "LESSON_RESET");
 	}
 
