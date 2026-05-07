@@ -110,15 +110,15 @@ class StudentDashboardControllerPublicIdWebTest {
 	void shouldReturnStudentSkillBreakdownForCurrentStudent() {
 		// given
 		when(studentService.getSkillStats()).thenReturn(Flux
-				.fromIterable(List.of(StudentSkillStatsResponse.builder().category("Wybor").correct(6).wrong(2).build(),
-						StudentSkillStatsResponse.builder().category("Pisanie").correct(1).wrong(1).build())));
+				.fromIterable(List.of(StudentSkillStatsResponse.builder().category("Wybór").correct(6).wrong(2).build(),
+					StudentSkillStatsResponse.builder().category("Pisanie").correct(1).wrong(1).build())));
 
 		// when
 		WebTestClient.ResponseSpec result = webTestClient.mutateWith(mockUser("student").roles("STUDENT")).get()
 				.uri("/api/v1/student/skills").exchange();
 
 		// then
-		result.expectStatus().isOk().expectBody().jsonPath("$[0].category").isEqualTo("Wybor").jsonPath("$[0].correct")
+		result.expectStatus().isOk().expectBody().jsonPath("$[0].category").isEqualTo("Wybór").jsonPath("$[0].correct")
 				.isEqualTo(6).jsonPath("$[0].wrong").isEqualTo(2);
 		verify(studentService).getSkillStats();
 	}
@@ -128,8 +128,8 @@ class StudentDashboardControllerPublicIdWebTest {
 		// given
 		when(studentAchievementService.getAchievementsForCurrentStudent())
 				.thenReturn(Mono.just(List.of(StudentAchievementResponse.builder().id(1).title("Pierwsza lekcja")
-						.description("Ukonczyles swoja pierwsza lekcje").icon("").color("warning").unlocked(true)
-						.unlockedAt(java.time.LocalDateTime.of(2026, 5, 6, 12, 30, 0)).newlyUnlocked(true).build())));
+					.description("Ukończyłeś swoją pierwszą lekcję").icon("").color("warning").unlocked(true)
+					.unlockedAt(java.time.LocalDateTime.of(2026, 5, 6, 12, 30, 0)).newlyUnlocked(true).build())));
 
 		// when
 		WebTestClient.ResponseSpec result = webTestClient.mutateWith(mockUser("student").roles("STUDENT")).get()
@@ -137,7 +137,7 @@ class StudentDashboardControllerPublicIdWebTest {
 
 		// then
 		result.expectStatus().isOk().expectBody().jsonPath("$[0].id").isEqualTo(1).jsonPath("$[0].title")
-				.isEqualTo("Pierwsza lekcja").jsonPath("$[0].description").isEqualTo("Ukonczyles swoja pierwsza lekcje")
+			.isEqualTo("Pierwsza lekcja").jsonPath("$[0].description").isEqualTo("Ukończyłeś swoją pierwszą lekcję")
 				.jsonPath("$[0].icon").isEqualTo("").jsonPath("$[0].color").isEqualTo("warning")
 				.jsonPath("$[0].unlocked").isEqualTo(true).jsonPath("$[0].unlockedAt").isEqualTo("2026-05-06T12:30:00")
 				.jsonPath("$[0].newlyUnlocked").isEqualTo(true);
