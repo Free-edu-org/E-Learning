@@ -17,7 +17,7 @@ public class AchievementRuleEvaluator {
 		};
 	}
 
-	void validateAchievement(Achievement achievement) {
+	public void validateAchievement(Achievement achievement) {
 		AchievementType type = achievement.getType();
 		Integer threshold = achievement.getThreshold();
 

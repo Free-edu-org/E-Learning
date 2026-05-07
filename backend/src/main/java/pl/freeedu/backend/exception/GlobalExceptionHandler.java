@@ -8,6 +8,7 @@ import org.springframework.web.bind.support.WebExchangeBindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.server.MethodNotAllowedException;
 import org.springframework.web.server.ServerWebExchange;
+import pl.freeedu.backend.achievement.exception.AchievementException;
 import pl.freeedu.backend.auth.exception.AuthException;
 import pl.freeedu.backend.invitation.exception.InvitationException;
 import pl.freeedu.backend.lesson.exception.LessonException;
@@ -33,6 +34,13 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(AuthException.class)
 	public Mono<ProblemDetail> handleAuthException(AuthException ex, ServerWebExchange exchange) {
 		log.warn("AuthException [{} {}]: {}", exchange.getRequest().getMethod(), exchange.getRequest().getPath(),
+				ex.getMessage());
+		return buildProblemDetail(ex.getErrorCode().getStatus(), ex.getMessage(), ex.getErrorCode().name(), exchange);
+	}
+
+	@ExceptionHandler(AchievementException.class)
+	public Mono<ProblemDetail> handleAchievementException(AchievementException ex, ServerWebExchange exchange) {
+		log.warn("AchievementException [{} {}]: {}", exchange.getRequest().getMethod(), exchange.getRequest().getPath(),
 				ex.getMessage());
 		return buildProblemDetail(ex.getErrorCode().getStatus(), ex.getMessage(), ex.getErrorCode().name(), exchange);
 	}

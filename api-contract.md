@@ -1177,6 +1177,208 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
 - `FORBIDDEN` (403 Forbidden): Token role does not permit access.
 
 ---
+### 6.6. Get All Achievement Definitions
+- **URL**: `/api/v1/admin/achievements`
+- **Method**: `GET`
+- **Description**: Zwraca wszystkie definicje achievementow, aktywne i nieaktywne, posortowane po `sortOrder`, potem po kolejności utworzenia. Wymaga `ADMIN`.
+
+**Success (200 OK):**
+```json
+[
+  {
+    "code": "FIRST_LESSON",
+    "title": "Pierwsza lekcja",
+    "description": "Ukończyłeś swoją pierwszą lekcję",
+    "icon": "",
+    "color": "warning",
+    "type": "LESSONS_COMPLETED",
+    "threshold": 1,
+    "active": true,
+    "sortOrder": 1,
+    "createdAt": "2026-05-06T12:30:00",
+    "updatedAt": "2026-05-06T12:30:00"
+  }
+]
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `code` | String | Immutable publiczny identyfikator achievementu. |
+| `title` | String | Nazwa achievementu. |
+| `description` | String | Opis achievementu. |
+| `icon` | String | Ikona prezentacyjna. |
+| `color` | String | Kolor prezentacyjny. |
+| `type` | Enum | Typ reguły unlocka (`LESSONS_COMPLETED`, `POINTS`, `AVATAR_CHANGED`). |
+| `threshold` | Integer \| null | Próg wymagany dla typu reguły. |
+| `active` | Boolean | Czy achievement jest widoczny dla studentów i brany pod uwagę przy unlockach. |
+| `sortOrder` | Integer | Kolejność wyświetlania. |
+| `createdAt` | String (ISO datetime) | Data utworzenia definicji. |
+| `updatedAt` | String (ISO datetime) | Data ostatniej aktualizacji definicji. |
+
+**Known Errors:**
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
+
+---
+### 6.7. Get Achievement Definition By Code
+- **URL**: `/api/v1/admin/achievements/{code}`
+- **Method**: `GET`
+- **Description**: Zwraca pojedynczą definicję achievementu po immutable `code`. Wymaga `ADMIN`.
+
+**Success (200 OK):**
+```json
+{
+  "code": "FIRST_LESSON",
+  "title": "Pierwsza lekcja",
+  "description": "Ukończyłeś swoją pierwszą lekcję",
+  "icon": "",
+  "color": "warning",
+  "type": "LESSONS_COMPLETED",
+  "threshold": 1,
+  "active": true,
+  "sortOrder": 1,
+  "createdAt": "2026-05-06T12:30:00",
+  "updatedAt": "2026-05-06T12:30:00"
+}
+```
+
+**Known Errors:**
+- `ACHIEVEMENT_NOT_FOUND` (404 Not Found): Achievement does not exist.
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
+
+---
+### 6.8. Create Achievement Definition
+- **URL**: `/api/v1/admin/achievements`
+- **Method**: `POST`
+- **Description**: Tworzy nową definicję achievementu. `code` i `type` są immutable po utworzeniu. Wymaga `ADMIN`.
+
+**Request Body (JSON):**
+```json
+{
+  "code": "FIRST_LESSON",
+  "title": "Pierwsza lekcja",
+  "description": "Ukończyłeś swoją pierwszą lekcję",
+  "icon": "",
+  "color": "warning",
+  "type": "LESSONS_COMPLETED",
+  "threshold": 1,
+  "active": true,
+  "sortOrder": 1
+}
+```
+
+**Success (201 Created):**
+```json
+{
+  "code": "FIRST_LESSON",
+  "title": "Pierwsza lekcja",
+  "description": "Ukończyłeś swoją pierwszą lekcję",
+  "icon": "",
+  "color": "warning",
+  "type": "LESSONS_COMPLETED",
+  "threshold": 1,
+  "active": true,
+  "sortOrder": 1,
+  "createdAt": "2026-05-06T12:30:00",
+  "updatedAt": "2026-05-06T12:30:00"
+}
+```
+
+**Validation Rules:**
+- `code` musi mieć format uppercase snake case, np. `FIRST_LESSON`.
+- `LESSONS_COMPLETED` i `POINTS` wymagają `threshold > 0`.
+- `AVATAR_CHANGED` wymaga `threshold = null`.
+- `active` jest wymagane.
+- `sortOrder` musi być `>= 0`.
+
+**Known Errors:**
+- `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
+- `INVALID_ACHIEVEMENT_RULE` (400 Bad Request): `type` i `threshold` nie tworzą poprawnej reguły.
+- `ACHIEVEMENT_CODE_ALREADY_EXISTS` (409 Conflict): `code` already exists.
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
+
+---
+### 6.9. Update Achievement Definition
+- **URL**: `/api/v1/admin/achievements/{code}`
+- **Method**: `PUT`
+- **Description**: Aktualizuje edytowalne pola achievementu. `code` i `type` pozostają immutable. Wymaga `ADMIN`.
+
+**Request Body (JSON):**
+```json
+{
+  "title": "Pierwsza lekcja - zaktualizowana",
+  "description": "Ukończyłeś swoją pierwszą lekcję",
+  "icon": "",
+  "color": "success",
+  "threshold": 2,
+  "active": true,
+  "sortOrder": 1
+}
+```
+
+**Success (200 OK):**
+```json
+{
+  "code": "FIRST_LESSON",
+  "title": "Pierwsza lekcja - zaktualizowana",
+  "description": "Ukończyłeś swoją pierwszą lekcję",
+  "icon": "",
+  "color": "success",
+  "type": "LESSONS_COMPLETED",
+  "threshold": 2,
+  "active": true,
+  "sortOrder": 1,
+  "createdAt": "2026-05-06T12:30:00",
+  "updatedAt": "2026-05-07T09:00:00"
+}
+```
+
+**Known Errors:**
+- `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
+- `INVALID_ACHIEVEMENT_RULE` (400 Bad Request): `type` i `threshold` nie tworzą poprawnej reguły.
+- `ACHIEVEMENT_NOT_FOUND` (404 Not Found): Achievement does not exist.
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
+
+---
+### 6.10. Activate Or Deactivate Achievement Definition
+- **URL**: `/api/v1/admin/achievements/{code}/active`
+- **Method**: `PATCH`
+- **Description**: Włącza lub wyłącza achievement. Deactivate ukrywa achievement z `GET /api/v1/student/achievements`, ale nie usuwa historycznych rekordów `user_get_achievement`. Wymaga `ADMIN`.
+
+**Request Body (JSON):**
+```json
+{
+  "active": false
+}
+```
+
+**Success (200 OK):**
+```json
+{
+  "code": "FIRST_LESSON",
+  "title": "Pierwsza lekcja",
+  "description": "Ukończyłeś swoją pierwszą lekcję",
+  "icon": "",
+  "color": "warning",
+  "type": "LESSONS_COMPLETED",
+  "threshold": 1,
+  "active": false,
+  "sortOrder": 1,
+  "createdAt": "2026-05-06T12:30:00",
+  "updatedAt": "2026-05-07T09:15:00"
+}
+```
+
+**Known Errors:**
+- `VALIDATION_FAILED` (400 Bad Request): `active` is missing.
+- `ACHIEVEMENT_NOT_FOUND` (404 Not Found): Achievement does not exist.
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
+
+---
 ## 7. Student Dashboard (`/api/v1/student`)
 
 Warstwa BFF dla uczniow.

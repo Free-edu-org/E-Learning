@@ -109,6 +109,11 @@ const LESSON_PREDICATES = [
     "title LIKE 'Own Lesson %'"
 ];
 
+const ACHIEVEMENT_PREDICATES = [
+    "code LIKE 'ADMIN_TEST_ACH_%'",
+    "name LIKE 'Admin Test Achievement %'"
+];
+
 async function selectIds(pool, table, idColumn, predicates) {
     const [rows] = await pool.query(
         `SELECT ${idColumn} AS id FROM ${table} WHERE ${predicates.join(' OR ')}`
@@ -158,6 +163,7 @@ async function main() {
         const lessonIds = await selectIds(pool, 'lessons', 'id', LESSON_PREDICATES);
         const groupIds = await selectIds(pool, 'user_groups', 'id', GROUP_PREDICATES);
         const userIds = await selectIds(pool, 'users', 'id', USER_PREDICATES);
+        const achievementIds = await selectIds(pool, 'achievements', 'id', ACHIEVEMENT_PREDICATES);
 
         const [attachmentRows] = lessonIds.length
             ? await pool.query(
@@ -174,7 +180,8 @@ async function main() {
             + await deleteByIds(pool, 'user_answers', 'lesson_id', lessonIds);
         const deletedUserLessonsCount = await deleteByIds(pool, 'user_lessons', 'user_id', userIds)
             + await deleteByIds(pool, 'user_lessons', 'lesson_id', lessonIds);
-        const deletedAchievementLinksCount = await deleteByIds(pool, 'user_get_achievement', 'user_id', userIds);
+        const deletedAchievementLinksCount = await deleteByIds(pool, 'user_get_achievement', 'user_id', userIds)
+            + await deleteByIds(pool, 'user_get_achievement', 'achievement_id', achievementIds);
         const deletedMembershipsCount = await deleteByIds(pool, 'user_in_group', 'user_id', userIds)
             + await deleteByIds(pool, 'user_in_group', 'group_id', groupIds);
         const deletedTasksCount = await deleteByIds(pool, 'choose_tasks', 'lesson_id', lessonIds)
@@ -185,6 +192,7 @@ async function main() {
         const deletedLessonAssignmentsCount = await deleteByIds(pool, 'group_has_lesson', 'lesson_id', lessonIds)
             + await deleteByIds(pool, 'group_has_lesson', 'group_id', groupIds);
         const deletedLessonsCount = await deleteByIds(pool, 'lessons', 'id', lessonIds);
+        const deletedAchievementsCount = await deleteByIds(pool, 'achievements', 'id', achievementIds);
         const deletedGroupsCount = await deleteByIds(pool, 'user_groups', 'id', groupIds);
         const deletedUsersCount = await deleteByIds(pool, 'users', 'id', userIds);
 
@@ -201,6 +209,7 @@ async function main() {
             deletedUserLessonsCount,
             deletedUserAnswersCount,
             deletedAchievementLinksCount,
+            deletedAchievementsCount,
             deletedResetArtifactsCount,
             deletedFilesCount: storedFileNames.length
         }, null, 2));

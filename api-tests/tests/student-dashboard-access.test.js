@@ -605,7 +605,10 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
 
             expect(response.status).toBe(200);
             expect(Array.isArray(response.data)).toBe(true);
-            expect(response.data).toHaveLength(3);
+            expect(response.data.length).toBeGreaterThanOrEqual(3);
+            expect(response.data.some((item) => item.title === 'Pierwsza lekcja')).toBe(true);
+            expect(response.data.some((item) => item.title === 'Nowy avatar')).toBe(true);
+            expect(response.data.some((item) => item.title === '10 punktów')).toBe(true);
 
             response.data.forEach((item) => {
                 expect(item).toHaveProperty('id');

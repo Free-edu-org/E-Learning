@@ -13,6 +13,9 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
     let createdTeacherPublicId;
     let createdStudentPublicId;
     let seedGroupPublicId;
+    let createdAchievementCode;
+    let deactivatedAchievementCode;
+    const createdAchievementCodes = new Set();
 
     beforeAll(async () => {
         let res = await apiClient.post('/auth/login', adminCreds);
@@ -41,6 +44,13 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
         if (createdTeacherPublicId) {
             const response = await apiClient.delete(`/users/${createdTeacherPublicId}`);
             expect([204, 404]).toContain(response.status);
+        }
+
+        for (const achievementCode of createdAchievementCodes) {
+            const response = await apiClient.patch(`/admin/achievements/${achievementCode}/active`, {
+                active: false
+            });
+            expect([200, 404]).toContain(response.status);
         }
 
         setAuthToken(null);
@@ -356,6 +366,211 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
             expect(response.status).toBe(200);
             expect(response.data.totalTeachers).toBeGreaterThanOrEqual(2);
             expect(response.data.totalStudents).toBeGreaterThanOrEqual(3);
+        });
+    });
+
+    describe('Admin achievement management', () => {
+        const createCode = () => `ADMIN_TEST_ACH_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+
+        it('should return 401 for achievement list when unauthenticated', async () => {
+            setAuthToken(null);
+            const response = await apiClient.get('/admin/achievements');
+            expect(response.status).toBe(401);
+        });
+
+        it('should return 403 for achievement list when role is TEACHER', async () => {
+            setAuthToken(teacherToken);
+            const response = await apiClient.get('/admin/achievements');
+            expect(response.status).toBe(403);
+        });
+
+        it('should create achievement for ADMIN (201)', async () => {
+            setAuthToken(adminToken);
+            createdAchievementCode = createCode();
+            createdAchievementCodes.add(createdAchievementCode);
+
+            const response = await apiClient.post('/admin/achievements', {
+                code: createdAchievementCode,
+                title: `Admin Test Achievement ${uniqueId}`,
+                description: 'Created from API test',
+                icon: 'icon',
+                color: 'warning',
+                type: 'LESSONS_COMPLETED',
+                threshold: 2,
+                active: true,
+                sortOrder: 9000
+            });
+
+            expect(response.status).toBe(201);
+            expect(response.data.code).toBe(createdAchievementCode);
+            expect(response.data.title).toBe(`Admin Test Achievement ${uniqueId}`);
+            expect(response.data).not.toHaveProperty('id');
+        });
+
+        it('should list achievements for ADMIN and keep sorting by sortOrder', async () => {
+            setAuthToken(adminToken);
+            const earlyCode = createCode();
+            const lateCode = createCode();
+            createdAchievementCodes.add(earlyCode);
+            createdAchievementCodes.add(lateCode);
+
+            let response = await apiClient.post('/admin/achievements', {
+                code: earlyCode,
+                title: `Admin Test Achievement ${uniqueId} Early`,
+                description: 'Early sort order',
+                icon: 'icon',
+                color: 'warning',
+                type: 'LESSONS_COMPLETED',
+                threshold: 1,
+                active: true,
+                sortOrder: 8000
+            });
+            expect(response.status).toBe(201);
+
+            response = await apiClient.post('/admin/achievements', {
+                code: lateCode,
+                title: `Admin Test Achievement ${uniqueId} Late`,
+                description: 'Late sort order',
+                icon: 'icon',
+                color: 'warning',
+                type: 'POINTS',
+                threshold: 20,
+                active: true,
+                sortOrder: 8001
+            });
+            expect(response.status).toBe(201);
+
+            response = await apiClient.get('/admin/achievements');
+            expect(response.status).toBe(200);
+            const earlyIndex = response.data.findIndex((item) => item.code === earlyCode);
+            const lateIndex = response.data.findIndex((item) => item.code === lateCode);
+            expect(earlyIndex).toBeGreaterThanOrEqual(0);
+            expect(lateIndex).toBeGreaterThanOrEqual(0);
+            expect(earlyIndex).toBeLessThan(lateIndex);
+        });
+
+        it('should get achievement by code for ADMIN (200)', async () => {
+            setAuthToken(adminToken);
+            const response = await apiClient.get(`/admin/achievements/${createdAchievementCode}`);
+            expect(response.status).toBe(200);
+            expect(response.data.code).toBe(createdAchievementCode);
+            expect(response.data.type).toBe('LESSONS_COMPLETED');
+        });
+
+        it('should return 404 for missing achievement code', async () => {
+            setAuthToken(adminToken);
+            const response = await apiClient.get('/admin/achievements/MISSING_ACHIEVEMENT_CODE');
+            expect(response.status).toBe(404);
+            expect(response.data.code).toBe('ACHIEVEMENT_NOT_FOUND');
+        });
+
+        it('should return 409 for duplicate achievement code', async () => {
+            setAuthToken(adminToken);
+            const response = await apiClient.post('/admin/achievements', {
+                code: createdAchievementCode,
+                title: 'Duplicate code',
+                description: 'Duplicate code',
+                icon: 'icon',
+                color: 'warning',
+                type: 'LESSONS_COMPLETED',
+                threshold: 1,
+                active: true,
+                sortOrder: 9001
+            });
+            expect(response.status).toBe(409);
+            expect(response.data.code).toBe('ACHIEVEMENT_CODE_ALREADY_EXISTS');
+        });
+
+        it('should return 400 for invalid code format', async () => {
+            setAuthToken(adminToken);
+            const response = await apiClient.post('/admin/achievements', {
+                code: 'bad-code',
+                title: 'Bad code',
+                description: 'Bad code',
+                icon: 'icon',
+                color: 'warning',
+                type: 'LESSONS_COMPLETED',
+                threshold: 1,
+                active: true,
+                sortOrder: 9002
+            });
+            expect(response.status).toBe(400);
+            expect(response.data.code).toBe('VALIDATION_FAILED');
+        });
+
+        it('should return 400 for invalid threshold rule', async () => {
+            setAuthToken(adminToken);
+            const response = await apiClient.post('/admin/achievements', {
+                code: createCode(),
+                title: 'Bad threshold',
+                description: 'Bad threshold',
+                icon: 'icon',
+                color: 'warning',
+                type: 'AVATAR_CHANGED',
+                threshold: 1,
+                active: true,
+                sortOrder: 9003
+            });
+            expect(response.status).toBe(400);
+            expect(response.data.code).toBe('INVALID_ACHIEVEMENT_RULE');
+        });
+
+        it('should update editable fields without changing code or type', async () => {
+            setAuthToken(adminToken);
+            const response = await apiClient.put(`/admin/achievements/${createdAchievementCode}`, {
+                code: 'SHOULD_NOT_CHANGE',
+                type: 'AVATAR_CHANGED',
+                title: 'Updated achievement title',
+                description: 'Updated achievement description',
+                icon: 'updated-icon',
+                color: 'success',
+                threshold: 5,
+                active: true,
+                sortOrder: 9100
+            });
+
+            expect(response.status).toBe(200);
+            expect(response.data.code).toBe(createdAchievementCode);
+            expect(response.data.type).toBe('LESSONS_COMPLETED');
+            expect(response.data.title).toBe('Updated achievement title');
+            expect(response.data.threshold).toBe(5);
+        });
+
+        it('should deactivate and reactivate achievement via PATCH active', async () => {
+            setAuthToken(adminToken);
+            deactivatedAchievementCode = createCode();
+            createdAchievementCodes.add(deactivatedAchievementCode);
+
+            let response = await apiClient.post('/admin/achievements', {
+                code: deactivatedAchievementCode,
+                title: `Admin Test Achievement ${uniqueId} Hidden`,
+                description: 'Will be hidden from student list',
+                icon: 'icon',
+                color: 'warning',
+                type: 'POINTS',
+                threshold: 999999,
+                active: true,
+                sortOrder: 9200
+            });
+            expect(response.status).toBe(201);
+
+            response = await apiClient.patch(`/admin/achievements/${deactivatedAchievementCode}/active`, {
+                active: false
+            });
+            expect(response.status).toBe(200);
+            expect(response.data.active).toBe(false);
+
+            setAuthToken(studentToken);
+            response = await apiClient.get('/student/achievements');
+            expect(response.status).toBe(200);
+            expect(response.data.some((item) => item.title === `Admin Test Achievement ${uniqueId} Hidden`)).toBe(false);
+
+            setAuthToken(adminToken);
+            response = await apiClient.patch(`/admin/achievements/${deactivatedAchievementCode}/active`, {
+                active: true
+            });
+            expect(response.status).toBe(200);
+            expect(response.data.active).toBe(true);
         });
     });
 });
