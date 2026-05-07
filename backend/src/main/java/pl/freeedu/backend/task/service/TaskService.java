@@ -3,16 +3,17 @@ package pl.freeedu.backend.task.service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.transaction.support.TransactionTemplate;
-import pl.freeedu.backend.achievement.event.LessonCompletedEvent;
+import org.springframework.transaction.support.TransactionTemplate;
 import pl.freeedu.backend.achievement.event.StudentStatsChangedEvent;
 import pl.freeedu.backend.lesson.model.Lesson;
 import pl.freeedu.backend.lesson.repository.LessonRepository;
 import pl.freeedu.backend.security.service.SecurityService;
 import pl.freeedu.backend.student.model.StudentProgressHistory;
 import pl.freeedu.backend.student.repository.StudentProgressHistoryRepository;
+import pl.freeedu.backend.student.service.PointService;
 import pl.freeedu.backend.task.dto.*;
 import pl.freeedu.backend.task.exception.TaskErrorCode;
 import pl.freeedu.backend.task.exception.TaskException;
@@ -46,6 +47,7 @@ public class TaskService {
 	private final TaskHintImageService taskHintImageService;
 	private final StudentProgressHistoryRepository studentProgressHistoryRepository;
 	private final UserTaskAttentionEventRepository userTaskAttentionEventRepository;
+	private final PointService pointsService;
 	private final TransactionTemplate transactionTemplate;
 	private final ApplicationEventPublisher applicationEventPublisher;
 	private final double sttMinScore;
@@ -57,8 +59,8 @@ public class TaskService {
 			UserInGroupRepository userInGroupRepository, SttClient sttClient,
 			TaskPublicIdLookupService taskPublicIdLookupService, TaskHintImageService taskHintImageService,
 			StudentProgressHistoryRepository studentProgressHistoryRepository,
-			UserTaskAttentionEventRepository userTaskAttentionEventRepository, TransactionTemplate transactionTemplate,
-			ApplicationEventPublisher applicationEventPublisher,
+			UserTaskAttentionEventRepository userTaskAttentionEventRepository, PointService pointsService,
+			TransactionTemplate transactionTemplate, ApplicationEventPublisher applicationEventPublisher,
 			@Value("${application.stt.min-score}") double sttMinScore) {
 		this.chooseTaskRepository = chooseTaskRepository;
 		this.writeTaskRepository = writeTaskRepository;
@@ -74,6 +76,7 @@ public class TaskService {
 		this.taskHintImageService = taskHintImageService;
 		this.studentProgressHistoryRepository = studentProgressHistoryRepository;
 		this.userTaskAttentionEventRepository = userTaskAttentionEventRepository;
+		this.pointsService = pointsService;
 		this.transactionTemplate = transactionTemplate;
 		this.applicationEventPublisher = applicationEventPublisher;
 		this.sttMinScore = sttMinScore;
@@ -406,10 +409,12 @@ public class TaskService {
 			userLesson.setFinishedAt(LocalDateTime.now());
 			userLessonRepository.save(userLesson);
 			saveProgressHistorySnapshot(userId);
-			applicationEventPublisher.publishEvent(new LessonCompletedEvent(userId, lessonId, lesson.getPublicId()));
-			// user_answers are persisted only during lesson submit today, so this generic
-			// stats-change event is the achievement trigger for both lessons and points
-			// rules.
+			try {
+				pointsService.addPointsForLessonResult(userLesson.getId(), userId, score, "TASK_CORRECT", userId);
+			} catch (Exception e) {
+				log.error("Failed to add points for lesson result. lessonResultId={}, userId={}", userLesson.getId(),
+						userId, e);
+			}
 			applicationEventPublisher.publishEvent(new StudentStatsChangedEvent(userId, "lesson-submitted"));
 
 			log.info("Lesson ID: {} submitted successfully by student ID: {}. Score: {}/{}", lessonId, userId, score,
@@ -472,6 +477,16 @@ public class TaskService {
 			lessonRepository.findById(lessonId).orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_FOUND));
 			userAnswerRepository.deleteByUserIdAndLessonId(userId, lessonId);
 			userTaskAttentionEventRepository.deleteByUserIdAndLessonId(userId, lessonId);
+			// rollback points related to this lesson result (if exists) before removing the
+			// result
+			userLessonRepository.findByUserIdAndLessonId(userId, lessonId).ifPresent(ul -> {
+				try {
+					pointsService.rollbackPointsForLessonResult(ul.getId(), userId, null);
+				} catch (Exception e) {
+					log.error("Failed to rollback points for lesson result. lessonResultId={}, userId={}", ul.getId(),
+							userId, e);
+				}
+			});
 			userLessonRepository.deleteByUserIdAndLessonId(userId, lessonId);
 			return (Void) null;
 		}).subscribeOn(Schedulers.boundedElastic()).then();

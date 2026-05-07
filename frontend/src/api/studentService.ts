@@ -5,6 +5,7 @@ export interface StudentStats {
   completedLessons: number;
   inProgressLessons: number;
   averageScore: number;
+  points: number;
 }
 
 export interface StudentProgressPoint {

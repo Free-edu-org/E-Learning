@@ -1394,7 +1394,8 @@ Warstwa BFF dla uczniow.
   "totalLessons": 2,
   "completedLessons": 1,
   "inProgressLessons": 1,
-  "averageScore": 80.0
+  "averageScore": 80.0,
+  "points": 5
 }
 ```
 
@@ -1404,6 +1405,7 @@ Warstwa BFF dla uczniow.
 | `completedLessons` | Integer | Liczba lekcji ukończonych przez ucznia. |
 | `inProgressLessons` | Integer | Liczba lekcji rozpoczętych, ale jeszcze nieukończonych. |
 | `averageScore` | Double | Średni wynik procentowy z lekcji, które mają zapisany rezultat. |
+| `points` | Integer | Aktualna suma punktów przyznanych uczniowi (1 punkt za poprawne zadanie). |
 
 **Known Errors:**
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.

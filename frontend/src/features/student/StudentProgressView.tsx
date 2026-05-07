@@ -209,7 +209,7 @@ export function StudentProgressView() {
               <StatCard
                 icon={PointsIcon}
                 title="Punkty"
-                value={totalPoints}
+                value={stats?.points ?? totalPoints}
                 subtitle={`${totalAnswers} odpowiedzi łącznie`}
                 color="info"
               />
