@@ -1405,7 +1405,7 @@ Warstwa BFF dla uczniow.
 | `completedLessons` | Integer | Liczba lekcji ukończonych przez ucznia. |
 | `inProgressLessons` | Integer | Liczba lekcji rozpoczętych, ale jeszcze nieukończonych. |
 | `averageScore` | Double | Średni wynik procentowy z lekcji, które mają zapisany rezultat. |
-| `points` | Integer | Aktualna suma punktów przyznanych uczniowi (1 punkt za poprawne zadanie). |
+| `points` | Integer | Aktualna suma punktów przyznanych uczniowi w ledgerze `student_points`; źródłem jest `PointService`, a reset lekcji zapisuje korektę ujemną. |
 
 **Known Errors:**
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
@@ -1416,7 +1416,7 @@ Warstwa BFF dla uczniow.
 ### 7.2. Get Student Lessons
 - **URL**: `/api/v1/student/lessons`
 - **Method**: `GET`
--- **Description**: Zwraca aktywne lekcje przypisane do aktualnego ucznia przez jego grupę oraz lekcje ukończone przez ucznia, nawet jeśli nauczyciel je później dezaktywuje. Wymaga `STUDENT`.
+- **Description**: Zwraca aktywne lekcje przypisane do aktualnego ucznia przez jego grupę oraz lekcje ukończone przez ucznia, nawet jeśli nauczyciel je później dezaktywuje. Wymaga `STUDENT`.
 
 **Success (200 OK):**
 ```json
@@ -1475,15 +1475,15 @@ Warstwa BFF dla uczniow.
 ### 7.2.1. Get Detailed Result Of Completed Lesson
 - **URL**: `/api/v1/student/lessons/{lessonPublicId}/result`
 - **Method**: `GET`
--- **Description**: Zwraca trwały widok szczegółowego wyniku ukończonej lekcji dla aktualnie zalogowanego ucznia.
+- **Description**: Zwraca trwały widok szczegółowego wyniku ukończonej lekcji dla aktualnie zalogowanego ucznia.
 - **Authorization**: `STUDENT`
 
 **Success (200 OK):** Response ma ten sam shape jak `GET /api/v1/teacher/lessons/{lessonPublicId}/students/{userPublicId}/result`.
 
 **Known Errors:**
 - `LESSON_NOT_FOUND` (404 Not Found)
--- `STUDENT_NO_ACCESS` (403 Forbidden): Uczeń nie ma dostępu do tej lekcji.
--- `LESSON_RESULT_NOT_FOUND` (404 Not Found): Brak ukończonego wyniku dla tej lekcji.
+- `STUDENT_NO_ACCESS` (403 Forbidden): Uczeń nie ma dostępu do tej lekcji.
+- `LESSON_RESULT_NOT_FOUND` (404 Not Found): Brak ukończonego wyniku dla tej lekcji.
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
 - `FORBIDDEN` (403 Forbidden): Token role does not permit access.
 
@@ -1492,7 +1492,7 @@ Warstwa BFF dla uczniow.
 ### 7.3. Get Student Skills Breakdown
 - **URL**: `/api/v1/student/skills`
 - **Method**: `GET`
--- **Description**: Zwraca rozbicie odpowiedzi aktualnego ucznia na kategorie zadań z liczbą poprawnych i błędnych odpowiedzi. Wymaga `STUDENT`.
+- **Description**: Zwraca rozbicie odpowiedzi aktualnego ucznia na kategorie zadań z liczbą poprawnych i błędnych odpowiedzi. Wymaga `STUDENT`.
 
 **Success (200 OK):**
 ```json
@@ -1519,7 +1519,7 @@ Warstwa BFF dla uczniow.
 ### 7.4. Get Student Achievements
 - **URL**: `/api/v1/student/achievements`
 - **Method**: `GET`
-- **Description**: Zwraca tylko aktywne achievementy ucznia. Endpoint jest read-only i nie wykonuje unlockow; achievementy sa odblokowywane event-driven po zapisaniu zdarzen domenowych. `unlocked`, `unlockedAt` i `newlyUnlocked` wynikaja z zapisanych rekordow `user_get_achievement` aktualnie zalogowanego ucznia. Wymaga `STUDENT`.
+- **Description**: Zwraca tylko aktywne achievementy ucznia. Endpoint jest read-only i nie wykonuje unlocków; achievementy są odblokowywane event-driven po zapisaniu zdarzeń domenowych. Reguła `POINTS` używa aktualnego salda z ledgera `student_points`. `unlocked`, `unlockedAt` i `newlyUnlocked` wynikają z zapisanych rekordów `user_get_achievement` aktualnie zalogowanego ucznia. Wymaga `STUDENT`.
 
 **Success (200 OK):**
 ```json
@@ -1555,7 +1555,7 @@ Warstwa BFF dla uczniow.
 ### 7.5. Mark Achievement Notifications As Seen
 - **URL**: `/api/v1/student/achievements/notifications/seen`
 - **Method**: `POST`
-- **Description**: Oznacza jako widziane wszystkie odblokowane achievementy aktualnie zalogowanego ucznia, ktore maja `notification_seen_at = NULL`. Endpoint nie przyjmuje `studentId`. Wymaga `STUDENT`.
+- **Description**: Oznacza jako widziane wszystkie odblokowane achievementy aktualnie zalogowanego ucznia, które mają `notification_seen_at = NULL`. Endpoint nie przyjmuje `studentId`. Wymaga `STUDENT`.
 
 **Success (200 OK):**
 ```json
@@ -1566,7 +1566,7 @@ Warstwa BFF dla uczniow.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `markedCount` | Integer | Liczba rekordow `user_get_achievement`, dla ktorych ustawiono `notification_seen_at`. |
+| `markedCount` | Integer | Liczba rekordów `user_get_achievement`, dla których ustawiono `notification_seen_at`. |
 
 ---
 

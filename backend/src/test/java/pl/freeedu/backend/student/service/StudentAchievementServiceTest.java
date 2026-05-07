@@ -173,6 +173,27 @@ class StudentAchievementServiceTest {
 		verify(userAchievementRepository).save(any(UserAchievement.class));
 	}
 
+	@Test
+	void shouldKeepPreviouslyUnlockedPointsAchievementAfterCurrentPointsDrop() {
+		// given
+		LocalDateTime unlockedAt = LocalDateTime.of(2026, 5, 6, 12, 30, 0);
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(7));
+		when(achievementRepository.findByActiveTrueOrderBySortOrderAscIdAsc())
+				.thenReturn(List.of(activeAchievement(1, "TEN_POINTS", "10 punktów", AchievementType.POINTS, 10)));
+		when(userAchievementRepository.findByUserId(7)).thenReturn(
+				List.of(UserAchievement.builder().userId(7).achievementId(1).createdAt(unlockedAt).build()));
+
+		// when
+		Mono<List<StudentAchievementResponse>> result = studentAchievementService.getAchievementsForCurrentStudent();
+
+		// then
+		StepVerifier.create(result).assertNext(responses -> {
+			assertEquals(1, responses.size());
+			assertTrue(responses.get(0).isUnlocked());
+			assertEquals(unlockedAt, responses.get(0).getUnlockedAt());
+		}).verifyComplete();
+	}
+
 	private Achievement activeAchievement(Integer id, String code, String name, AchievementType type,
 			Integer threshold) {
 		return Achievement.builder().id(id).code(code).name(name).description(name + " desc").icon("").color("warning")

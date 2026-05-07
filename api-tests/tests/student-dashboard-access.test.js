@@ -341,14 +341,17 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
             expect(response.data).toHaveProperty('completedLessons');
             expect(response.data).toHaveProperty('inProgressLessons');
             expect(response.data).toHaveProperty('averageScore');
+            expect(response.data).toHaveProperty('points');
             expect(typeof response.data.totalLessons).toBe('number');
             expect(typeof response.data.completedLessons).toBe('number');
             expect(typeof response.data.inProgressLessons).toBe('number');
             expect(typeof response.data.averageScore).toBe('number');
+            expect(typeof response.data.points).toBe('number');
             expect(response.data.completedLessons).toBeLessThanOrEqual(response.data.totalLessons);
             expect(response.data.inProgressLessons).toBeLessThanOrEqual(response.data.totalLessons);
             expect(response.data.averageScore).toBeGreaterThanOrEqual(0);
             expect(response.data.averageScore).toBeLessThanOrEqual(100);
+            expect(response.data.points).toBeGreaterThanOrEqual(0);
         });
 
         it('should deny TEACHER (403)', async () => {

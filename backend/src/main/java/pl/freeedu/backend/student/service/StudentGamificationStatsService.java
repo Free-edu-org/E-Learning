@@ -2,7 +2,6 @@ package pl.freeedu.backend.student.service;
 
 import org.springframework.stereotype.Service;
 import pl.freeedu.backend.task.model.UserLessonStatus;
-import pl.freeedu.backend.task.repository.UserAnswerRepository;
 import pl.freeedu.backend.task.repository.UserLessonRepository;
 import pl.freeedu.backend.user.exception.UserErrorCode;
 import pl.freeedu.backend.user.exception.UserException;
@@ -13,13 +12,13 @@ import pl.freeedu.backend.user.repository.UserRepository;
 public class StudentGamificationStatsService {
 
 	private final UserLessonRepository userLessonRepository;
-	private final UserAnswerRepository userAnswerRepository;
+	private final PointService pointService;
 	private final UserRepository userRepository;
 
-	public StudentGamificationStatsService(UserLessonRepository userLessonRepository,
-			UserAnswerRepository userAnswerRepository, UserRepository userRepository) {
+	public StudentGamificationStatsService(UserLessonRepository userLessonRepository, PointService pointService,
+			UserRepository userRepository) {
 		this.userLessonRepository = userLessonRepository;
-		this.userAnswerRepository = userAnswerRepository;
+		this.pointService = pointService;
 		this.userRepository = userRepository;
 	}
 
@@ -34,6 +33,6 @@ public class StudentGamificationStatsService {
 	}
 
 	public int calculateCurrentPoints(Integer userId) {
-		return Math.toIntExact(userAnswerRepository.countByUserId(userId));
+		return pointService.getCurrentPoints(userId);
 	}
 }

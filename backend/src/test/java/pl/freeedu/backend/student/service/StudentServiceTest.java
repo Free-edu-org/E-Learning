@@ -19,7 +19,6 @@ import pl.freeedu.backend.student.dto.StudentProgressHistoryResponse;
 import pl.freeedu.backend.student.dto.StudentStatsResponse;
 import pl.freeedu.backend.student.model.StudentProgressHistory;
 import pl.freeedu.backend.student.repository.StudentProgressHistoryRepository;
-import pl.freeedu.backend.student.repository.StudentPointRepository;
 import pl.freeedu.backend.task.dto.LessonResultDetailsResponse;
 import pl.freeedu.backend.task.exception.TaskErrorCode;
 import pl.freeedu.backend.task.exception.TaskException;
@@ -72,7 +71,7 @@ class StudentServiceTest {
 	@Mock
 	private StudentProgressHistoryRepository studentProgressHistoryRepository;
 	@Mock
-	private StudentPointRepository studentPointRepository;
+	private PointService pointService;
 
 	private StudentService studentService;
 
@@ -81,7 +80,7 @@ class StudentServiceTest {
 		studentService = new StudentService(securityService, userInGroupRepository, groupHasLessonRepository,
 				lessonRepository, userLessonRepository, lessonMapper, lessonResultDetailsService,
 				lessonAttachmentService, userGroupRepository, userAnswerRepository, studentProgressHistoryRepository,
-				studentPointRepository);
+				pointService);
 	}
 
 	@Test
@@ -247,6 +246,7 @@ class StudentServiceTest {
 		when(userLessonRepository.findByUserIdAndLessonIdIn(eq(userId), any())).thenReturn(List.of(
 				UserLesson.builder().lessonId(1).status(UserLessonStatus.COMPLETED).score(10).maxScore(10).build(),
 				UserLesson.builder().lessonId(2).status(UserLessonStatus.IN_PROGRESS).build()));
+		when(pointService.getCurrentPoints(userId)).thenReturn(7);
 
 		when(lessonMapper.toResponse(l1)).thenReturn(LessonResponse.builder().publicId("lesson-1").build());
 		when(lessonMapper.toResponse(l2)).thenReturn(LessonResponse.builder().publicId("lesson-2").build());
@@ -260,6 +260,7 @@ class StudentServiceTest {
 			assertEquals(1, stats.getCompletedLessons());
 			assertEquals(1, stats.getInProgressLessons());
 			assertEquals(100.0, stats.getAverageScore());
+			assertEquals(7, stats.getPoints());
 		}).verifyComplete();
 	}
 
@@ -305,6 +306,7 @@ class StudentServiceTest {
 		when(groupHasLessonRepository.findLessonIdsByGroupId(groupId)).thenReturn(List.of(1));
 		when(lessonRepository.findByIdIn(any())).thenReturn(List.of(l1));
 		when(lessonMapper.toResponse(any())).thenReturn(LessonResponse.builder().publicId("lesson-1").build());
+		when(pointService.getCurrentPoints(userId)).thenReturn(0);
 
 		// Score 0/0 -> null percent
 		when(userLessonRepository.findByUserIdAndLessonIdIn(anyInt(), any())).thenReturn(List
@@ -316,6 +318,7 @@ class StudentServiceTest {
 		// then
 		StepVerifier.create(result).assertNext(stats -> {
 			assertEquals(0.0, stats.getAverageScore());
+			assertEquals(0, stats.getPoints());
 		}).verifyComplete();
 	}
 

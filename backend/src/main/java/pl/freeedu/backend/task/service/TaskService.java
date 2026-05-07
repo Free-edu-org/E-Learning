@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.springframework.transaction.support.TransactionTemplate;
 import pl.freeedu.backend.achievement.event.StudentStatsChangedEvent;
 import pl.freeedu.backend.lesson.model.Lesson;
 import pl.freeedu.backend.lesson.repository.LessonRepository;
@@ -409,12 +408,7 @@ public class TaskService {
 			userLesson.setFinishedAt(LocalDateTime.now());
 			userLessonRepository.save(userLesson);
 			saveProgressHistorySnapshot(userId);
-			try {
-				pointsService.addPointsForLessonResult(userLesson.getId(), userId, score, "TASK_CORRECT", userId);
-			} catch (Exception e) {
-				log.error("Failed to add points for lesson result. lessonResultId={}, userId={}", userLesson.getId(),
-						userId, e);
-			}
+			pointsService.addPointsForLessonResult(userLesson.getId(), userId, score, "TASK_CORRECT", userId);
 			applicationEventPublisher.publishEvent(new StudentStatsChangedEvent(userId, "lesson-submitted"));
 
 			log.info("Lesson ID: {} submitted successfully by student ID: {}. Score: {}/{}", lessonId, userId, score,
@@ -477,15 +471,8 @@ public class TaskService {
 			lessonRepository.findById(lessonId).orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_FOUND));
 			userAnswerRepository.deleteByUserIdAndLessonId(userId, lessonId);
 			userTaskAttentionEventRepository.deleteByUserIdAndLessonId(userId, lessonId);
-			// rollback points related to this lesson result (if exists) before removing the
-			// result
 			userLessonRepository.findByUserIdAndLessonId(userId, lessonId).ifPresent(ul -> {
-				try {
-					pointsService.rollbackPointsForLessonResult(ul.getId(), userId, null);
-				} catch (Exception e) {
-					log.error("Failed to rollback points for lesson result. lessonResultId={}, userId={}", ul.getId(),
-							userId, e);
-				}
+				pointsService.rollbackPointsForLessonResult(ul.getId(), userId, null);
 			});
 			userLessonRepository.deleteByUserIdAndLessonId(userId, lessonId);
 			return (Void) null;

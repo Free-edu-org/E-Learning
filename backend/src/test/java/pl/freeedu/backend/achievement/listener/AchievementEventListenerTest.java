@@ -6,6 +6,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.freeedu.backend.achievement.event.AvatarChangedEvent;
+import pl.freeedu.backend.achievement.event.PointsChangedEvent;
 import pl.freeedu.backend.achievement.event.StudentStatsChangedEvent;
 import pl.freeedu.backend.student.service.StudentAchievementService;
 
@@ -41,6 +42,18 @@ class AchievementEventListenerTest {
 
 		// when
 		achievementEventListener.onStudentStatsChanged(event);
+
+		// then
+		verify(studentAchievementService).checkAndUnlockAchievements(7);
+	}
+
+	@Test
+	void shouldInvokeAchievementCheckWhenPointsChangedEventIsHandled() {
+		// given
+		PointsChangedEvent event = new PointsChangedEvent(7, 3, "TASK_CORRECT", 10);
+
+		// when
+		achievementEventListener.onPointsChanged(event);
 
 		// then
 		verify(studentAchievementService).checkAndUnlockAchievements(7);

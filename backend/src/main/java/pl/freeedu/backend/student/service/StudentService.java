@@ -21,7 +21,6 @@ import pl.freeedu.backend.student.dto.StudentProgressHistoryResponse;
 import pl.freeedu.backend.student.dto.StudentSkillStatsResponse;
 import pl.freeedu.backend.student.dto.StudentStatsResponse;
 import pl.freeedu.backend.student.repository.StudentProgressHistoryRepository;
-import pl.freeedu.backend.student.repository.StudentPointRepository;
 import pl.freeedu.backend.task.dto.LessonResultDetailsResponse;
 import pl.freeedu.backend.task.exception.TaskErrorCode;
 import pl.freeedu.backend.task.exception.TaskException;
@@ -50,15 +49,14 @@ public class StudentService {
 	private final UserGroupRepository userGroupRepository;
 	private final UserAnswerRepository userAnswerRepository;
 	private final StudentProgressHistoryRepository studentProgressHistoryRepository;
-	private final StudentPointRepository studentPointRepository;
+	private final PointService pointService;
 
 	public StudentService(SecurityService securityService, UserInGroupRepository userInGroupRepository,
 			GroupHasLessonRepository groupHasLessonRepository, LessonRepository lessonRepository,
 			UserLessonRepository userLessonRepository, LessonMapper lessonMapper,
 			LessonResultDetailsService lessonResultDetailsService, LessonAttachmentService lessonAttachmentService,
 			UserGroupRepository userGroupRepository, UserAnswerRepository userAnswerRepository,
-			StudentProgressHistoryRepository studentProgressHistoryRepository,
-			StudentPointRepository studentPointRepository) {
+			StudentProgressHistoryRepository studentProgressHistoryRepository, PointService pointService) {
 		this.securityService = securityService;
 		this.userInGroupRepository = userInGroupRepository;
 		this.groupHasLessonRepository = groupHasLessonRepository;
@@ -70,7 +68,7 @@ public class StudentService {
 		this.userGroupRepository = userGroupRepository;
 		this.userAnswerRepository = userAnswerRepository;
 		this.studentProgressHistoryRepository = studentProgressHistoryRepository;
-		this.studentPointRepository = studentPointRepository;
+		this.pointService = pointService;
 	}
 
 	public Mono<StudentStatsResponse> getStats() {
@@ -177,9 +175,7 @@ public class StudentService {
 		double averageScore = studentLessons.stream().filter(lesson -> lesson.getResultPercent() != null)
 				.mapToDouble(StudentLessonResponse::getResultPercent).average().orElse(0.0);
 
-		Integer points = studentPointRepository.sumDeltaByUserId(userId);
-		if (points == null)
-			points = 0;
+		Integer points = pointService.getCurrentPoints(userId);
 		StudentStatsResponse stats = StudentStatsResponse.builder().totalLessons(totalLessons)
 				.completedLessons(completedLessons).inProgressLessons(inProgressLessons)
 				.averageScore(roundToOneDecimal(averageScore)).points(points).build();
