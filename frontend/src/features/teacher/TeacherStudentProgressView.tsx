@@ -118,7 +118,7 @@ export function TeacherStudentProgressView() {
     });
   }, [stats]);
 
-  const totalPoints = useMemo(
+  const correctAnswers = useMemo(
     () =>
       (stats?.skillStats ?? []).reduce((sum, s) => sum + (s.correct ?? 0), 0),
     [stats],
@@ -248,8 +248,8 @@ export function TeacherStudentProgressView() {
               <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                 <StatCard
                   icon={PointsIcon}
-                  title="Punkty"
-                  value={totalPoints}
+                  title="Poprawne odpowiedzi"
+                  value={correctAnswers}
                   subtitle={`${totalAnswers} odpowiedzi łącznie`}
                   color="info"
                 />

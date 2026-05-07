@@ -8,6 +8,17 @@ export interface StudentStats {
   points: number;
 }
 
+export interface StudentAchievement {
+  id: number;
+  title: string;
+  description: string;
+  icon: string;
+  color: string;
+  unlocked: boolean;
+  unlockedAt: string | null;
+  newlyUnlocked: boolean;
+}
+
 export interface StudentProgressPoint {
   date: string;
   progress: number;
@@ -105,6 +116,8 @@ export interface LessonResultDetailsResponse {
 
 export const studentService = {
   getStats: () => fetchApi<StudentStats>("/api/v1/student/stats"),
+  getStudentAchievements: () =>
+    fetchApi<StudentAchievement[]>("/api/v1/student/achievements"),
   getLessons: () => fetchApi<StudentLesson[]>("/api/v1/student/lessons"),
   getProgress: () =>
     fetchApi<StudentProgressPoint[]>("/api/v1/student/progress"),
