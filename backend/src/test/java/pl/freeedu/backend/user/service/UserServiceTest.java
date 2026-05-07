@@ -252,6 +252,29 @@ class UserServiceTest {
 	}
 
 	@Test
+	void shouldPublishAvatarChangedEventWhenPresetAvatarIsSet() {
+		// given
+		Integer internalUserId = 42;
+		User user = User.builder().id(internalUserId).publicId("user-public-avatar").build();
+		when(userRepository.findById(internalUserId)).thenReturn(Optional.of(user));
+		when(userRepository.save(user)).thenReturn(user);
+		when(userMapper.toUserResponse(user))
+				.thenReturn(UserResponse.builder().publicId("user-public-avatar").avatarUrl("preset:avatar_1").build());
+
+		// when
+		Mono<UserResponse> result = userService.setPresetAvatar(internalUserId, "avatar_1");
+
+		// then
+		StepVerifier.create(result).assertNext(response -> {
+			assertEquals("user-public-avatar", response.getPublicId());
+			assertEquals("preset:avatar_1", user.getAvatarUrl());
+		}).verifyComplete();
+		ArgumentCaptor<AvatarChangedEvent> eventCaptor = ArgumentCaptor.forClass(AvatarChangedEvent.class);
+		verify(applicationEventPublisher).publishEvent(eventCaptor.capture());
+		assertEquals(internalUserId, eventCaptor.getValue().userId());
+	}
+
+	@Test
 	void shouldThrowWhenUserNotFoundInDelete() {
 		// given
 		when(userRepository.findById(1)).thenReturn(Optional.empty());

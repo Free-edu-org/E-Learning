@@ -5,7 +5,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 import pl.freeedu.backend.achievement.event.AvatarChangedEvent;
-import pl.freeedu.backend.achievement.event.LessonCompletedEvent;
 import pl.freeedu.backend.achievement.event.StudentStatsChangedEvent;
 import pl.freeedu.backend.student.service.StudentAchievementService;
 
@@ -17,12 +16,6 @@ public class AchievementEventListener {
 
 	public AchievementEventListener(StudentAchievementService studentAchievementService) {
 		this.studentAchievementService = studentAchievementService;
-	}
-
-	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-	public void onLessonCompleted(LessonCompletedEvent event) {
-		log.info("Received lesson completion event. User ID: {}, Lesson ID: {}, Lesson publicId: {}", event.userId(),
-				event.lessonId(), event.lessonPublicId());
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)

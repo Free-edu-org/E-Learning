@@ -1315,7 +1315,7 @@ Warstwa BFF dla uczniow.
 ### 7.4. Get Student Achievements
 - **URL**: `/api/v1/student/achievements`
 - **Method**: `GET`
-- **Description**: Zwraca tylko aktywne achievementy ucznia. Endpoint jest read-only i nie wykonuje unlockow. `unlocked`, `unlockedAt` i `newlyUnlocked` wynikaja z zapisanych rekordow `user_get_achievement` aktualnie zalogowanego ucznia. Wymaga `STUDENT`.
+- **Description**: Zwraca tylko aktywne achievementy ucznia. Endpoint jest read-only i nie wykonuje unlockow; achievementy sa odblokowywane event-driven po zapisaniu zdarzen domenowych. `unlocked`, `unlockedAt` i `newlyUnlocked` wynikaja z zapisanych rekordow `user_get_achievement` aktualnie zalogowanego ucznia. Wymaga `STUDENT`.
 
 **Success (200 OK):**
 ```json
@@ -1341,37 +1341,14 @@ Warstwa BFF dla uczniow.
 | `icon` | String | Ikona lub symbol achievementu. |
 | `color` | String | Kolor prezentacyjny achievementu. |
 | `unlocked` | Boolean | Czy achievement zostal zapisany jako odblokowany dla zalogowanego ucznia. |
+| `unlockedAt` | String \| null (ISO datetime) | Data odblokowania achievementu z `user_get_achievement.created_at`. |
+| `newlyUnlocked` | Boolean | `true`, gdy achievement jest odblokowany i `notification_seen_at IS NULL`. |
 
 **Known Errors:**
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
 - `FORBIDDEN` (403 Forbidden): Token role does not permit access.
 
-**Behavior Update (event-driven unlocks):**
-- Endpoint `GET /api/v1/student/achievements` jest read-only i nie tworzy unlockow.
-- `unlocked` wynika z istnienia rekordu w `user_get_achievement`.
-- Response zawiera tez:
-
-```json
-[
-  {
-    "id": 1,
-    "title": "Pierwsza lekcja",
-    "description": "Ukończyłeś swoją pierwszą lekcję",
-    "icon": "",
-    "color": "warning",
-    "unlocked": true,
-    "unlockedAt": "2026-05-06T12:30:00",
-    "newlyUnlocked": true
-  }
-]
-```
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `unlockedAt` | String \| null (ISO datetime) | Data odblokowania achievementu z `user_get_achievement.created_at`. |
-| `newlyUnlocked` | Boolean | `true`, gdy achievement jest odblokowany i `notification_seen_at IS NULL`. |
-
-**Related Endpoint:**
+### 7.5. Mark Achievement Notifications As Seen
 - **URL**: `/api/v1/student/achievements/notifications/seen`
 - **Method**: `POST`
 - **Description**: Oznacza jako widziane wszystkie odblokowane achievementy aktualnie zalogowanego ucznia, ktore maja `notification_seen_at = NULL`. Endpoint nie przyjmuje `studentId`. Wymaga `STUDENT`.
@@ -1389,7 +1366,7 @@ Warstwa BFF dla uczniow.
 
 ---
 
-### 7.5. Get Personal Progress History
+### 7.6. Get Personal Progress History
 - **URL**: `/api/v1/student/progress`
 - **Method**: `GET`
 - **Description**: Zwraca historyczny sredni wynik lekcji aktualnego ucznia. Snapshot jest aktualizowany przy ukonczeniu lekcji. Wymaga `STUDENT`.

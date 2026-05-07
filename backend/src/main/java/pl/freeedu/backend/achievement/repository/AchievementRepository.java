@@ -9,7 +9,5 @@ import java.util.List;
 @Repository
 public interface AchievementRepository extends JpaRepository<Achievement, Integer> {
 
-	List<Achievement> findAllByOrderByIdAsc();
-
 	List<Achievement> findByActiveTrueOrderBySortOrderAscIdAsc();
 }
