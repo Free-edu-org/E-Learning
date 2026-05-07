@@ -1,5 +1,7 @@
 package pl.freeedu.backend.student.dto;
 
+import java.time.LocalDateTime;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,4 +24,8 @@ public class StudentAchievementResponse {
 	private String color;
 
 	private boolean unlocked;
+
+	private LocalDateTime unlockedAt;
+
+	private boolean newlyUnlocked;
 }

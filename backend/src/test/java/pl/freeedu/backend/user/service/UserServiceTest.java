@@ -2,13 +2,18 @@ package pl.freeedu.backend.user.service;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.support.TransactionCallback;
+import org.springframework.transaction.support.TransactionTemplate;
+import pl.freeedu.backend.achievement.event.AvatarChangedEvent;
 import pl.freeedu.backend.auth.exception.AuthErrorCode;
 import pl.freeedu.backend.auth.exception.AuthException;
 import pl.freeedu.backend.security.principal.CustomUserDetails;
@@ -46,9 +51,21 @@ class UserServiceTest {
 	private PasswordEncoder passwordEncoder;
 	@Mock
 	private SecurityService securityService;
+	@Mock
+	private TransactionTemplate transactionTemplate;
+	@Mock
+	private ApplicationEventPublisher applicationEventPublisher;
 
 	@InjectMocks
 	private UserService userService;
+
+	@org.junit.jupiter.api.BeforeEach
+	void setUp() {
+		lenient().when(transactionTemplate.execute(any())).thenAnswer(invocation -> {
+			TransactionCallback<?> callback = invocation.getArgument(0);
+			return callback.doInTransaction(null);
+		});
+	}
 
 	@Test
 	void shouldCreateAdminSucceed() {
@@ -229,6 +246,9 @@ class UserServiceTest {
 			assertFalse(response.getAvatarUrl().startsWith("/uploads/avatars/" + internalUserId + "-"));
 			deleteTestAvatars(userPublicId);
 		}).verifyComplete();
+		ArgumentCaptor<AvatarChangedEvent> eventCaptor = ArgumentCaptor.forClass(AvatarChangedEvent.class);
+		verify(applicationEventPublisher).publishEvent(eventCaptor.capture());
+		assertEquals(internalUserId, eventCaptor.getValue().userId());
 	}
 
 	@Test

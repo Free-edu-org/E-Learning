@@ -22,6 +22,8 @@ class AchievementMigrationContractTest {
 		assertTrue(schema.contains("sort_order  INT          DEFAULT NULL"));
 		assertTrue(schema.contains("UNIQUE KEY uk_achievements_code (code)"));
 		assertTrue(schema.contains("UNIQUE KEY uk_user_get_achievement_user_achievement (user_id, achievement_id)"));
+		assertTrue(schema.contains("notification_seen_at TIMESTAMP NULL DEFAULT NULL"));
+		assertTrue(schema.contains("CREATE TABLE group_invitations"));
 
 		assertTrue(seed.contains("FIRST_LESSON"));
 		assertTrue(seed.contains("LESSONS_COMPLETED"));

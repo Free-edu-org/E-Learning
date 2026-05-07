@@ -8,9 +8,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import pl.freeedu.backend.student.dto.AchievementNotificationsSeenResponse;
 import pl.freeedu.backend.lesson.service.LessonPublicIdLookupService;
 import pl.freeedu.backend.student.dto.StudentAchievementResponse;
 import pl.freeedu.backend.student.dto.StudentLessonResponse;
@@ -85,6 +87,15 @@ public class StudentDashboardController {
 	@PreAuthorize("hasRole('STUDENT')")
 	public Mono<ResponseEntity<List<StudentAchievementResponse>>> getAchievements() {
 		return studentAchievementService.getAchievementsForCurrentStudent().map(ResponseEntity::ok);
+	}
+
+	@Operation(summary = "Mark student achievement notifications as seen")
+	@ApiResponse(responseCode = "200", description = "Achievement notifications marked as seen for current student")
+	@PostMapping("/achievements/notifications/seen")
+	@PreAuthorize("hasRole('STUDENT')")
+	public Mono<ResponseEntity<AchievementNotificationsSeenResponse>> markAchievementNotificationsSeen() {
+		return studentAchievementService.markNotificationsSeenForCurrentStudent().map(markedCount -> ResponseEntity
+				.ok(AchievementNotificationsSeenResponse.builder().markedCount(markedCount).build()));
 	}
 
 	@Operation(summary = "Get detailed result of student's completed lesson")

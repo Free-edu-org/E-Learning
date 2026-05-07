@@ -35,4 +35,7 @@ public class UserAchievement {
 
 	@Column(name = "created_at", insertable = false, updatable = false)
 	private LocalDateTime createdAt;
+
+	@Column(name = "notification_seen_at")
+	private LocalDateTime notificationSeenAt;
 }

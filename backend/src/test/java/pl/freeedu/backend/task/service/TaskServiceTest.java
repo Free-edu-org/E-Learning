@@ -5,7 +5,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.codec.multipart.FilePart;
+import org.springframework.transaction.support.TransactionCallback;
+import org.springframework.transaction.support.TransactionTemplate;
+import pl.freeedu.backend.achievement.event.LessonCompletedEvent;
+import pl.freeedu.backend.achievement.event.StudentStatsChangedEvent;
 import pl.freeedu.backend.lesson.model.Lesson;
 import pl.freeedu.backend.lesson.repository.LessonRepository;
 import pl.freeedu.backend.security.principal.CustomUserDetails;
@@ -59,6 +64,10 @@ class TaskServiceTest {
 	private StudentProgressHistoryRepository studentProgressHistoryRepository;
 	@Mock
 	private UserTaskAttentionEventRepository userTaskAttentionEventRepository;
+	@Mock
+	private TransactionTemplate transactionTemplate;
+	@Mock
+	private ApplicationEventPublisher applicationEventPublisher;
 
 	private TaskService taskService;
 
@@ -67,7 +76,12 @@ class TaskServiceTest {
 		taskService = new TaskService(chooseTaskRepository, writeTaskRepository, scatterTaskRepository,
 				speakTaskRepository, userAnswerRepository, userLessonRepository, lessonRepository, securityService,
 				userInGroupRepository, sttClient, taskPublicIdLookupService, taskHintImageService,
-				studentProgressHistoryRepository, userTaskAttentionEventRepository, 0.85);
+				studentProgressHistoryRepository, userTaskAttentionEventRepository, transactionTemplate,
+				applicationEventPublisher, 0.85);
+		lenient().when(transactionTemplate.execute(any())).thenAnswer(invocation -> {
+			TransactionCallback<?> callback = invocation.getArgument(0);
+			return callback.doInTransaction(null);
+		});
 	}
 
 	@Test
@@ -576,6 +590,8 @@ class TaskServiceTest {
 			assertEquals(UserLessonStatus.COMPLETED, userLesson.getStatus());
 		}).verifyComplete();
 		verify(studentProgressHistoryRepository).save(any());
+		verify(applicationEventPublisher).publishEvent(any(LessonCompletedEvent.class));
+		verify(applicationEventPublisher).publishEvent(any(StudentStatsChangedEvent.class));
 	}
 
 	@Test

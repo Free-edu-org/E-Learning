@@ -21,10 +21,10 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 
 import pl.freeedu.backend.exception.GlobalExceptionHandler;
 import pl.freeedu.backend.lesson.service.LessonPublicIdLookupService;
+import pl.freeedu.backend.security.service.SecurityService;
 import pl.freeedu.backend.student.dto.StudentAchievementResponse;
 import pl.freeedu.backend.student.dto.StudentProgressHistoryResponse;
 import pl.freeedu.backend.student.dto.StudentSkillStatsResponse;
-import pl.freeedu.backend.security.service.SecurityService;
 import pl.freeedu.backend.student.service.StudentAchievementService;
 import pl.freeedu.backend.student.service.StudentService;
 import pl.freeedu.backend.support.ControllerTestSecurityConfig;
@@ -109,8 +109,8 @@ class StudentDashboardControllerPublicIdWebTest {
 	@Test
 	void shouldReturnStudentSkillBreakdownForCurrentStudent() {
 		// given
-		when(studentService.getSkillStats()).thenReturn(reactor.core.publisher.Flux
-				.fromIterable(List.of(StudentSkillStatsResponse.builder().category("Wybór").correct(6).wrong(2).build(),
+		when(studentService.getSkillStats()).thenReturn(Flux
+				.fromIterable(List.of(StudentSkillStatsResponse.builder().category("Wybor").correct(6).wrong(2).build(),
 						StudentSkillStatsResponse.builder().category("Pisanie").correct(1).wrong(1).build())));
 
 		// when
@@ -118,7 +118,7 @@ class StudentDashboardControllerPublicIdWebTest {
 				.uri("/api/v1/student/skills").exchange();
 
 		// then
-		result.expectStatus().isOk().expectBody().jsonPath("$[0].category").isEqualTo("Wybór").jsonPath("$[0].correct")
+		result.expectStatus().isOk().expectBody().jsonPath("$[0].category").isEqualTo("Wybor").jsonPath("$[0].correct")
 				.isEqualTo(6).jsonPath("$[0].wrong").isEqualTo(2);
 		verify(studentService).getSkillStats();
 	}
@@ -128,8 +128,8 @@ class StudentDashboardControllerPublicIdWebTest {
 		// given
 		when(studentAchievementService.getAchievementsForCurrentStudent())
 				.thenReturn(Mono.just(List.of(StudentAchievementResponse.builder().id(1).title("Pierwsza lekcja")
-						.description("Ukończyłeś swoją pierwszą lekcję").icon("").color("warning").unlocked(true)
-						.build())));
+						.description("Ukonczyles swoja pierwsza lekcje").icon("").color("warning").unlocked(true)
+						.unlockedAt(java.time.LocalDateTime.of(2026, 5, 6, 12, 30, 0)).newlyUnlocked(true).build())));
 
 		// when
 		WebTestClient.ResponseSpec result = webTestClient.mutateWith(mockUser("student").roles("STUDENT")).get()
@@ -137,9 +137,10 @@ class StudentDashboardControllerPublicIdWebTest {
 
 		// then
 		result.expectStatus().isOk().expectBody().jsonPath("$[0].id").isEqualTo(1).jsonPath("$[0].title")
-				.isEqualTo("Pierwsza lekcja").jsonPath("$[0].description").isEqualTo("Ukończyłeś swoją pierwszą lekcję")
+				.isEqualTo("Pierwsza lekcja").jsonPath("$[0].description").isEqualTo("Ukonczyles swoja pierwsza lekcje")
 				.jsonPath("$[0].icon").isEqualTo("").jsonPath("$[0].color").isEqualTo("warning")
-				.jsonPath("$[0].unlocked").isEqualTo(true);
+				.jsonPath("$[0].unlocked").isEqualTo(true).jsonPath("$[0].unlockedAt").isEqualTo("2026-05-06T12:30:00")
+				.jsonPath("$[0].newlyUnlocked").isEqualTo(true);
 		verify(studentAchievementService).getAchievementsForCurrentStudent();
 	}
 
@@ -152,6 +153,31 @@ class StudentDashboardControllerPublicIdWebTest {
 		// then
 		result.expectStatus().isForbidden();
 		verify(studentAchievementService, never()).getAchievementsForCurrentStudent();
+	}
+
+	@Test
+	void shouldMarkAchievementNotificationsSeenForCurrentStudent() {
+		// given
+		when(studentAchievementService.markNotificationsSeenForCurrentStudent()).thenReturn(Mono.just(2));
+
+		// when
+		WebTestClient.ResponseSpec result = webTestClient.mutateWith(mockUser("student").roles("STUDENT")).post()
+				.uri("/api/v1/student/achievements/notifications/seen").exchange();
+
+		// then
+		result.expectStatus().isOk().expectBody().jsonPath("$.markedCount").isEqualTo(2);
+		verify(studentAchievementService).markNotificationsSeenForCurrentStudent();
+	}
+
+	@Test
+	void shouldForbidAchievementNotificationsSeenForNonStudentRole() {
+		// when
+		WebTestClient.ResponseSpec result = webTestClient.mutateWith(mockUser("teacher").roles("TEACHER")).post()
+				.uri("/api/v1/student/achievements/notifications/seen").exchange();
+
+		// then
+		result.expectStatus().isForbidden();
+		verify(studentAchievementService, never()).markNotificationsSeenForCurrentStudent();
 	}
 
 	@Configuration
