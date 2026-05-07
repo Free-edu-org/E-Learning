@@ -28,9 +28,8 @@ export function StudentAchievementNotifications({
     };
 
     syncActiveHost();
-    const unsubscribe = subscribeToAchievementNotificationHostChanges(
-      syncActiveHost,
-    );
+    const unsubscribe =
+      subscribeToAchievementNotificationHostChanges(syncActiveHost);
 
     return () => {
       unsubscribe();

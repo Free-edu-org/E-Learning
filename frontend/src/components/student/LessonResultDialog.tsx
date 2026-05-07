@@ -42,7 +42,10 @@ export function LessonResultDialog({
       onClose={() => undefined}
       maxWidth="xs"
       backdropSx={{
-        backgroundColor: alpha("#0f172a", theme.palette.mode === "dark" ? 0.56 : 0.34),
+        backgroundColor: alpha(
+          "#0f172a",
+          theme.palette.mode === "dark" ? 0.56 : 0.34,
+        ),
         backdropFilter: "blur(10px)",
         WebkitBackdropFilter: "blur(10px)",
       }}

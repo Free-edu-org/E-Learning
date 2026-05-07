@@ -72,12 +72,9 @@ export function AchievementUnlockDialog({
   const description = getAchievementDescription(achievement.description);
   const icon = getAchievementIcon(achievement.icon);
   const isLast = currentIndex >= total - 1;
-  const panelSurface =
-    theme.palette.mode === "dark" ? "#0f172a" : "#ffffff";
-  const panelSurfaceAlt =
-    theme.palette.mode === "dark" ? "#111827" : "#f8fafc";
-  const mutedSurface =
-    theme.palette.mode === "dark" ? "#1f2937" : "#f1f5f9";
+  const panelSurface = theme.palette.mode === "dark" ? "#0f172a" : "#ffffff";
+  const panelSurfaceAlt = theme.palette.mode === "dark" ? "#111827" : "#f8fafc";
+  const mutedSurface = theme.palette.mode === "dark" ? "#1f2937" : "#f1f5f9";
   const dialogTitle = isLast
     ? "Masz nowe osiągnięcie"
     : "Kolejne osiągnięcie odblokowane";
@@ -96,7 +93,10 @@ export function AchievementUnlockDialog({
       onClose={processing ? () => undefined : onClose}
       maxWidth="xs"
       backdropSx={{
-        backgroundColor: alpha("#0f172a", theme.palette.mode === "dark" ? 0.56 : 0.34),
+        backgroundColor: alpha(
+          "#0f172a",
+          theme.palette.mode === "dark" ? 0.56 : 0.34,
+        ),
         backdropFilter: "blur(10px)",
         WebkitBackdropFilter: "blur(10px)",
       }}
@@ -107,7 +107,10 @@ export function AchievementUnlockDialog({
         bgcolor: panelSurface,
         background: `linear-gradient(180deg, ${panelSurfaceAlt} 0%, ${panelSurface} 100%)`,
         backgroundImage: "none",
-        borderColor: alpha(visuals.accent, theme.palette.mode === "dark" ? 0.22 : 0.2),
+        borderColor: alpha(
+          visuals.accent,
+          theme.palette.mode === "dark" ? 0.22 : 0.2,
+        ),
         boxShadow: `0 28px 70px ${alpha("#020617", theme.palette.mode === "dark" ? 0.58 : 0.22)}`,
         "&::before": {
           content: '""',
@@ -201,7 +204,14 @@ export function AchievementUnlockDialog({
               </Box>
             </Box>
 
-            <Stack spacing={1.5} sx={{ flex: 1, minWidth: 0, textAlign: { xs: "center", sm: "left" } }}>
+            <Stack
+              spacing={1.5}
+              sx={{
+                flex: 1,
+                minWidth: 0,
+                textAlign: { xs: "center", sm: "left" },
+              }}
+            >
               <Stack
                 direction="row"
                 spacing={1}
@@ -234,7 +244,11 @@ export function AchievementUnlockDialog({
               </Stack>
 
               <Box>
-                <Typography variant="h5" fontWeight={800} sx={{ lineHeight: 1.16 }}>
+                <Typography
+                  variant="h5"
+                  fontWeight={800}
+                  sx={{ lineHeight: 1.16 }}
+                >
                   {title}
                 </Typography>
                 <Typography
@@ -260,7 +274,11 @@ export function AchievementUnlockDialog({
               </Typography>
             )}
             {helperCopy && (
-              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ lineHeight: 1.6 }}
+              >
                 {helperCopy}
               </Typography>
             )}
