@@ -16,8 +16,8 @@ spring:
     baseline-on-migrate: true
     baseline-description: "init"
     baseline-version: "0"
-    repair-on-migrate: true
-    ignore-missing-migrations: true
+    repair-on-migrate: false
+    ignore-missing-migrations: false
     locations:
       - classpath:db/migration
       - classpath:db/seed
