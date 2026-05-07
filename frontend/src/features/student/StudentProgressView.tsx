@@ -33,10 +33,12 @@ import {
 } from "recharts";
 import {
   studentService,
+  type StudentAchievement,
   type StudentProgressPoint,
   type StudentSkillStats,
   type StudentStats,
 } from "@/api/studentService";
+import { AchievementCard } from "@/components/achievements/AchievementCard";
 import { userService, type UserProfile } from "@/api/userService";
 import { DashboardHeader } from "@/components/ui/panel/DashboardHeader";
 import { DashboardTopBar } from "@/components/ui/panel/DashboardTopBar";
@@ -47,7 +49,6 @@ import {
 import { StatCard } from "@/components/ui/panel/StatCard";
 import { useAuth } from "@/context/AuthContext";
 import { getErrorMessage } from "@/utils/dashboardUtils";
-import { generateAchievements } from "@/utils/progressMockData";
 
 type NormalizedSkill = StudentSkillStats & {
   correctPct: number;
@@ -64,11 +65,15 @@ export function StudentProgressView() {
     StudentProgressPoint[]
   >([]);
   const [skillsData, setSkillsData] = useState<StudentSkillStats[]>([]);
+  const [achievements, setAchievements] = useState<StudentAchievement[]>([]);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [achievementsLoading, setAchievementsLoading] = useState(true);
+  const [achievementsError, setAchievementsError] = useState<string | null>(
+    null,
+  );
 
-  const achievements = useMemo(() => generateAchievements(), []);
   const progressChartData = useMemo(
     () =>
       progressHistory.map((item) => ({
@@ -94,26 +99,14 @@ export function StudentProgressView() {
     });
   }, [skillsData]);
 
-  const totalPoints = useMemo(
-    () => skillsData.reduce((sum, item) => sum + (item.correct ?? 0), 0),
-    [skillsData],
-  );
-
-  const totalAnswers = useMemo(
-    () =>
-      skillsData.reduce(
-        (sum, item) => sum + (item.correct ?? 0) + (item.wrong ?? 0),
-        0,
-      ),
-    [skillsData],
-  );
-
   const handleLogout = () => {
     logout();
     navigate("/login");
   };
 
   useEffect(() => {
+    let ignore = false;
+
     Promise.all([
       userService.getCurrentUser(),
       studentService.getStats(),
@@ -121,15 +114,56 @@ export function StudentProgressView() {
       studentService.getSkills(),
     ])
       .then(([currentUser, nextStats, nextProgressHistory, nextSkills]) => {
+        if (ignore) {
+          return;
+        }
+
         setUser(currentUser);
         setStats(nextStats);
         setProgressHistory(nextProgressHistory);
         setSkillsData(nextSkills);
       })
       .catch((err: unknown) => {
+        if (ignore) {
+          return;
+        }
+
         setError(getErrorMessage(err, "Nie udało się pobrać danych postępu."));
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!ignore) {
+          setLoading(false);
+        }
+      });
+
+    studentService
+      .getStudentAchievements()
+      .then((nextAchievements) => {
+        if (ignore) {
+          return;
+        }
+
+        setAchievements(nextAchievements);
+        setAchievementsError(null);
+      })
+      .catch((err: unknown) => {
+        if (ignore) {
+          return;
+        }
+
+        setAchievementsError(
+          getErrorMessage(err, "Nie udało się pobrać listy achievementów."),
+        );
+      })
+      .finally(() => {
+        if (!ignore) {
+          setAchievementsLoading(false);
+        }
+      });
+
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   const pageBg =
@@ -209,8 +243,8 @@ export function StudentProgressView() {
               <StatCard
                 icon={PointsIcon}
                 title="Punkty"
-                value={stats?.points ?? totalPoints}
-                subtitle={`${totalAnswers} odpowiedzi łącznie`}
+                value={stats?.points ?? 0}
+                subtitle="Suma punktów przyznanych z ukończonych lekcji"
                 color="info"
               />
             </Grid>
@@ -401,55 +435,25 @@ export function StudentProgressView() {
                     <Skeleton key={i} variant="rounded" height={80} />
                   ))}
                 </Stack>
+              ) : achievementsLoading ? (
+                <Stack spacing={1}>
+                  {[...Array(4)].map((_, i) => (
+                    <Skeleton key={i} variant="rounded" height={164} />
+                  ))}
+                </Stack>
+              ) : achievementsError ? (
+                <Alert severity="error" sx={{ borderRadius: 2 }}>
+                  {achievementsError}
+                </Alert>
+              ) : achievements.length === 0 ? (
+                <Alert severity="info" sx={{ borderRadius: 2 }}>
+                  Nie ma jeszcze aktywnych achievementów do wyświetlenia.
+                </Alert>
               ) : (
                 <Grid container spacing={2}>
                   {achievements.map((achievement) => (
                     <Grid key={achievement.id} size={{ xs: 12, sm: 6, md: 3 }}>
-                      <Paper
-                        elevation={0}
-                        sx={{
-                          p: 2.5,
-                          textAlign: "center",
-                          borderRadius: 2,
-                          bgcolor: achievement.unlocked
-                            ? (t) =>
-                                alpha(t.palette[achievement.color].main, 0.08)
-                            : (t) => alpha(t.palette.text.disabled, 0.05),
-                          border: "1px solid",
-                          borderColor: achievement.unlocked
-                            ? (t) =>
-                                alpha(t.palette[achievement.color].main, 0.2)
-                            : (t) => alpha(t.palette.divider, 0.3),
-                          opacity: achievement.unlocked ? 1 : 0.6,
-                        }}
-                      >
-                        <Typography variant="h4" sx={{ mb: 1, fontSize: 32 }}>
-                          {achievement.icon}
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          fontWeight={700}
-                          sx={{ mb: 0.5 }}
-                        >
-                          {achievement.label}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {achievement.description}
-                        </Typography>
-                        {achievement.unlocked && achievement.unlockedAt && (
-                          <Typography
-                            variant="caption"
-                            display="block"
-                            sx={{
-                              mt: 1,
-                              color: (t) => t.palette[achievement.color].main,
-                              fontWeight: 600,
-                            }}
-                          >
-                            Zdobyte
-                          </Typography>
-                        )}
-                      </Paper>
+                      <AchievementCard achievement={achievement} />
                     </Grid>
                   ))}
                 </Grid>

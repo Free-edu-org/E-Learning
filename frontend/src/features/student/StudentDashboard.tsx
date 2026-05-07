@@ -604,6 +604,11 @@ export function StudentDashboard() {
                         color="success"
                         variant="outlined"
                       />
+                      <Chip
+                        label={`Punkty: ${stats.points}`}
+                        color="info"
+                        variant="outlined"
+                      />
                     </Stack>
                     <Typography
                       variant="body2"
