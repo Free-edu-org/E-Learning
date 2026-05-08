@@ -10,7 +10,6 @@ import {
   Container,
   FormControlLabel,
   Grid,
-  IconButton,
   InputAdornment,
   MenuItem,
   Paper,
@@ -30,7 +29,7 @@ import {
   RefreshOutlined as RefreshIcon,
   SearchOutlined as SearchIcon,
 } from "@mui/icons-material";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   adminService,
   type AchievementType,
@@ -60,10 +59,10 @@ import {
   panelFooterButtonSx,
   panelGridCardContentSx,
   panelGridCardSx,
-  panelIconButtonSx,
   panelInlineActionsSx,
   panelSingleLineSx,
   panelSurfaceSx,
+  panelToolbarButtonSx,
   panelToolbarSx,
   panelTwoLinesSx,
 } from "@/components/ui/panel/panelStyles";
@@ -194,23 +193,6 @@ function normalizeCodeInput(value: string) {
     .replace(/^_+/, "");
 }
 
-function buildDraftFromAchievement(
-  achievement: AdminAchievement,
-): AchievementDraft {
-  return {
-    code: achievement.code,
-    title: achievement.title,
-    description: achievement.description,
-    icon: achievement.icon,
-    color: resolveAchievementColor(achievement.color),
-    type: achievement.type,
-    threshold:
-      achievement.threshold == null ? "" : String(achievement.threshold),
-    active: achievement.active,
-    sortOrder: String(achievement.sortOrder),
-  };
-}
-
 function getTypeLabel(type: AchievementType) {
   return (
     ACHIEVEMENT_TYPE_OPTIONS.find((option) => option.value === type)?.label ??
@@ -270,10 +252,6 @@ function getDisplayIcon(icon?: string) {
   }
 
   return Array.from(normalized).length <= 4 ? normalized : "🏅";
-}
-
-function getStatusTone(active: boolean) {
-  return active ? "success" : "default";
 }
 
 function translateAchievementValidationDetail(detail: string) {
@@ -592,6 +570,7 @@ function AchievementListSkeleton() {
 export function AdminAchievementsView() {
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const theme = useTheme();
 
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
@@ -608,8 +587,7 @@ export function AdminAchievementsView() {
   const [search, setSearch] = useState("");
 
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogMode, setDialogMode] =
-    useState<AchievementDialogMode>("create");
+  const [dialogMode] = useState<AchievementDialogMode>("create");
   const [selectedAchievementCode, setSelectedAchievementCode] = useState<
     string | null
   >(null);
@@ -685,6 +663,24 @@ export function AdminAchievementsView() {
     void loadAchievements();
   }, [loadAchievements]);
 
+  useEffect(() => {
+    const flash = location.state as
+      | {
+          snackbar?: {
+            severity: "success" | "error";
+            message: string;
+          };
+        }
+      | null;
+
+    if (!flash?.snackbar) {
+      return;
+    }
+
+    setSnackbar(flash.snackbar);
+    navigate("/admin/achievements", { replace: true, state: null });
+  }, [location.state, navigate]);
+
   const filteredAchievements = useMemo(() => {
     const normalized = search.trim().toLowerCase();
     if (!normalized) {
@@ -731,36 +727,11 @@ export function AdminAchievementsView() {
   };
 
   const openCreateDialog = () => {
-    setDialogMode("create");
-    setDialogFeedback(null);
-    setFieldErrors({});
-    setSelectedAchievementCode(null);
-    setDraft(emptyAchievementDraft);
-    setDialogOpen(true);
+    navigate("/admin/achievements/new");
   };
 
-  const openEditDialog = async (code: string) => {
-    setDialogMode("edit");
-    setSelectedAchievementCode(code);
-    setDialogFeedback(null);
-    setFieldErrors({});
-    setDialogOpen(true);
-    setDialogDetailsLoading(true);
-
-    try {
-      const achievement = await adminService.getAdminAchievement(code);
-      setDraft(buildDraftFromAchievement(achievement));
-    } catch (error) {
-      setDialogFeedback({
-        severity: "error",
-        message: getAchievementApiErrorState(
-          error,
-          "Nie udało się pobrać szczegółów achievementu.",
-        ).message,
-      });
-    } finally {
-      setDialogDetailsLoading(false);
-    }
+  const openEditDialog = (code: string) => {
+    navigate(`/admin/achievements/${code}/edit`);
   };
 
   const submitDialog = async () => {
@@ -892,14 +863,15 @@ export function AdminAchievementsView() {
           </Button>
 
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-            <IconButton
-              aria-label="Odśwież achievementy"
+            <Button
+              variant="outlined"
+              startIcon={<RefreshIcon />}
               onClick={() => void loadAchievements()}
               disabled={loadingAchievements}
-              sx={panelIconButtonSx}
+              sx={panelToolbarButtonSx}
             >
-              <RefreshIcon fontSize="small" />
-            </IconButton>
+              Odśwież
+            </Button>
             <Button
               variant="contained"
               startIcon={<AddCircleIcon />}
@@ -974,10 +946,6 @@ export function AdminAchievementsView() {
                 />
               </Paper>
 
-              <Alert severity="info" sx={{ borderRadius: 3 }}>
-                Aktywne osiągnięcie jest widoczne dla uczniów i może zostać zdobyte. Nieaktywne osiągnięcie jest ukryte przed uczniami i nie będzie dalej zdobywane. Dezaktywacja nie usuwa historii już zdobytych osiągnięć.
-              </Alert>
-
               {achievementsError && (
                 <Alert
                   severity="warning"
@@ -1019,8 +987,12 @@ export function AdminAchievementsView() {
               ) : (
                 <Grid container spacing={2}>
                   {filteredAchievements.map((achievement) => (
-                    <Grid key={achievement.code} size={{ xs: 12, md: 6, xl: 4 }}>
-                      <Card elevation={0} sx={panelGridCardSx}>
+                    <Grid
+                      key={achievement.code}
+                      size={{ xs: 12, md: 6, xl: 4 }}
+                      sx={{ display: "flex" }}
+                    >
+                      <Card elevation={0} sx={{ ...panelGridCardSx, width: "100%" }}>
                         <Box sx={panelGridCardContentSx}>
                           {(() => {
                             const visuals = getAchievementVisuals(
@@ -1034,10 +1006,9 @@ export function AdminAchievementsView() {
                           <Stack
                             direction="row"
                             spacing={1.5}
-                            alignItems="flex-start"
-                            justifyContent="space-between"
+                            alignItems="center"
                           >
-                            <Stack direction="row" spacing={1.5} sx={{ minWidth: 0 }}>
+                            <Stack direction="row" spacing={1.5} alignItems="center" sx={{ minWidth: 0 }}>
                               <Box
                                 sx={{
                                   width: 50,
@@ -1055,81 +1026,99 @@ export function AdminAchievementsView() {
                               >
                                 {icon}
                               </Box>
-                              <Box sx={{ minWidth: 0 }}>
+                              <Box sx={{ minWidth: 0, minHeight: 44, display: "flex", alignItems: "center" }}>
                                 <Typography variant="h6" fontWeight={800} sx={panelSingleLineSx}>
                                   {achievement.title}
-                                </Typography>
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                  sx={panelSingleLineSx}
-                                >
-                                  Kod techniczny: {achievement.code}
                                 </Typography>
                               </Box>
                             </Stack>
 
-                            <Chip
-                              label={achievement.active ? "Aktywny" : "Nieaktywny"}
-                              color={getStatusTone(achievement.active)}
-                              variant={achievement.active ? "filled" : "outlined"}
-                              sx={{ flexShrink: 0 }}
-                            />
                           </Stack>
 
                           <Typography
                             variant="body2"
                             color="text.secondary"
-                            sx={{ ...panelTwoLinesSx, mt: 2 }}
+                            sx={{ ...panelTwoLinesSx, mt: 1.25 }}
                           >
                             {achievement.description}
                           </Typography>
 
-                          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mt: 2 }}>
-                            <Chip label={getTypeLabel(achievement.type)} variant="outlined" sx={outlinedMetaChipSx} />
-                            <Chip label={getThresholdSummary(achievement)} variant="outlined" sx={outlinedMetaChipSx} />
-                            <Chip label={`Kolejność: ${achievement.sortOrder}`} variant="outlined" sx={outlinedMetaChipSx} />
-                            <Chip label={getColorLabel(resolveAchievementColor(achievement.color))} variant="outlined" sx={outlinedMetaChipSx} />
-                          </Stack>
-
-                          <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
-                            Warunek zdobycia: {getTypeLabel(achievement.type)}
-                          </Typography>
-
-                          <Stack spacing={0.5} sx={{ mt: 2.5 }}>
-                            <Typography variant="caption" color="text.secondary">
-                              Ostatnia aktualizacja: {formatDate(achievement.updatedAt)}
-                            </Typography>
-                          </Stack>
+                          <Box
+                            sx={{
+                              mt: 0.5,
+                              mb: 2,
+                              minHeight: 104,
+                              px: 1.5,
+                              py: 1,
+                              borderRadius: 2.5,
+                              display: "flex",
+                              alignItems: "center",
+                              border: "1px solid",
+                              borderColor: alpha(theme.palette.divider, 0.22),
+                              bgcolor: alpha(theme.palette.common.white, theme.palette.mode === "dark" ? 0.02 : 0.52),
+                            }}
+                          >
+                            <Stack spacing={0.85} sx={{ width: "100%" }}>
+                              <Stack direction="row" justifyContent="space-between" spacing={2}>
+                                <Typography variant="caption" color="text.secondary">
+                                  Warunek zdobycia
+                                </Typography>
+                                <Typography variant="caption" fontWeight={700} textAlign="right">
+                                  {getTypeLabel(achievement.type)}
+                                </Typography>
+                              </Stack>
+                              <Stack direction="row" justifyContent="space-between" spacing={2}>
+                                <Typography variant="caption" color="text.secondary">
+                                  Próg
+                                </Typography>
+                                <Typography variant="caption" fontWeight={700} textAlign="right">
+                                  {getThresholdSummary(achievement)}
+                                </Typography>
+                              </Stack>
+                              <Stack direction="row" justifyContent="space-between" spacing={2}>
+                                <Typography variant="caption" color="text.secondary">
+                                  Kolor
+                                </Typography>
+                                <Typography variant="caption" fontWeight={700} textAlign="right">
+                                  {getColorLabel(resolveAchievementColor(achievement.color))}
+                                </Typography>
+                              </Stack>
+                              <Stack direction="row" justifyContent="space-between" spacing={2}>
+                                <Typography variant="caption" color="text.secondary">
+                                  Kolejność
+                                </Typography>
+                                <Typography variant="caption" fontWeight={700} textAlign="right">
+                                  {achievement.sortOrder}
+                                </Typography>
+                              </Stack>
+                              <Stack direction="row" justifyContent="space-between" spacing={2}>
+                                <Typography variant="caption" color="text.secondary">
+                                  Ostatnia aktualizacja
+                                </Typography>
+                                <Typography variant="caption" fontWeight={700} textAlign="right">
+                                  {formatDate(achievement.updatedAt)}
+                                </Typography>
+                              </Stack>
+                            </Stack>
+                          </Box>
 
                           <Box sx={panelCardFooterSx}>
-                            <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-                              <Button
-                                variant="outlined"
-                                startIcon={<EditIcon />}
-                                onClick={() => void openEditDialog(achievement.code)}
-                                sx={panelFooterButtonSx}
-                              >
-                                Edytuj
-                              </Button>
+                            <Box />
+                            <Box sx={panelInlineActionsSx}>
                               <Box
                                 sx={{
-                                  minHeight: 40,
-                                  px: 1.4,
-                                  borderRadius: 999,
+                                  minHeight: 32,
+                                  px: 0,
+                                  borderRadius: 0,
                                   display: "flex",
                                   alignItems: "center",
-                                  gap: 1,
-                                  border: "1px solid",
-                                  borderColor: achievement.active
-                                    ? alpha(theme.palette.success.main, 0.28)
-                                    : alpha(theme.palette.divider, 0.9),
-                                  bgcolor: achievement.active
-                                    ? alpha(theme.palette.success.main, 0.08)
-                                    : alpha(theme.palette.text.disabled, 0.06),
+                                  gap: 0.5,
+                                  border: "none",
+                                  bgcolor: "transparent",
                                 }}
                               >
                                 <Switch
+                                  size="small"
                                   checked={achievement.active}
                                   disabled={toggleLoading}
                                   onChange={() => openToggleDialog(achievement)}
@@ -1139,20 +1128,47 @@ export function AdminAchievementsView() {
                                       : `Aktywuj osiągnięcie ${achievement.title}`,
                                   }}
                                   color="success"
+                                  sx={{
+                                    mr: 0.25,
+                                    "& .MuiSwitch-switchBase": {
+                                      p: 0.5,
+                                    },
+                                    "& .MuiSwitch-thumb": {
+                                      boxShadow: "none",
+                                    },
+                                    "& .MuiSwitch-track": {
+                                      borderRadius: 999,
+                                      opacity: 1,
+                                      bgcolor: achievement.active
+                                        ? alpha(theme.palette.success.main, 0.35)
+                                        : alpha(theme.palette.text.disabled, 0.35),
+                                    },
+                                  }}
                                 />
                                 <Box sx={{ minWidth: 0 }}>
                                   <Typography variant="body2" fontWeight={700}>
                                     {achievement.active ? "Aktywne" : "Nieaktywne"}
                                   </Typography>
-                                  <Typography variant="caption" color="text.secondary">
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    sx={{ display: "none" }}
+                                  >
                                     {achievement.active
                                       ? "Widoczne dla uczniów"
                                       : "Ukryte przed uczniami"}
                                   </Typography>
                                 </Box>
                               </Box>
-                            </Stack>
-                            <Box sx={panelInlineActionsSx} />
+                              <Button
+                                variant="outlined"
+                                startIcon={<EditIcon />}
+                                onClick={() => void openEditDialog(achievement.code)}
+                                sx={panelFooterButtonSx}
+                              >
+                                Edytuj
+                              </Button>
+                            </Box>
                           </Box>
                               </>
                             );
@@ -1454,9 +1470,6 @@ export function AdminAchievementsView() {
                         }
                         label={draft.active ? "Aktywne" : "Nieaktywne"}
                       />
-                      <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.75 }}>
-                        Aktywne: osiągnięcie jest widoczne dla uczniów i może zostać zdobyte. Nieaktywne: osiągnięcie jest ukryte przed uczniami i nie będzie dalej zdobywane. Dezaktywacja nie usuwa historii już zdobytych osiągnięć.
-                      </Typography>
                     </FormField>
                   </Grid>
                 </Grid>
@@ -1516,27 +1529,14 @@ export function AdminAchievementsView() {
         <AppDialogHeader
           icon={<AchievementIcon />}
           title={toggleDialog?.active ? "Ukryć osiągnięcie?" : "Aktywować osiągnięcie?"}
-          subtitle={
-            toggleDialog?.active
-              ? "Zmiana statusu zapisze się od razu. Osiągnięcie zostanie ukryte przed uczniami, ale historia już zdobytych osiągnięć pozostanie bez zmian."
-              : "Zmiana statusu zapisze się od razu. Osiągnięcie znów będzie widoczne dla uczniów i będzie mogło zostać zdobyte."
-          }
+          subtitle={undefined}
         />
         <AppDialogBody>
           <Stack spacing={1.25}>
             <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
-              {toggleDialog
-                ? `Potwierdź zmianę statusu dla osiągnięcia „${toggleDialog.title}”. Kod techniczny: ${toggleDialog.code}.`
-                : ""}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Aktywne: osiągnięcie jest widoczne dla uczniów i może zostać zdobyte.
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Nieaktywne: osiągnięcie jest ukryte przed uczniami i nie będzie dalej zdobywane.
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Dezaktywacja nie usuwa historii już zdobytych osiągnięć.
+              {toggleDialog?.active
+                ? "Zmiana statusu zapisze się od razu. Osiągnięcie zostanie ukryte przed uczniami, ale historia już zdobytych osiągnięć pozostanie bez zmian."
+                : "Zmiana statusu zapisze się od razu. Osiągnięcie znów będzie widoczne dla uczniów i będzie mogło zostać zdobyte."}
             </Typography>
           </Stack>
         </AppDialogBody>

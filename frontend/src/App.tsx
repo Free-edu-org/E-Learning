@@ -28,6 +28,7 @@ import { TeacherStudentsView } from "./features/teacher/TeacherStudentsView";
 import { TeacherStudentProgressView } from "./features/teacher/TeacherStudentProgressView";
 import { AdminDashboard } from "./features/admin/AdminDashboard";
 import { AdminAchievementsView } from "./features/admin/AdminAchievementsView";
+import { AdminAchievementEditorView } from "./features/admin/AdminAchievementEditorView";
 import { StudentDashboard } from "./features/student/StudentDashboard";
 import { StudentProgressView } from "./features/student/StudentProgressView";
 import { LessonSolver } from "./features/student/LessonSolver";
@@ -84,10 +85,10 @@ function ErrorGuard() {
 
 function App() {
   return (
-    <AppErrorBoundary>
-      <AppThemeProvider>
-        <AuthProvider>
-          <BrowserRouter>
+    <BrowserRouter>
+      <AppErrorBoundary>
+        <AppThemeProvider>
+          <AuthProvider>
             <Routes>
               {/* ErrorGuard wraps all routes – shows full-screen error on API failures */}
               <Route element={<ErrorGuard />}>
@@ -135,6 +136,14 @@ function App() {
                     path="/admin/achievements"
                     element={<AdminAchievementsView />}
                   />
+                  <Route
+                    path="/admin/achievements/new"
+                    element={<AdminAchievementEditorView mode="create" />}
+                  />
+                  <Route
+                    path="/admin/achievements/:code/edit"
+                    element={<AdminAchievementEditorView mode="edit" />}
+                  />
                 </Route>
 
                 <Route element={<ProtectedRoute allowedRoles={["STUDENT"]} />}>
@@ -157,10 +166,10 @@ function App() {
                 <Route path="*" element={<ErrorPage type="404" />} />
               </Route>
             </Routes>
-          </BrowserRouter>
-        </AuthProvider>
-      </AppThemeProvider>
-    </AppErrorBoundary>
+          </AuthProvider>
+        </AppThemeProvider>
+      </AppErrorBoundary>
+    </BrowserRouter>
   );
 }
 
