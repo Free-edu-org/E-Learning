@@ -122,7 +122,14 @@ export function AchievementCard({ achievement }: AchievementCardProps) {
             <Typography
               variant="subtitle1"
               fontWeight={800}
-              sx={{ lineHeight: 1.25 }}
+              sx={{
+                lineHeight: 1.25,
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+                overflowWrap: "anywhere",
+              }}
             >
               {title}
             </Typography>
@@ -130,7 +137,15 @@ export function AchievementCard({ achievement }: AchievementCardProps) {
           <Typography
             variant="body2"
             color="text.secondary"
-            sx={{ mt: 0.75, lineHeight: 1.6 }}
+            sx={{
+              mt: 0.75,
+              lineHeight: 1.6,
+              display: "-webkit-box",
+              WebkitLineClamp: 4,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+              overflowWrap: "anywhere",
+            }}
           >
             {description}
           </Typography>

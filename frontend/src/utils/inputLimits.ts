@@ -1,6 +1,8 @@
 export const INPUT_LIMITS = {
   lessonTitle: 30,
   lessonTheme: 120,
+  achievementTitle: 30,
+  achievementDescription: 90,
   username: 50,
   groupName: 60,
   groupDescription: 300,

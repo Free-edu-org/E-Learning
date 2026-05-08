@@ -952,6 +952,21 @@ export function AdminDashboard() {
               Zbuduj grupę i ustaw właściciela
             </Typography>
           </Paper>
+          <Paper
+            elevation={0}
+            onClick={() => navigate("/admin/achievements")}
+            sx={quickActionTileSx}
+          >
+            <Box sx={{ color: "warning.main", mb: 0.5 }}>
+              <SparklesIcon sx={{ fontSize: 30 }} />
+            </Box>
+            <Typography variant="body1" fontWeight={700} align="center">
+              Achievementy
+            </Typography>
+            <Typography variant="caption" color="text.secondary" align="center">
+              Zarządzaj listą achievementów i ich aktywnością
+            </Typography>
+          </Paper>
         </Box>
 
         <Card elevation={0} sx={panelSurfaceSx}>
