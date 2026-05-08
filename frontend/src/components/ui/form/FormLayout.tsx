@@ -1,9 +1,21 @@
-import { Box, Stack, Typography, type SxProps, type Theme } from "@mui/material";
+import {
+  Box,
+  Stack,
+  Typography,
+  type SxProps,
+  type Theme,
+} from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import type { ReactNode } from "react";
 import { uiTokens } from "@/theme/uiTokens";
 
-export function FormField({ children, sx }: { children: ReactNode; sx?: SxProps<Theme> }) {
+export function FormField({
+  children,
+  sx,
+}: {
+  children: ReactNode;
+  sx?: SxProps<Theme>;
+}) {
   return (
     <Box
       sx={{

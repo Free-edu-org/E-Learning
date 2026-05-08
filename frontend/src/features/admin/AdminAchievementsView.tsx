@@ -74,7 +74,11 @@ import {
   resolveAchievementColor,
 } from "@/components/achievements/achievementPresentation";
 import { useAuth } from "@/context/AuthContext";
-import { getApiErrorMessage, getErrorMessage, formatDate } from "@/utils/dashboardUtils";
+import {
+  getApiErrorMessage,
+  getErrorMessage,
+  formatDate,
+} from "@/utils/dashboardUtils";
 
 type AchievementDialogMode = "create" | "edit";
 
@@ -285,7 +289,9 @@ function translateAchievementValidationDetail(detail: string) {
   return detail;
 }
 
-function parseAchievementApiFieldErrors(error: ApiError): AchievementFieldErrors {
+function parseAchievementApiFieldErrors(
+  error: ApiError,
+): AchievementFieldErrors {
   const detail = error.problem.detail ?? "";
   if (!detail.startsWith("Validation failed:")) {
     return {};
@@ -402,7 +408,7 @@ function validateAchievementDraft(
   }
 
   if (mode === "create" && !draft.type) {
-    nextErrors.type = 'Wybierz warunek zdobycia.';
+    nextErrors.type = "Wybierz warunek zdobycia.";
   }
 
   if (draft.type === "AVATAR_CHANGED") {
@@ -446,8 +452,7 @@ function buildCreateAchievementPayload(
     icon: draft.icon.trim(),
     color: resolveAchievementColor(draft.color),
     type: draft.type,
-    threshold:
-      draft.type === "AVATAR_CHANGED" ? null : Number(draft.threshold),
+    threshold: draft.type === "AVATAR_CHANGED" ? null : Number(draft.threshold),
     active: draft.active,
     sortOrder: Number(draft.sortOrder),
   };
@@ -461,8 +466,7 @@ function buildUpdateAchievementPayload(
     description: draft.description.trim(),
     icon: draft.icon.trim(),
     color: resolveAchievementColor(draft.color),
-    threshold:
-      draft.type === "AVATAR_CHANGED" ? null : Number(draft.threshold),
+    threshold: draft.type === "AVATAR_CHANGED" ? null : Number(draft.threshold),
     active: draft.active,
     sortOrder: Number(draft.sortOrder),
   };
@@ -523,18 +527,38 @@ function AchievementPreviewCard({ draft }: { draft: AchievementDraft }) {
         </Stack>
 
         <Box>
-          <Typography variant="subtitle1" fontWeight={800} sx={{ lineHeight: 1.25 }}>
+          <Typography
+            variant="subtitle1"
+            fontWeight={800}
+            sx={{ lineHeight: 1.25 }}
+          >
             {title}
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75, lineHeight: 1.6 }}>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ mt: 0.75, lineHeight: 1.6 }}
+          >
             {description}
           </Typography>
         </Box>
 
         <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-          <Chip label={getTypeLabel(draft.type)} variant="outlined" sx={outlinedMetaChipSx} />
-          <Chip label={getDraftThresholdSummary(draft)} variant="outlined" sx={outlinedMetaChipSx} />
-          <Chip label={`Kolor: ${getColorLabel(draft.color)}`} variant="outlined" sx={outlinedMetaChipSx} />
+          <Chip
+            label={getTypeLabel(draft.type)}
+            variant="outlined"
+            sx={outlinedMetaChipSx}
+          />
+          <Chip
+            label={getDraftThresholdSummary(draft)}
+            variant="outlined"
+            sx={outlinedMetaChipSx}
+          />
+          <Chip
+            label={`Kolor: ${getColorLabel(draft.color)}`}
+            variant="outlined"
+            sx={outlinedMetaChipSx}
+          />
         </Stack>
 
         <Typography variant="caption" color="text.secondary">
@@ -575,9 +599,7 @@ export function AdminAchievementsView() {
 
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [loadingCurrentUser, setLoadingCurrentUser] = useState(true);
-  const [currentUserError, setCurrentUserError] = useState<string | null>(
-    null,
-  );
+  const [currentUserError, setCurrentUserError] = useState<string | null>(null);
 
   const [achievements, setAchievements] = useState<AdminAchievement[]>([]);
   const [loadingAchievements, setLoadingAchievements] = useState(true);
@@ -664,14 +686,12 @@ export function AdminAchievementsView() {
   }, [loadAchievements]);
 
   useEffect(() => {
-    const flash = location.state as
-      | {
-          snackbar?: {
-            severity: "success" | "error";
-            message: string;
-          };
-        }
-      | null;
+    const flash = location.state as {
+      snackbar?: {
+        severity: "success" | "error";
+        message: string;
+      };
+    } | null;
 
     if (!flash?.snackbar) {
       return;
@@ -747,7 +767,9 @@ export function AdminAchievementsView() {
 
     try {
       if (dialogMode === "create") {
-        await adminService.createAchievement(buildCreateAchievementPayload(draft));
+        await adminService.createAchievement(
+          buildCreateAchievementPayload(draft),
+        );
         setSnackbar({
           severity: "success",
           message: "Achievement został utworzony.",
@@ -902,8 +924,8 @@ export function AdminAchievementsView() {
                     Lista osiągnięć
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Twórz i edytuj osiągnięcia widoczne dla uczniów oraz decyduj,
-                    które z nich są aktywne.
+                    Twórz i edytuj osiągnięcia widoczne dla uczniów oraz
+                    decyduj, które z nich są aktywne.
                   </Typography>
                 </Stack>
               </Stack>
@@ -918,7 +940,10 @@ export function AdminAchievementsView() {
                     input: {
                       startAdornment: (
                         <InputAdornment position="start">
-                          <SearchIcon fontSize="small" sx={{ color: "text.secondary" }} />
+                          <SearchIcon
+                            fontSize="small"
+                            sx={{ color: "text.secondary" }}
+                          />
                         </InputAdornment>
                       ),
                     },
@@ -978,7 +1003,8 @@ export function AdminAchievementsView() {
                     </Button>
                   }
                 >
-                  Brak achievementów. Dodaj pierwszy wpis, aby udostępnić go w systemie.
+                  Brak achievementów. Dodaj pierwszy wpis, aby udostępnić go w
+                  systemie.
                 </Alert>
               ) : filteredAchievements.length === 0 ? (
                 <Alert severity="info">
@@ -992,7 +1018,10 @@ export function AdminAchievementsView() {
                       size={{ xs: 12, md: 6, xl: 4 }}
                       sx={{ display: "flex" }}
                     >
-                      <Card elevation={0} sx={{ ...panelGridCardSx, width: "100%" }}>
+                      <Card
+                        elevation={0}
+                        sx={{ ...panelGridCardSx, width: "100%" }}
+                      >
                         <Box sx={panelGridCardContentSx}>
                           {(() => {
                             const visuals = getAchievementVisuals(
@@ -1003,173 +1032,270 @@ export function AdminAchievementsView() {
 
                             return (
                               <>
-                          <Stack
-                            direction="row"
-                            spacing={1.5}
-                            alignItems="center"
-                          >
-                            <Stack direction="row" spacing={1.5} alignItems="center" sx={{ minWidth: 0 }}>
-                              <Box
-                                sx={{
-                                  width: 50,
-                                  height: 50,
-                                  borderRadius: 3,
-                                  display: "grid",
-                                  placeItems: "center",
-                                  fontSize: 28,
-                                  flexShrink: 0,
-                                  color: visuals.accent,
-                                  bgcolor: visuals.strongBackground,
-                                  border: "1px solid",
-                                  borderColor: visuals.border,
-                                }}
-                              >
-                                {icon}
-                              </Box>
-                              <Box sx={{ minWidth: 0, minHeight: 44, display: "flex", alignItems: "center" }}>
-                                <Typography variant="h6" fontWeight={800} sx={panelSingleLineSx}>
-                                  {achievement.title}
-                                </Typography>
-                              </Box>
-                            </Stack>
-
-                          </Stack>
-
-                          <Typography
-                            variant="body2"
-                            color="text.secondary"
-                            sx={{ ...panelTwoLinesSx, mt: 1.25 }}
-                          >
-                            {achievement.description}
-                          </Typography>
-
-                          <Box
-                            sx={{
-                              mt: 0.5,
-                              mb: 2,
-                              minHeight: 104,
-                              px: 1.5,
-                              py: 1,
-                              borderRadius: 2.5,
-                              display: "flex",
-                              alignItems: "center",
-                              border: "1px solid",
-                              borderColor: alpha(theme.palette.divider, 0.22),
-                              bgcolor: alpha(theme.palette.common.white, theme.palette.mode === "dark" ? 0.02 : 0.52),
-                            }}
-                          >
-                            <Stack spacing={0.85} sx={{ width: "100%" }}>
-                              <Stack direction="row" justifyContent="space-between" spacing={2}>
-                                <Typography variant="caption" color="text.secondary">
-                                  Warunek zdobycia
-                                </Typography>
-                                <Typography variant="caption" fontWeight={700} textAlign="right">
-                                  {getTypeLabel(achievement.type)}
-                                </Typography>
-                              </Stack>
-                              <Stack direction="row" justifyContent="space-between" spacing={2}>
-                                <Typography variant="caption" color="text.secondary">
-                                  Próg
-                                </Typography>
-                                <Typography variant="caption" fontWeight={700} textAlign="right">
-                                  {getThresholdSummary(achievement)}
-                                </Typography>
-                              </Stack>
-                              <Stack direction="row" justifyContent="space-between" spacing={2}>
-                                <Typography variant="caption" color="text.secondary">
-                                  Kolor
-                                </Typography>
-                                <Typography variant="caption" fontWeight={700} textAlign="right">
-                                  {getColorLabel(resolveAchievementColor(achievement.color))}
-                                </Typography>
-                              </Stack>
-                              <Stack direction="row" justifyContent="space-between" spacing={2}>
-                                <Typography variant="caption" color="text.secondary">
-                                  Kolejność
-                                </Typography>
-                                <Typography variant="caption" fontWeight={700} textAlign="right">
-                                  {achievement.sortOrder}
-                                </Typography>
-                              </Stack>
-                              <Stack direction="row" justifyContent="space-between" spacing={2}>
-                                <Typography variant="caption" color="text.secondary">
-                                  Ostatnia aktualizacja
-                                </Typography>
-                                <Typography variant="caption" fontWeight={700} textAlign="right">
-                                  {formatDate(achievement.updatedAt)}
-                                </Typography>
-                              </Stack>
-                            </Stack>
-                          </Box>
-
-                          <Box sx={panelCardFooterSx}>
-                            <Box />
-                            <Box sx={panelInlineActionsSx}>
-                              <Box
-                                sx={{
-                                  minHeight: 32,
-                                  px: 0,
-                                  borderRadius: 0,
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 0.5,
-                                  border: "none",
-                                  bgcolor: "transparent",
-                                }}
-                              >
-                                <Switch
-                                  size="small"
-                                  checked={achievement.active}
-                                  disabled={toggleLoading}
-                                  onChange={() => openToggleDialog(achievement)}
-                                  inputProps={{
-                                    "aria-label": achievement.active
-                                      ? `Dezaktywuj osiągnięcie ${achievement.title}`
-                                      : `Aktywuj osiągnięcie ${achievement.title}`,
-                                  }}
-                                  color="success"
-                                  sx={{
-                                    mr: 0.25,
-                                    "& .MuiSwitch-switchBase": {
-                                      p: 0.5,
-                                    },
-                                    "& .MuiSwitch-thumb": {
-                                      boxShadow: "none",
-                                    },
-                                    "& .MuiSwitch-track": {
-                                      borderRadius: 999,
-                                      opacity: 1,
-                                      bgcolor: achievement.active
-                                        ? alpha(theme.palette.success.main, 0.35)
-                                        : alpha(theme.palette.text.disabled, 0.35),
-                                    },
-                                  }}
-                                />
-                                <Box sx={{ minWidth: 0 }}>
-                                  <Typography variant="body2" fontWeight={700}>
-                                    {achievement.active ? "Aktywne" : "Nieaktywne"}
-                                  </Typography>
-                                  <Typography
-                                    variant="caption"
-                                    color="text.secondary"
-                                    sx={{ display: "none" }}
+                                <Stack
+                                  direction="row"
+                                  spacing={1.5}
+                                  alignItems="center"
+                                >
+                                  <Stack
+                                    direction="row"
+                                    spacing={1.5}
+                                    alignItems="center"
+                                    sx={{ minWidth: 0 }}
                                   >
-                                    {achievement.active
-                                      ? "Widoczne dla uczniów"
-                                      : "Ukryte przed uczniami"}
-                                  </Typography>
+                                    <Box
+                                      sx={{
+                                        width: 50,
+                                        height: 50,
+                                        borderRadius: 3,
+                                        display: "grid",
+                                        placeItems: "center",
+                                        fontSize: 28,
+                                        flexShrink: 0,
+                                        color: visuals.accent,
+                                        bgcolor: visuals.strongBackground,
+                                        border: "1px solid",
+                                        borderColor: visuals.border,
+                                      }}
+                                    >
+                                      {icon}
+                                    </Box>
+                                    <Box
+                                      sx={{
+                                        minWidth: 0,
+                                        minHeight: 44,
+                                        display: "flex",
+                                        alignItems: "center",
+                                      }}
+                                    >
+                                      <Typography
+                                        variant="h6"
+                                        fontWeight={800}
+                                        sx={panelSingleLineSx}
+                                      >
+                                        {achievement.title}
+                                      </Typography>
+                                    </Box>
+                                  </Stack>
+                                </Stack>
+
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                  sx={{ ...panelTwoLinesSx, mt: 1.25 }}
+                                >
+                                  {achievement.description}
+                                </Typography>
+
+                                <Box
+                                  sx={{
+                                    mt: 0.5,
+                                    mb: 2,
+                                    minHeight: 104,
+                                    px: 1.5,
+                                    py: 1,
+                                    borderRadius: 2.5,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    border: "1px solid",
+                                    borderColor: alpha(
+                                      theme.palette.divider,
+                                      0.22,
+                                    ),
+                                    bgcolor: alpha(
+                                      theme.palette.common.white,
+                                      theme.palette.mode === "dark"
+                                        ? 0.02
+                                        : 0.52,
+                                    ),
+                                  }}
+                                >
+                                  <Stack spacing={0.85} sx={{ width: "100%" }}>
+                                    <Stack
+                                      direction="row"
+                                      justifyContent="space-between"
+                                      spacing={2}
+                                    >
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                      >
+                                        Warunek zdobycia
+                                      </Typography>
+                                      <Typography
+                                        variant="caption"
+                                        fontWeight={700}
+                                        textAlign="right"
+                                      >
+                                        {getTypeLabel(achievement.type)}
+                                      </Typography>
+                                    </Stack>
+                                    <Stack
+                                      direction="row"
+                                      justifyContent="space-between"
+                                      spacing={2}
+                                    >
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                      >
+                                        Próg
+                                      </Typography>
+                                      <Typography
+                                        variant="caption"
+                                        fontWeight={700}
+                                        textAlign="right"
+                                      >
+                                        {getThresholdSummary(achievement)}
+                                      </Typography>
+                                    </Stack>
+                                    <Stack
+                                      direction="row"
+                                      justifyContent="space-between"
+                                      spacing={2}
+                                    >
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                      >
+                                        Kolor
+                                      </Typography>
+                                      <Typography
+                                        variant="caption"
+                                        fontWeight={700}
+                                        textAlign="right"
+                                      >
+                                        {getColorLabel(
+                                          resolveAchievementColor(
+                                            achievement.color,
+                                          ),
+                                        )}
+                                      </Typography>
+                                    </Stack>
+                                    <Stack
+                                      direction="row"
+                                      justifyContent="space-between"
+                                      spacing={2}
+                                    >
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                      >
+                                        Kolejność
+                                      </Typography>
+                                      <Typography
+                                        variant="caption"
+                                        fontWeight={700}
+                                        textAlign="right"
+                                      >
+                                        {achievement.sortOrder}
+                                      </Typography>
+                                    </Stack>
+                                    <Stack
+                                      direction="row"
+                                      justifyContent="space-between"
+                                      spacing={2}
+                                    >
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                      >
+                                        Ostatnia aktualizacja
+                                      </Typography>
+                                      <Typography
+                                        variant="caption"
+                                        fontWeight={700}
+                                        textAlign="right"
+                                      >
+                                        {formatDate(achievement.updatedAt)}
+                                      </Typography>
+                                    </Stack>
+                                  </Stack>
                                 </Box>
-                              </Box>
-                              <Button
-                                variant="outlined"
-                                startIcon={<EditIcon />}
-                                onClick={() => void openEditDialog(achievement.code)}
-                                sx={panelFooterButtonSx}
-                              >
-                                Edytuj
-                              </Button>
-                            </Box>
-                          </Box>
+
+                                <Box sx={panelCardFooterSx}>
+                                  <Box />
+                                  <Box sx={panelInlineActionsSx}>
+                                    <Box
+                                      sx={{
+                                        minHeight: 32,
+                                        px: 0,
+                                        borderRadius: 0,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 0.5,
+                                        border: "none",
+                                        bgcolor: "transparent",
+                                      }}
+                                    >
+                                      <Switch
+                                        size="small"
+                                        checked={achievement.active}
+                                        disabled={toggleLoading}
+                                        onChange={() =>
+                                          openToggleDialog(achievement)
+                                        }
+                                        inputProps={{
+                                          "aria-label": achievement.active
+                                            ? `Dezaktywuj osiągnięcie ${achievement.title}`
+                                            : `Aktywuj osiągnięcie ${achievement.title}`,
+                                        }}
+                                        color="success"
+                                        sx={{
+                                          mr: 0.25,
+                                          "& .MuiSwitch-switchBase": {
+                                            p: 0.5,
+                                          },
+                                          "& .MuiSwitch-thumb": {
+                                            boxShadow: "none",
+                                          },
+                                          "& .MuiSwitch-track": {
+                                            borderRadius: 999,
+                                            opacity: 1,
+                                            bgcolor: achievement.active
+                                              ? alpha(
+                                                  theme.palette.success.main,
+                                                  0.35,
+                                                )
+                                              : alpha(
+                                                  theme.palette.text.disabled,
+                                                  0.35,
+                                                ),
+                                          },
+                                        }}
+                                      />
+                                      <Box sx={{ minWidth: 0 }}>
+                                        <Typography
+                                          variant="body2"
+                                          fontWeight={700}
+                                        >
+                                          {achievement.active
+                                            ? "Aktywne"
+                                            : "Nieaktywne"}
+                                        </Typography>
+                                        <Typography
+                                          variant="caption"
+                                          color="text.secondary"
+                                          sx={{ display: "none" }}
+                                        >
+                                          {achievement.active
+                                            ? "Widoczne dla uczniów"
+                                            : "Ukryte przed uczniami"}
+                                        </Typography>
+                                      </Box>
+                                    </Box>
+                                    <Button
+                                      variant="outlined"
+                                      startIcon={<EditIcon />}
+                                      onClick={() =>
+                                        void openEditDialog(achievement.code)
+                                      }
+                                      sx={panelFooterButtonSx}
+                                    >
+                                      Edytuj
+                                    </Button>
+                                  </Box>
+                                </Box>
                               </>
                             );
                           })()}
@@ -1194,7 +1320,9 @@ export function AdminAchievementsView() {
       >
         <AppDialogHeader
           icon={<AchievementIcon />}
-          title={dialogMode === "create" ? "Nowe osiągnięcie" : "Edytuj osiągnięcie"}
+          title={
+            dialogMode === "create" ? "Nowe osiągnięcie" : "Edytuj osiągnięcie"
+          }
           subtitle={
             dialogMode === "create"
               ? "Uzupełnij dane osiągnięcia i wybierz warunek jego zdobycia."
@@ -1225,9 +1353,17 @@ export function AdminAchievementsView() {
                         label="Kod techniczny"
                         value={draft.code}
                         onChange={(event) => {
-                          const nextCode = normalizeCodeInput(event.target.value);
-                          setDraft((current) => ({ ...current, code: nextCode }));
-                          setFieldErrors((current) => ({ ...current, code: undefined }));
+                          const nextCode = normalizeCodeInput(
+                            event.target.value,
+                          );
+                          setDraft((current) => ({
+                            ...current,
+                            code: nextCode,
+                          }));
+                          setFieldErrors((current) => ({
+                            ...current,
+                            code: undefined,
+                          }));
                         }}
                         disabled={dialogMode === "edit"}
                         error={Boolean(fieldErrors.code)}
@@ -1248,7 +1384,8 @@ export function AdminAchievementsView() {
                         select
                         value={draft.type}
                         onChange={(event) => {
-                          const nextType = event.target.value as AchievementType;
+                          const nextType = event.target
+                            .value as AchievementType;
                           setDraft((current) => ({
                             ...current,
                             type: nextType,
@@ -1282,8 +1419,14 @@ export function AdminAchievementsView() {
                         label="Nazwa osiągnięcia"
                         value={draft.title}
                         onChange={(event) => {
-                          setDraft((current) => ({ ...current, title: event.target.value }));
-                          setFieldErrors((current) => ({ ...current, title: undefined }));
+                          setDraft((current) => ({
+                            ...current,
+                            title: event.target.value,
+                          }));
+                          setFieldErrors((current) => ({
+                            ...current,
+                            title: undefined,
+                          }));
                         }}
                         error={Boolean(fieldErrors.title)}
                         helperText={fieldErrors.title}
@@ -1298,8 +1441,14 @@ export function AdminAchievementsView() {
                           label="Ikona"
                           value={draft.icon}
                           onChange={(event) => {
-                            setDraft((current) => ({ ...current, icon: event.target.value }));
-                            setFieldErrors((current) => ({ ...current, icon: undefined }));
+                            setDraft((current) => ({
+                              ...current,
+                              icon: event.target.value,
+                            }));
+                            setFieldErrors((current) => ({
+                              ...current,
+                              icon: undefined,
+                            }));
                           }}
                           error={Boolean(fieldErrors.icon)}
                           helperText={
@@ -1318,9 +1467,15 @@ export function AdminAchievementsView() {
                                       display: "grid",
                                       placeItems: "center",
                                       fontSize: 20,
-                                      bgcolor: alpha(draftColorVisuals.accent, 0.12),
+                                      bgcolor: alpha(
+                                        draftColorVisuals.accent,
+                                        0.12,
+                                      ),
                                       border: "1px solid",
-                                      borderColor: alpha(draftColorVisuals.accent, 0.24),
+                                      borderColor: alpha(
+                                        draftColorVisuals.accent,
+                                        0.24,
+                                      ),
                                     }}
                                   >
                                     {draftPreviewIcon}
@@ -1332,17 +1487,36 @@ export function AdminAchievementsView() {
                           fullWidth
                         />
 
-                        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          flexWrap="wrap"
+                          useFlexGap
+                        >
                           {ACHIEVEMENT_ICON_OPTIONS.map((iconOption) => (
                             <Chip
                               key={iconOption}
                               label={iconOption}
                               clickable
-                              color={getDisplayIcon(draft.icon) === iconOption ? "primary" : "default"}
-                              variant={getDisplayIcon(draft.icon) === iconOption ? "filled" : "outlined"}
+                              color={
+                                getDisplayIcon(draft.icon) === iconOption
+                                  ? "primary"
+                                  : "default"
+                              }
+                              variant={
+                                getDisplayIcon(draft.icon) === iconOption
+                                  ? "filled"
+                                  : "outlined"
+                              }
                               onClick={() => {
-                                setDraft((current) => ({ ...current, icon: iconOption }));
-                                setFieldErrors((current) => ({ ...current, icon: undefined }));
+                                setDraft((current) => ({
+                                  ...current,
+                                  icon: iconOption,
+                                }));
+                                setFieldErrors((current) => ({
+                                  ...current,
+                                  icon: undefined,
+                                }));
                               }}
                               sx={{ minWidth: 44, justifyContent: "center" }}
                             />
@@ -1357,8 +1531,14 @@ export function AdminAchievementsView() {
                         label="Opis"
                         value={draft.description}
                         onChange={(event) => {
-                          setDraft((current) => ({ ...current, description: event.target.value }));
-                          setFieldErrors((current) => ({ ...current, description: undefined }));
+                          setDraft((current) => ({
+                            ...current,
+                            description: event.target.value,
+                          }));
+                          setFieldErrors((current) => ({
+                            ...current,
+                            description: undefined,
+                          }));
                         }}
                         error={Boolean(fieldErrors.description)}
                         helperText={fieldErrors.description}
@@ -1387,10 +1567,16 @@ export function AdminAchievementsView() {
                             ...current,
                             color: resolveAchievementColor(event.target.value),
                           }));
-                          setFieldErrors((current) => ({ ...current, color: undefined }));
+                          setFieldErrors((current) => ({
+                            ...current,
+                            color: undefined,
+                          }));
                         }}
                         error={Boolean(fieldErrors.color)}
-                        helperText={fieldErrors.color ?? "Kolor wpływa na wygląd karty osiągnięcia w panelu ucznia."}
+                        helperText={
+                          fieldErrors.color ??
+                          "Kolor wpływa na wygląd karty osiągnięcia w panelu ucznia."
+                        }
                         fullWidth
                       >
                         {ACHIEVEMENT_COLOR_OPTIONS.map((option) => (
@@ -1400,7 +1586,12 @@ export function AdminAchievementsView() {
                         ))}
                       </TextField>
 
-                      <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        alignItems="center"
+                        sx={{ mt: 1 }}
+                      >
                         <Box
                           sx={{
                             width: 14,
@@ -1425,8 +1616,14 @@ export function AdminAchievementsView() {
                         value={draft.threshold}
                         disabled={thresholdDisabled}
                         onChange={(event) => {
-                          setDraft((current) => ({ ...current, threshold: event.target.value }));
-                          setFieldErrors((current) => ({ ...current, threshold: undefined }));
+                          setDraft((current) => ({
+                            ...current,
+                            threshold: event.target.value,
+                          }));
+                          setFieldErrors((current) => ({
+                            ...current,
+                            threshold: undefined,
+                          }));
                         }}
                         error={Boolean(fieldErrors.threshold)}
                         helperText={
@@ -1448,11 +1645,20 @@ export function AdminAchievementsView() {
                         type="number"
                         value={draft.sortOrder}
                         onChange={(event) => {
-                          setDraft((current) => ({ ...current, sortOrder: event.target.value }));
-                          setFieldErrors((current) => ({ ...current, sortOrder: undefined }));
+                          setDraft((current) => ({
+                            ...current,
+                            sortOrder: event.target.value,
+                          }));
+                          setFieldErrors((current) => ({
+                            ...current,
+                            sortOrder: undefined,
+                          }));
                         }}
                         error={Boolean(fieldErrors.sortOrder)}
-                        helperText={fieldErrors.sortOrder ?? "Określa kolejność wyświetlania osiągnięć na liście. Niższa liczba oznacza wyższą pozycję."}
+                        helperText={
+                          fieldErrors.sortOrder ??
+                          "Określa kolejność wyświetlania osiągnięć na liście. Niższa liczba oznacza wyższą pozycję."
+                        }
                         fullWidth
                       />
                     </FormField>
@@ -1464,7 +1670,10 @@ export function AdminAchievementsView() {
                           <Switch
                             checked={draft.active}
                             onChange={(_, checked) =>
-                              setDraft((current) => ({ ...current, active: checked }))
+                              setDraft((current) => ({
+                                ...current,
+                                active: checked,
+                              }))
                             }
                           />
                         }
@@ -1512,7 +1721,13 @@ export function AdminAchievementsView() {
               variant="contained"
               onClick={() => void submitDialog()}
               disabled={dialogLoading || dialogDetailsLoading}
-              startIcon={dialogLoading ? <CircularProgress size={16} color="inherit" /> : <AddCircleIcon />}
+              startIcon={
+                dialogLoading ? (
+                  <CircularProgress size={16} color="inherit" />
+                ) : (
+                  <AddCircleIcon />
+                )
+              }
               sx={{ ...panelFooterButtonSx, boxShadow: "none" }}
             >
               {dialogMode === "create" ? "Utwórz osiągnięcie" : "Zapisz zmiany"}
@@ -1528,12 +1743,20 @@ export function AdminAchievementsView() {
       >
         <AppDialogHeader
           icon={<AchievementIcon />}
-          title={toggleDialog?.active ? "Ukryć osiągnięcie?" : "Aktywować osiągnięcie?"}
+          title={
+            toggleDialog?.active
+              ? "Ukryć osiągnięcie?"
+              : "Aktywować osiągnięcie?"
+          }
           subtitle={undefined}
         />
         <AppDialogBody>
           <Stack spacing={1.25}>
-            <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ lineHeight: 1.7 }}
+            >
               {toggleDialog?.active
                 ? "Zmiana statusu zapisze się od razu. Osiągnięcie zostanie ukryte przed uczniami, ale historia już zdobytych osiągnięć pozostanie bez zmian."
                 : "Zmiana statusu zapisze się od razu. Osiągnięcie znów będzie widoczne dla uczniów i będzie mogło zostać zdobyte."}
@@ -1553,7 +1776,11 @@ export function AdminAchievementsView() {
             color={toggleDialog?.active ? "warning" : "success"}
             onClick={() => void confirmToggleActive()}
             disabled={toggleLoading}
-            startIcon={toggleLoading ? <CircularProgress size={16} color="inherit" /> : undefined}
+            startIcon={
+              toggleLoading ? (
+                <CircularProgress size={16} color="inherit" />
+              ) : undefined
+            }
             sx={{ ...panelFooterButtonSx, boxShadow: "none" }}
           >
             {toggleDialog?.active ? "Ukryj osiągnięcie" : "Aktywuj osiągnięcie"}

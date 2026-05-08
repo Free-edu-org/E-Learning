@@ -210,7 +210,6 @@ function getTypeLabel(type: AchievementType) {
   );
 }
 
-
 function getDisplayIcon(icon?: string) {
   const normalized = getAchievementIcon(icon).trim().replace(/\s+/g, " ");
 
@@ -252,7 +251,9 @@ function translateAchievementValidationDetail(detail: string) {
   return detail;
 }
 
-function parseAchievementApiFieldErrors(error: ApiError): AchievementFieldErrors {
+function parseAchievementApiFieldErrors(
+  error: ApiError,
+): AchievementFieldErrors {
   const detail = error.problem.detail ?? "";
   if (!detail.startsWith("Validation failed:")) {
     return {};
@@ -411,8 +412,7 @@ function buildCreateAchievementPayload(
     icon: draft.icon.trim(),
     color: resolveAchievementColor(draft.color),
     type: draft.type,
-    threshold:
-      draft.type === "AVATAR_CHANGED" ? null : Number(draft.threshold),
+    threshold: draft.type === "AVATAR_CHANGED" ? null : Number(draft.threshold),
     active: draft.active,
     sortOrder: Number(draft.sortOrder),
   };
@@ -426,8 +426,7 @@ function buildUpdateAchievementPayload(
     description: draft.description.trim(),
     icon: draft.icon.trim(),
     color: resolveAchievementColor(draft.color),
-    threshold:
-      draft.type === "AVATAR_CHANGED" ? null : Number(draft.threshold),
+    threshold: draft.type === "AVATAR_CHANGED" ? null : Number(draft.threshold),
     active: draft.active,
     sortOrder: Number(draft.sortOrder),
   };
@@ -577,7 +576,9 @@ export function AdminAchievementEditorView({
 
     try {
       if (mode === "create") {
-        await adminService.createAchievement(buildCreateAchievementPayload(draft));
+        await adminService.createAchievement(
+          buildCreateAchievementPayload(draft),
+        );
       } else {
         await adminService.updateAchievement(
           code!,
@@ -687,7 +688,12 @@ export function AdminAchievementEditorView({
             >
               Powrót do listy achievementów
             </Button>
-            <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+            <Stack
+              direction="row"
+              spacing={2}
+              alignItems="center"
+              flexWrap="wrap"
+            >
               <Box
                 sx={{
                   width: 44,
@@ -697,16 +703,29 @@ export function AdminAchievementEditorView({
                   placeItems: "center",
                   fontSize: "1.5rem",
                   flexShrink: 0,
-                  bgcolor: (theme) => alpha(draftColorVisuals.accent, theme.palette.mode === "dark" ? 0.15 : 0.1),
+                  bgcolor: (theme) =>
+                    alpha(
+                      draftColorVisuals.accent,
+                      theme.palette.mode === "dark" ? 0.15 : 0.1,
+                    ),
                   border: "1.5px solid",
-                  borderColor: (theme) => alpha(draftColorVisuals.accent, theme.palette.mode === "dark" ? 0.3 : 0.22),
+                  borderColor: (theme) =>
+                    alpha(
+                      draftColorVisuals.accent,
+                      theme.palette.mode === "dark" ? 0.3 : 0.22,
+                    ),
                   transition: "all 0.2s ease",
                 }}
               >
                 {draftPreviewIcon}
               </Box>
               <Stack spacing={0.3}>
-                <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  alignItems="center"
+                  flexWrap="wrap"
+                >
                   <Typography
                     variant="h5"
                     fontWeight={700}
@@ -727,16 +746,20 @@ export function AdminAchievementEditorView({
                       letterSpacing: "0.03em",
                       ...(mode === "create"
                         ? {
-                            bgcolor: (theme) => alpha(theme.palette.primary.main, 0.12),
+                            bgcolor: (theme) =>
+                              alpha(theme.palette.primary.main, 0.12),
                             color: "primary.main",
                             border: "1px solid",
-                            borderColor: (theme) => alpha(theme.palette.primary.main, 0.25),
+                            borderColor: (theme) =>
+                              alpha(theme.palette.primary.main, 0.25),
                           }
                         : {
-                            bgcolor: (theme) => alpha(theme.palette.text.secondary, 0.08),
+                            bgcolor: (theme) =>
+                              alpha(theme.palette.text.secondary, 0.08),
                             color: "text.secondary",
                             border: "1px solid",
-                            borderColor: (theme) => alpha(theme.palette.divider, 0.3),
+                            borderColor: (theme) =>
+                              alpha(theme.palette.divider, 0.3),
                           }),
                     }}
                   />
@@ -780,7 +803,10 @@ export function AdminAchievementEditorView({
               alignItems: "stretch",
             }}
           >
-            <Stack spacing={{ xs: 2, md: 2.25 }} sx={{ minWidth: 0, height: "100%" }}>
+            <Stack
+              spacing={{ xs: 2, md: 2.25 }}
+              sx={{ minWidth: 0, height: "100%" }}
+            >
               <FormSection
                 title="Dane podstawowe"
                 description="Kod techniczny i warunek zdobycia ustawiasz przy tworzeniu. Po zapisaniu nie można ich zmienić."
@@ -797,9 +823,17 @@ export function AdminAchievementEditorView({
                         label="Kod techniczny"
                         value={draft.code}
                         onChange={(event) => {
-                          const nextCode = normalizeCodeInput(event.target.value);
-                          setDraft((current) => ({ ...current, code: nextCode }));
-                          setFieldErrors((current) => ({ ...current, code: undefined }));
+                          const nextCode = normalizeCodeInput(
+                            event.target.value,
+                          );
+                          setDraft((current) => ({
+                            ...current,
+                            code: nextCode,
+                          }));
+                          setFieldErrors((current) => ({
+                            ...current,
+                            code: undefined,
+                          }));
                         }}
                         disabled={mode === "edit"}
                         error={Boolean(fieldErrors.code)}
@@ -820,7 +854,8 @@ export function AdminAchievementEditorView({
                         select
                         value={draft.type}
                         onChange={(event) => {
-                          const nextType = event.target.value as AchievementType;
+                          const nextType = event.target
+                            .value as AchievementType;
                           setDraft((current) => ({
                             ...current,
                             type: nextType,
@@ -863,14 +898,19 @@ export function AdminAchievementEditorView({
                             INPUT_LIMITS.achievementTitle,
                           );
                           setDraft((current) => ({ ...current, title: value }));
-                          setFieldErrors((current) => ({ ...current, title: undefined }));
+                          setFieldErrors((current) => ({
+                            ...current,
+                            title: undefined,
+                          }));
                         }}
                         error={Boolean(fieldErrors.title)}
                         helperText={
                           fieldErrors.title ??
                           `Widoczna nazwa w panelu ucznia. (${draft.title.length}/${INPUT_LIMITS.achievementTitle})`
                         }
-                        inputProps={{ maxLength: INPUT_LIMITS.achievementTitle }}
+                        inputProps={{
+                          maxLength: INPUT_LIMITS.achievementTitle,
+                        }}
                         InputLabelProps={{ shrink: true }}
                         fullWidth
                         size="small"
@@ -886,7 +926,11 @@ export function AdminAchievementEditorView({
                         border: "1px solid",
                         borderColor: fieldErrors.icon
                           ? "error.main"
-                          : (theme) => alpha(theme.palette.divider, theme.palette.mode === "dark" ? 0.28 : 0.42),
+                          : (theme) =>
+                              alpha(
+                                theme.palette.divider,
+                                theme.palette.mode === "dark" ? 0.28 : 0.42,
+                              ),
                         overflow: "hidden",
                         display: "flex",
                         flexDirection: "column",
@@ -897,16 +941,25 @@ export function AdminAchievementEditorView({
                         direction="row"
                         sx={{
                           borderBottom: "1px solid",
-                          borderColor: (theme) => alpha(theme.palette.divider, theme.palette.mode === "dark" ? 0.16 : 0.3),
+                          borderColor: (theme) =>
+                            alpha(
+                              theme.palette.divider,
+                              theme.palette.mode === "dark" ? 0.16 : 0.3,
+                            ),
                           px: 1.5,
                           py: 0.75,
-                          bgcolor: (theme) => alpha(theme.palette.background.paper, 0.6),
+                          bgcolor: (theme) =>
+                            alpha(theme.palette.background.paper, 0.6),
                           flexShrink: 0,
                         }}
                         alignItems="center"
                         justifyContent="space-between"
                       >
-                        <Typography variant="caption" color="text.secondary" fontWeight={500}>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          fontWeight={500}
+                        >
                           Ikona
                         </Typography>
                         <Box
@@ -938,19 +991,27 @@ export function AdminAchievementEditorView({
                           alignContent: "start",
                           "&::-webkit-scrollbar": { width: 3 },
                           "&::-webkit-scrollbar-thumb": {
-                            bgcolor: (theme) => alpha(theme.palette.divider, 0.2),
+                            bgcolor: (theme) =>
+                              alpha(theme.palette.divider, 0.2),
                             borderRadius: 2,
                           },
                         }}
                       >
                         {ACHIEVEMENT_ICON_PICKER_OPTIONS.map((iconOption) => {
-                          const isIconSelected = getDisplayIcon(draft.icon) === iconOption;
+                          const isIconSelected =
+                            getDisplayIcon(draft.icon) === iconOption;
                           return (
                             <Box
                               key={iconOption}
                               onClick={() => {
-                                setDraft((current) => ({ ...current, icon: iconOption }));
-                                setFieldErrors((current) => ({ ...current, icon: undefined }));
+                                setDraft((current) => ({
+                                  ...current,
+                                  icon: iconOption,
+                                }));
+                                setFieldErrors((current) => ({
+                                  ...current,
+                                  icon: undefined,
+                                }));
                               }}
                               sx={{
                                 height: 34,
@@ -963,10 +1024,17 @@ export function AdminAchievementEditorView({
                                 border: "1.5px solid",
                                 borderColor: isIconSelected
                                   ? alpha(draftColorVisuals.accent, 0.6)
-                                  : (theme) => alpha(theme.palette.divider, 0.1),
+                                  : (theme) =>
+                                      alpha(theme.palette.divider, 0.1),
                                 bgcolor: isIconSelected
                                   ? alpha(draftColorVisuals.accent, 0.12)
-                                  : (theme) => alpha(theme.palette.text.primary, theme.palette.mode === "dark" ? 0.04 : 0.02),
+                                  : (theme) =>
+                                      alpha(
+                                        theme.palette.text.primary,
+                                        theme.palette.mode === "dark"
+                                          ? 0.04
+                                          : 0.02,
+                                      ),
                                 boxShadow: isIconSelected
                                   ? `0 0 0 2px ${alpha(draftColorVisuals.accent, 0.2)}`
                                   : "none",
@@ -974,10 +1042,12 @@ export function AdminAchievementEditorView({
                                 "&:hover": {
                                   bgcolor: isIconSelected
                                     ? alpha(draftColorVisuals.accent, 0.18)
-                                    : (theme) => alpha(theme.palette.primary.main, 0.07),
+                                    : (theme) =>
+                                        alpha(theme.palette.primary.main, 0.07),
                                   borderColor: isIconSelected
                                     ? alpha(draftColorVisuals.accent, 0.75)
-                                    : (theme) => alpha(theme.palette.primary.main, 0.3),
+                                    : (theme) =>
+                                        alpha(theme.palette.primary.main, 0.3),
                                   transform: "scale(1.08)",
                                 },
                               }}
@@ -993,7 +1063,8 @@ export function AdminAchievementEditorView({
                       color={fieldErrors.icon ? "error" : "text.secondary"}
                       sx={{ px: 1.75, lineHeight: 1.4 }}
                     >
-                      {fieldErrors.icon ?? "Wybierz gotową ikonę albo wpisz własne emoji w polu tekstowym."}
+                      {fieldErrors.icon ??
+                        "Wybierz gotową ikonę albo wpisz własne emoji w polu tekstowym."}
                     </Typography>
                   </Stack>
                 </Stack>
@@ -1009,7 +1080,10 @@ export function AdminAchievementEditorView({
                             0,
                             INPUT_LIMITS.achievementDescription,
                           );
-                          setDraft((current) => ({ ...current, description: value }));
+                          setDraft((current) => ({
+                            ...current,
+                            description: value,
+                          }));
                           setFieldErrors((current) => ({
                             ...current,
                             description: undefined,
@@ -1047,18 +1121,31 @@ export function AdminAchievementEditorView({
                             ...current,
                             color: event.target.value,
                           }));
-                          setFieldErrors((current) => ({ ...current, color: undefined }));
+                          setFieldErrors((current) => ({
+                            ...current,
+                            color: undefined,
+                          }));
                         }}
                         error={Boolean(fieldErrors.color)}
-                        helperText={fieldErrors.color ?? "Wpływa na kolorystykę karty achievementu w panelu ucznia."}
+                        helperText={
+                          fieldErrors.color ??
+                          "Wpływa na kolorystykę karty achievementu w panelu ucznia."
+                        }
                         fullWidth
                         size="small"
                       >
                         {ACHIEVEMENT_COLOR_OPTIONS.map((option) => {
-                          const optionVisuals = getAchievementVisuals(theme, option.value);
+                          const optionVisuals = getAchievementVisuals(
+                            theme,
+                            option.value,
+                          );
                           return (
                             <MenuItem key={option.value} value={option.value}>
-                              <Stack direction="row" spacing={1.25} alignItems="center">
+                              <Stack
+                                direction="row"
+                                spacing={1.25}
+                                alignItems="center"
+                              >
                                 <Box
                                   sx={{
                                     width: 12,
@@ -1085,9 +1172,17 @@ export function AdminAchievementEditorView({
                         value={draft.threshold}
                         disabled={thresholdDisabled}
                         onChange={(event) => {
-                          const value = normalizeNonNegativeIntegerInput(event.target.value);
-                          setDraft((current) => ({ ...current, threshold: value }));
-                          setFieldErrors((current) => ({ ...current, threshold: undefined }));
+                          const value = normalizeNonNegativeIntegerInput(
+                            event.target.value,
+                          );
+                          setDraft((current) => ({
+                            ...current,
+                            threshold: value,
+                          }));
+                          setFieldErrors((current) => ({
+                            ...current,
+                            threshold: undefined,
+                          }));
                         }}
                         inputProps={{ min: 1, step: 1, inputMode: "numeric" }}
                         error={Boolean(fieldErrors.threshold)}
@@ -1112,13 +1207,24 @@ export function AdminAchievementEditorView({
                         type="number"
                         value={draft.sortOrder}
                         onChange={(event) => {
-                          const value = normalizeNonNegativeIntegerInput(event.target.value);
-                          setDraft((current) => ({ ...current, sortOrder: value }));
-                          setFieldErrors((current) => ({ ...current, sortOrder: undefined }));
+                          const value = normalizeNonNegativeIntegerInput(
+                            event.target.value,
+                          );
+                          setDraft((current) => ({
+                            ...current,
+                            sortOrder: value,
+                          }));
+                          setFieldErrors((current) => ({
+                            ...current,
+                            sortOrder: undefined,
+                          }));
                         }}
                         inputProps={{ min: 0, step: 1, inputMode: "numeric" }}
                         error={Boolean(fieldErrors.sortOrder)}
-                        helperText={fieldErrors.sortOrder ?? "Decyduje o kolejności na liście. Niższa wartość – wyższa pozycja."}
+                        helperText={
+                          fieldErrors.sortOrder ??
+                          "Decyduje o kolejności na liście. Niższa wartość – wyższa pozycja."
+                        }
                         InputLabelProps={{ shrink: true }}
                         fullWidth
                         size="small"
@@ -1158,7 +1264,10 @@ export function AdminAchievementEditorView({
                         <Switch
                           checked={draft.active}
                           onChange={(_, checked) =>
-                            setDraft((current) => ({ ...current, active: checked }))
+                            setDraft((current) => ({
+                              ...current,
+                              active: checked,
+                            }))
                           }
                           color="success"
                         />
@@ -1234,7 +1343,8 @@ export function AdminAchievementEditorView({
                       background: (theme) =>
                         `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${alpha(theme.palette.primary.dark, 0.9)} 100%)`,
                       "&:hover": {
-                        boxShadow: (theme) => `0 4px 16px ${alpha(theme.palette.primary.main, 0.35)}`,
+                        boxShadow: (theme) =>
+                          `0 4px 16px ${alpha(theme.palette.primary.main, 0.35)}`,
                         transform: "translateY(-1px)",
                       },
                       "&:active": { transform: "translateY(0)" },
@@ -1273,7 +1383,8 @@ export function AdminAchievementEditorView({
         <AppDialogBody>
           <Stack spacing={1.5}>
             <Typography variant="body2" color="text.secondary">
-              Jeśli wrócisz teraz, wprowadzone zmiany w formularzu nie zostaną zapisane.
+              Jeśli wrócisz teraz, wprowadzone zmiany w formularzu nie zostaną
+              zapisane.
             </Typography>
             <Typography variant="body2" color="text.secondary">
               Możesz też zapisać achievement teraz i wrócić do listy później.
