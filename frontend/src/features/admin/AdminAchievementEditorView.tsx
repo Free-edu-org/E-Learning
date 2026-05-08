@@ -809,6 +809,7 @@ export function AdminAchievementEditorView({
                             ? "Stały identyfikator – nie można zmienić po zapisaniu."
                             : "Unikalny identyfikator. Tylko wielkie litery, cyfry i podkreślenia.")
                         }
+                        InputLabelProps={{ shrink: true }}
                         fullWidth
                         size="small"
                       />
@@ -870,6 +871,7 @@ export function AdminAchievementEditorView({
                           `Widoczna nazwa w panelu ucznia. (${draft.title.length}/${INPUT_LIMITS.achievementTitle})`
                         }
                         inputProps={{ maxLength: INPUT_LIMITS.achievementTitle }}
+                        InputLabelProps={{ shrink: true }}
                         fullWidth
                         size="small"
                       />
@@ -1022,6 +1024,7 @@ export function AdminAchievementEditorView({
                         rows={3}
                         fullWidth
                         size="small"
+                        InputLabelProps={{ shrink: true }}
                       />
                     </FormField>
                   </Grid>
@@ -1096,6 +1099,7 @@ export function AdminAchievementEditorView({
                               ? "Minimalna liczba punktów wymagana do odblokowania achievementu."
                               : "Minimalna liczba ukończonych lekcji wymagana do odblokowania.")
                         }
+                        InputLabelProps={{ shrink: true }}
                         fullWidth
                         size="small"
                       />
@@ -1115,6 +1119,7 @@ export function AdminAchievementEditorView({
                         inputProps={{ min: 0, step: 1, inputMode: "numeric" }}
                         error={Boolean(fieldErrors.sortOrder)}
                         helperText={fieldErrors.sortOrder ?? "Decyduje o kolejności na liście. Niższa wartość – wyższa pozycja."}
+                        InputLabelProps={{ shrink: true }}
                         fullWidth
                         size="small"
                       />
