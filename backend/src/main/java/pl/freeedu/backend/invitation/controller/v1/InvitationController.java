@@ -4,7 +4,7 @@ import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import pl.freeedu.backend.auth.dto.AuthResponse;
+import pl.freeedu.backend.auth.dto.MessageResponse;
 import pl.freeedu.backend.invitation.dto.InvitationInfoResponse;
 import pl.freeedu.backend.invitation.dto.RegisterWithInvitationRequest;
 import pl.freeedu.backend.invitation.service.InvitationService;
@@ -29,7 +29,8 @@ public class InvitationController {
 
 	@PostMapping("/register")
 	@ResponseStatus(HttpStatus.CREATED)
-	public Mono<AuthResponse> registerWithInvitation(@Valid @RequestBody Mono<RegisterWithInvitationRequest> request) {
+	public Mono<MessageResponse> registerWithInvitation(
+			@Valid @RequestBody Mono<RegisterWithInvitationRequest> request) {
 		return invitationService.registerWithInvitation(request);
 	}
 }

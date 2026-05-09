@@ -4,8 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
-import pl.freeedu.backend.auth.dto.AuthResponse;
-import pl.freeedu.backend.auth.service.AuthMapper;
+import pl.freeedu.backend.auth.dto.MessageResponse;
+import pl.freeedu.backend.emailverification.service.EmailVerificationService;
 import pl.freeedu.backend.invitation.dto.CreateInvitationRequest;
 import pl.freeedu.backend.invitation.dto.InvitationInfoResponse;
 import pl.freeedu.backend.invitation.dto.InvitationResponse;
@@ -14,12 +14,12 @@ import pl.freeedu.backend.invitation.exception.InvitationErrorCode;
 import pl.freeedu.backend.invitation.exception.InvitationException;
 import pl.freeedu.backend.invitation.model.GroupInvitation;
 import pl.freeedu.backend.invitation.repository.GroupInvitationRepository;
-import pl.freeedu.backend.security.jwt.JwtService;
 import pl.freeedu.backend.security.service.SecurityService;
 import pl.freeedu.backend.user.exception.UserErrorCode;
 import pl.freeedu.backend.user.exception.UserException;
 import pl.freeedu.backend.user.model.Role;
 import pl.freeedu.backend.user.model.User;
+import pl.freeedu.backend.user.model.UserStatus;
 import pl.freeedu.backend.user.repository.UserRepository;
 import pl.freeedu.backend.usergroup.exception.UserGroupErrorCode;
 import pl.freeedu.backend.usergroup.exception.UserGroupException;
@@ -44,13 +44,12 @@ public class InvitationService {
 	private final UserInGroupRepository userInGroupRepository;
 	private final SecurityService securityService;
 	private final PasswordEncoder passwordEncoder;
-	private final AuthMapper authMapper;
-	private final JwtService jwtService;
+	private final EmailVerificationService emailVerificationService;
 	private final TransactionTemplate transactionTemplate;
 
 	public InvitationService(GroupInvitationRepository invitationRepository, UserGroupRepository userGroupRepository,
 			UserRepository userRepository, UserInGroupRepository userInGroupRepository, SecurityService securityService,
-			PasswordEncoder passwordEncoder, AuthMapper authMapper, JwtService jwtService,
+			PasswordEncoder passwordEncoder, EmailVerificationService emailVerificationService,
 			TransactionTemplate transactionTemplate) {
 		this.invitationRepository = invitationRepository;
 		this.userGroupRepository = userGroupRepository;
@@ -58,8 +57,7 @@ public class InvitationService {
 		this.userInGroupRepository = userInGroupRepository;
 		this.securityService = securityService;
 		this.passwordEncoder = passwordEncoder;
-		this.authMapper = authMapper;
-		this.jwtService = jwtService;
+		this.emailVerificationService = emailVerificationService;
 		this.transactionTemplate = transactionTemplate;
 	}
 
@@ -118,10 +116,10 @@ public class InvitationService {
 		}).subscribeOn(Schedulers.boundedElastic());
 	}
 
-	public Mono<AuthResponse> registerWithInvitation(Mono<RegisterWithInvitationRequest> requestMono) {
+	public Mono<MessageResponse> registerWithInvitation(Mono<RegisterWithInvitationRequest> requestMono) {
 		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
 			log.info("Student registration via invitation token: {}", request.getToken());
-			return transactionTemplate.execute(status -> {
+			User createdStudent = transactionTemplate.execute(status -> {
 				GroupInvitation invitation = invitationRepository.findByToken(request.getToken())
 						.orElseThrow(() -> new InvitationException(InvitationErrorCode.INVITATION_NOT_FOUND));
 				validateInvitation(invitation);
@@ -136,20 +134,21 @@ public class InvitationService {
 				}
 
 				User student = User.builder().email(request.getEmail()).username(request.getUsername())
-						.password(passwordEncoder.encode(request.getPassword())).role(Role.STUDENT).build();
+						.password(passwordEncoder.encode(request.getPassword())).role(Role.STUDENT)
+						.status(UserStatus.EMAIL_VERIFICATION_PENDING).build();
 				userRepository.save(student);
 
 				userInGroupRepository
 						.save(UserInGroup.builder().userId(student.getId()).groupId(invitation.getGroupId()).build());
 
 				invitationRepository.incrementUsedCount(invitation.getId());
-
-				String jwtToken = jwtService.generateToken(student.getPublicId(),
-						student.getTokenVersion() != null ? student.getTokenVersion() : 0);
 				log.info("Student registered via invitation. User ID: {}, Group ID: {}", student.getId(),
 						invitation.getGroupId());
-				return authMapper.toAuthResponse(jwtToken, student.getRole());
+				return student;
 			});
+			String verificationToken = emailVerificationService.createVerificationForUser(createdStudent);
+			emailVerificationService.sendVerificationEmail(createdStudent, verificationToken);
+			return MessageResponse.builder().message("Email verification required.").build();
 		}).subscribeOn(Schedulers.boundedElastic()));
 	}
 

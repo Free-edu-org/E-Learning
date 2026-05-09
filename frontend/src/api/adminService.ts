@@ -65,7 +65,7 @@ export interface AdminUpdateStudentRequest {
 export interface AdminStudentProfile extends UserProfile {
   groupPublicId?: string | null;
   groupName?: string | null;
-  status?: "ACTIVE" | "INVITED";
+  status?: "ACTIVE" | "INVITED" | "EMAIL_VERIFICATION_PENDING";
 }
 
 export const adminService = {

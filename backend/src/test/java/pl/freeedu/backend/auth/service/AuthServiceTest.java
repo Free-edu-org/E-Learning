@@ -34,9 +34,12 @@ import pl.freeedu.backend.auth.exception.AuthErrorCode;
 import pl.freeedu.backend.auth.exception.AuthException;
 import pl.freeedu.backend.auth.model.PasswordResetToken;
 import pl.freeedu.backend.auth.repository.PasswordResetTokenRepository;
+import pl.freeedu.backend.emailverification.exception.EmailVerificationErrorCode;
+import pl.freeedu.backend.emailverification.exception.EmailVerificationException;
 import pl.freeedu.backend.security.jwt.JwtService;
 import pl.freeedu.backend.user.model.Role;
 import pl.freeedu.backend.user.model.User;
+import pl.freeedu.backend.user.model.UserStatus;
 import pl.freeedu.backend.user.repository.UserRepository;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -141,6 +144,23 @@ class AuthServiceTest {
 			AuthException exception = assertInstanceOf(AuthException.class, error);
 			assertEquals(AuthErrorCode.INVALID_CREDENTIALS, exception.getErrorCode());
 		}).verify();
+	}
+
+	@Test
+	void shouldBlockLoginWhenEmailVerificationIsPending() {
+		LoginRequest request = LoginRequest.builder().identifier("student@edu.pl").password("secret").build();
+		User user = User.builder().id(13).email("student@edu.pl").password("hashed").role(Role.STUDENT)
+				.status(UserStatus.EMAIL_VERIFICATION_PENDING).build();
+
+		when(userRepository.findByEmail("student@edu.pl")).thenReturn(Optional.of(user));
+
+		Mono<AuthResponse> result = authService.login(Mono.just(request));
+
+		StepVerifier.create(result).expectErrorSatisfies(error -> {
+			EmailVerificationException exception = assertInstanceOf(EmailVerificationException.class, error);
+			assertEquals(EmailVerificationErrorCode.EMAIL_VERIFICATION_REQUIRED, exception.getErrorCode());
+		}).verify();
+		verify(passwordEncoder, never()).matches(any(), any());
 	}
 
 	@Test

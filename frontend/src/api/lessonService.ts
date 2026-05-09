@@ -43,7 +43,7 @@ export interface TeacherStudentResponse {
   username: string | null;
   email: string;
   role: string;
-  status: "ACTIVE" | "INVITED";
+  status: "ACTIVE" | "INVITED" | "EMAIL_VERIFICATION_PENDING";
   createdAt: string;
   groupPublicId: string;
   avatarUrl?: string | null;

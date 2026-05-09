@@ -1347,6 +1347,17 @@ export function AdminDashboard() {
                                     variant="outlined"
                                   />
                                 )}
+                              {"status" in user &&
+                                user.status ===
+                                  "EMAIL_VERIFICATION_PENDING" && (
+                                  <Chip
+                                    icon={<PendingIcon />}
+                                    label="Czeka na email"
+                                    size="small"
+                                    color="info"
+                                    variant="outlined"
+                                  />
+                                )}
                             </Stack>
                             <Typography
                               variant="body2"

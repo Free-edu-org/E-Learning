@@ -1,4 +1,5 @@
 import { fetchApi } from "./apiClient";
+import type { MessageResponse } from "./authService";
 
 export interface InvitationResponse {
   token: string;
@@ -30,11 +31,6 @@ export interface RegisterWithInvitationRequest {
   password: string;
 }
 
-export interface RegisterWithInvitationResponse {
-  token: string;
-  role: string;
-}
-
 export const invitationService = {
   createInvitation: (groupPublicId: string, data: CreateInvitationRequest) =>
     fetchApi<InvitationResponse>(
@@ -60,7 +56,7 @@ export const invitationService = {
     fetchApi<InvitationInfoResponse>(`/api/v1/invitations/${token}`),
 
   registerWithInvitation: (data: RegisterWithInvitationRequest) =>
-    fetchApi<RegisterWithInvitationResponse>(`/api/v1/invitations/register`, {
+    fetchApi<MessageResponse>(`/api/v1/invitations/register`, {
       method: "POST",
       body: JSON.stringify(data),
     }),
