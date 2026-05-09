@@ -62,9 +62,64 @@ async function updateUserPasswordByEmail(pool, email, passwordHash) {
     );
 }
 
+async function insertInvitationToken(pool, {
+    userEmail,
+    plainToken,
+    expiresAt,
+    usedAt = null
+}) {
+    const userId = await findUserIdByEmail(pool, userEmail);
+    const tokenHash = hashToken(plainToken);
+
+    await pool.execute(
+        `INSERT INTO invitation_tokens (user_id, token_hash, expires_at, used_at)
+         VALUES (?, ?, ?, ?)`,
+        [userId, tokenHash, expiresAt, usedAt]
+    );
+
+    return { tokenHash };
+}
+
+async function deleteInvitationToken(pool, tokenHash) {
+    await pool.execute(
+        'DELETE FROM invitation_tokens WHERE token_hash = ?',
+        [tokenHash]
+    );
+}
+
+async function countInvitationTokensByUserEmail(pool, email) {
+    const [rows] = await pool.execute(
+        `SELECT COUNT(*) AS count
+         FROM invitation_tokens it
+         JOIN users u ON u.id = it.user_id
+         WHERE u.email = ?`,
+        [email]
+    );
+
+    return Number(rows[0].count);
+}
+
+async function countActiveInvitationTokensByUserEmail(pool, email) {
+    const [rows] = await pool.execute(
+        `SELECT COUNT(*) AS count
+         FROM invitation_tokens it
+         JOIN users u ON u.id = it.user_id
+         WHERE u.email = ?
+           AND it.used_at IS NULL
+           AND it.expires_at > NOW()`,
+        [email]
+    );
+
+    return Number(rows[0].count);
+}
+
 module.exports = {
     createPool,
     insertPasswordResetToken,
     deletePasswordResetToken,
-    updateUserPasswordByEmail
+    updateUserPasswordByEmail,
+    insertInvitationToken,
+    deleteInvitationToken,
+    countInvitationTokensByUserEmail,
+    countActiveInvitationTokensByUserEmail
 };

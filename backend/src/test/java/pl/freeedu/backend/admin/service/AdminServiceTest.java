@@ -138,6 +138,24 @@ class AdminServiceTest {
 	}
 
 	@Test
+	void shouldRejectTeacherInviteWhenEmailTaken() {
+		// given
+		AdminInviteTeacherRequest req = AdminInviteTeacherRequest.builder().email("taken@e.com").build();
+		when(userRepository.existsByEmail(req.getEmail())).thenReturn(true);
+
+		// when
+		Mono<UserResponse> result = adminService.inviteTeacher(req);
+
+		// then
+		StepVerifier.create(result).expectErrorSatisfies(error -> {
+			assertTrue(error instanceof UserException);
+			assertEquals(UserErrorCode.EMAIL_ALREADY_TAKEN, ((UserException) error).getErrorCode());
+		}).verify();
+		verify(accountActivationService, never()).createInvitedUser(anyString(), any());
+		verify(accountActivationService, never()).sendInvitationEmail(anyString(), anyString());
+	}
+
+	@Test
 	void shouldGetStudentsWithGroupInfo() {
 		// given
 		User student = User.builder().id(1).publicId("pub-1").username("S1").role(Role.STUDENT).build();
@@ -192,6 +210,7 @@ class AdminServiceTest {
 			assertEquals("group-public-id", resp.getGroupPublicId());
 			verify(userInGroupRepository).save(any());
 		}).verifyComplete();
+		verify(accountActivationService).sendInvitationEmail("s@e.com", "plain-token");
 	}
 
 	@Test

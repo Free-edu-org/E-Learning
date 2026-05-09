@@ -50,7 +50,7 @@ public class SmtpAccountInvitationMailService implements AccountInvitationMailSe
 	}
 
 	private String buildBody(String email, String activationUrl) {
-		return "Witaj!\n\n" + "Zostales zaproszony do platformy FreeEdu jako uczen.\n"
+		return "Witaj!\n\n" + "Zostales zaproszony do platformy FreeEdu.\n"
 				+ "Kliknij w link ponizej, aby dokonczyc tworzenie konta:\n\n" + activationUrl + "\n\n"
 				+ "Link jest jednorazowy i wygasa po " + invitationExpirationHours + " godzinach.\n"
 				+ "Jesli nie spodziewales sie tego zaproszenia, mozesz zignorowac ta wiadomosc.\n\n" + fromName;

@@ -1,9 +1,11 @@
-const { apiClient } = require('../utils/apiClient');
+const { apiClient, setAuthToken } = require('../utils/apiClient');
 const {
     createPool,
     insertPasswordResetToken,
     deletePasswordResetToken,
-    updateUserPasswordByEmail
+    updateUserPasswordByEmail,
+    insertInvitationToken,
+    deleteInvitationToken
 } = require('../utils/db');
 
 const SEEDED_STUDENT_PASSWORD_HASH = '$2a$10$EfQqseEyw46zbJW75uREjeFG.SG5XK/OtIKrmxHMr0xyCmgS3N5f.';
@@ -14,14 +16,21 @@ function decodeJwtPayload(token) {
 }
 
 describe('Authentication API (/api/v1/auth)', () => {
+    const adminCreds = { identifier: 'admin_marek', password: 'admin1' };
     const validStudent = {
         email: 'student1@edu.pl',
         username: 'jan_kowalski',
         password: 'student1'
     };
     const dbPool = createPool();
+    let adminToken;
+    let createdInvitedStudentPublicId;
+    let createdInvitedTeacherPublicId;
 
     beforeAll(async () => {
+        const adminLogin = await apiClient.post('/auth/login', adminCreds);
+        adminToken = adminLogin.data.token;
+
         await updateUserPasswordByEmail(
             dbPool,
             validStudent.email,
@@ -35,6 +44,20 @@ describe('Authentication API (/api/v1/auth)', () => {
             validStudent.email,
             SEEDED_STUDENT_PASSWORD_HASH
         );
+
+        setAuthToken(adminToken);
+
+        if (createdInvitedStudentPublicId) {
+            const response = await apiClient.delete(`/users/${createdInvitedStudentPublicId}`);
+            expect([204, 404]).toContain(response.status);
+        }
+
+        if (createdInvitedTeacherPublicId) {
+            const response = await apiClient.delete(`/users/${createdInvitedTeacherPublicId}`);
+            expect([204, 404]).toContain(response.status);
+        }
+
+        setAuthToken(null);
         await dbPool.end();
     });
 
@@ -196,6 +219,98 @@ describe('Authentication API (/api/v1/auth)', () => {
                 expect(response.data.code).toBe('PASSWORD_RESET_TOKEN_USED');
             } finally {
                 await deletePasswordResetToken(dbPool, tokenHash);
+            }
+        });
+    });
+
+    describe('Account activation flow', () => {
+        it('should validate and activate an invited student account using a public link', async () => {
+            // given
+            const studentInviteEmail = `auth.invited.student.${Date.now()}@example.com`;
+            const plainToken = `student-activation-${Date.now()}`;
+            const username = `activated_student_${Date.now()}`;
+
+            setAuthToken(adminToken);
+            const inviteResponse = await apiClient.post('/admin/students', {
+                email: studentInviteEmail
+            });
+            expect(inviteResponse.status).toBe(201);
+            createdInvitedStudentPublicId = inviteResponse.data.publicId;
+
+            const { tokenHash } = await insertInvitationToken(dbPool, {
+                userEmail: studentInviteEmail,
+                plainToken,
+                expiresAt: new Date(Date.now() + 10 * 60_000)
+            });
+
+            setAuthToken(null);
+
+            try {
+                // when
+                const validateResponse = await apiClient.get(`/auth/invite/${plainToken}`);
+                const activateResponse = await apiClient.post('/auth/activate', {
+                    token: plainToken,
+                    username,
+                    password: 'studentPass123'
+                });
+                const loginResponse = await apiClient.post('/auth/login', {
+                    identifier: username,
+                    password: 'studentPass123'
+                });
+
+                // then
+                expect(validateResponse.status).toBe(200);
+                expect(validateResponse.data.email).toBe(studentInviteEmail);
+                expect(activateResponse.status).toBe(204);
+                expect(loginResponse.status).toBe(200);
+                expect(loginResponse.data.role).toBe('STUDENT');
+            } finally {
+                await deleteInvitationToken(dbPool, tokenHash);
+            }
+        });
+
+        it('should validate and activate an invited teacher account using a public link', async () => {
+            // given
+            const teacherInviteEmail = `auth.invited.teacher.${Date.now()}@example.com`;
+            const plainToken = `teacher-activation-${Date.now()}`;
+            const username = `activated_teacher_${Date.now()}`;
+
+            setAuthToken(adminToken);
+            const inviteResponse = await apiClient.post('/admin/teachers', {
+                email: teacherInviteEmail
+            });
+            expect(inviteResponse.status).toBe(201);
+            createdInvitedTeacherPublicId = inviteResponse.data.publicId;
+
+            const { tokenHash } = await insertInvitationToken(dbPool, {
+                userEmail: teacherInviteEmail,
+                plainToken,
+                expiresAt: new Date(Date.now() + 10 * 60_000)
+            });
+
+            setAuthToken(null);
+
+            try {
+                // when
+                const validateResponse = await apiClient.get(`/auth/invite/${plainToken}`);
+                const activateResponse = await apiClient.post('/auth/activate', {
+                    token: plainToken,
+                    username,
+                    password: 'teacherPass123'
+                });
+                const loginResponse = await apiClient.post('/auth/login', {
+                    identifier: username,
+                    password: 'teacherPass123'
+                });
+
+                // then
+                expect(validateResponse.status).toBe(200);
+                expect(validateResponse.data.email).toBe(teacherInviteEmail);
+                expect(activateResponse.status).toBe(204);
+                expect(loginResponse.status).toBe(200);
+                expect(loginResponse.data.role).toBe('TEACHER');
+            } finally {
+                await deleteInvitationToken(dbPool, tokenHash);
             }
         });
     });
