@@ -105,6 +105,7 @@ import { uiTokens } from "@/theme/uiTokens";
 import { UserAvatar } from "@/components/ui/avatar/UserAvatar";
 import { getApiErrorMessage } from "@/utils/dashboardUtils";
 import { INPUT_LIMITS } from "@/utils/inputLimits";
+import { PasswordStrengthIndicator } from "@/components/ui/form/PasswordStrengthIndicator";
 
 type UserRole = "TEACHER" | "STUDENT";
 type UserFilter = "ALL" | UserRole;
@@ -2417,6 +2418,11 @@ export function AdminDashboard() {
                       fullWidth
                       placeholder="Wprowadź hasło"
                     />
+                    <Box sx={{ mt: 1 }}>
+                      <PasswordStrengthIndicator
+                        password={userDraft.password}
+                      />
+                    </Box>
                   </Box>
                 )}
 
