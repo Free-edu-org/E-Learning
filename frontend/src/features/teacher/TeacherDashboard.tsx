@@ -60,7 +60,10 @@ import {
 } from "@/components/ui/form/FormLayout";
 import { DashboardHeader } from "@/components/ui/panel/DashboardHeader";
 import { DashboardTopBar } from "@/components/ui/panel/DashboardTopBar";
-import { panelFooterButtonSx } from "@/components/ui/panel/panelStyles";
+import {
+  panelDeleteButtonSx,
+  panelFooterButtonSx,
+} from "@/components/ui/panel/panelStyles";
 import { useAuth } from "@/context/AuthContext";
 import { uiTokens } from "@/theme/uiTokens";
 import { LESSON_TITLE_MAX_LENGTH } from "./lessonEditor";
@@ -1469,9 +1472,17 @@ export function TeacherDashboard() {
           maxWidth="xs"
         >
           <AppDialogHeader
-            icon={<DeleteIcon />}
+            icon={<DeleteIcon sx={{ color: "error.main" }} />}
             title="Usuń lekcję"
-            subtitle={`Czy na pewno chcesz usunąć lekcję "${deletingLesson?.title ?? ""}"? Ta operacja jest nieodwracalna.`}
+            subtitle="Ta operacja jest nieodwracalna i natychmiast usuwa wskazaną lekcję."
+            badge={
+              <Chip
+                label="Ostrzeżenie"
+                size="small"
+                color="error"
+                sx={{ fontWeight: 700 }}
+              />
+            }
           />
           <AppDialogBody>
             {deleteDialogFeedback && (
@@ -1479,6 +1490,24 @@ export function TeacherDashboard() {
                 {deleteDialogFeedback.message}
               </AppDialogStatus>
             )}
+            <FormSection>
+              <Typography variant="body1" fontWeight={700} sx={{ mb: 0.5 }}>
+                {deletingLesson?.title}
+              </Typography>
+              {deletingLesson?.description && (
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ overflowWrap: "anywhere" }}
+                >
+                  {deletingLesson.description}
+                </Typography>
+              )}
+            </FormSection>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+              Usunięcie lekcji skasuje również wszystkie jej zadania i postępy
+              uczniów.
+            </Typography>
           </AppDialogBody>
           <AppDialogFooter>
             <FormActions>
@@ -1489,14 +1518,13 @@ export function TeacherDashboard() {
                 Anuluj
               </Button>
               <Button
-                variant="contained"
                 color="error"
                 startIcon={<DeleteIcon />}
                 onClick={submitDeleteLesson}
                 disabled={deleteDialogLoading}
-                sx={panelFooterButtonSx}
+                sx={panelDeleteButtonSx}
               >
-                {deleteDialogLoading ? "Usuwanie..." : "Usuń lekcję"}
+                {deleteDialogLoading ? "Usuwanie..." : "Potwierdź usunięcie"}
               </Button>
             </FormActions>
           </AppDialogFooter>
