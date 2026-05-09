@@ -165,6 +165,8 @@ const validationFieldLabels: Record<string, string> = {
   groupPublicId: "Grupa",
 };
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 function getErrorMessage(error: unknown, fallback: string) {
   if (error instanceof ApiError) {
     return getApiErrorMessage(error, fallback, validationFieldLabels);
@@ -281,6 +283,18 @@ export function AdminDashboard() {
   const [membershipLoading, setMembershipLoading] = useState(false);
   const [membershipDialogFeedback, setMembershipDialogFeedback] =
     useState<DialogFeedbackState | null>(null);
+
+  const isCreateStudentDialog =
+    userDialogMode === "create" && userDialogRole === "STUDENT";
+  const isPrimaryEmailInvalid =
+    isCreateStudentDialog &&
+    userDraft.email.length > 0 &&
+    !EMAIL_REGEX.test(userDraft.email.trim());
+  const isConfirmEmailInvalid =
+    isCreateStudentDialog &&
+    userDialogConfirmEmail.length > 0 &&
+    (!EMAIL_REGEX.test(userDialogConfirmEmail.trim()) ||
+      userDraft.email.trim() !== userDialogConfirmEmail.trim());
 
   const allUsers = useMemo(
     () =>
@@ -540,6 +554,7 @@ export function AdminDashboard() {
     setUserDialogRole(role);
     setSelectedUser(null);
     setUserDraft(emptyUserDraft);
+    setUserDialogConfirmEmail("");
     setUserDialogFeedback(null);
     setUserDialogOpen(true);
   };
@@ -554,6 +569,7 @@ export function AdminDashboard() {
       password: "",
       groupPublicId: "groupPublicId" in user ? (user.groupPublicId ?? "") : "",
     });
+    setUserDialogConfirmEmail(user.email);
     setUserDialogFeedback(null);
     setUserDialogOpen(true);
   };
@@ -561,6 +577,7 @@ export function AdminDashboard() {
   const resetUserDialogState = () => {
     setSelectedUser(null);
     setUserDraft(emptyUserDraft);
+    setUserDialogConfirmEmail("");
     setUserDialogRole("TEACHER");
     setUserDialogMode("create");
     setUserDialogFeedback(null);
@@ -591,6 +608,32 @@ export function AdminDashboard() {
   const submitUserDialog = async () => {
     if (userDialogLoading) {
       return;
+    }
+
+    if (isCreateStudentDialog) {
+      if (!EMAIL_REGEX.test(userDraft.email.trim())) {
+        setUserDialogFeedback({
+          severity: "error",
+          message: "Podaj prawidłowy adres e-mail.",
+        });
+        return;
+      }
+
+      if (!EMAIL_REGEX.test(userDialogConfirmEmail.trim())) {
+        setUserDialogFeedback({
+          severity: "error",
+          message: "Podaj prawidłowy adres e-mail w polu potwierdzenia.",
+        });
+        return;
+      }
+
+      if (userDraft.email.trim() !== userDialogConfirmEmail.trim()) {
+        setUserDialogFeedback({
+          severity: "error",
+          message: "Adresy e-mail nie są identyczne.",
+        });
+        return;
+      }
     }
 
     setUserDialogFeedback(null);
@@ -2360,36 +2403,48 @@ export function AdminDashboard() {
                           email: event.target.value,
                         }))
                       }
+                      error={isPrimaryEmailInvalid}
+                      helperText={
+                        isPrimaryEmailInvalid
+                          ? "Podaj prawidłowy adres e-mail"
+                          : ""
+                      }
                       fullWidth
                       size="small"
                       placeholder="Wprowadź e-mail"
                     />
-                    <TextField
-                      name="admin-user-dialog-confirm-email"
-                      autoComplete="off"
-                      type="email"
-                      value={userDialogConfirmEmail}
-                      onChange={(event) =>
-                        setUserDialogConfirmEmail(event.target.value)
-                      }
-                      error={
-                        userDialogConfirmEmail.length > 0 &&
-                        (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userDialogConfirmEmail) ||
-                          userDraft.email !== userDialogConfirmEmail)
-                      }
-                      helperText={
-                        userDialogConfirmEmail.length > 0
-                          ? !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userDialogConfirmEmail)
-                            ? "Podaj prawidłowy adres e-mail"
-                            : userDraft.email !== userDialogConfirmEmail
-                              ? "Adresy e-mail nie są identyczne"
-                              : ""
-                          : ""
-                      }
-                      size="small"
-                      fullWidth
-                      placeholder="Powtórz adres e-mail"
-                    />
+                    <Box>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        display="block"
+                        sx={{ mb: 0.75 }}
+                      >
+                        Adres e-mail
+                      </Typography>
+                      <TextField
+                        name="admin-user-dialog-confirm-email"
+                        autoComplete="off"
+                        type="email"
+                        value={userDialogConfirmEmail}
+                        onChange={(event) =>
+                          setUserDialogConfirmEmail(event.target.value)
+                        }
+                        error={isConfirmEmailInvalid}
+                        helperText={
+                          userDialogConfirmEmail.length > 0
+                            ? !EMAIL_REGEX.test(userDialogConfirmEmail.trim())
+                              ? "Podaj prawidłowy adres e-mail"
+                              : userDraft.email.trim() !== userDialogConfirmEmail.trim()
+                                ? "Adresy e-mail nie są identyczne"
+                                : ""
+                            : ""
+                        }
+                        size="small"
+                        fullWidth
+                        placeholder="Powtórz e-mail"
+                      />
+                    </Box>
                   </Stack>
                 </Box>
 
@@ -2445,6 +2500,7 @@ export function AdminDashboard() {
                     </Typography>
                     <TextField
                       select
+                      SelectProps={{ displayEmpty: true }}
                       value={userDraft.groupPublicId}
                       onChange={(event) =>
                         setUserDraft((current) => ({
@@ -2460,7 +2516,7 @@ export function AdminDashboard() {
                           : "Wybór grupy jest opcjonalny."
                       }
                     >
-                      <MenuItem value="">Bez grupy</MenuItem>
+                      <MenuItem value="">Wybierz grupę (opcjonalnie)</MenuItem>
                       {assignableGroups.map((group) => (
                         <MenuItem key={group.publicId} value={group.publicId}>
                           {group.name}
