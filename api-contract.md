@@ -297,6 +297,7 @@ Default local development base URL is `http://localhost:8080`
   "username": "student1",
   "email": "user@example.com",
   "role": "STUDENT",
+  "status": "ACTIVE",
   "createdAt": "2026-03-02T21:00:00",
   "avatarUrl": "preset:avatar_1"
 }
@@ -320,6 +321,7 @@ Default local development base URL is `http://localhost:8080`
   "username": "student1",
   "email": "user@example.com",
   "role": "STUDENT",
+  "status": "ACTIVE",
   "createdAt": "2026-03-02T21:00:00",
   "avatarUrl": "preset:avatar_1"
 }
@@ -1202,12 +1204,63 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
     "username": "teacher1",
     "email": "teacher@example.com",
     "role": "TEACHER",
+    "status": "ACTIVE",
     "createdAt": "2026-03-02T21:00:00"
   }
 ]
 ```
 
+> `status` is `"ACTIVE"` or `"INVITED"`. Invited teachers have `username: null` until they complete account activation.
+
 **Known Errors:**
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
+
+---
+
+### 6.2.1. Invite Teacher / Send Invitation (Admin API)
+- **URL**: `/api/v1/admin/teachers`
+- **Method**: `POST`
+- **Description**: Tworzy konto nauczyciela w stanie `INVITED` i wysyła email z linkiem aktywacyjnym. Nauczyciel musi kliknąć link i ustawić username oraz hasło, zanim konto stanie się `ACTIVE`. Wymaga `ADMIN`.
+
+**Request Body (JSON):**
+```json
+{
+  "email": "new.teacher@example.com"
+}
+```
+
+**Success (201 Created):**
+```json
+{
+  "publicId": "33333333-3333-3333-3333-333333333333",
+  "username": null,
+  "email": "new.teacher@example.com",
+  "role": "TEACHER",
+  "status": "INVITED",
+  "createdAt": "2026-03-26T20:15:00"
+}
+```
+
+**Known Errors:**
+- `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
+- `EMAIL_ALREADY_TAKEN` (409 Conflict): Email already exists.
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
+
+---
+
+### 6.2.2. Resend Teacher Invitation (Admin API)
+- **URL**: `/api/v1/admin/teachers/{teacherPublicId}/resend-invite`
+- **Method**: `POST`
+- **Description**: Unieważnia poprzedni token i wysyła nowy email aktywacyjny do nauczyciela o statusie `INVITED`. Wymaga `ADMIN`.
+
+**Success (204 No Content):**
+*(Empty Response Body)*
+
+**Known Errors:**
+- `USER_NOT_FOUND` (404 Not Found): Nauczyciel o podanym ID nie istnieje.
+- `ACCOUNT_NOT_INVITED` (409 Conflict): Konto nauczyciela nie ma statusu `INVITED` (już aktywne).
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
 - `FORBIDDEN` (403 Forbidden): Token role does not permit access.
 

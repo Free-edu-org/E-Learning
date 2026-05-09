@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import pl.freeedu.backend.user.model.Role;
+import pl.freeedu.backend.user.model.UserStatus;
 
 import java.time.LocalDateTime;
 
@@ -17,6 +18,7 @@ public class UserResponse {
 	private String email;
 	private String username;
 	private Role role;
+	private UserStatus status;
 	private LocalDateTime createdAt;
 	private String avatarUrl;
 }

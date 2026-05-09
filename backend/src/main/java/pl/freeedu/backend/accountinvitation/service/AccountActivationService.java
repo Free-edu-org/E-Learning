@@ -19,6 +19,7 @@ import pl.freeedu.backend.accountinvitation.model.InvitationToken;
 import pl.freeedu.backend.accountinvitation.repository.InvitationTokenRepository;
 import pl.freeedu.backend.user.exception.UserErrorCode;
 import pl.freeedu.backend.user.exception.UserException;
+import pl.freeedu.backend.user.model.Role;
 import pl.freeedu.backend.user.model.User;
 import pl.freeedu.backend.user.model.UserStatus;
 import pl.freeedu.backend.user.repository.UserRepository;
@@ -53,6 +54,10 @@ public class AccountActivationService {
 	}
 
 	public String createInvitedUser(String email) {
+		return createInvitedUser(email, Role.STUDENT);
+	}
+
+	public String createInvitedUser(String email, Role role) {
 		java.util.Optional<User> existing = userRepository.findByEmail(email);
 		if (existing.isPresent()) {
 			User existingUser = existing.get();
@@ -65,8 +70,7 @@ public class AccountActivationService {
 			return token;
 		}
 
-		User invited = User.builder().email(email).status(UserStatus.INVITED)
-				.role(pl.freeedu.backend.user.model.Role.STUDENT).build();
+		User invited = User.builder().email(email).status(UserStatus.INVITED).role(role).build();
 		try {
 			User saved = userRepository.save(invited);
 			String token = generateAndPersistToken(saved.getId());

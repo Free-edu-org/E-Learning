@@ -50,8 +50,10 @@ import { useNavigate } from "react-router-dom";
 import {
   adminService,
   type AdminCreateStudentRequest,
+  type AdminInviteTeacherRequest,
   type AdminStudentProfile,
   type AdminStats,
+  type AdminTeacherProfile,
   type AdminUpdateStudentRequest,
 } from "@/api/adminService";
 import { ApiError } from "@/api/apiClient";
@@ -59,7 +61,6 @@ import { StatsCard } from "@/components/teacher/StatsCard";
 import { userGroupService, type UserGroup } from "@/api/userGroupService";
 import {
   userService,
-  type CreateUserRequest,
   type UpdateUserRequest,
   type UserProfile,
 } from "@/api/userService";
@@ -104,12 +105,11 @@ import { uiTokens } from "@/theme/uiTokens";
 import { UserAvatar } from "@/components/ui/avatar/UserAvatar";
 import { getApiErrorMessage, translateApiMessage } from "@/utils/dashboardUtils";
 import { INPUT_LIMITS } from "@/utils/inputLimits";
-import { PasswordStrengthIndicator } from "@/components/ui/form/PasswordStrengthIndicator";
 
 type UserRole = "TEACHER" | "STUDENT";
 type UserFilter = "ALL" | UserRole;
 type AdminTab = "users" | "groups";
-type AdminListUser = UserProfile | AdminStudentProfile;
+type AdminListUser = AdminTeacherProfile | AdminStudentProfile;
 type AdminViewMode = "grid" | "list";
 
 interface UserDraft {
@@ -355,6 +355,11 @@ export function AdminDashboard() {
 
   const isCreateStudentDialog =
     userDialogMode === "create" && userDialogRole === "STUDENT";
+  const isCreateTeacherDialog =
+    userDialogMode === "create" && userDialogRole === "TEACHER";
+  const isCreateInviteDialog =
+    userDialogMode === "create" &&
+    (userDialogRole === "STUDENT" || userDialogRole === "TEACHER");
 
   const allUsers = useMemo(
     () =>
@@ -438,7 +443,7 @@ export function AdminDashboard() {
       }
 
       return (
-        user.username.toLowerCase().includes(normalizedQuery) ||
+        (user.username ?? "").toLowerCase().includes(normalizedQuery) ||
         user.email.toLowerCase().includes(normalizedQuery) ||
         String(user.publicId).includes(normalizedQuery)
       );
@@ -646,9 +651,13 @@ export function AdminDashboard() {
     setUserDialogFeedback(null);
   };
 
-  const resendStudentInvite = async (user: AdminListUser) => {
+  const resendUserInvite = async (user: AdminListUser) => {
     try {
-      await adminService.resendStudentInvite(user.publicId);
+      if (user.role === "TEACHER") {
+        await adminService.resendTeacherInvite(user.publicId);
+      } else {
+        await adminService.resendStudentInvite(user.publicId);
+      }
       setPageFeedback({
         severity: "success",
         message: `Zaproszenie wysłane ponownie na ${user.email}.`,
@@ -673,7 +682,7 @@ export function AdminDashboard() {
       return;
     }
 
-    if (isCreateStudentDialog) {
+    if (isCreateInviteDialog) {
       const nextFieldErrors: UserFieldErrors = {};
 
       if (!EMAIL_REGEX.test(userDraft.email.trim())) {
@@ -701,15 +710,14 @@ export function AdminDashboard() {
     try {
       if (userDialogMode === "create") {
         if (userDialogRole === "TEACHER") {
-          const payload: CreateUserRequest = {
-            username: userDraft.username,
+          const payload: AdminInviteTeacherRequest = {
             email: userDraft.email,
-            password: userDraft.password,
           };
-          await userService.createTeacher(payload);
+          await adminService.inviteTeacher(payload);
           setUserDialogFeedback({
             severity: "success",
-            message: "Nauczyciel został utworzony.",
+            message:
+              "Zaproszenie wysłane. Nauczyciel aktywuje konto przez link w e-mailu.",
           });
         } else {
           const payload: AdminCreateStudentRequest = {
@@ -760,7 +768,7 @@ export function AdminDashboard() {
       await Promise.all([loadUsers(), loadAdminStats()]);
       closeDialogWithSuccessDelay(closeUserDialog);
     } catch (error) {
-      if (isCreateStudentDialog && error instanceof ApiError) {
+      if (isCreateInviteDialog && error instanceof ApiError) {
         const nextFieldErrors = parseUserApiFieldErrors(error);
         const code = error.problem.code?.toUpperCase() ?? "";
 
@@ -768,7 +776,7 @@ export function AdminDashboard() {
           nextFieldErrors.email = "Ten adres e-mail jest już zajęty.";
         }
 
-        if (code === "USER_GROUP_NOT_FOUND") {
+        if (isCreateStudentDialog && code === "USER_GROUP_NOT_FOUND") {
           nextFieldErrors.groupPublicId = "Wybrana grupa nie istnieje.";
         }
 
@@ -1079,10 +1087,10 @@ export function AdminDashboard() {
               <SchoolIcon sx={{ fontSize: 30 }} />
             </Box>
             <Typography variant="body1" fontWeight={700} align="center">
-              Nowy nauczyciel
+              Zaproszenie nauczyciela
             </Typography>
             <Typography variant="caption" color="text.secondary" align="center">
-              Dodaj konto i od razu nadaj dostęp
+              Wyślij zaproszenie e-mail do aktywacji konta nauczyciela
             </Typography>
           </Paper>
           <Paper
@@ -1550,7 +1558,7 @@ export function AdminDashboard() {
                                 size="small"
                                 color="warning"
                                 startIcon={<SendIcon fontSize="small" />}
-                                onClick={() => resendStudentInvite(user)}
+                                onClick={() => resendUserInvite(user)}
                                 sx={panelFooterButtonSx}
                               >
                                 Wyślij ponownie
@@ -1602,7 +1610,7 @@ export function AdminDashboard() {
                                   openDeleteDialog({
                                     type: "user",
                                     publicId: user.publicId,
-                                    label: user.username,
+                                    label: user.username ?? user.email,
                                     detail:
                                       user.role === "STUDENT" &&
                                       "groupName" in user &&
@@ -1610,7 +1618,7 @@ export function AdminDashboard() {
                                         ? `Uczeń w grupie ${user.groupName}`
                                         : user.email,
                                     fields: [
-                                      { label: "Nazwa", value: user.username },
+                                      { label: "Nazwa", value: user.username ?? "—" },
                                       { label: "E-mail", value: user.email },
                                       ...(user.role === "STUDENT" &&
                                       "groupName" in user &&
@@ -1639,10 +1647,10 @@ export function AdminDashboard() {
                                   openDeleteDialog({
                                     type: "user",
                                     publicId: user.publicId,
-                                    label: user.username,
+                                    label: user.username ?? user.email,
                                     detail: user.email,
                                     fields: [
-                                      { label: "Nazwa", value: user.username },
+                                      { label: "Nazwa", value: user.username ?? "—" },
                                       { label: "E-mail", value: user.email, secondary: true },
                                     ],
                                   })
@@ -1813,7 +1821,7 @@ export function AdminDashboard() {
                                     color="warning"
                                     startIcon={<SendIcon fontSize="small" />}
                                     fullWidth
-                                    onClick={() => resendStudentInvite(user)}
+                                    onClick={() => resendUserInvite(user)}
                                     sx={panelFooterButtonSx}
                                   >
                                     Wyślij ponownie
@@ -1873,7 +1881,7 @@ export function AdminDashboard() {
                                       openDeleteDialog({
                                         type: "user",
                                         publicId: user.publicId,
-                                        label: user.username,
+                                        label: user.username ?? user.email,
                                         detail:
                                           user.role === "STUDENT" &&
                                           "groupName" in user &&
@@ -1881,7 +1889,7 @@ export function AdminDashboard() {
                                             ? `Uczeń w grupie ${user.groupName}`
                                             : user.email,
                                         fields: [
-                                          { label: "Nazwa", value: user.username },
+                                          { label: "Nazwa", value: user.username ?? "—" },
                                           { label: "E-mail", value: user.email },
                                           ...(user.role === "STUDENT" &&
                                           "groupName" in user &&
@@ -1912,10 +1920,10 @@ export function AdminDashboard() {
                                     openDeleteDialog({
                                       type: "user",
                                       publicId: user.publicId,
-                                      label: user.username,
+                                      label: user.username ?? user.email,
                                       detail: user.email,
                                       fields: [
-                                        { label: "Nazwa", value: user.username },
+                                        { label: "Nazwa", value: user.username ?? "—" },
                                         { label: "E-mail", value: user.email, secondary: true },
                                       ],
                                     })
@@ -2439,13 +2447,15 @@ export function AdminDashboard() {
             title={
               userDialogMode === "create"
                 ? userDialogRole === "TEACHER"
-                  ? "Nowe konto nauczyciela"
+                  ? "Zaproszenie nauczyciela"
                   : "Zaproszenie ucznia"
                 : `Edycja konta ${selectedUser?.username ?? ""}`
             }
             subtitle={
               userDialogRole === "TEACHER"
-                ? "Utwórz lub zaktualizuj konto nauczyciela."
+                ? userDialogMode === "create"
+                  ? "Wyślij zaproszenie e-mail. Nauczyciel sam ustawi nazwę i hasło."
+                  : "Zarządzaj danymi nauczyciela i dostępem do konta."
                 : userDialogMode === "create"
                   ? "Wyślij zaproszenie e-mail. Uczeń sam ustawi nazwę i hasło."
                   : "Zarządzaj danymi ucznia, przypisaną grupą i dostępem."
@@ -2483,7 +2493,7 @@ export function AdminDashboard() {
                   overflow: "hidden",
                 }}
               >
-                {!(userDialogMode === "create" && userDialogRole === "STUDENT") && (
+                {!isCreateInviteDialog && (
                   <Box
                     sx={{
                       px: 2,
@@ -2596,7 +2606,9 @@ export function AdminDashboard() {
                             ...current,
                             emailConfirm: undefined,
                           }));
-                          setUserDialogConfirmEmail(event.target.value);
+                          setUserDialogConfirmEmail(
+                            event.target.value.slice(0, INPUT_LIMITS.email),
+                          );
                         }}
                         inputProps={{ maxLength: INPUT_LIMITS.email }}
                         error={Boolean(userFieldErrors.emailConfirm)}
@@ -2612,46 +2624,6 @@ export function AdminDashboard() {
                     </Box>
                   </Stack>
                 </Box>
-
-                {userDialogMode === "create" && userDialogRole === "TEACHER" && (
-                  <Box
-                    sx={{
-                      px: 2,
-                      py: 1.5,
-                      borderBottom: "none",
-                      borderColor: "divider",
-                    }}
-                  >
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      display="block"
-                      sx={{ mb: 0.75 }}
-                    >
-                      Hasło
-                    </Typography>
-                    <TextField
-                      name="admin-user-dialog-password"
-                      autoComplete="new-password"
-                      type="password"
-                      value={userDraft.password}
-                      onChange={(event) =>
-                        setUserDraft((current) => ({
-                          ...current,
-                          password: event.target.value,
-                        }))
-                      }
-                      size="small"
-                      fullWidth
-                      placeholder="Wprowadź hasło"
-                    />
-                    <Box sx={{ mt: 1 }}>
-                      <PasswordStrengthIndicator
-                        password={userDraft.password}
-                      />
-                    </Box>
-                  </Box>
-                )}
 
                 {userDialogRole === "STUDENT" && (
                   <Box sx={{ px: 2, py: 1.5 }}>
@@ -3129,7 +3101,9 @@ export function AdminDashboard() {
               >
                 {userDialogLoading
                   ? "Zapisywanie..."
-                  : userDialogMode === "create" && userDialogRole === "STUDENT"
+                  : isCreateTeacherDialog
+                    ? "Zaproś nauczyciela"
+                    : isCreateStudentDialog
                     ? "Zaproś ucznia"
                     : "Zapisz zmiany"}
               </Button>
