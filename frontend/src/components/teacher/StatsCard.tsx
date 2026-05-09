@@ -16,6 +16,7 @@ export function StatsCard({ label, value, highlightColor }: StatsCardProps) {
         p: 2.5,
         flex: 1,
         minWidth: 150,
+        textAlign: "center",
       }}
     >
       <Typography

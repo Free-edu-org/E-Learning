@@ -878,7 +878,7 @@ export function AdminDashboard() {
         )}
 
         {adminStats && (
-          <Box sx={{ display: "flex", gap: 2, mb: 3, flexWrap: "wrap" }}>
+          <Box sx={{ display: "flex", gap: 2, mb: 3, flexWrap: "wrap", justifyContent: "center" }}>
             <StatsCard
               label="Wszyscy użytkownicy"
               value={adminStats.totalUsers}
