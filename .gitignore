@@ -45,12 +45,22 @@ __pycache__/
 ############################
 *.log
 
-############################
+# ############################
 # ENV FILES
-############################
+# ############################
 .env
-.env.*
+.env.local
+.env.production
+.env.prod
+*.secret
+application-secret.yaml
+application-local.yaml
+application-secret.properties
+application-local.properties
 !.env.example
+!.env.production.example
+!.env.prod.example
+!application-prod.yaml
 
 ############################
 # TEST / COVERAGE
