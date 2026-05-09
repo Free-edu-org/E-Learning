@@ -3,15 +3,16 @@
 -- =============================================================================
 
 CREATE TABLE users (
-    id           INT            NOT NULL AUTO_INCREMENT,
-    email        VARCHAR(255)   NOT NULL,
-    username     VARCHAR(255)   NOT NULL,
-    password     TEXT           NOT NULL,
-    role         ENUM('ADMIN','STUDENT','TEACHER') NOT NULL,
-    created_at   TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    avatar_url   VARCHAR(512)   DEFAULT NULL,
-    token_version INT           NOT NULL DEFAULT 0,
-    public_id    VARCHAR(36)    NOT NULL DEFAULT (UUID()),
+    id            INT            NOT NULL AUTO_INCREMENT,
+    email         VARCHAR(255)   NOT NULL,
+    username      VARCHAR(255)   NULL,
+    password      TEXT           NULL,
+    role          ENUM('ADMIN','STUDENT','TEACHER') NOT NULL,
+    status        ENUM('ACTIVE', 'INVITED') NOT NULL DEFAULT 'ACTIVE',
+    created_at    TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    avatar_url    VARCHAR(512)   DEFAULT NULL,
+    token_version INT            NOT NULL DEFAULT 0,
+    public_id     VARCHAR(36)    NOT NULL DEFAULT (UUID()),
     PRIMARY KEY (id),
     UNIQUE KEY email (email),
     UNIQUE KEY username (username),
@@ -292,3 +293,16 @@ CREATE TABLE user_task_attention_events (
 
 CREATE INDEX idx_user_task_attention_user_lesson
     ON user_task_attention_events (user_id, lesson_id);
+
+CREATE TABLE invitation_tokens (
+    id          BIGINT       NOT NULL AUTO_INCREMENT,
+    user_id     INT          NOT NULL,
+    token_hash  CHAR(64)     NOT NULL,
+    expires_at  TIMESTAMP    NOT NULL,
+    used_at     TIMESTAMP    NULL DEFAULT NULL,
+    created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_invitation_tokens_token_hash (token_hash),
+    KEY idx_invitation_tokens_user_id (user_id),
+    CONSTRAINT fk_invitation_tokens_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+);

@@ -35,7 +35,11 @@ import pl.freeedu.backend.task.dto.LessonResultDetailsResponse;
 import pl.freeedu.backend.task.exception.TaskErrorCode;
 import pl.freeedu.backend.task.exception.TaskException;
 import pl.freeedu.backend.task.service.LessonResultDetailsService;
+import pl.freeedu.backend.accountinvitation.service.AccountActivationService;
 import pl.freeedu.backend.user.model.User;
+import pl.freeedu.backend.user.model.UserStatus;
+import pl.freeedu.backend.accountinvitation.exception.AccountInvitationException;
+import pl.freeedu.backend.accountinvitation.exception.AccountInvitationErrorCode;
 import pl.freeedu.backend.user.exception.UserException;
 import pl.freeedu.backend.user.exception.UserErrorCode;
 import pl.freeedu.backend.usergroup.exception.UserGroupException;
@@ -67,6 +71,8 @@ public class TeacherService {
 	private final StudentProgressHistoryRepository studentProgressHistoryRepository;
 	private final UserAnswerRepository userAnswerRepository;
 
+	private final AccountActivationService accountActivationService;
+
 	public TeacherService(TeacherStatsRepository teacherStatsRepository, LessonRepository lessonRepository,
 			GroupHasLessonRepository groupHasLessonRepository, LessonMapper lessonMapper,
 			SecurityService securityService, UserGroupService userGroupService, UserRepository userRepository,
@@ -75,7 +81,7 @@ public class TeacherService {
 			LessonAttachmentService lessonAttachmentService,
 			UserGroupPublicIdLookupService userGroupPublicIdLookupService,
 			StudentProgressHistoryRepository studentProgressHistoryRepository,
-			UserAnswerRepository userAnswerRepository) {
+			UserAnswerRepository userAnswerRepository, AccountActivationService accountActivationService) {
 		this.teacherStatsRepository = teacherStatsRepository;
 		this.lessonRepository = lessonRepository;
 		this.groupHasLessonRepository = groupHasLessonRepository;
@@ -91,6 +97,7 @@ public class TeacherService {
 		this.userGroupPublicIdLookupService = userGroupPublicIdLookupService;
 		this.studentProgressHistoryRepository = studentProgressHistoryRepository;
 		this.userAnswerRepository = userAnswerRepository;
+		this.accountActivationService = accountActivationService;
 	}
 
 	public Mono<TeacherStatsResponse> getStats() {
@@ -131,8 +138,8 @@ public class TeacherService {
 			return userRepository.findStudentsWithGroupByTeacherId(teacherId, Role.STUDENT).stream()
 					.map(proj -> TeacherStudentResponse.builder().publicId(proj.getPublicId())
 							.username(proj.getUsername()).email(proj.getEmail()).role(proj.getRole().name())
-							.createdAt(proj.getCreatedAt()).groupPublicId(proj.getGroupPublicId())
-							.avatarUrl(proj.getAvatarUrl()).build())
+							.status(proj.getStatus()).createdAt(proj.getCreatedAt())
+							.groupPublicId(proj.getGroupPublicId()).avatarUrl(proj.getAvatarUrl()).build())
 					.toList();
 		}).subscribeOn(Schedulers.boundedElastic()).flatMapMany(Flux::fromIterable));
 	}
@@ -176,9 +183,6 @@ public class TeacherService {
 					if (userRepository.existsByEmail(request.getEmail())) {
 						throw new UserException(UserErrorCode.EMAIL_ALREADY_TAKEN);
 					}
-					if (userRepository.existsByUsername(request.getUsername())) {
-						throw new UserException(UserErrorCode.USERNAME_ALREADY_TAKEN);
-					}
 
 					UserGroup group = userGroupPublicIdLookupService.getRequiredGroup(request.getGroupPublicId());
 
@@ -186,27 +190,54 @@ public class TeacherService {
 						throw new UserGroupException(UserGroupErrorCode.INVALID_ROLE_FOR_GROUP);
 					}
 
-					User student = User.builder().email(request.getEmail()).username(request.getUsername())
-							.password(passwordEncoder.encode(request.getPassword())).role(Role.STUDENT).build();
+					String plainToken = accountActivationService.createInvitedUser(request.getEmail());
+					User savedStudent = userRepository.findByEmail(request.getEmail())
+							.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 
-					try {
-						User savedStudent = userRepository.save(student);
-						userInGroupRepository.save(
-								UserInGroup.builder().userId(savedStudent.getId()).groupId(group.getId()).build());
-						return TeacherStudentResponse.builder().publicId(savedStudent.getPublicId())
-								.username(savedStudent.getUsername()).email(savedStudent.getEmail())
-								.role(savedStudent.getRole().name()).createdAt(savedStudent.getCreatedAt())
-								.groupPublicId(group.getPublicId()).avatarUrl(savedStudent.getAvatarUrl()).build();
-					} catch (DataIntegrityViolationException ex) {
-						if (userRepository.existsByEmail(request.getEmail())) {
-							throw new UserException(UserErrorCode.EMAIL_ALREADY_TAKEN);
-						}
-						if (userRepository.existsByUsername(request.getUsername())) {
-							throw new UserException(UserErrorCode.USERNAME_ALREADY_TAKEN);
-						}
-						throw ex;
-					}
+					userInGroupRepository
+							.save(UserInGroup.builder().userId(savedStudent.getId()).groupId(group.getId()).build());
+
+					accountActivationService.sendInvitationEmail(savedStudent.getEmail(), plainToken);
+					log.info("Student invited by teacher: student ID={}, group ID={}", savedStudent.getId(),
+							group.getId());
+
+					return TeacherStudentResponse.builder().publicId(savedStudent.getPublicId())
+							.username(savedStudent.getUsername()).email(savedStudent.getEmail())
+							.role(savedStudent.getRole().name()).status(savedStudent.getStatus())
+							.createdAt(savedStudent.getCreatedAt()).groupPublicId(group.getPublicId())
+							.avatarUrl(savedStudent.getAvatarUrl()).build();
 				})).subscribeOn(Schedulers.boundedElastic())));
+	}
+
+	public Mono<Void> resendInvite(Integer studentId) {
+		return securityService.getCurrentUserId().flatMap(teacherId -> Mono.fromCallable(() -> {
+			User student = userRepository.findById(studentId)
+					.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
+			boolean isStudentsTeacher = userRepository.findStudentsWithGroupByTeacherId(teacherId, Role.STUDENT)
+					.stream().anyMatch(u -> u.getPublicId().equals(student.getPublicId()));
+			if (!isStudentsTeacher) {
+				throw new org.springframework.security.access.AccessDeniedException("Missing ownership over student");
+			}
+			return (Void) null;
+		}).subscribeOn(Schedulers.boundedElastic())).then(accountActivationService.resendInvite(studentId));
+	}
+
+	public Mono<Void> cancelStudentInvitation(Integer studentId) {
+		return securityService.getCurrentUserId().flatMap(teacherId -> Mono.fromCallable(() -> {
+			User student = userRepository.findById(studentId)
+					.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
+			boolean isStudentsTeacher = userRepository.findStudentsWithGroupByTeacherId(teacherId, Role.STUDENT)
+					.stream().anyMatch(u -> u.getPublicId().equals(student.getPublicId()));
+			if (!isStudentsTeacher) {
+				throw new org.springframework.security.access.AccessDeniedException("Missing ownership over student");
+			}
+			if (student.getStatus() != UserStatus.INVITED) {
+				throw new AccountInvitationException(AccountInvitationErrorCode.ACCOUNT_NOT_INVITED);
+			}
+			userRepository.delete(student);
+			log.info("Teacher ID: {} cancelled invitation for student ID: {}", teacherId, studentId);
+			return null;
+		}).subscribeOn(Schedulers.boundedElastic()).then());
 	}
 	public Mono<TeacherStudentStatsResponse> getStudentStats(Integer studentId) {
 		return securityService.getCurrentUserId().flatMap(teacherId -> Mono.fromCallable(() -> {
@@ -285,7 +316,8 @@ public class TeacherService {
 							&& userRepository.existsByEmail(request.getEmail())) {
 						throw new UserException(UserErrorCode.EMAIL_ALREADY_TAKEN);
 					}
-					if (!student.getUsername().equals(request.getUsername())
+					if (!java.util.Objects.equals(student.getUsername(), request.getUsername())
+							&& request.getUsername() != null
 							&& userRepository.existsByUsername(request.getUsername())) {
 						throw new UserException(UserErrorCode.USERNAME_ALREADY_TAKEN);
 					}
@@ -312,7 +344,8 @@ public class TeacherService {
 								&& userRepository.existsByEmail(request.getEmail())) {
 							throw new UserException(UserErrorCode.EMAIL_ALREADY_TAKEN);
 						}
-						if (!originalUsername.equals(request.getUsername())
+						if (!java.util.Objects.equals(originalUsername, request.getUsername())
+								&& request.getUsername() != null
 								&& userRepository.existsByUsername(request.getUsername())) {
 							throw new UserException(UserErrorCode.USERNAME_ALREADY_TAKEN);
 						}

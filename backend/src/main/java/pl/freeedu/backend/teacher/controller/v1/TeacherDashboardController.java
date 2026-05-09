@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -144,5 +145,31 @@ public class TeacherDashboardController {
 			@Valid @RequestBody Mono<pl.freeedu.backend.teacher.dto.TeacherUpdateStudentRequest> request) {
 		return userPublicIdLookupService.getInternalId(studentPublicId)
 				.flatMap(studentId -> teacherService.updateStudent(studentId, request));
+	}
+
+	@Operation(summary = "Resend invitation email to a pending student")
+	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Invitation resent successfully"),
+			@ApiResponse(responseCode = "403", description = "Forbidden - not the student's teacher"),
+			@ApiResponse(responseCode = "404", description = "Student not found"),
+			@ApiResponse(responseCode = "409", description = "Account is already active")})
+	@PostMapping("/students/{studentPublicId}/resend-invite")
+	@PreAuthorize("hasRole('TEACHER')")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public Mono<Void> resendInvite(@PathVariable String studentPublicId) {
+		return userPublicIdLookupService.getInternalId(studentPublicId)
+				.flatMap(studentId -> teacherService.resendInvite(studentId));
+	}
+
+	@Operation(summary = "Cancel an invitation and delete the INVITED student account")
+	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Invitation cancelled and account deleted"),
+			@ApiResponse(responseCode = "403", description = "Forbidden - not the student's teacher"),
+			@ApiResponse(responseCode = "404", description = "Student not found"),
+			@ApiResponse(responseCode = "409", description = "Account is already active, cannot cancel")})
+	@DeleteMapping("/students/{studentPublicId}")
+	@PreAuthorize("hasRole('TEACHER')")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public Mono<Void> cancelStudentInvitation(@PathVariable String studentPublicId) {
+		return userPublicIdLookupService.getInternalId(studentPublicId)
+				.flatMap(studentId -> teacherService.cancelStudentInvitation(studentId));
 	}
 }
