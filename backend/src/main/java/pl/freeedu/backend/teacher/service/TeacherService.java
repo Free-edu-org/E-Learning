@@ -210,15 +210,16 @@ public class TeacherService {
 	}
 
 	public Mono<Void> resendInvite(Integer studentId) {
-		return securityService.getCurrentUserId().flatMap(teacherId -> {
+		return securityService.getCurrentUserId().flatMap(teacherId -> Mono.fromCallable(() -> {
+			User student = userRepository.findById(studentId)
+					.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 			boolean isStudentsTeacher = userRepository.findStudentsWithGroupByTeacherId(teacherId, Role.STUDENT)
-					.stream().anyMatch(u -> userRepository.findById(studentId)
-							.map(s -> u.getPublicId().equals(s.getPublicId())).orElse(false));
+					.stream().anyMatch(u -> u.getPublicId().equals(student.getPublicId()));
 			if (!isStudentsTeacher) {
 				throw new org.springframework.security.access.AccessDeniedException("Missing ownership over student");
 			}
-			return accountActivationService.resendInvite(studentId);
-		});
+			return (Void) null;
+		}).subscribeOn(Schedulers.boundedElastic())).then(accountActivationService.resendInvite(studentId));
 	}
 
 	public Mono<Void> cancelStudentInvitation(Integer studentId) {
@@ -315,7 +316,8 @@ public class TeacherService {
 							&& userRepository.existsByEmail(request.getEmail())) {
 						throw new UserException(UserErrorCode.EMAIL_ALREADY_TAKEN);
 					}
-					if (!student.getUsername().equals(request.getUsername())
+					if (!java.util.Objects.equals(student.getUsername(), request.getUsername())
+							&& request.getUsername() != null
 							&& userRepository.existsByUsername(request.getUsername())) {
 						throw new UserException(UserErrorCode.USERNAME_ALREADY_TAKEN);
 					}
@@ -342,7 +344,8 @@ public class TeacherService {
 								&& userRepository.existsByEmail(request.getEmail())) {
 							throw new UserException(UserErrorCode.EMAIL_ALREADY_TAKEN);
 						}
-						if (!originalUsername.equals(request.getUsername())
+						if (!java.util.Objects.equals(originalUsername, request.getUsername())
+								&& request.getUsername() != null
 								&& userRepository.existsByUsername(request.getUsername())) {
 							throw new UserException(UserErrorCode.USERNAME_ALREADY_TAKEN);
 						}

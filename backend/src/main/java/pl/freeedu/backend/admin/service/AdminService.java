@@ -136,7 +136,7 @@ public class AdminService {
 				log.warn("Student update failed: New email already taken");
 				throw new UserException(UserErrorCode.EMAIL_ALREADY_TAKEN);
 			}
-			if (!student.getUsername().equals(request.getUsername())
+			if (!java.util.Objects.equals(student.getUsername(), request.getUsername()) && request.getUsername() != null
 					&& userRepository.existsByUsername(request.getUsername())) {
 				log.warn("Student update failed: New username already taken");
 				throw new UserException(UserErrorCode.USERNAME_ALREADY_TAKEN);

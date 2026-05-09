@@ -33,12 +33,12 @@ public class SmtpAccountInvitationMailService implements AccountInvitationMailSe
 
 	@Override
 	public void sendInvitationEmail(String toEmail, String inviteToken) {
-		String activationUrl = frontendBaseUrl + "/activate?token=" + inviteToken;
-
 		if (!mailEnabled) {
-			log.warn("Invitation email delivery is disabled. Activation URL: {}", activationUrl);
+			log.warn("Invitation email delivery is disabled — skipping send to: {}", toEmail);
 			return;
 		}
+
+		String activationUrl = frontendBaseUrl + "/activate?token=" + inviteToken;
 
 		SimpleMailMessage message = new SimpleMailMessage();
 		message.setTo(toEmail);

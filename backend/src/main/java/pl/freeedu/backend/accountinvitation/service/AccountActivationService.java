@@ -24,6 +24,7 @@ import pl.freeedu.backend.user.model.UserStatus;
 import pl.freeedu.backend.user.repository.UserRepository;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import org.springframework.dao.DataIntegrityViolationException;
 
 @Slf4j
 @Service
@@ -52,16 +53,28 @@ public class AccountActivationService {
 	}
 
 	public String createInvitedUser(String email) {
-		invitationTokenRepository.invalidateActiveTokensForUser(
-				userRepository.findByEmail(email).map(User::getId).orElse(-1), LocalDateTime.now());
+		java.util.Optional<User> existing = userRepository.findByEmail(email);
+		if (existing.isPresent()) {
+			User existingUser = existing.get();
+			if (existingUser.getStatus() != UserStatus.INVITED) {
+				throw new UserException(UserErrorCode.EMAIL_ALREADY_TAKEN);
+			}
+			invitationTokenRepository.invalidateActiveTokensForUser(existingUser.getId(), LocalDateTime.now());
+			String token = generateAndPersistToken(existingUser.getId());
+			log.info("New invitation token generated for existing invited user ID: {}", existingUser.getId());
+			return token;
+		}
 
 		User invited = User.builder().email(email).status(UserStatus.INVITED)
 				.role(pl.freeedu.backend.user.model.Role.STUDENT).build();
-
-		User saved = userRepository.save(invited);
-		String token = generateAndPersistToken(saved.getId());
-		log.info("Invited user created. User ID: {}", saved.getId());
-		return token;
+		try {
+			User saved = userRepository.save(invited);
+			String token = generateAndPersistToken(saved.getId());
+			log.info("Invited user created. User ID: {}", saved.getId());
+			return token;
+		} catch (DataIntegrityViolationException ex) {
+			throw new UserException(UserErrorCode.EMAIL_ALREADY_TAKEN);
+		}
 	}
 
 	public String createInvitationTokenForExistingUser(User user) {

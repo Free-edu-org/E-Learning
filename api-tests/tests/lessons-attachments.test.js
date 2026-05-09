@@ -74,22 +74,23 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonPublicId}/attachments)', ()
         res = await apiClient.patch(`/lessons/${lessonPublicId}/status`, { isActive: true });
         expect(res.status).toBe(204);
 
-        // Teacher creates a student in the group
-        setAuthToken(teacherToken);
-        res = await apiClient.post('/teacher/students', {
+        // Teacher creates a student in the group (must be ACTIVE to login)
+        setAuthToken(adminToken);
+        res = await apiClient.post('/users/register', {
             username: `attach_student_${uniqueId}`,
             email: `attach_student_${uniqueId}@test.com`,
             password: 'admin1',
-            groupPublicId,
         });
-        expect(res.status).toBe(201);
-        studentPublicId = res.data.publicId;
-
         res = await apiClient.post('/auth/login', {
             identifier: `attach_student_${uniqueId}`,
             password: 'admin1',
         });
         studentToken = res.data.token;
+        setAuthToken(studentToken);
+        res = await apiClient.get('/users/me');
+        studentPublicId = res.data.publicId;
+        setAuthToken(teacherToken);
+        await apiClient.post(`/user-groups/${groupPublicId}/members/${studentPublicId}`);
     });
 
     afterAll(async () => {
