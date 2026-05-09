@@ -62,9 +62,7 @@ import {
   AppDialogHeader,
   AppDialogStatus,
 } from "@/components/ui/dialog/AppDialog";
-import {
-  FormActions,
-} from "@/components/ui/form/FormLayout";
+import { FormActions } from "@/components/ui/form/FormLayout";
 import { DashboardHeader } from "@/components/ui/panel/DashboardHeader";
 import { DashboardTopBar } from "@/components/ui/panel/DashboardTopBar";
 import {
@@ -73,7 +71,10 @@ import {
 } from "@/components/ui/panel/panelStyles";
 import { UserAvatar } from "@/components/ui/avatar/UserAvatar";
 import { uiTokens } from "@/theme/uiTokens";
-import { getApiErrorMessage, translateApiMessage } from "@/utils/dashboardUtils";
+import {
+  getApiErrorMessage,
+  translateApiMessage,
+} from "@/utils/dashboardUtils";
 import { INPUT_LIMITS } from "@/utils/inputLimits";
 import { GroupInvitationsSection } from "./GroupInvitationsSection";
 
@@ -156,7 +157,9 @@ function parseGroupApiFieldErrors(error: ApiError): GroupFieldErrors {
         return acc;
       }
 
-      const field = part.slice(0, separatorIndex).trim() as keyof GroupFieldErrors;
+      const field = part
+        .slice(0, separatorIndex)
+        .trim() as keyof GroupFieldErrors;
       const validationDetail = part.slice(separatorIndex + 1).trim();
       if (!(field in emptyGroupDraft)) {
         return acc;
@@ -184,12 +187,11 @@ function parseStudentApiFieldErrors(error: ApiError): StudentFieldErrors {
         return acc;
       }
 
-      const field = part.slice(0, separatorIndex).trim() as keyof StudentFieldErrors;
+      const field = part
+        .slice(0, separatorIndex)
+        .trim() as keyof StudentFieldErrors;
       const validationDetail = part.slice(separatorIndex + 1).trim();
-      if (
-        field !== "username" &&
-        !(field in emptyStudentDraft)
-      ) {
+      if (field !== "username" && !(field in emptyStudentDraft)) {
         return acc;
       }
 
@@ -240,7 +242,9 @@ export function TeacherStudentsView() {
     useState<DialogFeedbackState | null>(null);
   const [editStudentFieldErrors, setEditStudentFieldErrors] =
     useState<StudentFieldErrors>({});
-  const [editStudentEditingFields, setEditStudentEditingFields] = useState<string[]>([]);
+  const [editStudentEditingFields, setEditStudentEditingFields] = useState<
+    string[]
+  >([]);
 
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
   const [createGroupDraft, setCreateGroupDraft] = useState(emptyGroupDraft);
@@ -257,7 +261,9 @@ export function TeacherStudentsView() {
     useState<DialogFeedbackState | null>(null);
   const [editGroupFieldErrors, setEditGroupFieldErrors] =
     useState<GroupFieldErrors>({});
-  const [editGroupEditingFields, setEditGroupEditingFields] = useState<string[]>([]);
+  const [editGroupEditingFields, setEditGroupEditingFields] = useState<
+    string[]
+  >([]);
 
   const [draggingStudentPublicId, setDraggingStudentPublicId] = useState<
     string | null
@@ -373,7 +379,9 @@ export function TeacherStudentsView() {
     if (!createStudentDraft.email.trim()) {
       nextFieldErrors.email = "Podaj adres e-mail ucznia.";
     }
-    if (createStudentDraft.email.trim() !== createStudentDraft.emailConfirm.trim()) {
+    if (
+      createStudentDraft.email.trim() !== createStudentDraft.emailConfirm.trim()
+    ) {
       nextFieldErrors.emailConfirm = "Adresy e-mail nie są zgodne.";
     }
     if (createStudentDraft.groupPublicId === "") {
@@ -459,7 +467,9 @@ export function TeacherStudentsView() {
       nextFieldErrors.groupPublicId = "Wybierz docelową grupę.";
     }
 
-    if (editStudentDraft.email.trim() !== editStudentDraft.emailConfirm.trim()) {
+    if (
+      editStudentDraft.email.trim() !== editStudentDraft.emailConfirm.trim()
+    ) {
       nextFieldErrors.emailConfirm = "Adresy e-mail nie są zgodne.";
     }
 
@@ -516,7 +526,10 @@ export function TeacherStudentsView() {
     } catch (error) {
       setEditStudentFeedback({
         severity: "error",
-        message: getOperationErrorMessage(error, "Nie udało się wysłać linku do resetu hasła."),
+        message: getOperationErrorMessage(
+          error,
+          "Nie udało się wysłać linku do resetu hasła.",
+        ),
       });
     } finally {
       setEditStudentLoading(false);
@@ -1363,8 +1376,9 @@ export function TeacherStudentsView() {
                   placeholder="Powtórz e-mail"
                   error={
                     Boolean(createStudentFieldErrors.emailConfirm) ||
-                    createStudentDraft.emailConfirm.length > 0 &&
-                    createStudentDraft.email !== createStudentDraft.emailConfirm
+                    (createStudentDraft.emailConfirm.length > 0 &&
+                      createStudentDraft.email !==
+                        createStudentDraft.emailConfirm)
                   }
                   helperText={
                     createStudentFieldErrors.emailConfirm ??
@@ -1566,7 +1580,12 @@ export function TeacherStudentsView() {
                           placeholder="Wprowadź nazwę użytkownika"
                         />
                         <Box
-                          sx={{ display: "flex", gap: 0.5, flexShrink: 0, mt: 0.5 }}
+                          sx={{
+                            display: "flex",
+                            gap: 0.5,
+                            flexShrink: 0,
+                            mt: 0.5,
+                          }}
                         >
                           <IconButton
                             size="small"
@@ -1582,9 +1601,11 @@ export function TeacherStudentsView() {
                             sx={{
                               borderRadius: 1.5,
                               color: "success.main",
-                              bgcolor: (t) => alpha(t.palette.success.main, 0.08),
+                              bgcolor: (t) =>
+                                alpha(t.palette.success.main, 0.08),
                               "&:hover": {
-                                bgcolor: (t) => alpha(t.palette.success.main, 0.16),
+                                bgcolor: (t) =>
+                                  alpha(t.palette.success.main, 0.16),
                               },
                               "&.Mui-disabled": { opacity: 0.35 },
                             }}
@@ -1607,7 +1628,8 @@ export function TeacherStudentsView() {
                               borderRadius: 1.5,
                               color: "text.secondary",
                               "&:hover": {
-                                bgcolor: (t) => alpha(t.palette.text.primary, 0.06),
+                                bgcolor: (t) =>
+                                  alpha(t.palette.text.primary, 0.06),
                               },
                             }}
                           >
@@ -1708,7 +1730,12 @@ export function TeacherStudentsView() {
                             disabled={editStudentLoading}
                           />
                           <Box
-                            sx={{ display: "flex", gap: 0.5, flexShrink: 0, mt: 0.5 }}
+                            sx={{
+                              display: "flex",
+                              gap: 0.5,
+                              flexShrink: 0,
+                              mt: 0.5,
+                            }}
                           >
                             <IconButton
                               size="small"
@@ -1721,9 +1748,11 @@ export function TeacherStudentsView() {
                               sx={{
                                 borderRadius: 1.5,
                                 color: "success.main",
-                                bgcolor: (t) => alpha(t.palette.success.main, 0.08),
+                                bgcolor: (t) =>
+                                  alpha(t.palette.success.main, 0.08),
                                 "&:hover": {
-                                  bgcolor: (t) => alpha(t.palette.success.main, 0.16),
+                                  bgcolor: (t) =>
+                                    alpha(t.palette.success.main, 0.16),
                                 },
                               }}
                             >
@@ -1746,7 +1775,8 @@ export function TeacherStudentsView() {
                                 borderRadius: 1.5,
                                 color: "text.secondary",
                                 "&:hover": {
-                                  bgcolor: (t) => alpha(t.palette.text.primary, 0.06),
+                                  bgcolor: (t) =>
+                                    alpha(t.palette.text.primary, 0.06),
                                 },
                               }}
                             >
@@ -1773,13 +1803,15 @@ export function TeacherStudentsView() {
                           disabled={editStudentLoading}
                           error={
                             Boolean(editStudentFieldErrors.emailConfirm) ||
-                            editStudentDraft.emailConfirm.length > 0 &&
-                            editStudentDraft.email !== editStudentDraft.emailConfirm
+                            (editStudentDraft.emailConfirm.length > 0 &&
+                              editStudentDraft.email !==
+                                editStudentDraft.emailConfirm)
                           }
                           helperText={
                             editStudentFieldErrors.emailConfirm ??
                             (editStudentDraft.emailConfirm.length > 0 &&
-                            editStudentDraft.email !== editStudentDraft.emailConfirm
+                            editStudentDraft.email !==
+                              editStudentDraft.emailConfirm
                               ? "Adresy e-mail nie są zgodne"
                               : undefined)
                           }
@@ -1809,7 +1841,8 @@ export function TeacherStudentsView() {
                         </Typography>
                         <Typography variant="body2" fontWeight={500}>
                           {availableGroups.find(
-                            (g) => g.publicId === editStudentDraft.groupPublicId,
+                            (g) =>
+                              g.publicId === editStudentDraft.groupPublicId,
                           )?.name ?? "—"}
                         </Typography>
                       </Box>
@@ -1871,18 +1904,27 @@ export function TeacherStudentsView() {
                           disabled={editStudentLoading}
                         >
                           {availableGroups.map((group) => (
-                            <MenuItem key={group.publicId} value={group.publicId}>
+                            <MenuItem
+                              key={group.publicId}
+                              value={group.publicId}
+                            >
                               {group.name}
                             </MenuItem>
                           ))}
                         </TextField>
                         <Box
-                          sx={{ display: "flex", gap: 0.5, flexShrink: 0, mt: 0.5 }}
+                          sx={{
+                            display: "flex",
+                            gap: 0.5,
+                            flexShrink: 0,
+                            mt: 0.5,
+                          }}
                         >
                           <IconButton
                             size="small"
                             disabled={
-                              editStudentLoading || !editStudentDraft.groupPublicId
+                              editStudentLoading ||
+                              !editStudentDraft.groupPublicId
                             }
                             onClick={() =>
                               setEditStudentEditingFields((prev) =>
@@ -1892,9 +1934,11 @@ export function TeacherStudentsView() {
                             sx={{
                               borderRadius: 1.5,
                               color: "success.main",
-                              bgcolor: (t) => alpha(t.palette.success.main, 0.08),
+                              bgcolor: (t) =>
+                                alpha(t.palette.success.main, 0.08),
                               "&:hover": {
-                                bgcolor: (t) => alpha(t.palette.success.main, 0.16),
+                                bgcolor: (t) =>
+                                  alpha(t.palette.success.main, 0.16),
                               },
                               "&.Mui-disabled": { opacity: 0.35 },
                             }}
@@ -1918,7 +1962,8 @@ export function TeacherStudentsView() {
                               borderRadius: 1.5,
                               color: "text.secondary",
                               "&:hover": {
-                                bgcolor: (t) => alpha(t.palette.text.primary, 0.06),
+                                bgcolor: (t) =>
+                                  alpha(t.palette.text.primary, 0.06),
                               },
                             }}
                           >
@@ -1934,7 +1979,12 @@ export function TeacherStudentsView() {
 
             {!editStudentLoading && (
               <Box sx={{ mt: 3, px: 2 }}>
-                <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1.5 }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  display="block"
+                  sx={{ mb: 1.5 }}
+                >
                   Bezpieczeństwo konta
                 </Typography>
                 <Button
@@ -1944,19 +1994,18 @@ export function TeacherStudentsView() {
                   onClick={resetStudentPassword}
                   disabled={editStudentLoading}
                   fullWidth
-                  sx={{ 
-                    ...buttonSx, 
-                    py: 1.25, 
-                    borderWidth: 1.5, 
+                  sx={{
+                    ...buttonSx,
+                    py: 1.25,
+                    borderWidth: 1.5,
                     "&:hover": { borderWidth: 1.5 },
-                    justifyContent: "center"
+                    justifyContent: "center",
                   }}
                 >
                   Wyślij link do resetu hasła
                 </Button>
               </Box>
             )}
-
           </AppDialogBody>
           <AppDialogFooter>
             <FormActions>
@@ -2076,25 +2125,25 @@ export function TeacherStudentsView() {
                       <TextField
                         autoFocus
                         value={editGroupDraft.name}
-                          onChange={(event) => {
-                            setEditGroupFieldErrors((current) => ({
-                              ...current,
-                              name: undefined,
-                            }));
-                            setEditGroupDraft((draft) => ({
-                              ...draft,
-                              name: event.target.value.slice(
-                                0,
-                                INPUT_LIMITS.groupName,
-                              ),
-                            }));
-                          }}
+                        onChange={(event) => {
+                          setEditGroupFieldErrors((current) => ({
+                            ...current,
+                            name: undefined,
+                          }));
+                          setEditGroupDraft((draft) => ({
+                            ...draft,
+                            name: event.target.value.slice(
+                              0,
+                              INPUT_LIMITS.groupName,
+                            ),
+                          }));
+                        }}
                         inputProps={{ maxLength: INPUT_LIMITS.groupName }}
-                          error={Boolean(editGroupFieldErrors.name)}
-                          helperText={
-                            editGroupFieldErrors.name ??
-                            `${editGroupDraft.name.length}/${INPUT_LIMITS.groupName}`
-                          }
+                        error={Boolean(editGroupFieldErrors.name)}
+                        helperText={
+                          editGroupFieldErrors.name ??
+                          `${editGroupDraft.name.length}/${INPUT_LIMITS.groupName}`
+                        }
                         sx={counterFieldSx}
                         fullWidth
                         size="small"
@@ -2102,7 +2151,12 @@ export function TeacherStudentsView() {
                         placeholder="Wprowadź nazwę grupy"
                       />
                       <Box
-                        sx={{ display: "flex", gap: 0.5, flexShrink: 0, mt: 0.5 }}
+                        sx={{
+                          display: "flex",
+                          gap: 0.5,
+                          flexShrink: 0,
+                          mt: 0.5,
+                        }}
                       >
                         <IconButton
                           size="small"
@@ -2118,8 +2172,7 @@ export function TeacherStudentsView() {
                           sx={{
                             borderRadius: 1.5,
                             color: "success.main",
-                            bgcolor: (t) =>
-                              alpha(t.palette.success.main, 0.08),
+                            bgcolor: (t) => alpha(t.palette.success.main, 0.08),
                             "&:hover": {
                               bgcolor: (t) =>
                                 alpha(t.palette.success.main, 0.16),
@@ -2243,7 +2296,9 @@ export function TeacherStudentsView() {
                             ),
                           }));
                         }}
-                        inputProps={{ maxLength: INPUT_LIMITS.groupDescription }}
+                        inputProps={{
+                          maxLength: INPUT_LIMITS.groupDescription,
+                        }}
                         error={Boolean(editGroupFieldErrors.description)}
                         helperText={
                           editGroupFieldErrors.description ??
@@ -2258,7 +2313,12 @@ export function TeacherStudentsView() {
                         placeholder="Wprowadź opis grupy"
                       />
                       <Box
-                        sx={{ display: "flex", gap: 0.5, flexShrink: 0, mt: 0.5 }}
+                        sx={{
+                          display: "flex",
+                          gap: 0.5,
+                          flexShrink: 0,
+                          mt: 0.5,
+                        }}
                       >
                         <IconButton
                           size="small"
@@ -2271,8 +2331,7 @@ export function TeacherStudentsView() {
                           sx={{
                             borderRadius: 1.5,
                             color: "success.main",
-                            bgcolor: (t) =>
-                              alpha(t.palette.success.main, 0.08),
+                            bgcolor: (t) => alpha(t.palette.success.main, 0.08),
                             "&:hover": {
                               bgcolor: (t) =>
                                 alpha(t.palette.success.main, 0.16),
@@ -2387,10 +2446,7 @@ export function TeacherStudentsView() {
                     }));
                     setCreateGroupDraft((draft) => ({
                       ...draft,
-                      name: event.target.value.slice(
-                        0,
-                        INPUT_LIMITS.groupName,
-                      ),
+                      name: event.target.value.slice(0, INPUT_LIMITS.groupName),
                     }));
                   }}
                   inputProps={{ maxLength: INPUT_LIMITS.groupName }}

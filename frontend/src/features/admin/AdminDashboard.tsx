@@ -76,10 +76,7 @@ import {
   getRoleChipColor,
   getRoleLabel,
 } from "@/components/ui/chips/roleLabels";
-import {
-  FormActions,
-  FormSection,
-} from "@/components/ui/form/FormLayout";
+import { FormActions, FormSection } from "@/components/ui/form/FormLayout";
 import { DashboardHeader } from "@/components/ui/panel/DashboardHeader";
 import { DashboardTopBar } from "@/components/ui/panel/DashboardTopBar";
 import {
@@ -103,7 +100,10 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { uiTokens } from "@/theme/uiTokens";
 import { UserAvatar } from "@/components/ui/avatar/UserAvatar";
-import { getApiErrorMessage, translateApiMessage } from "@/utils/dashboardUtils";
+import {
+  getApiErrorMessage,
+  translateApiMessage,
+} from "@/utils/dashboardUtils";
 import { INPUT_LIMITS } from "@/utils/inputLimits";
 
 type UserRole = "TEACHER" | "STUDENT";
@@ -138,7 +138,9 @@ interface DeleteDialogState {
 }
 
 type GroupFieldErrors = Partial<Record<keyof GroupDraft, string>>;
-type UserFieldErrors = Partial<Record<keyof UserDraft | "emailConfirm", string>>;
+type UserFieldErrors = Partial<
+  Record<keyof UserDraft | "emailConfirm", string>
+>;
 
 interface MembershipDialogState {
   groupPublicId: string;
@@ -201,7 +203,9 @@ function parseGroupApiFieldErrors(error: ApiError): GroupFieldErrors {
         return acc;
       }
 
-      const field = part.slice(0, separatorIndex).trim() as keyof GroupFieldErrors;
+      const field = part
+        .slice(0, separatorIndex)
+        .trim() as keyof GroupFieldErrors;
       const validationDetail = part.slice(separatorIndex + 1).trim();
       if (!(field in emptyGroupDraft)) {
         return acc;
@@ -229,7 +233,9 @@ function parseUserApiFieldErrors(error: ApiError): UserFieldErrors {
         return acc;
       }
 
-      const field = part.slice(0, separatorIndex).trim() as keyof UserFieldErrors;
+      const field = part
+        .slice(0, separatorIndex)
+        .trim() as keyof UserFieldErrors;
       const validationDetail = part.slice(separatorIndex + 1).trim();
       if (!(field in emptyUserDraft)) {
         return acc;
@@ -326,7 +332,9 @@ export function AdminDashboard() {
     useState<DialogFeedbackState | null>(null);
   const [userDialogConfirmEmail, setUserDialogConfirmEmail] = useState("");
   const [userFieldErrors, setUserFieldErrors] = useState<UserFieldErrors>({});
-  const [userDialogEditingFields, setUserDialogEditingFields] = useState<string[]>([]);
+  const [userDialogEditingFields, setUserDialogEditingFields] = useState<
+    string[]
+  >([]);
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [groupDialogMode, setGroupDialogMode] = useState<"create" | "edit">(
     "create",
@@ -336,7 +344,9 @@ export function AdminDashboard() {
   const [groupDialogLoading, setGroupDialogLoading] = useState(false);
   const [groupDialogFeedback, setGroupDialogFeedback] =
     useState<DialogFeedbackState | null>(null);
-  const [groupFieldErrors, setGroupFieldErrors] = useState<GroupFieldErrors>({});
+  const [groupFieldErrors, setGroupFieldErrors] = useState<GroupFieldErrors>(
+    {},
+  );
   const [deleteDialog, setDeleteDialog] = useState<DeleteDialogState | null>(
     null,
   );
@@ -1618,7 +1628,10 @@ export function AdminDashboard() {
                                         ? `Uczeń w grupie ${user.groupName}`
                                         : user.email,
                                     fields: [
-                                      { label: "Nazwa", value: user.username ?? "—" },
+                                      {
+                                        label: "Nazwa",
+                                        value: user.username ?? "—",
+                                      },
                                       { label: "E-mail", value: user.email },
                                       ...(user.role === "STUDENT" &&
                                       "groupName" in user &&
@@ -1650,8 +1663,15 @@ export function AdminDashboard() {
                                     label: user.username ?? user.email,
                                     detail: user.email,
                                     fields: [
-                                      { label: "Nazwa", value: user.username ?? "—" },
-                                      { label: "E-mail", value: user.email, secondary: true },
+                                      {
+                                        label: "Nazwa",
+                                        value: user.username ?? "—",
+                                      },
+                                      {
+                                        label: "E-mail",
+                                        value: user.email,
+                                        secondary: true,
+                                      },
                                     ],
                                   })
                                 }
@@ -1855,7 +1875,10 @@ export function AdminDashboard() {
                                         detail:
                                           "Konto oczekujące — link aktywacyjny straci ważność.",
                                         fields: [
-                                          { label: "E-mail", value: user.email },
+                                          {
+                                            label: "E-mail",
+                                            value: user.email,
+                                          },
                                           {
                                             label: "Status",
                                             value:
@@ -1889,8 +1912,14 @@ export function AdminDashboard() {
                                             ? `Uczeń w grupie ${user.groupName}`
                                             : user.email,
                                         fields: [
-                                          { label: "Nazwa", value: user.username ?? "—" },
-                                          { label: "E-mail", value: user.email },
+                                          {
+                                            label: "Nazwa",
+                                            value: user.username ?? "—",
+                                          },
+                                          {
+                                            label: "E-mail",
+                                            value: user.email,
+                                          },
                                           ...(user.role === "STUDENT" &&
                                           "groupName" in user &&
                                           user.groupName
@@ -1923,8 +1952,15 @@ export function AdminDashboard() {
                                       label: user.username ?? user.email,
                                       detail: user.email,
                                       fields: [
-                                        { label: "Nazwa", value: user.username ?? "—" },
-                                        { label: "E-mail", value: user.email, secondary: true },
+                                        {
+                                          label: "Nazwa",
+                                          value: user.username ?? "—",
+                                        },
+                                        {
+                                          label: "E-mail",
+                                          value: user.email,
+                                          secondary: true,
+                                        },
                                       ],
                                     })
                                   }
@@ -2234,7 +2270,9 @@ export function AdminDashboard() {
                                       { label: "Nazwa", value: group.name },
                                       {
                                         label: "Opis",
-                                        value: group.description?.trim() || "Brak opisu",
+                                        value:
+                                          group.description?.trim() ||
+                                          "Brak opisu",
                                         secondary: true,
                                       },
                                     ],
@@ -2411,7 +2449,9 @@ export function AdminDashboard() {
                                       { label: "Nazwa", value: group.name },
                                       {
                                         label: "Opis",
-                                        value: group.description?.trim() || "Brak opisu",
+                                        value:
+                                          group.description?.trim() ||
+                                          "Brak opisu",
                                         secondary: true,
                                       },
                                     ],
@@ -2546,7 +2586,9 @@ export function AdminDashboard() {
                     px: 2,
                     py: 1.5,
                     borderBottom:
-                      userDialogRole === "STUDENT" || (userDialogMode === "create" && userDialogRole === "TEACHER")
+                      userDialogRole === "STUDENT" ||
+                      (userDialogMode === "create" &&
+                        userDialogRole === "TEACHER")
                         ? "1px solid"
                         : "none",
                     borderColor: "divider",
@@ -2573,7 +2615,10 @@ export function AdminDashboard() {
                         }));
                         setUserDraft((current) => ({
                           ...current,
-                          email: event.target.value.slice(0, INPUT_LIMITS.email),
+                          email: event.target.value.slice(
+                            0,
+                            INPUT_LIMITS.email,
+                          ),
                         }));
                       }}
                       inputProps={{ maxLength: INPUT_LIMITS.email }}
@@ -2698,7 +2743,13 @@ export function AdminDashboard() {
                       >
                         Edycja nazwy użytkownika
                       </Typography>
-                      <Box sx={{ display: "flex", gap: 1, alignItems: "flex-start" }}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          gap: 1,
+                          alignItems: "flex-start",
+                        }}
+                      >
                         <TextField
                           value={userDraft.username}
                           onChange={(event) =>
@@ -2727,7 +2778,14 @@ export function AdminDashboard() {
                           }
                           sx={counterFieldSx}
                         />
-                        <Box sx={{ display: "flex", gap: 0.5, flexShrink: 0, mt: 0.5 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            gap: 0.5,
+                            flexShrink: 0,
+                            mt: 0.5,
+                          }}
+                        >
                           <IconButton
                             size="small"
                             disabled={userDraft.username.trim().length < 3}
@@ -2820,7 +2878,8 @@ export function AdminDashboard() {
                   sx={{
                     px: 2,
                     py: 1.5,
-                    borderBottom: userDialogRole === "STUDENT" ? "1px solid" : "none",
+                    borderBottom:
+                      userDialogRole === "STUDENT" ? "1px solid" : "none",
                     borderColor: "divider",
                   }}
                 >
@@ -2835,7 +2894,13 @@ export function AdminDashboard() {
                         Edycja adresu e-mail
                       </Typography>
                       <Stack spacing={1.5}>
-                        <Box sx={{ display: "flex", gap: 1, alignItems: "flex-start" }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            gap: 1,
+                            alignItems: "flex-start",
+                          }}
+                        >
                           <TextField
                             value={userDraft.email}
                             onChange={(event) =>
@@ -2850,7 +2915,14 @@ export function AdminDashboard() {
                             autoComplete="off"
                             placeholder="Wprowadź e-mail"
                           />
-                          <Box sx={{ display: "flex", gap: 0.5, flexShrink: 0, mt: 0.5 }}>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              gap: 0.5,
+                              flexShrink: 0,
+                              mt: 0.5,
+                            }}
+                          >
                             <IconButton
                               size="small"
                               onClick={() =>
@@ -2878,7 +2950,9 @@ export function AdminDashboard() {
                                   ...current,
                                   email: selectedUser?.email ?? "",
                                 }));
-                                setUserDialogConfirmEmail(selectedUser?.email ?? "");
+                                setUserDialogConfirmEmail(
+                                  selectedUser?.email ?? "",
+                                );
                                 setUserDialogEditingFields((prev) =>
                                   prev.filter((f) => f !== "email"),
                                 );
@@ -2961,7 +3035,13 @@ export function AdminDashboard() {
                 {userDialogRole === "STUDENT" && (
                   <Box sx={{ px: 2, py: 1.5 }}>
                     {userDialogEditingFields.includes("group") ? (
-                      <Box sx={{ display: "flex", gap: 1, alignItems: "flex-start" }}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          gap: 1,
+                          alignItems: "flex-start",
+                        }}
+                      >
                         <Box sx={{ flex: 1 }}>
                           <Typography
                             variant="caption"
@@ -2977,7 +3057,9 @@ export function AdminDashboard() {
                             onChange={(event) =>
                               setUserDraft((current) => ({
                                 ...current,
-                                groupPublicId: event.target.value as string | "",
+                                groupPublicId: event.target.value as
+                                  | string
+                                  | "",
                               }))
                             }
                             size="small"
@@ -2985,13 +3067,23 @@ export function AdminDashboard() {
                           >
                             <MenuItem value="">Bez grupy</MenuItem>
                             {assignableGroups.map((group) => (
-                              <MenuItem key={group.publicId} value={group.publicId}>
+                              <MenuItem
+                                key={group.publicId}
+                                value={group.publicId}
+                              >
                                 {group.name}
                               </MenuItem>
                             ))}
                           </TextField>
                         </Box>
-                        <Box sx={{ display: "flex", gap: 0.5, flexShrink: 0, mt: 3 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            gap: 0.5,
+                            flexShrink: 0,
+                            mt: 3,
+                          }}
+                        >
                           <IconButton
                             size="small"
                             onClick={() =>
@@ -3018,7 +3110,8 @@ export function AdminDashboard() {
                               setUserDraft((current) => ({
                                 ...current,
                                 groupPublicId:
-                                  selectedUser && "groupPublicId" in selectedUser
+                                  selectedUser &&
+                                  "groupPublicId" in selectedUser
                                     ? (selectedUser.groupPublicId ?? "")
                                     : "",
                               }));
@@ -3104,8 +3197,8 @@ export function AdminDashboard() {
                   : isCreateTeacherDialog
                     ? "Zaproś nauczyciela"
                     : isCreateStudentDialog
-                    ? "Zaproś ucznia"
-                    : "Zapisz zmiany"}
+                      ? "Zaproś ucznia"
+                      : "Zapisz zmiany"}
               </Button>
             </FormActions>
           </AppDialogFooter>
@@ -3164,21 +3257,16 @@ export function AdminDashboard() {
                 </Typography>
                 <TextField
                   value={groupDraft.name}
-                  onChange={(event) =>
-                    {
-                      setGroupFieldErrors((current) => ({
-                        ...current,
-                        name: undefined,
-                      }));
-                      setGroupDraft((current) => ({
-                        ...current,
-                        name: event.target.value.slice(
-                          0,
-                          INPUT_LIMITS.groupName,
-                        ),
-                      }));
-                    }
-                  }
+                  onChange={(event) => {
+                    setGroupFieldErrors((current) => ({
+                      ...current,
+                      name: undefined,
+                    }));
+                    setGroupDraft((current) => ({
+                      ...current,
+                      name: event.target.value.slice(0, INPUT_LIMITS.groupName),
+                    }));
+                  }}
                   inputProps={{ maxLength: INPUT_LIMITS.groupName }}
                   error={Boolean(groupFieldErrors.name)}
                   helperText={
@@ -3209,21 +3297,19 @@ export function AdminDashboard() {
                 </Typography>
                 <TextField
                   value={groupDraft.description}
-                  onChange={(event) =>
-                    {
-                      setGroupFieldErrors((current) => ({
-                        ...current,
-                        description: undefined,
-                      }));
-                      setGroupDraft((current) => ({
-                        ...current,
-                        description: event.target.value.slice(
-                          0,
-                          INPUT_LIMITS.groupDescription,
-                        ),
-                      }));
-                    }
-                  }
+                  onChange={(event) => {
+                    setGroupFieldErrors((current) => ({
+                      ...current,
+                      description: undefined,
+                    }));
+                    setGroupDraft((current) => ({
+                      ...current,
+                      description: event.target.value.slice(
+                        0,
+                        INPUT_LIMITS.groupDescription,
+                      ),
+                    }));
+                  }}
                   inputProps={{ maxLength: INPUT_LIMITS.groupDescription }}
                   error={Boolean(groupFieldErrors.description)}
                   helperText={
@@ -3250,18 +3336,16 @@ export function AdminDashboard() {
                 <TextField
                   select
                   value={groupDraft.teacherPublicId}
-                  onChange={(event) =>
-                    {
-                      setGroupFieldErrors((current) => ({
-                        ...current,
-                        teacherPublicId: undefined,
-                      }));
-                      setGroupDraft((current) => ({
-                        ...current,
-                        teacherPublicId: event.target.value,
-                      }));
-                    }
-                  }
+                  onChange={(event) => {
+                    setGroupFieldErrors((current) => ({
+                      ...current,
+                      teacherPublicId: undefined,
+                    }));
+                    setGroupDraft((current) => ({
+                      ...current,
+                      teacherPublicId: event.target.value,
+                    }));
+                  }}
                   SelectProps={{ displayEmpty: true }}
                   error={Boolean(groupFieldErrors.teacherPublicId)}
                   helperText={
@@ -3286,11 +3370,7 @@ export function AdminDashboard() {
                       value={teacher.publicId}
                       sx={{ py: 1 }}
                     >
-                      <Stack
-                        direction="row"
-                        spacing={1.5}
-                        alignItems="center"
-                      >
+                      <Stack direction="row" spacing={1.5} alignItems="center">
                         <UserAvatar
                           avatarUrl={teacher.avatarUrl}
                           username={teacher.username}
@@ -3362,7 +3442,9 @@ export function AdminDashboard() {
                     <Typography
                       key={`${field.label}-${field.value}`}
                       variant="body2"
-                      color={field.secondary ? "text.secondary" : "text.primary"}
+                      color={
+                        field.secondary ? "text.secondary" : "text.primary"
+                      }
                       sx={{ overflowWrap: "anywhere" }}
                     >
                       <Box

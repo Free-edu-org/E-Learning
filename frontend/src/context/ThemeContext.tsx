@@ -186,8 +186,7 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
               root: {
                 "& .MuiOutlinedInput-root": {
                   borderRadius: "10px",
-                  backgroundColor:
-                    mode === "light" ? "#ffffff" : "#1b2030",
+                  backgroundColor: mode === "light" ? "#ffffff" : "#1b2030",
                   transition: "box-shadow 0.2s ease, border-color 0.2s ease",
                   "& fieldset": {
                     borderColor:
