@@ -52,7 +52,7 @@ public class AccountActivationService {
 		this.transactionTemplate = transactionTemplate;
 	}
 
-	public String createInvitedUser(String email) {
+	public String createInvitedUser(String email, pl.freeedu.backend.user.model.Role role) {
 		java.util.Optional<User> existing = userRepository.findByEmail(email);
 		if (existing.isPresent()) {
 			User existingUser = existing.get();
@@ -65,12 +65,11 @@ public class AccountActivationService {
 			return token;
 		}
 
-		User invited = User.builder().email(email).status(UserStatus.INVITED)
-				.role(pl.freeedu.backend.user.model.Role.STUDENT).build();
+		User invited = User.builder().email(email).status(UserStatus.INVITED).role(role).build();
 		try {
 			User saved = userRepository.save(invited);
 			String token = generateAndPersistToken(saved.getId());
-			log.info("Invited user created. User ID: {}", saved.getId());
+			log.info("Invited user created. User ID: {}, Role: {}", saved.getId(), role);
 			return token;
 		} catch (DataIntegrityViolationException ex) {
 			throw new UserException(UserErrorCode.EMAIL_ALREADY_TAKEN);

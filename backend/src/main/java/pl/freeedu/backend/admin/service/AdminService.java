@@ -94,7 +94,7 @@ public class AdminService {
 				group = userGroupPublicIdLookupService.getRequiredGroup(request.getGroupPublicId());
 			}
 
-			String plainToken = accountActivationService.createInvitedUser(request.getEmail());
+			String plainToken = accountActivationService.createInvitedUser(request.getEmail(), Role.STUDENT);
 			User savedStudent = userRepository.findByEmail(request.getEmail())
 					.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 
@@ -113,6 +113,26 @@ public class AdminService {
 					.groupPublicId(finalGroup != null ? finalGroup.getPublicId() : null)
 					.groupName(finalGroup != null ? finalGroup.getName() : null).createdAt(savedStudent.getCreatedAt())
 					.avatarUrl(savedStudent.getAvatarUrl()).build();
+		})).subscribeOn(Schedulers.boundedElastic());
+	}
+
+	public Mono<pl.freeedu.backend.user.dto.UserResponse> inviteTeacher(
+			pl.freeedu.backend.admin.dto.AdminInviteTeacherRequest request) {
+		return Mono.fromCallable(() -> transactionTemplate.execute(status -> {
+			log.info("Admin inviting new teacher account via email: '{}'", request.getEmail());
+			if (userRepository.existsByEmail(request.getEmail())) {
+				log.warn("Teacher invitation failed: Email already taken");
+				throw new UserException(UserErrorCode.EMAIL_ALREADY_TAKEN);
+			}
+
+			String plainToken = accountActivationService.createInvitedUser(request.getEmail(), Role.TEACHER);
+			User savedTeacher = userRepository.findByEmail(request.getEmail())
+					.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
+
+			accountActivationService.sendInvitationEmail(savedTeacher.getEmail(), plainToken);
+			log.info("Teacher invitation sent by admin. Teacher ID: {}", savedTeacher.getId());
+
+			return userMapper.toUserResponse(savedTeacher);
 		})).subscribeOn(Schedulers.boundedElastic());
 	}
 

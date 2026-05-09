@@ -149,7 +149,7 @@ class AdminServiceTest {
 
 		when(userRepository.existsByEmail(req.getEmail())).thenReturn(false);
 		when(userGroupPublicIdLookupService.getRequiredGroup("group-public-id")).thenReturn(group);
-		when(accountActivationService.createInvitedUser("s@e.com")).thenReturn("plain-token");
+		when(accountActivationService.createInvitedUser("s@e.com", Role.STUDENT)).thenReturn("plain-token");
 		when(userRepository.findByEmail("s@e.com")).thenReturn(Optional.of(savedStudent));
 
 		// when

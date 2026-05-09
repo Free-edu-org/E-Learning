@@ -190,7 +190,7 @@ public class TeacherService {
 						throw new UserGroupException(UserGroupErrorCode.INVALID_ROLE_FOR_GROUP);
 					}
 
-					String plainToken = accountActivationService.createInvitedUser(request.getEmail());
+					String plainToken = accountActivationService.createInvitedUser(request.getEmail(), Role.STUDENT);
 					User savedStudent = userRepository.findByEmail(request.getEmail())
 							.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 

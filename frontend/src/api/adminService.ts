@@ -90,6 +90,11 @@ export const adminService = {
       body: JSON.stringify({ active } satisfies SetAchievementActiveRequest),
     }),
   getTeachers: () => fetchApi<UserProfile[]>("/api/v1/admin/teachers"),
+  inviteTeacher: (payload: { email: string }) =>
+    fetchApi<UserProfile>("/api/v1/admin/teachers", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
   getStudents: () => fetchApi<AdminStudentProfile[]>("/api/v1/admin/students"),
   createStudent: (payload: AdminCreateStudentRequest) =>
     fetchApi<AdminStudentProfile>("/api/v1/admin/students", {

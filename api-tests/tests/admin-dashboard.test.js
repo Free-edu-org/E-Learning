@@ -266,25 +266,70 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
         });
     });
 
+    describe('POST /api/v1/admin/teachers', () => {
+        it('should return 401 when unauthenticated', async () => {
+            setAuthToken(null);
+            const response = await apiClient.post('/admin/teachers', {
+                email: `unauth.teacher.${uniqueId}@example.com`
+            });
+            expect(response.status).toBe(401);
+        });
+
+        it('should return 403 for TEACHER', async () => {
+            setAuthToken(teacherToken);
+            const response = await apiClient.post('/admin/teachers', {
+                email: `teacher.forbidden.teacher.${uniqueId}@example.com`
+            });
+            expect(response.status).toBe(403);
+        });
+
+        it('should invite teacher for ADMIN (201)', async () => {
+            setAuthToken(adminToken);
+            const response = await apiClient.post('/admin/teachers', {
+                email: `admin.teacher.invited.${uniqueId}@example.com`
+            });
+
+            expect(response.status).toBe(201);
+            expect(response.data.role).toBe('TEACHER');
+            expect(response.data.status).toBe('INVITED');
+            createdTeacherPublicId = response.data.publicId;
+        });
+
+        it('should return 409 for EMAIL_ALREADY_TAKEN', async () => {
+            setAuthToken(adminToken);
+            const response = await apiClient.post('/admin/teachers', {
+                email: `admin.teacher.invited.${uniqueId}@example.com`
+            });
+            expect(response.status).toBe(409);
+            expect(response.data.code).toBe('EMAIL_ALREADY_TAKEN');
+        });
+
+        it('should return 400 for VALIDATION_FAILED (bad email)', async () => {
+            setAuthToken(adminToken);
+            const response = await apiClient.post('/admin/teachers', {
+                email: 'not-an-email'
+            });
+            expect(response.status).toBe(400);
+            expect(response.data.code).toBe('VALIDATION_FAILED');
+        });
+    });
+
     describe('GET /api/v1/admin/teachers and /students', () => {
         beforeAll(async () => {
+            // Ensure we have at least one teacher and student created for listing tests
             setAuthToken(adminToken);
-
-            const teacherPayload = {
-                email: `admin.teacher.${uniqueId}@example.com`,
-                username: `admin_teacher_${uniqueId}`,
-                password: 'password123'
-            };
-            let response = await apiClient.post('/users/teacher', teacherPayload);
-            expect(response.status).toBe(201);
-
-            response = await apiClient.post('/auth/login', {
-                identifier: teacherPayload.username,
-                password: teacherPayload.password
-            });
-            setAuthToken(response.data.token);
-            response = await apiClient.get('/users/me');
-            createdTeacherPublicId = response.data.publicId;
+            if (!createdTeacherPublicId) {
+                const res = await apiClient.post('/admin/teachers', {
+                    email: `seed.teacher.${uniqueId}@example.com`
+                });
+                createdTeacherPublicId = res.data.publicId;
+            }
+            if (!createdStudentPublicId) {
+                const res = await apiClient.post('/admin/students', {
+                    email: `seed.student.${uniqueId}@example.com`
+                });
+                createdStudentPublicId = res.data.publicId;
+            }
         });
 
         it('should return 401 for teachers list when unauthenticated', async () => {

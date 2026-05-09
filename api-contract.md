@@ -1241,7 +1241,33 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
 - `FORBIDDEN` (403 Forbidden): Token role does not permit access.
 
 ---
-### 6.4. Create Student / Send Invitation (Admin API)
+### 6.4. Invite Teacher (Admin API)
+- **URL**: `/api/v1/admin/teachers`
+- **Method**: `POST`
+- **Description**: Tworzy konto nauczyciela w stanie `INVITED` i wysyła email z linkiem aktywacyjnym. Nauczyciel musi kliknąć link i ustawić username oraz hasło, zanim konto stanie się `ACTIVE`. Wymaga `ADMIN`.
+
+**Request Body (JSON):**
+```json
+{
+  "email": "teacher@example.com"
+}
+```
+
+**Success (201 Created):**
+```json
+{
+  "publicId": "teacher-public-id",
+  "email": "teacher@example.com",
+  "username": null,
+  "role": "TEACHER",
+  "status": "INVITED",
+  "createdAt": "2023-10-27T10:00:00Z",
+  "avatarUrl": null
+}
+```
+
+---
+### 6.5. Create Student / Send Invitation (Admin API)
 - **URL**: `/api/v1/admin/students`
 - **Method**: `POST`
 - **Description**: Tworzy konto ucznia w stanie `INVITED` i wysyła email z linkiem aktywacyjnym. Opcjonalnie przypisuje do grupy. Uczeń musi kliknąć link i ustawić username oraz hasło, zanim konto stanie się `ACTIVE`. Wymaga `ADMIN`.
