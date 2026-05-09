@@ -119,6 +119,10 @@ const emptyStudentDraft = {
   groupPublicId: "" as string | "",
 };
 
+type StudentFieldErrors = Partial<
+  Record<"username" | keyof typeof emptyStudentDraft, string>
+>;
+
 const emptyGroupDraft = {
   name: "",
   description: "",
@@ -163,6 +167,37 @@ function parseGroupApiFieldErrors(error: ApiError): GroupFieldErrors {
     }, {});
 }
 
+function parseStudentApiFieldErrors(error: ApiError): StudentFieldErrors {
+  const detail = error.problem.detail ?? "";
+  if (!detail.startsWith("Validation failed:")) {
+    return {};
+  }
+
+  return detail
+    .replace("Validation failed:", "")
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .reduce<StudentFieldErrors>((acc, part) => {
+      const separatorIndex = part.indexOf(":");
+      if (separatorIndex === -1) {
+        return acc;
+      }
+
+      const field = part.slice(0, separatorIndex).trim() as keyof StudentFieldErrors;
+      const validationDetail = part.slice(separatorIndex + 1).trim();
+      if (
+        field !== "username" &&
+        !(field in emptyStudentDraft)
+      ) {
+        return acc;
+      }
+
+      acc[field] = translateApiMessage(validationDetail);
+      return acc;
+    }, {});
+}
+
 export function TeacherStudentsView() {
   const theme = useTheme();
   const navigate = useNavigate();
@@ -187,6 +222,8 @@ export function TeacherStudentsView() {
   const [createStudentLoading, setCreateStudentLoading] = useState(false);
   const [createStudentFeedback, setCreateStudentFeedback] =
     useState<DialogFeedbackState | null>(null);
+  const [createStudentFieldErrors, setCreateStudentFieldErrors] =
+    useState<StudentFieldErrors>({});
 
   const [editStudentOpen, setEditStudentOpen] = useState(false);
   const [editingStudent, seteditingStudent] =
@@ -201,6 +238,8 @@ export function TeacherStudentsView() {
   const [editStudentLoading, setEditStudentLoading] = useState(false);
   const [editStudentFeedback, setEditStudentFeedback] =
     useState<DialogFeedbackState | null>(null);
+  const [editStudentFieldErrors, setEditStudentFieldErrors] =
+    useState<StudentFieldErrors>({});
   const [editStudentEditingFields, setEditStudentEditingFields] = useState<string[]>([]);
 
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
@@ -316,6 +355,7 @@ export function TeacherStudentsView() {
 
   const openCreateStudentDialog = () => {
     setCreateStudentDraft(emptyStudentDraft);
+    setCreateStudentFieldErrors({});
     setCreateStudentFeedback(null);
     setCreateStudentOpen(true);
   };
@@ -323,32 +363,30 @@ export function TeacherStudentsView() {
   const closeCreateStudentDialog = () => {
     if (createStudentLoading) return;
     setCreateStudentOpen(false);
+    setCreateStudentFieldErrors({});
   };
 
   const submitCreateStudent = async () => {
     if (createStudentLoading) return;
+    const nextFieldErrors: StudentFieldErrors = {};
+
     if (!createStudentDraft.email.trim()) {
-      setCreateStudentFeedback({
-        severity: "error",
-        message: "Podaj adres e-mail ucznia.",
-      });
-      return;
+      nextFieldErrors.email = "Podaj adres e-mail ucznia.";
     }
     if (createStudentDraft.email.trim() !== createStudentDraft.emailConfirm.trim()) {
-      setCreateStudentFeedback({
-        severity: "error",
-        message: "Adresy e-mail nie są zgodne.",
-      });
-      return;
+      nextFieldErrors.emailConfirm = "Adresy e-mail nie są zgodne.";
     }
     if (createStudentDraft.groupPublicId === "") {
-      setCreateStudentFeedback({
-        severity: "error",
-        message: "Wybierz grupę, do której przypisać ucznia.",
-      });
+      nextFieldErrors.groupPublicId =
+        "Wybierz grupę, do której przypisać ucznia.";
+    }
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setCreateStudentFieldErrors(nextFieldErrors);
       return;
     }
 
+    setCreateStudentFieldErrors({});
     setCreateStudentFeedback(null);
     setCreateStudentLoading(true);
     try {
@@ -364,6 +402,14 @@ export function TeacherStudentsView() {
       await fetchData();
       window.setTimeout(() => closeCreateStudentDialog(), 1500);
     } catch (error) {
+      if (error instanceof ApiError) {
+        const nextFieldErrors = parseStudentApiFieldErrors(error);
+        if (Object.keys(nextFieldErrors).length > 0) {
+          setCreateStudentFieldErrors(nextFieldErrors);
+          return;
+        }
+      }
+
       setCreateStudentFeedback({
         severity: "error",
         message: getOperationErrorMessage(
@@ -384,6 +430,7 @@ export function TeacherStudentsView() {
       emailConfirm: student.email,
       groupPublicId: student.groupPublicId,
     });
+    setEditStudentFieldErrors({});
     setEditStudentFeedback(null);
     setEditStudentEditingFields([]);
     setEditStudentOpen(true);
@@ -393,33 +440,35 @@ export function TeacherStudentsView() {
     if (editStudentLoading) return;
     setEditStudentOpen(false);
     seteditingStudent(null);
+    setEditStudentFieldErrors({});
   };
 
   const submitEditStudent = async () => {
     if (editStudentLoading || !editingStudent) return;
+    const nextFieldErrors: StudentFieldErrors = {};
+
     if (!editStudentDraft.username.trim() || !editStudentDraft.email.trim()) {
-      setEditStudentFeedback({
-        severity: "error",
-        message: "Wypełnij nazwę użytkownika i e-mail.",
-      });
-      return;
+      if (!editStudentDraft.username.trim()) {
+        nextFieldErrors.username = "Wypełnij nazwę użytkownika.";
+      }
+      if (!editStudentDraft.email.trim()) {
+        nextFieldErrors.email = "Wypełnij adres e-mail.";
+      }
     }
     if (editStudentDraft.groupPublicId === "") {
-      setEditStudentFeedback({
-        severity: "error",
-        message: "Wybierz docelową grupę.",
-      });
-      return;
+      nextFieldErrors.groupPublicId = "Wybierz docelową grupę.";
     }
 
     if (editStudentDraft.email.trim() !== editStudentDraft.emailConfirm.trim()) {
-      setEditStudentFeedback({
-        severity: "error",
-        message: "Adresy e-mail nie są zgodne.",
-      });
+      nextFieldErrors.emailConfirm = "Adresy e-mail nie są zgodne.";
+    }
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setEditStudentFieldErrors(nextFieldErrors);
       return;
     }
 
+    setEditStudentFieldErrors({});
     setEditStudentFeedback(null);
     setEditStudentLoading(true);
     try {
@@ -435,6 +484,14 @@ export function TeacherStudentsView() {
       await fetchData();
       window.setTimeout(() => closeEditStudentDialog(), 700);
     } catch (error) {
+      if (error instanceof ApiError) {
+        const nextFieldErrors = parseStudentApiFieldErrors(error);
+        if (Object.keys(nextFieldErrors).length > 0) {
+          setEditStudentFieldErrors(nextFieldErrors);
+          return;
+        }
+      }
+
       setEditStudentFeedback({
         severity: "error",
         message: getOperationErrorMessage(
@@ -1251,12 +1308,18 @@ export function TeacherStudentsView() {
                   autoComplete="off"
                   type="email"
                   value={createStudentDraft.email}
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    setCreateStudentFieldErrors((current) => ({
+                      ...current,
+                      email: undefined,
+                    }));
                     setCreateStudentDraft((draft) => ({
                       ...draft,
                       email: event.target.value,
-                    }))
-                  }
+                    }));
+                  }}
+                  error={Boolean(createStudentFieldErrors.email)}
+                  helperText={createStudentFieldErrors.email}
                   fullWidth
                   size="small"
                   disabled={createStudentLoading}
@@ -1284,25 +1347,31 @@ export function TeacherStudentsView() {
                   autoComplete="off"
                   type="email"
                   value={createStudentDraft.emailConfirm}
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    setCreateStudentFieldErrors((current) => ({
+                      ...current,
+                      emailConfirm: undefined,
+                    }));
                     setCreateStudentDraft((draft) => ({
                       ...draft,
                       emailConfirm: event.target.value,
-                    }))
-                  }
+                    }));
+                  }}
                   fullWidth
                   size="small"
                   disabled={createStudentLoading}
                   placeholder="Powtórz e-mail"
                   error={
+                    Boolean(createStudentFieldErrors.emailConfirm) ||
                     createStudentDraft.emailConfirm.length > 0 &&
                     createStudentDraft.email !== createStudentDraft.emailConfirm
                   }
                   helperText={
-                    createStudentDraft.emailConfirm.length > 0 &&
+                    createStudentFieldErrors.emailConfirm ??
+                    (createStudentDraft.emailConfirm.length > 0 &&
                     createStudentDraft.email !== createStudentDraft.emailConfirm
                       ? "Adresy e-mail nie są zgodne"
-                      : undefined
+                      : undefined)
                   }
                 />
               </Box>
@@ -1318,12 +1387,18 @@ export function TeacherStudentsView() {
                 <TextField
                   select
                   value={createStudentDraft.groupPublicId}
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    setCreateStudentFieldErrors((current) => ({
+                      ...current,
+                      groupPublicId: undefined,
+                    }));
                     setCreateStudentDraft((draft) => ({
                       ...draft,
                       groupPublicId: event.target.value,
-                    }))
-                  }
+                    }));
+                  }}
+                  error={Boolean(createStudentFieldErrors.groupPublicId)}
+                  helperText={createStudentFieldErrors.groupPublicId}
                   fullWidth
                   size="small"
                   disabled={createStudentLoading}
@@ -1465,17 +1540,25 @@ export function TeacherStudentsView() {
                           autoComplete="off"
                           autoFocus
                           value={editStudentDraft.username}
-                          onChange={(event) =>
+                          onChange={(event) => {
+                            setEditStudentFieldErrors((current) => ({
+                              ...current,
+                              username: undefined,
+                            }));
                             setEditStudentDraft((draft) => ({
                               ...draft,
                               username: event.target.value.slice(
                                 0,
                                 INPUT_LIMITS.username,
                               ),
-                            }))
-                          }
+                            }));
+                          }}
                           inputProps={{ maxLength: INPUT_LIMITS.username }}
-                          helperText={`${editStudentDraft.username.length}/${INPUT_LIMITS.username}`}
+                          error={Boolean(editStudentFieldErrors.username)}
+                          helperText={
+                            editStudentFieldErrors.username ??
+                            `${editStudentDraft.username.length}/${INPUT_LIMITS.username}`
+                          }
                           sx={counterFieldSx}
                           fullWidth
                           size="small"
@@ -1607,13 +1690,19 @@ export function TeacherStudentsView() {
                           <TextField
                             autoFocus
                             value={editStudentDraft.email}
-                            onChange={(event) =>
+                            onChange={(event) => {
+                              setEditStudentFieldErrors((current) => ({
+                                ...current,
+                                email: undefined,
+                              }));
                               setEditStudentDraft((draft) => ({
                                 ...draft,
                                 email: event.target.value,
-                              }))
-                            }
+                              }));
+                            }}
                             placeholder="Wprowadź e-mail"
+                            error={Boolean(editStudentFieldErrors.email)}
+                            helperText={editStudentFieldErrors.email}
                             fullWidth
                             size="small"
                             disabled={editStudentLoading}
@@ -1668,25 +1757,31 @@ export function TeacherStudentsView() {
                         <TextField
                           label="Powtórz e-mail"
                           value={editStudentDraft.emailConfirm}
-                          onChange={(event) =>
+                          onChange={(event) => {
+                            setEditStudentFieldErrors((current) => ({
+                              ...current,
+                              emailConfirm: undefined,
+                            }));
                             setEditStudentDraft((draft) => ({
                               ...draft,
                               emailConfirm: event.target.value,
-                            }))
-                          }
+                            }));
+                          }}
                           placeholder="Powtórz e-mail"
                           fullWidth
                           size="small"
                           disabled={editStudentLoading}
                           error={
+                            Boolean(editStudentFieldErrors.emailConfirm) ||
                             editStudentDraft.emailConfirm.length > 0 &&
                             editStudentDraft.email !== editStudentDraft.emailConfirm
                           }
                           helperText={
-                            editStudentDraft.emailConfirm.length > 0 &&
+                            editStudentFieldErrors.emailConfirm ??
+                            (editStudentDraft.emailConfirm.length > 0 &&
                             editStudentDraft.email !== editStudentDraft.emailConfirm
                               ? "Adresy e-mail nie są zgodne"
-                              : undefined
+                              : undefined)
                           }
                         />
                       </Stack>
@@ -1759,12 +1854,18 @@ export function TeacherStudentsView() {
                         <TextField
                           select
                           value={editStudentDraft.groupPublicId}
-                          onChange={(event) =>
+                          onChange={(event) => {
+                            setEditStudentFieldErrors((current) => ({
+                              ...current,
+                              groupPublicId: undefined,
+                            }));
                             setEditStudentDraft((draft) => ({
                               ...draft,
                               groupPublicId: event.target.value,
-                            }))
-                          }
+                            }));
+                          }}
+                          error={Boolean(editStudentFieldErrors.groupPublicId)}
+                          helperText={editStudentFieldErrors.groupPublicId}
                           fullWidth
                           size="small"
                           disabled={editStudentLoading}

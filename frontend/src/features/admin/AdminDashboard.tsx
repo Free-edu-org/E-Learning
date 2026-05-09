@@ -138,6 +138,7 @@ interface DeleteDialogState {
 }
 
 type GroupFieldErrors = Partial<Record<keyof GroupDraft, string>>;
+type UserFieldErrors = Partial<Record<keyof UserDraft | "emailConfirm", string>>;
 
 interface MembershipDialogState {
   groupPublicId: string;
@@ -211,6 +212,34 @@ function parseGroupApiFieldErrors(error: ApiError): GroupFieldErrors {
     }, {});
 }
 
+function parseUserApiFieldErrors(error: ApiError): UserFieldErrors {
+  const detail = error.problem.detail ?? "";
+  if (!detail.startsWith("Validation failed:")) {
+    return {};
+  }
+
+  return detail
+    .replace("Validation failed:", "")
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .reduce<UserFieldErrors>((acc, part) => {
+      const separatorIndex = part.indexOf(":");
+      if (separatorIndex === -1) {
+        return acc;
+      }
+
+      const field = part.slice(0, separatorIndex).trim() as keyof UserFieldErrors;
+      const validationDetail = part.slice(separatorIndex + 1).trim();
+      if (!(field in emptyUserDraft)) {
+        return acc;
+      }
+
+      acc[field] = translateApiMessage(validationDetail);
+      return acc;
+    }, {});
+}
+
 function formatDate(value?: string) {
   if (!value) {
     return "Brak danych";
@@ -241,6 +270,7 @@ const counterFieldSx = {
     display: "flex",
     justifyContent: "flex-start",
     textAlign: "left",
+    fontSize: "0.75rem",
     mt: 0.75,
     mx: 0,
     pl: 1.5,
@@ -295,6 +325,7 @@ export function AdminDashboard() {
   const [userDialogFeedback, setUserDialogFeedback] =
     useState<DialogFeedbackState | null>(null);
   const [userDialogConfirmEmail, setUserDialogConfirmEmail] = useState("");
+  const [userFieldErrors, setUserFieldErrors] = useState<UserFieldErrors>({});
   const [userDialogEditingFields, setUserDialogEditingFields] = useState<string[]>([]);
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [groupDialogMode, setGroupDialogMode] = useState<"create" | "edit">(
@@ -324,15 +355,6 @@ export function AdminDashboard() {
 
   const isCreateStudentDialog =
     userDialogMode === "create" && userDialogRole === "STUDENT";
-  const isPrimaryEmailInvalid =
-    isCreateStudentDialog &&
-    userDraft.email.length > 0 &&
-    !EMAIL_REGEX.test(userDraft.email.trim());
-  const isConfirmEmailInvalid =
-    isCreateStudentDialog &&
-    userDialogConfirmEmail.length > 0 &&
-    (!EMAIL_REGEX.test(userDialogConfirmEmail.trim()) ||
-      userDraft.email.trim() !== userDialogConfirmEmail.trim());
 
   const allUsers = useMemo(
     () =>
@@ -593,6 +615,7 @@ export function AdminDashboard() {
     setSelectedUser(null);
     setUserDraft(emptyUserDraft);
     setUserDialogConfirmEmail("");
+    setUserFieldErrors({});
     setUserDialogFeedback(null);
     setUserDialogOpen(true);
   };
@@ -608,6 +631,7 @@ export function AdminDashboard() {
       groupPublicId: "groupPublicId" in user ? (user.groupPublicId ?? "") : "",
     });
     setUserDialogConfirmEmail(user.email);
+    setUserFieldErrors({});
     setUserDialogFeedback(null);
     setUserDialogOpen(true);
   };
@@ -616,6 +640,7 @@ export function AdminDashboard() {
     setSelectedUser(null);
     setUserDraft(emptyUserDraft);
     setUserDialogConfirmEmail("");
+    setUserFieldErrors({});
     setUserDialogRole("TEACHER");
     setUserDialogMode("create");
     setUserDialogFeedback(null);
@@ -649,31 +674,28 @@ export function AdminDashboard() {
     }
 
     if (isCreateStudentDialog) {
+      const nextFieldErrors: UserFieldErrors = {};
+
       if (!EMAIL_REGEX.test(userDraft.email.trim())) {
-        setUserDialogFeedback({
-          severity: "error",
-          message: "Podaj prawidłowy adres e-mail.",
-        });
-        return;
+        nextFieldErrors.email = "Podaj prawidłowy adres e-mail.";
       }
 
       if (!EMAIL_REGEX.test(userDialogConfirmEmail.trim())) {
-        setUserDialogFeedback({
-          severity: "error",
-          message: "Podaj prawidłowy adres e-mail w polu potwierdzenia.",
-        });
-        return;
+        nextFieldErrors.emailConfirm =
+          "Podaj prawidłowy adres e-mail w polu potwierdzenia.";
       }
 
       if (userDraft.email.trim() !== userDialogConfirmEmail.trim()) {
-        setUserDialogFeedback({
-          severity: "error",
-          message: "Adresy e-mail nie są identyczne.",
-        });
+        nextFieldErrors.emailConfirm = "Adresy e-mail nie są identyczne.";
+      }
+
+      if (Object.keys(nextFieldErrors).length > 0) {
+        setUserFieldErrors(nextFieldErrors);
         return;
       }
     }
 
+    setUserFieldErrors({});
     setUserDialogFeedback(null);
     setUserDialogLoading(true);
     try {
@@ -738,6 +760,24 @@ export function AdminDashboard() {
       await Promise.all([loadUsers(), loadAdminStats()]);
       closeDialogWithSuccessDelay(closeUserDialog);
     } catch (error) {
+      if (isCreateStudentDialog && error instanceof ApiError) {
+        const nextFieldErrors = parseUserApiFieldErrors(error);
+        const code = error.problem.code?.toUpperCase() ?? "";
+
+        if (code === "EMAIL_ALREADY_TAKEN") {
+          nextFieldErrors.email = "Ten adres e-mail jest już zajęty.";
+        }
+
+        if (code === "USER_GROUP_NOT_FOUND") {
+          nextFieldErrors.groupPublicId = "Wybrana grupa nie istnieje.";
+        }
+
+        if (Object.keys(nextFieldErrors).length > 0) {
+          setUserFieldErrors(nextFieldErrors);
+          return;
+        }
+      }
+
       setUserDialogFeedback({
         severity: "error",
         message: getErrorMessage(error, "Nie udało się zapisać zmian konta."),
@@ -1054,10 +1094,10 @@ export function AdminDashboard() {
               <PersonIcon sx={{ fontSize: 30 }} />
             </Box>
             <Typography variant="body1" fontWeight={700} align="center">
-              Nowy uczeń
+              Zaproszenie ucznia
             </Typography>
             <Typography variant="caption" color="text.secondary" align="center">
-              Utwórz konto ucznia i przypisz grupę
+              Wyślij zaproszenie e-mail i opcjonalnie przypisz grupę
             </Typography>
           </Paper>
           <Paper
@@ -1084,10 +1124,10 @@ export function AdminDashboard() {
               <SparklesIcon sx={{ fontSize: 30 }} />
             </Box>
             <Typography variant="body1" fontWeight={700} align="center">
-              Achievementy
+              Osiągnięcia
             </Typography>
             <Typography variant="caption" color="text.secondary" align="center">
-              Zarządzaj listą achievementów i ich aktywnością
+              Zarządzaj listą osiągnięć i ich aktywnością
             </Typography>
           </Paper>
         </Box>
@@ -2400,7 +2440,7 @@ export function AdminDashboard() {
               userDialogMode === "create"
                 ? userDialogRole === "TEACHER"
                   ? "Nowe konto nauczyciela"
-                  : "Zaproś ucznia"
+                  : "Zaproszenie ucznia"
                 : `Edycja konta ${selectedUser?.username ?? ""}`
             }
             subtitle={
@@ -2516,18 +2556,23 @@ export function AdminDashboard() {
                       autoComplete="off"
                       type="email"
                       value={userDraft.email}
-                      onChange={(event) =>
+                      onChange={(event) => {
+                        setUserFieldErrors((current) => ({
+                          ...current,
+                          email: undefined,
+                        }));
                         setUserDraft((current) => ({
                           ...current,
-                          email: event.target.value,
-                        }))
-                      }
-                      error={isPrimaryEmailInvalid}
+                          email: event.target.value.slice(0, INPUT_LIMITS.email),
+                        }));
+                      }}
+                      inputProps={{ maxLength: INPUT_LIMITS.email }}
+                      error={Boolean(userFieldErrors.email)}
                       helperText={
-                        isPrimaryEmailInvalid
-                          ? "Podaj prawidłowy adres e-mail"
-                          : ""
+                        userFieldErrors.email ??
+                        `${userDraft.email.length}/${INPUT_LIMITS.email}`
                       }
+                      sx={counterFieldSx}
                       fullWidth
                       size="small"
                       placeholder="Wprowadź e-mail"
@@ -2546,19 +2591,20 @@ export function AdminDashboard() {
                         autoComplete="off"
                         type="email"
                         value={userDialogConfirmEmail}
-                        onChange={(event) =>
-                          setUserDialogConfirmEmail(event.target.value)
-                        }
-                        error={isConfirmEmailInvalid}
+                        onChange={(event) => {
+                          setUserFieldErrors((current) => ({
+                            ...current,
+                            emailConfirm: undefined,
+                          }));
+                          setUserDialogConfirmEmail(event.target.value);
+                        }}
+                        inputProps={{ maxLength: INPUT_LIMITS.email }}
+                        error={Boolean(userFieldErrors.emailConfirm)}
                         helperText={
-                          userDialogConfirmEmail.length > 0
-                            ? !EMAIL_REGEX.test(userDialogConfirmEmail.trim())
-                              ? "Podaj prawidłowy adres e-mail"
-                              : userDraft.email.trim() !== userDialogConfirmEmail.trim()
-                                ? "Adresy e-mail nie są identyczne"
-                                : ""
-                            : ""
+                          userFieldErrors.emailConfirm ??
+                          `${userDialogConfirmEmail.length}/${INPUT_LIMITS.email}`
                         }
+                        sx={counterFieldSx}
                         size="small"
                         fullWidth
                         placeholder="Powtórz e-mail"
@@ -2621,18 +2667,24 @@ export function AdminDashboard() {
                       select
                       SelectProps={{ displayEmpty: true }}
                       value={userDraft.groupPublicId}
-                      onChange={(event) =>
+                      onChange={(event) => {
+                        setUserFieldErrors((current) => ({
+                          ...current,
+                          groupPublicId: undefined,
+                        }));
                         setUserDraft((current) => ({
                           ...current,
                           groupPublicId: event.target.value as string | "",
-                        }))
-                      }
+                        }));
+                      }}
+                      error={Boolean(userFieldErrors.groupPublicId)}
                       size="small"
                       fullWidth
                       helperText={
-                        assignableGroups.length === 0
+                        userFieldErrors.groupPublicId ??
+                        (assignableGroups.length === 0
                           ? "Brak grup do wyboru"
-                          : "Wybór grupy jest opcjonalny."
+                          : "Wybór grupy jest opcjonalny.")
                       }
                     >
                       <MenuItem value="">Wybierz grupę (opcjonalnie)</MenuItem>
@@ -3075,7 +3127,11 @@ export function AdminDashboard() {
                 disabled={userDialogLoading}
                 sx={panelFooterButtonSx}
               >
-                {userDialogLoading ? "Zapisywanie..." : "Zapisz zmiany"}
+                {userDialogLoading
+                  ? "Zapisywanie..."
+                  : userDialogMode === "create" && userDialogRole === "STUDENT"
+                    ? "Zaproś ucznia"
+                    : "Zapisz zmiany"}
               </Button>
             </FormActions>
           </AppDialogFooter>

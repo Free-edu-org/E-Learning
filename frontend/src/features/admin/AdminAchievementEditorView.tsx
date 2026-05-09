@@ -245,7 +245,7 @@ function translateAchievementValidationDetail(detail: string) {
   }
 
   if (detail.includes("immutable")) {
-    return "To pole nie może zostać zmienione po utworzeniu achievementu.";
+    return "To pole nie może zostać zmienione po utworzeniu osiągnięcia.";
   }
 
   return detail;
@@ -308,14 +308,14 @@ function getAchievementApiErrorState(
 
   if (error.problem.status === 404) {
     return {
-      message: "Nie znaleziono wskazanego achievementu.",
+      message: "Nie znaleziono wskazanego osiągnięcia.",
       fieldErrors,
     };
   }
 
   if (error.problem.status === 403) {
     return {
-      message: "Brak uprawnień do zarządzania achievementami.",
+      message: "Brak uprawnień do zarządzania osiągnięciami.",
       fieldErrors,
     };
   }
@@ -323,7 +323,7 @@ function getAchievementApiErrorState(
   if (/immutable/i.test(detail)) {
     return {
       message:
-        "Nie można zmienić pola, które po utworzeniu achievementu jest stałe.",
+        "Nie można zmienić pola, które po utworzeniu osiągnięcia jest stałe.",
       fieldErrors,
     };
   }
@@ -513,7 +513,7 @@ export function AdminAchievementEditorView({
         severity: "error",
         message: getAchievementApiErrorState(
           error,
-          "Nie udało się pobrać szczegółów achievementu.",
+          "Nie udało się pobrać szczegółów osiągnięcia.",
         ).message,
       });
     } finally {
@@ -552,7 +552,7 @@ export function AdminAchievementEditorView({
     mode === "create" ? "Nowe osiągnięcie" : "Edytuj osiągnięcie";
   const pageSubtitle =
     mode === "create"
-      ? "Uzupełnij dane achievementu i zapisz go jako osobny wpis."
+      ? "Uzupełnij dane osiągnięcia i zapisz je jako osobny wpis."
       : "Zmień nazwę, opis, próg lub aktywność bez naruszania stałych pól systemowych.";
 
   const handleSubmit = async () => {
@@ -565,7 +565,7 @@ export function AdminAchievementEditorView({
     if (mode === "edit" && !code) {
       setPageFeedback({
         severity: "error",
-        message: "Brakuje kodu achievementu do edycji.",
+        message: "Brakuje kodu osiągnięcia do edycji.",
       });
       return;
     }
@@ -592,8 +592,8 @@ export function AdminAchievementEditorView({
             severity: "success" as const,
             message:
               mode === "create"
-                ? "Achievement został utworzony."
-                : "Achievement został zapisany.",
+                ? "Osiągnięcie zostało utworzone."
+                : "Osiągnięcie zostało zapisane.",
           },
         },
       });
@@ -601,8 +601,8 @@ export function AdminAchievementEditorView({
       const errorState = getAchievementApiErrorState(
         error,
         mode === "create"
-          ? "Nie udało się utworzyć achievementu."
-          : "Nie udało się zapisać zmian achievementu.",
+          ? "Nie udało się utworzyć osiągnięcia."
+          : "Nie udało się zapisać zmian osiągnięcia.",
       );
       setFieldErrors((current) => ({ ...current, ...errorState.fieldErrors }));
       setPageFeedback({
@@ -656,7 +656,7 @@ export function AdminAchievementEditorView({
         <DashboardHeader
           loading={loadingCurrentUser}
           username={currentUser?.username}
-          subtitle="Zarządzanie achievementami"
+          subtitle="Zarządzanie osiągnięciami"
           fallbackName="Administratorze"
           user={currentUser}
           onUserUpdated={setCurrentUser}
@@ -686,7 +686,7 @@ export function AdminAchievementEditorView({
                 "& .MuiButton-startIcon": { mr: 0.5 },
               }}
             >
-              Powrót do listy achievementów
+              Powrót do listy osiągnięć
             </Button>
             <Stack
               direction="row"
@@ -876,7 +876,7 @@ export function AdminAchievementEditorView({
                           fieldErrors.type ??
                           (typeHint
                             ? `Określa zasadę odblokowania. ${typeHint}`
-                            : "Określa zasadę odblokowania achievementu.")
+                            : "Określa zasadę odblokowania osiągnięcia.")
                         }
                         fullWidth
                         size="small"
@@ -1118,7 +1118,7 @@ export function AdminAchievementEditorView({
                         error={Boolean(fieldErrors.color)}
                         helperText={
                           fieldErrors.color ??
-                          "Wpływa na kolorystykę karty achievementu w panelu ucznia."
+                          "Wpływa na kolorystykę karty osiągnięcia w panelu ucznia."
                         }
                         fullWidth
                         size="small"
@@ -1181,7 +1181,7 @@ export function AdminAchievementEditorView({
                           (thresholdDisabled
                             ? "Typ \u201eZmiana avatara\u201d nie wymaga progu – achievement odblokuje się automatycznie."
                             : draft.type === "POINTS"
-                              ? "Minimalna liczba punktów wymagana do odblokowania achievementu."
+                              ? "Minimalna liczba punktów wymagana do odblokowania osiągnięcia."
                               : "Minimalna liczba ukończonych lekcji wymagana do odblokowania.")
                         }
                         InputLabelProps={{ shrink: true }}
@@ -1248,7 +1248,7 @@ export function AdminAchievementEditorView({
                           <Typography variant="caption" color="text.secondary">
                             {draft.active
                               ? "Osiągnięcie jest widoczne dla uczniów."
-                              : "Achievement jest ukryty dla uczniów."}
+                              : "Osiągnięcie jest ukryte dla uczniów."}
                           </Typography>
                         </Stack>
                         <Switch
@@ -1365,8 +1365,8 @@ export function AdminAchievementEditorView({
           icon={<BackIcon />}
           title={
             mode === "create"
-              ? "Opuścić tworzenie achievementu?"
-              : "Opuścić edycję achievementu?"
+              ? "Opuścić tworzenie osiągnięcia?"
+              : "Opuścić edycję osiągnięcia?"
           }
           subtitle="Niezapisane zmiany zostaną usunięte."
         />
@@ -1377,7 +1377,7 @@ export function AdminAchievementEditorView({
               zapisane.
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Możesz też zapisać achievement teraz i wrócić do listy później.
+              Możesz też zapisać osiągnięcie teraz i wrócić do listy później.
             </Typography>
           </Stack>
         </AppDialogBody>
