@@ -15,6 +15,7 @@ import { authService } from "@/api/authService";
 import { ApiError } from "@/api/apiClient";
 import { getApiErrorMessage } from "@/utils/dashboardUtils";
 import { useAppTheme } from "@/context/ThemeContext";
+import { PasswordStrengthIndicator } from "@/components/ui/form/PasswordStrengthIndicator";
 
 export function ResetPassword() {
   const theme = useTheme();
@@ -143,6 +144,7 @@ export function ResetPassword() {
                 required
                 disabled={isLoading}
               />
+              <PasswordStrengthIndicator password={newPassword} />
               <TextField
                 fullWidth
                 label="Powtórz nowe hasło"

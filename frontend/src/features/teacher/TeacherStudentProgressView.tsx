@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import {
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 import {
   Alert,
   Box,
@@ -71,8 +76,21 @@ function scoreColor(percent: number): string {
 export function TeacherStudentProgressView() {
   const { studentPublicId } = useParams<{ studentPublicId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { logout } = useAuth();
   const theme = useTheme();
+  const fromLessonPublicId = searchParams.get("fromLessonPublicId");
+  const routeState = location.state as {
+    backTo?: string;
+    backLabel?: string;
+  } | null;
+  const backTo = fromLessonPublicId
+    ? `/teacher/lessons/${fromLessonPublicId}/stats`
+    : (routeState?.backTo ?? "/teacher/students");
+  const backLabel = fromLessonPublicId
+    ? "Wróć do wyników lekcji"
+    : (routeState?.backLabel ?? "Wróć do uczniów");
 
   const [stats, setStats] = useState<TeacherStudentStatsResponse | null>(null);
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -162,7 +180,7 @@ export function TeacherStudentProgressView() {
         >
           <Button
             startIcon={<BackIcon />}
-            onClick={() => navigate("/teacher/students")}
+            onClick={() => navigate(backTo)}
             sx={{
               textTransform: "none",
               fontWeight: 600,
@@ -173,7 +191,7 @@ export function TeacherStudentProgressView() {
               "&:hover": { bgcolor: "transparent", color: "text.secondary" },
             }}
           >
-            Wróć do uczniów
+            {backLabel}
           </Button>
         </Box>
 
