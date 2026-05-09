@@ -200,6 +200,15 @@ const toolbarFieldSx = {
   },
 };
 
+const counterFieldSx = {
+  "& .MuiFormHelperText-root": {
+    display: "flex",
+    justifyContent: "flex-end",
+    textAlign: "right",
+    mr: 0,
+  },
+};
+
 export function AdminDashboard() {
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -257,8 +266,6 @@ export function AdminDashboard() {
   const [groupDialogLoading, setGroupDialogLoading] = useState(false);
   const [groupDialogFeedback, setGroupDialogFeedback] =
     useState<DialogFeedbackState | null>(null);
-  const [groupDialogEditingFields, setGroupDialogEditingFields] = useState<string[]>([]);
-
   const [deleteDialog, setDeleteDialog] = useState<DeleteDialogState | null>(
     null,
   );
@@ -2811,7 +2818,10 @@ export function AdminDashboard() {
                             onClick={() => {
                               setUserDraft((current) => ({
                                 ...current,
-                                groupPublicId: selectedUser?.groupPublicId ?? "",
+                                groupPublicId:
+                                  selectedUser && "groupPublicId" in selectedUser
+                                    ? (selectedUser.groupPublicId ?? "")
+                                    : "",
                               }));
                               setUserDialogEditingFields((prev) =>
                                 prev.filter((f) => f !== "group"),

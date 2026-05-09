@@ -22,10 +22,12 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
+import { alpha, useTheme } from "@mui/material/styles";
 import {
   AddCircleOutlined as AddIcon,
   ArrowBackOutlined as BackIcon,
+  CheckOutlined as CheckIcon,
+  CloseOutlined as CloseIcon,
   DragIndicatorOutlined as DragIcon,
   EditOutlined as EditIcon,
   EmailOutlined as EmailIcon,
@@ -120,6 +122,15 @@ const emptyStudentDraft = {
 const emptyGroupDraft = {
   name: "",
   description: "",
+};
+
+const counterFieldSx = {
+  "& .MuiFormHelperText-root": {
+    display: "flex",
+    justifyContent: "flex-end",
+    textAlign: "right",
+    mr: 0,
+  },
 };
 
 export function TeacherStudentsView() {

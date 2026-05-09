@@ -1494,15 +1494,6 @@ export function TeacherDashboard() {
               <Typography variant="body1" fontWeight={700} sx={{ mb: 0.5 }}>
                 {deletingLesson?.title}
               </Typography>
-              {deletingLesson?.description && (
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ overflowWrap: "anywhere" }}
-                >
-                  {deletingLesson.description}
-                </Typography>
-              )}
             </FormSection>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
               Usunięcie lekcji skasuje również wszystkie jej zadania i postępy
