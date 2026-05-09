@@ -9,6 +9,7 @@ import {
   CardContent,
   Chip,
   CircularProgress,
+  Collapse,
   Container,
   Divider,
   Grid,
@@ -27,10 +28,13 @@ import {
 import {
   AddCircleOutline as AddCircleIcon,
   AutoAwesomeOutlined as SparklesIcon,
+  CheckOutlined as CheckIcon,
+  CloseOutlined as CloseIcon,
   DeleteOutline as DeleteIcon,
   EditOutlined as EditIcon,
   GroupOutlined as GroupIcon,
   ListOutlined as ListIcon,
+  LockResetOutlined as LockResetIcon,
   PeopleOutline as PeopleIcon,
   PersonOutline as PersonIcon,
   RefreshOutlined as RefreshIcon,
@@ -39,7 +43,7 @@ import {
   SearchOutlined as SearchIcon,
   GridViewOutlined as GridIcon,
 } from "@mui/icons-material";
-import { useTheme } from "@mui/material/styles";
+import { alpha, useTheme } from "@mui/material/styles";
 import type { SxProps, Theme } from "@mui/material/styles";
 import { useNavigate } from "react-router-dom";
 import {
@@ -49,6 +53,7 @@ import {
   type AdminStats,
   type AdminUpdateStudentRequest,
 } from "@/api/adminService";
+import { authService } from "@/api/authService";
 import { ApiError } from "@/api/apiClient";
 import { StatsCard } from "@/components/teacher/StatsCard";
 import { userGroupService, type UserGroup } from "@/api/userGroupService";
@@ -237,6 +242,12 @@ export function AdminDashboard() {
   const [userDialogLoading, setUserDialogLoading] = useState(false);
   const [userDialogFeedback, setUserDialogFeedback] =
     useState<DialogFeedbackState | null>(null);
+  const [userDialogEditingFields, setUserDialogEditingFields] = useState<
+    string[]
+  >([]);
+  const [userDialogConfirmEmail, setUserDialogConfirmEmail] = useState("");
+  const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
+  const [resetPasswordSuccess, setResetPasswordSuccess] = useState(false);
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [groupDialogMode, setGroupDialogMode] = useState<"create" | "edit">(
     "create",
@@ -545,6 +556,10 @@ export function AdminDashboard() {
     setUserDialogRole("TEACHER");
     setUserDialogMode("create");
     setUserDialogFeedback(null);
+    setUserDialogEditingFields([]);
+    setUserDialogConfirmEmail("");
+    setResetPasswordLoading(false);
+    setResetPasswordSuccess(false);
   };
 
   const closeUserDialog = () => {
@@ -2085,105 +2100,686 @@ export function AdminDashboard() {
                 {userDialogFeedback.message}
               </AppDialogStatus>
             )}
-            <Stack spacing={2.25}>
-              <FormSection>
-                <Stack spacing={2.25}>
-                  <FormField>
-                    <TextField
-                      label="Nazwa użytkownika"
-                      name="admin-user-dialog-username"
-                      autoComplete="off"
-                      value={userDraft.username}
-                      onChange={(event) =>
-                        setUserDraft((current) => ({
-                          ...current,
-                          username: event.target.value.slice(
-                            0,
-                            INPUT_LIMITS.username,
-                          ),
-                        }))
-                      }
-                      inputProps={{ maxLength: INPUT_LIMITS.username }}
-                      helperText={`${userDraft.username.length}/${INPUT_LIMITS.username}`}
-                      fullWidth
-                    />
-                  </FormField>
-                  <FormField>
-                    <TextField
-                      label="Adres e-mail"
-                      name="admin-user-dialog-email"
-                      autoComplete="off"
-                      type="email"
-                      value={userDraft.email}
-                      onChange={(event) =>
-                        setUserDraft((current) => ({
-                          ...current,
-                          email: event.target.value,
-                        }))
-                      }
-                      fullWidth
-                    />
-                  </FormField>
-                  {(userDialogMode === "create" ||
-                    userDialogRole === "STUDENT") && (
-                    <>
-                      {userDialogMode === "create" && (
-                        <FormField>
-                          <TextField
-                            label="Hasło"
-                            name="admin-user-dialog-password"
-                            autoComplete="new-password"
-                            type="password"
-                            value={userDraft.password}
-                            onChange={(event) =>
-                              setUserDraft((current) => ({
-                                ...current,
-                                password: event.target.value,
-                              }))
-                            }
-                            fullWidth
-                          />
-                        </FormField>
-                      )}
 
-                      {userDialogRole === "STUDENT" && (
-                        <FormField>
-                          <TextField
-                            select
-                            label="Grupa"
-                            value={userDraft.groupPublicId}
-                            onChange={(event) =>
+            {userDialogMode === "create" ? (
+              /* ── CREATE MODE: zwykły formularz ── */
+              <Stack spacing={2}>
+                <FormField>
+                  <TextField
+                    label="Nazwa użytkownika"
+                    name="admin-user-dialog-username"
+                    autoComplete="off"
+                    value={userDraft.username}
+                    onChange={(event) =>
+                      setUserDraft((current) => ({
+                        ...current,
+                        username: event.target.value.slice(
+                          0,
+                          INPUT_LIMITS.username,
+                        ),
+                      }))
+                    }
+                    inputProps={{ maxLength: INPUT_LIMITS.username }}
+                    helperText={`${userDraft.username.length}/${INPUT_LIMITS.username}`}
+                    size="small"
+                    fullWidth
+                  />
+                </FormField>
+                <FormField>
+                  <TextField
+                    label="Adres e-mail"
+                    name="admin-user-dialog-email"
+                    autoComplete="off"
+                    type="email"
+                    value={userDraft.email}
+                    onChange={(event) =>
+                      setUserDraft((current) => ({
+                        ...current,
+                        email: event.target.value,
+                      }))
+                    }
+                    size="small"
+                    fullWidth
+                  />
+                </FormField>
+                <FormField>
+                  <TextField
+                    label="Hasło"
+                    name="admin-user-dialog-password"
+                    autoComplete="new-password"
+                    type="password"
+                    value={userDraft.password}
+                    onChange={(event) =>
+                      setUserDraft((current) => ({
+                        ...current,
+                        password: event.target.value,
+                      }))
+                    }
+                    size="small"
+                    fullWidth
+                  />
+                </FormField>
+                {userDialogRole === "STUDENT" && (
+                  <FormField>
+                    <TextField
+                      select
+                      label="Grupa"
+                      value={userDraft.groupPublicId}
+                      onChange={(event) =>
+                        setUserDraft((current) => ({
+                          ...current,
+                          groupPublicId: event.target.value as string | "",
+                        }))
+                      }
+                      size="small"
+                      fullWidth
+                      helperText={
+                        assignableGroups.length === 0
+                          ? "Brak grup do wyboru"
+                          : "Wybór grupy jest opcjonalny."
+                      }
+                    >
+                      <MenuItem value="">Bez grupy</MenuItem>
+                      {assignableGroups.map((group) => (
+                        <MenuItem key={group.publicId} value={group.publicId}>
+                          {group.name}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  </FormField>
+                )}
+              </Stack>
+            ) : (
+              /* ── EDIT MODE: inline-edit rows (wzorzec AccountSettings) ── */
+              <Box
+                sx={{
+                  borderRadius: 2,
+                  border: "1px solid",
+                  borderColor: "divider",
+                  overflow: "hidden",
+                }}
+              >
+                {/* Nazwa użytkownika */}
+                <Box
+                  sx={{
+                    px: 2,
+                    py: 1.5,
+                    "&:not(:last-child)": {
+                      borderBottom: "1px solid",
+                      borderColor: "divider",
+                    },
+                  }}
+                >
+                  <Collapse
+                    in={userDialogEditingFields.includes("username")}
+                    unmountOnExit
+                  >
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      display="block"
+                      sx={{ mb: 0.75 }}
+                    >
+                      Edycja nazwy użytkownika
+                    </Typography>
+                    <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                      <TextField
+                        value={userDraft.username}
+                        onChange={(event) =>
+                          setUserDraft((current) => ({
+                            ...current,
+                            username: event.target.value.slice(
+                              0,
+                              INPUT_LIMITS.username,
+                            ),
+                          }))
+                        }
+                        autoFocus
+                        size="small"
+                        fullWidth
+                        autoComplete="off"
+                        inputProps={{ maxLength: INPUT_LIMITS.username }}
+                        error={
+                          userDraft.username.length > 0 &&
+                          userDraft.username.trim().length < 3
+                        }
+                        helperText={
+                          userDraft.username.length > 0 &&
+                          userDraft.username.trim().length < 3
+                            ? "Minimalna długość to 3 znaki"
+                            : `${userDraft.username.length}/${INPUT_LIMITS.username}`
+                        }
+                      />
+                      <Box sx={{ display: "flex", gap: 0.5, flexShrink: 0, alignSelf: "flex-start", mt: 0.5 }}>
+                        <IconButton
+                          size="small"
+                          disabled={userDraft.username.trim().length < 3}
+                          onClick={() =>
+                            setUserDialogEditingFields((prev) =>
+                              prev.filter((f) => f !== "username"),
+                            )
+                          }
+                          sx={{
+                            borderRadius: 1.5,
+                            color: "success.main",
+                            bgcolor: (theme) =>
+                              alpha(theme.palette.success.main, 0.08),
+                            "&:hover": {
+                              bgcolor: (theme) =>
+                                alpha(theme.palette.success.main, 0.16),
+                            },
+                            "&.Mui-disabled": { opacity: 0.35 },
+                          }}
+                        >
+                          <CheckIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => {
+                            setUserDraft((current) => ({
+                              ...current,
+                              username: selectedUser?.username ?? "",
+                            }));
+                            setUserDialogEditingFields((prev) =>
+                              prev.filter((f) => f !== "username"),
+                            );
+                          }}
+                          sx={{
+                            borderRadius: 1.5,
+                            color: "text.secondary",
+                            "&:hover": {
+                              bgcolor: (theme) =>
+                                alpha(theme.palette.text.primary, 0.06),
+                            },
+                          }}
+                        >
+                          <CloseIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    </Box>
+                  </Collapse>
+                  <Collapse
+                    in={!userDialogEditingFields.includes("username")}
+                    unmountOnExit
+                  >
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <Box>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          display="block"
+                        >
+                          Nazwa użytkownika
+                        </Typography>
+                        <Typography variant="body2" fontWeight={500}>
+                          {userDraft.username || (
+                            <Box
+                              component="span"
+                              sx={{ color: "text.disabled" }}
+                            >
+                              —
+                            </Box>
+                          )}
+                        </Typography>
+                      </Box>
+                      <Button
+                        size="small"
+                        onClick={() => {
+                          setUserDraft((current) => ({ ...current, username: "" }));
+                          setUserDialogEditingFields((prev) => [
+                            ...prev,
+                            "username",
+                          ]);
+                        }}
+                        sx={{
+                          textTransform: "none",
+                          fontWeight: 500,
+                          fontSize: "0.8rem",
+                          color: "primary.main",
+                          flexShrink: 0,
+                          ml: 1,
+                        }}
+                      >
+                        Zmień
+                      </Button>
+                    </Box>
+                  </Collapse>
+                </Box>
+
+                {/* E-mail */}
+                <Box
+                  sx={{
+                    px: 2,
+                    py: 1.5,
+                    "&:not(:last-child)": {
+                      borderBottom: "1px solid",
+                      borderColor: "divider",
+                    },
+                  }}
+                >
+                  <Collapse
+                    in={userDialogEditingFields.includes("email")}
+                    unmountOnExit
+                  >
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      display="block"
+                      sx={{ mb: 1.5 }}
+                    >
+                      Edycja adresu e-mail
+                    </Typography>
+                    <Stack spacing={1.25}>
+                      <TextField
+                        value={userDraft.email}
+                        onChange={(event) =>
+                          setUserDraft((current) => ({
+                            ...current,
+                            email: event.target.value,
+                          }))
+                        }
+                        autoFocus
+                        size="small"
+                        type="email"
+                        label="Nowy adres e-mail"
+                        fullWidth
+                        autoComplete="off"
+                        error={
+                          userDraft.email.length > 0 &&
+                          !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userDraft.email)
+                        }
+                        helperText={
+                          userDraft.email.length > 0 &&
+                          !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userDraft.email)
+                            ? "Podaj prawidłowy adres e-mail"
+                            : ""
+                        }
+                      />
+                      <TextField
+                        value={userDialogConfirmEmail}
+                        onChange={(event) =>
+                          setUserDialogConfirmEmail(event.target.value)
+                        }
+                        size="small"
+                        type="email"
+                        label="Powtórz adres e-mail"
+                        fullWidth
+                        autoComplete="off"
+                        error={
+                          userDialogConfirmEmail.length > 0 &&
+                          (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userDialogConfirmEmail) ||
+                            userDraft.email !== userDialogConfirmEmail)
+                        }
+                        helperText={
+                          userDialogConfirmEmail.length > 0
+                            ? !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userDialogConfirmEmail)
+                              ? "Podaj prawidłowy adres e-mail"
+                              : userDraft.email !== userDialogConfirmEmail
+                              ? "Adresy e-mail nie są identyczne"
+                              : ""
+                            : ""
+                        }
+                      />
+                    </Stack>
+                    <Box sx={{ display: "flex", gap: 0.5, justifyContent: "flex-end", mt: 1 }}>
+                      <IconButton
+                        size="small"
+                        disabled={
+                          !userDraft.email ||
+                          !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userDraft.email) ||
+                          userDraft.email !== userDialogConfirmEmail
+                        }
+                        onClick={() =>
+                          setUserDialogEditingFields((prev) =>
+                            prev.filter((f) => f !== "email"),
+                          )
+                        }
+                        sx={{
+                          borderRadius: 1.5,
+                          color: "success.main",
+                          bgcolor: (theme) =>
+                            alpha(theme.palette.success.main, 0.08),
+                          "&:hover": {
+                            bgcolor: (theme) =>
+                              alpha(theme.palette.success.main, 0.16),
+                          },
+                          "&.Mui-disabled": { opacity: 0.35 },
+                        }}
+                      >
+                        <CheckIcon fontSize="small" />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          setUserDraft((current) => ({
+                            ...current,
+                            email: selectedUser?.email ?? "",
+                          }));
+                          setUserDialogConfirmEmail("");
+                          setUserDialogEditingFields((prev) =>
+                            prev.filter((f) => f !== "email"),
+                          );
+                        }}
+                        sx={{
+                          borderRadius: 1.5,
+                          color: "text.secondary",
+                          "&:hover": {
+                            bgcolor: (theme) =>
+                              alpha(theme.palette.text.primary, 0.06),
+                          },
+                        }}
+                      >
+                        <CloseIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
+                  </Collapse>
+                  <Collapse
+                    in={!userDialogEditingFields.includes("email")}
+                    unmountOnExit
+                  >
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <Box>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          display="block"
+                        >
+                          Adres e-mail
+                        </Typography>
+                        <Typography variant="body2" fontWeight={500}>
+                          {userDraft.email || (
+                            <Box
+                              component="span"
+                              sx={{ color: "text.disabled" }}
+                            >
+                              —
+                            </Box>
+                          )}
+                        </Typography>
+                      </Box>
+                      <Button
+                        size="small"
+                        onClick={() => {
+                          setUserDraft((current) => ({ ...current, email: "" }));
+                          setUserDialogConfirmEmail("");
+                          setUserDialogEditingFields((prev) => [
+                            ...prev,
+                            "email",
+                          ]);
+                        }}
+                        sx={{
+                          textTransform: "none",
+                          fontWeight: 500,
+                          fontSize: "0.8rem",
+                          color: "primary.main",
+                          flexShrink: 0,
+                          ml: 1,
+                        }}
+                      >
+                        Zmień
+                      </Button>
+                    </Box>
+                  </Collapse>
+                </Box>
+
+                {/* Resetowanie hasła */}
+                <Box
+                  sx={{
+                    px: 2,
+                    py: 1.5,
+                    "&:not(:last-child)": {
+                      borderBottom: "1px solid",
+                      borderColor: "divider",
+                    },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <Box>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        display="block"
+                      >
+                        Hasło
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        fontWeight={500}
+                        sx={{ letterSpacing: 2, color: "text.secondary" }}
+                      >
+                        {"•".repeat(8)}
+                      </Typography>
+                    </Box>
+                    {resetPasswordSuccess ? (
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 0.5,
+                          color: "success.main",
+                          fontSize: "0.8rem",
+                          fontWeight: 500,
+                        }}
+                      >
+                        <CheckIcon sx={{ fontSize: "1rem" }} />
+                        Link wysłany
+                      </Box>
+                    ) : (
+                      <Button
+                        size="small"
+                        disabled={resetPasswordLoading}
+                        startIcon={
+                          resetPasswordLoading ? (
+                            <CircularProgress size={14} color="inherit" />
+                          ) : (
+                            <LockResetIcon sx={{ fontSize: "1rem" }} />
+                          )
+                        }
+                        onClick={async () => {
+                          if (!selectedUser?.email) return;
+                          setResetPasswordLoading(true);
+                          try {
+                            await authService.forgotPassword({
+                              email: selectedUser.email,
+                            });
+                            setResetPasswordSuccess(true);
+                          } catch {
+                            // ignore — email may still be sent
+                            setResetPasswordSuccess(true);
+                          } finally {
+                            setResetPasswordLoading(false);
+                          }
+                        }}
+                        sx={{
+                          textTransform: "none",
+                          fontWeight: 500,
+                          fontSize: "0.8rem",
+                          color: "primary.main",
+                          flexShrink: 0,
+                          ml: 1,
+                        }}
+                      >
+                        Wyślij link
+                      </Button>
+                    )}
+                  </Box>
+                </Box>
+
+                {/* Grupa (tylko STUDENT) */}
+                {userDialogRole === "STUDENT" && (
+                  <Box
+                    sx={{
+                      px: 2,
+                      py: 1.5,
+                    }}
+                  >
+                    <Collapse
+                      in={userDialogEditingFields.includes("group")}
+                      unmountOnExit
+                    >
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        display="block"
+                        sx={{ mb: 0.75 }}
+                      >
+                        Zmiana grupy
+                      </Typography>
+                      <Box
+                        sx={{ display: "flex", gap: 1, alignItems: "center" }}
+                      >
+                        <TextField
+                          select
+                          value={userDraft.groupPublicId}
+                          onChange={(event) =>
+                            setUserDraft((current) => ({
+                              ...current,
+                              groupPublicId: event.target.value as string | "",
+                            }))
+                          }
+                          size="small"
+                          fullWidth
+                          helperText={
+                            assignableGroups.length === 0
+                              ? "Brak grup do wyboru"
+                              : "Wybór grupy jest opcjonalny."
+                          }
+                        >
+                          <MenuItem value="">Bez grupy</MenuItem>
+                          {assignableGroups.map((group) => (
+                            <MenuItem
+                              key={group.publicId}
+                              value={group.publicId}
+                            >
+                              {group.name}
+                            </MenuItem>
+                          ))}
+                        </TextField>
+                        <Box sx={{ display: "flex", gap: 0.5, flexShrink: 0, alignSelf: "flex-start", mt: 0.5 }}>
+                          <IconButton
+                            size="small"
+                            onClick={() =>
+                              setUserDialogEditingFields((prev) =>
+                                prev.filter((f) => f !== "group"),
+                              )
+                            }
+                            sx={{
+                              borderRadius: 1.5,
+                              color: "success.main",
+                              bgcolor: (theme) =>
+                                alpha(theme.palette.success.main, 0.08),
+                              "&:hover": {
+                                bgcolor: (theme) =>
+                                  alpha(theme.palette.success.main, 0.16),
+                              },
+                            }}
+                          >
+                            <CheckIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={() => {
+                              const originalGroupId =
+                                selectedUser && "groupPublicId" in selectedUser
+                                  ? (selectedUser.groupPublicId ?? "")
+                                  : "";
                               setUserDraft((current) => ({
                                 ...current,
-                                groupPublicId: event.target.value as
-                                  | string
-                                  | "",
-                              }))
-                            }
-                            fullWidth
-                            helperText={
-                              assignableGroups.length === 0
-                                ? "Brak grup do wyboru"
-                                : "Wybór grupy jest opcjonalny."
-                            }
+                                groupPublicId: originalGroupId,
+                              }));
+                              setUserDialogEditingFields((prev) =>
+                                prev.filter((f) => f !== "group"),
+                              );
+                            }}
+                            sx={{
+                              borderRadius: 1.5,
+                              color: "text.secondary",
+                              "&:hover": {
+                                bgcolor: (theme) =>
+                                  alpha(theme.palette.text.primary, 0.06),
+                              },
+                            }}
                           >
-                            <MenuItem value="">Bez grupy</MenuItem>
-                            {assignableGroups.map((group) => (
-                              <MenuItem
-                                key={group.publicId}
-                                value={group.publicId}
+                            <CloseIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                      </Box>
+                    </Collapse>
+                    <Collapse
+                      in={!userDialogEditingFields.includes("group")}
+                      unmountOnExit
+                    >
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                        }}
+                      >
+                        <Box>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            display="block"
+                          >
+                            Grupa
+                          </Typography>
+                          <Typography variant="body2" fontWeight={500}>
+                            {assignableGroups.find(
+                              (g) => g.publicId === userDraft.groupPublicId,
+                            )?.name ?? (
+                              <Box
+                                component="span"
+                                sx={{ color: "text.disabled" }}
                               >
-                                {group.name}
-                              </MenuItem>
-                            ))}
-                          </TextField>
-                        </FormField>
-                      )}
-                    </>
-                  )}
-                </Stack>
-              </FormSection>
-            </Stack>
+                                Bez grupy
+                              </Box>
+                            )}
+                          </Typography>
+                        </Box>
+                        <Button
+                          size="small"
+                          onClick={() =>
+                            setUserDialogEditingFields((prev) => [
+                              ...prev,
+                              "group",
+                            ])
+                          }
+                          sx={{
+                            textTransform: "none",
+                            fontWeight: 500,
+                            fontSize: "0.8rem",
+                            color: "primary.main",
+                            flexShrink: 0,
+                            ml: 1,
+                          }}
+                        >
+                          Zmień
+                        </Button>
+                      </Box>
+                    </Collapse>
+                  </Box>
+                )}
+              </Box>
+            )}
           </AppDialogBody>
           <AppDialogFooter>
             <FormActions>
@@ -2195,12 +2791,18 @@ export function AdminDashboard() {
               </Button>
               <Button
                 variant="contained"
-                startIcon={<SaveIcon />}
+                startIcon={
+                  userDialogLoading ? (
+                    <CircularProgress size={16} color="inherit" />
+                  ) : (
+                    <SaveIcon />
+                  )
+                }
                 onClick={submitUserDialog}
                 disabled={userDialogLoading}
                 sx={panelFooterButtonSx}
               >
-                {userDialogLoading ? "Zapisywanie..." : "Zapisz zmiany"}
+                {userDialogMode === "create" ? "Utwórz konto" : "Zapisz zmiany"}
               </Button>
             </FormActions>
           </AppDialogFooter>

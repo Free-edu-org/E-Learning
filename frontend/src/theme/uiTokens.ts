@@ -1,6 +1,6 @@
 export const uiTokens = {
   radius: {
-    dialog: 6,
+    dialog: 3,
     section: 4,
     card: 4,
     control: 2.5,
