@@ -1,5 +1,5 @@
 import type { FormEvent } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
   Box,
@@ -20,7 +20,7 @@ import { Link as RouterLink, useSearchParams } from "react-router-dom";
 import { authService } from "@/api/authService";
 import { invitationService } from "@/api/invitationService";
 import { ApiError } from "@/api/apiClient";
-import "./RegisterWithInvitation.css";
+import { PasswordStrengthIndicator } from "@/components/ui/form/PasswordStrengthIndicator";
 
 const REGISTER_ERROR_MESSAGES: Record<string, string> = {
   INVITATION_NOT_FOUND: "Link zaproszenia jest nieprawidłowy.",
@@ -50,34 +50,6 @@ export function RegisterWithInvitation() {
   const [isRegistered, setIsRegistered] = useState(false);
   const [resendMsg, setResendMsg] = useState<string | null>(null);
   const [resendLoading, setResendLoading] = useState(false);
-
-  const passwordStrength = useMemo(() => {
-    if (!password) return 0;
-    let score = 0;
-    if (password.length > 6) score += 25;
-    if (password.length > 10) score += 25;
-    if (/[A-Z]/.test(password)) score += 25;
-    if (/[0-9]/.test(password) || /[^A-Za-z0-9]/.test(password)) score += 25;
-    return score;
-  }, [password]);
-
-  const strengthColor =
-    passwordStrength <= 25
-      ? "#ef4444"
-      : passwordStrength <= 50
-        ? "#f59e0b"
-        : passwordStrength <= 75
-          ? "#3b82f6"
-          : "#10b981";
-
-  const strengthLabel =
-    passwordStrength <= 25
-      ? "Słabe"
-      : passwordStrength <= 50
-        ? "Średnie"
-        : passwordStrength <= 75
-          ? "Mocne"
-          : "Bardzo mocne";
 
   const confirmError =
     confirmPassword && password !== confirmPassword
@@ -284,22 +256,7 @@ export function RegisterWithInvitation() {
                     disabled={isLoading}
                     inputProps={{ minLength: 8 }}
                   />
-                  {password && (
-                    <Box className="strength-container">
-                      <Box className="strength-bar">
-                        <Box
-                          className="strength-progress"
-                          sx={{
-                            width: `${passwordStrength}%`,
-                            backgroundColor: strengthColor,
-                          }}
-                        />
-                      </Box>
-                      <Typography className="strength-text">
-                        Siła hasła: {strengthLabel}
-                      </Typography>
-                    </Box>
-                  )}
+                  <PasswordStrengthIndicator password={password} />
                   <TextField
                     label="Powtórz hasło"
                     type="password"

@@ -1,5 +1,5 @@
 import type { FormEvent } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
   Box,
@@ -19,6 +19,7 @@ import {
 import { Link as RouterLink, useSearchParams } from "react-router-dom";
 import { authService } from "@/api/authService";
 import { ApiError } from "@/api/apiClient";
+import { PasswordStrengthIndicator } from "@/components/ui/form/PasswordStrengthIndicator";
 
 const ACTIVATION_ERROR_MESSAGES: Record<string, string> = {
   INVITATION_TOKEN_INVALID: "Link aktywacyjny jest nieprawidłowy.",
@@ -44,34 +45,6 @@ export function AccountActivationPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  const passwordStrength = useMemo(() => {
-    if (!password) return 0;
-    let score = 0;
-    if (password.length > 6) score += 25;
-    if (password.length > 10) score += 25;
-    if (/[A-Z]/.test(password)) score += 25;
-    if (/[0-9]/.test(password) || /[^A-Za-z0-9]/.test(password)) score += 25;
-    return score;
-  }, [password]);
-
-  const strengthColor =
-    passwordStrength <= 25
-      ? "#ef4444"
-      : passwordStrength <= 50
-        ? "#f59e0b"
-        : passwordStrength <= 75
-          ? "#3b82f6"
-          : "#10b981";
-
-  const strengthLabel =
-    passwordStrength <= 25
-      ? "Słabe"
-      : passwordStrength <= 50
-        ? "Średnie"
-        : passwordStrength <= 75
-          ? "Mocne"
-          : "Bardzo mocne";
 
   const confirmError =
     confirmPassword && password !== confirmPassword
@@ -236,30 +209,7 @@ export function AccountActivationPage() {
                   disabled={isLoading}
                   inputProps={{ minLength: 6 }}
                 />
-                {password && (
-                  <Box sx={{ mb: 1 }}>
-                    <Box
-                      sx={{
-                        height: 4,
-                        bgcolor: "divider",
-                        borderRadius: 2,
-                        overflow: "hidden",
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          height: "100%",
-                          width: `${passwordStrength}%`,
-                          bgcolor: strengthColor,
-                          transition: "width 0.3s, background-color 0.3s",
-                        }}
-                      />
-                    </Box>
-                    <Typography variant="caption" color="text.secondary">
-                      Siła hasła: {strengthLabel}
-                    </Typography>
-                  </Box>
-                )}
+                <PasswordStrengthIndicator password={password} />
                 <TextField
                   label="Powtórz hasło"
                   type="password"
