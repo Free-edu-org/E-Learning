@@ -22,12 +22,10 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useTheme, alpha } from "@mui/material/styles";
+import { useTheme } from "@mui/material/styles";
 import {
   AddCircleOutlined as AddIcon,
   ArrowBackOutlined as BackIcon,
-  CheckOutlined as CheckIcon,
-  CloseOutlined as CloseIcon,
   DragIndicatorOutlined as DragIcon,
   EditOutlined as EditIcon,
   EmailOutlined as EmailIcon,
@@ -62,7 +60,9 @@ import {
   AppDialogHeader,
   AppDialogStatus,
 } from "@/components/ui/dialog/AppDialog";
-import { FormActions } from "@/components/ui/form/FormLayout";
+import {
+  FormActions,
+} from "@/components/ui/form/FormLayout";
 import { DashboardHeader } from "@/components/ui/panel/DashboardHeader";
 import { DashboardTopBar } from "@/components/ui/panel/DashboardTopBar";
 import {
@@ -110,10 +110,6 @@ const getOperationErrorMessage = (error: unknown, fallback: string) => {
   }
   return fallback;
 };
-
-const counterFieldSx = {
-  "& .MuiFormHelperText-root": { ml: "14px", fontSize: "0.7rem", opacity: 0.65, mt: 0.75 },
-} as const;
 
 const emptyStudentDraft = {
   email: "",
@@ -352,7 +348,6 @@ export function TeacherStudentsView() {
     if (editStudentLoading) return;
     setEditStudentOpen(false);
     seteditingStudent(null);
-    setEditStudentEditingFields([]);
   };
 
   const submitEditStudent = async () => {
@@ -534,7 +529,6 @@ export function TeacherStudentsView() {
     if (editGroupLoading) return;
     setEditGroupOpen(false);
     setEditingGroup(null);
-    setEditGroupEditingFields([]);
   };
 
   const submitEditGroup = async () => {
@@ -1322,221 +1316,76 @@ export function TeacherStudentsView() {
                 {editStudentFeedback.message}
               </AppDialogStatus>
             )}
-            <Box
-              sx={{
-                borderRadius: 2,
-                border: "1px solid",
-                borderColor: "divider",
-                overflow: "hidden",
-              }}
-            >
-              {/* Username */}
+
+            {!editStudentLoading && (
               <Box
                 sx={{
-                  px: 2,
-                  py: 1.5,
-                  borderBottom: "1px solid",
+                  borderRadius: 2,
+                  border: "1px solid",
                   borderColor: "divider",
+                  overflow: "hidden",
                 }}
               >
-                {!editStudentEditingFields.includes("username") ? (
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <Box>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        display="block"
-                      >
-                        Nazwa użytkownika
-                      </Typography>
-                      <Typography variant="body2" fontWeight={500}>
-                        {editStudentDraft.username}
-                      </Typography>
-                    </Box>
-                    <Button
-                      size="small"
-                      disabled={editStudentLoading}
-                      onClick={() =>
-                        setEditStudentEditingFields((prev) => [
-                          ...prev,
-                          "username",
-                        ])
-                      }
-                      sx={{
-                        textTransform: "none",
-                        fontWeight: 500,
-                        fontSize: "0.8rem",
-                        color: "primary.main",
-                        flexShrink: 0,
-                        ml: 1,
-                      }}
-                    >
-                      Zmień
-                    </Button>
-                  </Box>
-                ) : (
-                  <>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      display="block"
-                      sx={{ mb: 0.75 }}
-                    >
-                      Edycja nazwy użytkownika
-                    </Typography>
+                {/* Username */}
+                <Box
+                  sx={{
+                    px: 2,
+                    py: 1.5,
+                    borderBottom: "1px solid",
+                    borderColor: "divider",
+                  }}
+                >
+                  {!editStudentEditingFields.includes("username") ? (
                     <Box
                       sx={{
                         display: "flex",
-                        gap: 1,
-                        alignItems: "flex-start",
+                        alignItems: "center",
+                        justifyContent: "space-between",
                       }}
                     >
-                      <TextField
-                        name="teacher-edit-student-username"
-                        autoComplete="off"
-                        autoFocus
-                        value={editStudentDraft.username}
-                        onChange={(event) =>
-                          setEditStudentDraft((draft) => ({
-                            ...draft,
-                            username: event.target.value.slice(
-                              0,
-                              INPUT_LIMITS.username,
-                            ),
-                          }))
-                        }
-                        inputProps={{ maxLength: INPUT_LIMITS.username }}
-                        helperText={`${editStudentDraft.username.length}/${INPUT_LIMITS.username}`}
-                        sx={counterFieldSx}
-                        fullWidth
+                      <Box>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          display="block"
+                        >
+                          Nazwa użytkownika
+                        </Typography>
+                        <Typography variant="body2" fontWeight={500}>
+                          {editStudentDraft.username}
+                        </Typography>
+                      </Box>
+                      <Button
                         size="small"
                         disabled={editStudentLoading}
-                        placeholder="Wprowadź nazwę użytkownika"
-                      />
-                      <Box
-                        sx={{ display: "flex", gap: 0.5, flexShrink: 0, mt: 0.5 }}
+                        onClick={() =>
+                          setEditStudentEditingFields((prev) => [
+                            ...prev,
+                            "username",
+                          ])
+                        }
+                        sx={{
+                          textTransform: "none",
+                          fontWeight: 500,
+                          fontSize: "0.8rem",
+                          color: "primary.main",
+                          flexShrink: 0,
+                          ml: 1,
+                        }}
                       >
-                        <IconButton
-                          size="small"
-                          disabled={
-                            editStudentLoading ||
-                            editStudentDraft.username.trim().length < 3
-                          }
-                          onClick={() =>
-                            setEditStudentEditingFields((prev) =>
-                              prev.filter((f) => f !== "username"),
-                            )
-                          }
-                          sx={{
-                            borderRadius: 1.5,
-                            color: "success.main",
-                            bgcolor: (t) =>
-                              alpha(t.palette.success.main, 0.08),
-                            "&:hover": {
-                              bgcolor: (t) =>
-                                alpha(t.palette.success.main, 0.16),
-                            },
-                            "&.Mui-disabled": { opacity: 0.35 },
-                          }}
-                        >
-                          <CheckIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          disabled={editStudentLoading}
-                          onClick={() => {
-                            setEditStudentDraft((draft) => ({
-                              ...draft,
-                              username: editingStudent?.username ?? "",
-                            }));
-                            setEditStudentEditingFields((prev) =>
-                              prev.filter((f) => f !== "username"),
-                            );
-                          }}
-                          sx={{
-                            borderRadius: 1.5,
-                            color: "text.secondary",
-                            "&:hover": {
-                              bgcolor: (t) =>
-                                alpha(t.palette.text.primary, 0.06),
-                            },
-                          }}
-                        >
-                          <CloseIcon fontSize="small" />
-                        </IconButton>
-                      </Box>
+                        Zmień
+                      </Button>
                     </Box>
-                  </>
-                )}
-              </Box>
-
-              {/* Email */}
-              <Box
-                sx={{
-                  px: 2,
-                  py: 1.5,
-                  borderBottom: "1px solid",
-                  borderColor: "divider",
-                }}
-              >
-                {!editStudentEditingFields.includes("email") ? (
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <Box>
+                  ) : (
+                    <>
                       <Typography
                         variant="caption"
                         color="text.secondary"
                         display="block"
+                        sx={{ mb: 0.75 }}
                       >
-                        Adres e-mail
+                        Edycja nazwy użytkownika
                       </Typography>
-                      <Typography variant="body2" fontWeight={500}>
-                        {editStudentDraft.email}
-                      </Typography>
-                    </Box>
-                    <Button
-                      size="small"
-                      disabled={editStudentLoading}
-                      onClick={() =>
-                        setEditStudentEditingFields((prev) => [
-                          ...prev,
-                          "email",
-                        ])
-                      }
-                      sx={{
-                        textTransform: "none",
-                        fontWeight: 500,
-                        fontSize: "0.8rem",
-                        color: "primary.main",
-                        flexShrink: 0,
-                        ml: 1,
-                      }}
-                    >
-                      Zmień
-                    </Button>
-                  </Box>
-                ) : (
-                  <>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      display="block"
-                      sx={{ mb: 0.75 }}
-                    >
-                      Edycja adresu e-mail
-                    </Typography>
-                    <Stack spacing={1.5}>
                       <Box
                         sx={{
                           display: "flex",
@@ -1545,39 +1394,49 @@ export function TeacherStudentsView() {
                         }}
                       >
                         <TextField
+                          name="teacher-edit-student-username"
+                          autoComplete="off"
                           autoFocus
-                          value={editStudentDraft.email}
+                          value={editStudentDraft.username}
                           onChange={(event) =>
                             setEditStudentDraft((draft) => ({
                               ...draft,
-                              email: event.target.value,
+                              username: event.target.value.slice(
+                                0,
+                                INPUT_LIMITS.username,
+                              ),
                             }))
                           }
-                          placeholder="Wprowadź e-mail"
+                          inputProps={{ maxLength: INPUT_LIMITS.username }}
+                          helperText={`${editStudentDraft.username.length}/${INPUT_LIMITS.username}`}
+                          sx={counterFieldSx}
                           fullWidth
                           size="small"
                           disabled={editStudentLoading}
+                          placeholder="Wprowadź nazwę użytkownika"
                         />
                         <Box
                           sx={{ display: "flex", gap: 0.5, flexShrink: 0, mt: 0.5 }}
                         >
                           <IconButton
                             size="small"
-                            disabled={editStudentLoading}
+                            disabled={
+                              editStudentLoading ||
+                              editStudentDraft.username.trim().length < 3
+                            }
                             onClick={() =>
                               setEditStudentEditingFields((prev) =>
-                                prev.filter((f) => f !== "email"),
+                                prev.filter((f) => f !== "username"),
                               )
                             }
                             sx={{
                               borderRadius: 1.5,
                               color: "success.main",
-                              bgcolor: (t) =>
-                                alpha(t.palette.success.main, 0.08),
+                              bgcolor: (t) => alpha(t.palette.success.main, 0.08),
                               "&:hover": {
-                                bgcolor: (t) =>
-                                  alpha(t.palette.success.main, 0.16),
+                                bgcolor: (t) => alpha(t.palette.success.main, 0.16),
                               },
+                              "&.Mui-disabled": { opacity: 0.35 },
                             }}
                           >
                             <CheckIcon fontSize="small" />
@@ -1588,19 +1447,17 @@ export function TeacherStudentsView() {
                             onClick={() => {
                               setEditStudentDraft((draft) => ({
                                 ...draft,
-                                email: editingStudent?.email ?? "",
-                                emailConfirm: editingStudent?.email ?? "",
+                                username: editingStudent?.username ?? "",
                               }));
                               setEditStudentEditingFields((prev) =>
-                                prev.filter((f) => f !== "email"),
+                                prev.filter((f) => f !== "username"),
                               );
                             }}
                             sx={{
                               borderRadius: 1.5,
                               color: "text.secondary",
                               "&:hover": {
-                                bgcolor: (t) =>
-                                  alpha(t.palette.text.primary, 0.06),
+                                bgcolor: (t) => alpha(t.palette.text.primary, 0.06),
                               },
                             }}
                           >
@@ -1608,196 +1465,330 @@ export function TeacherStudentsView() {
                           </IconButton>
                         </Box>
                       </Box>
-                      <TextField
-                        label="Powtórz e-mail"
-                        value={editStudentDraft.emailConfirm}
-                        onChange={(event) =>
-                          setEditStudentDraft((draft) => ({
-                            ...draft,
-                            emailConfirm: event.target.value,
-                          }))
-                        }
-                        placeholder="Powtórz e-mail"
-                        fullWidth
+                    </>
+                  )}
+                </Box>
+
+                {/* Email */}
+                <Box
+                  sx={{
+                    px: 2,
+                    py: 1.5,
+                    borderBottom: "1px solid",
+                    borderColor: "divider",
+                  }}
+                >
+                  {!editStudentEditingFields.includes("email") ? (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <Box>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          display="block"
+                        >
+                          Adres e-mail
+                        </Typography>
+                        <Typography variant="body2" fontWeight={500}>
+                          {editStudentDraft.email}
+                        </Typography>
+                      </Box>
+                      <Button
                         size="small"
                         disabled={editStudentLoading}
-                        error={
-                          editStudentDraft.emailConfirm.length > 0 &&
-                          editStudentDraft.email !== editStudentDraft.emailConfirm
+                        onClick={() =>
+                          setEditStudentEditingFields((prev) => [
+                            ...prev,
+                            "email",
+                          ])
                         }
-                        helperText={
-                          editStudentDraft.emailConfirm.length > 0 &&
-                          editStudentDraft.email !== editStudentDraft.emailConfirm
-                            ? "Adresy e-mail nie są zgodne"
-                            : undefined
-                        }
-                      />
-                    </Stack>
-                  </>
-                )}
-              </Box>
-
-              {/* Group */}
-              <Box sx={{ px: 2, py: 1.5 }}>
-                {!editStudentEditingFields.includes("group") ? (
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <Box>
+                        sx={{
+                          textTransform: "none",
+                          fontWeight: 500,
+                          fontSize: "0.8rem",
+                          color: "primary.main",
+                          flexShrink: 0,
+                          ml: 1,
+                        }}
+                      >
+                        Zmień
+                      </Button>
+                    </Box>
+                  ) : (
+                    <>
                       <Typography
                         variant="caption"
                         color="text.secondary"
                         display="block"
+                        sx={{ mb: 0.75 }}
                       >
-                        Przypisana grupa
+                        Edycja adresu e-mail
                       </Typography>
-                      <Typography variant="body2" fontWeight={500}>
-                        {availableGroups.find(
-                          (g) => g.publicId === editStudentDraft.groupPublicId,
-                        )?.name ?? "—"}
-                      </Typography>
-                    </Box>
-                    <Button
-                      size="small"
-                      disabled={editStudentLoading}
-                      onClick={() =>
-                        setEditStudentEditingFields((prev) => [
-                          ...prev,
-                          "group",
-                        ])
-                      }
-                      sx={{
-                        textTransform: "none",
-                        fontWeight: 500,
-                        fontSize: "0.8rem",
-                        color: "primary.main",
-                        flexShrink: 0,
-                        ml: 1,
-                      }}
-                    >
-                      Zmień
-                    </Button>
-                  </Box>
-                ) : (
-                  <>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      display="block"
-                      sx={{ mb: 0.75 }}
-                    >
-                      Edycja przypisanej grupy
-                    </Typography>
+                      <Stack spacing={1.5}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            gap: 1,
+                            alignItems: "flex-start",
+                          }}
+                        >
+                          <TextField
+                            autoFocus
+                            value={editStudentDraft.email}
+                            onChange={(event) =>
+                              setEditStudentDraft((draft) => ({
+                                ...draft,
+                                email: event.target.value,
+                              }))
+                            }
+                            placeholder="Wprowadź e-mail"
+                            fullWidth
+                            size="small"
+                            disabled={editStudentLoading}
+                          />
+                          <Box
+                            sx={{ display: "flex", gap: 0.5, flexShrink: 0, mt: 0.5 }}
+                          >
+                            <IconButton
+                              size="small"
+                              disabled={editStudentLoading}
+                              onClick={() =>
+                                setEditStudentEditingFields((prev) =>
+                                  prev.filter((f) => f !== "email"),
+                                )
+                              }
+                              sx={{
+                                borderRadius: 1.5,
+                                color: "success.main",
+                                bgcolor: (t) => alpha(t.palette.success.main, 0.08),
+                                "&:hover": {
+                                  bgcolor: (t) => alpha(t.palette.success.main, 0.16),
+                                },
+                              }}
+                            >
+                              <CheckIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              disabled={editStudentLoading}
+                              onClick={() => {
+                                setEditStudentDraft((draft) => ({
+                                  ...draft,
+                                  email: editingStudent?.email ?? "",
+                                  emailConfirm: editingStudent?.email ?? "",
+                                }));
+                                setEditStudentEditingFields((prev) =>
+                                  prev.filter((f) => f !== "email"),
+                                );
+                              }}
+                              sx={{
+                                borderRadius: 1.5,
+                                color: "text.secondary",
+                                "&:hover": {
+                                  bgcolor: (t) => alpha(t.palette.text.primary, 0.06),
+                                },
+                              }}
+                            >
+                              <CloseIcon fontSize="small" />
+                            </IconButton>
+                          </Box>
+                        </Box>
+                        <TextField
+                          label="Powtórz e-mail"
+                          value={editStudentDraft.emailConfirm}
+                          onChange={(event) =>
+                            setEditStudentDraft((draft) => ({
+                              ...draft,
+                              emailConfirm: event.target.value,
+                            }))
+                          }
+                          placeholder="Powtórz e-mail"
+                          fullWidth
+                          size="small"
+                          disabled={editStudentLoading}
+                          error={
+                            editStudentDraft.emailConfirm.length > 0 &&
+                            editStudentDraft.email !== editStudentDraft.emailConfirm
+                          }
+                          helperText={
+                            editStudentDraft.emailConfirm.length > 0 &&
+                            editStudentDraft.email !== editStudentDraft.emailConfirm
+                              ? "Adresy e-mail nie są zgodne"
+                              : undefined
+                          }
+                        />
+                      </Stack>
+                    </>
+                  )}
+                </Box>
+
+                {/* Group */}
+                <Box sx={{ px: 2, py: 1.5 }}>
+                  {!editStudentEditingFields.includes("group") ? (
                     <Box
                       sx={{
                         display: "flex",
-                        gap: 1,
-                        alignItems: "flex-start",
+                        alignItems: "center",
+                        justifyContent: "space-between",
                       }}
                     >
-                      <TextField
-                        select
-                        value={editStudentDraft.groupPublicId}
-                        onChange={(event) =>
-                          setEditStudentDraft((draft) => ({
-                            ...draft,
-                            groupPublicId: event.target.value,
-                          }))
-                        }
-                        fullWidth
+                      <Box>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          display="block"
+                        >
+                          Przypisana grupa
+                        </Typography>
+                        <Typography variant="body2" fontWeight={500}>
+                          {availableGroups.find(
+                            (g) => g.publicId === editStudentDraft.groupPublicId,
+                          )?.name ?? "—"}
+                        </Typography>
+                      </Box>
+                      <Button
                         size="small"
                         disabled={editStudentLoading}
+                        onClick={() =>
+                          setEditStudentEditingFields((prev) => [
+                            ...prev,
+                            "group",
+                          ])
+                        }
+                        sx={{
+                          textTransform: "none",
+                          fontWeight: 500,
+                          fontSize: "0.8rem",
+                          color: "primary.main",
+                          flexShrink: 0,
+                          ml: 1,
+                        }}
                       >
-                        {availableGroups.map((group) => (
-                          <MenuItem key={group.publicId} value={group.publicId}>
-                            {group.name}
-                          </MenuItem>
-                        ))}
-                      </TextField>
+                        Zmień
+                      </Button>
+                    </Box>
+                  ) : (
+                    <>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        display="block"
+                        sx={{ mb: 0.75 }}
+                      >
+                        Edycja przypisanej grupy
+                      </Typography>
                       <Box
-                        sx={{ display: "flex", gap: 0.5, flexShrink: 0, mt: 0.5 }}
+                        sx={{
+                          display: "flex",
+                          gap: 1,
+                          alignItems: "flex-start",
+                        }}
                       >
-                        <IconButton
-                          size="small"
-                          disabled={
-                            editStudentLoading || !editStudentDraft.groupPublicId
-                          }
-                          onClick={() =>
-                            setEditStudentEditingFields((prev) =>
-                              prev.filter((f) => f !== "group"),
-                            )
-                          }
-                          sx={{
-                            borderRadius: 1.5,
-                            color: "success.main",
-                            bgcolor: (t) =>
-                              alpha(t.palette.success.main, 0.08),
-                            "&:hover": {
-                              bgcolor: (t) =>
-                                alpha(t.palette.success.main, 0.16),
-                            },
-                            "&.Mui-disabled": { opacity: 0.35 },
-                          }}
-                        >
-                          <CheckIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          disabled={editStudentLoading}
-                          onClick={() => {
+                        <TextField
+                          select
+                          value={editStudentDraft.groupPublicId}
+                          onChange={(event) =>
                             setEditStudentDraft((draft) => ({
                               ...draft,
-                              groupPublicId:
-                                editingStudent?.groupPublicId ?? "",
-                            }));
-                            setEditStudentEditingFields((prev) =>
-                              prev.filter((f) => f !== "group"),
-                            );
-                          }}
-                          sx={{
-                            borderRadius: 1.5,
-                            color: "text.secondary",
-                            "&:hover": {
-                              bgcolor: (t) =>
-                                alpha(t.palette.text.primary, 0.06),
-                            },
-                          }}
+                              groupPublicId: event.target.value,
+                            }))
+                          }
+                          fullWidth
+                          size="small"
+                          disabled={editStudentLoading}
                         >
-                          <CloseIcon fontSize="small" />
-                        </IconButton>
+                          {availableGroups.map((group) => (
+                            <MenuItem key={group.publicId} value={group.publicId}>
+                              {group.name}
+                            </MenuItem>
+                          ))}
+                        </TextField>
+                        <Box
+                          sx={{ display: "flex", gap: 0.5, flexShrink: 0, mt: 0.5 }}
+                        >
+                          <IconButton
+                            size="small"
+                            disabled={
+                              editStudentLoading || !editStudentDraft.groupPublicId
+                            }
+                            onClick={() =>
+                              setEditStudentEditingFields((prev) =>
+                                prev.filter((f) => f !== "group"),
+                              )
+                            }
+                            sx={{
+                              borderRadius: 1.5,
+                              color: "success.main",
+                              bgcolor: (t) => alpha(t.palette.success.main, 0.08),
+                              "&:hover": {
+                                bgcolor: (t) => alpha(t.palette.success.main, 0.16),
+                              },
+                              "&.Mui-disabled": { opacity: 0.35 },
+                            }}
+                          >
+                            <CheckIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            disabled={editStudentLoading}
+                            onClick={() => {
+                              setEditStudentDraft((draft) => ({
+                                ...draft,
+                                groupPublicId:
+                                  editingStudent?.groupPublicId ?? "",
+                              }));
+                              setEditStudentEditingFields((prev) =>
+                                prev.filter((f) => f !== "group"),
+                              );
+                            }}
+                            sx={{
+                              borderRadius: 1.5,
+                              color: "text.secondary",
+                              "&:hover": {
+                                bgcolor: (t) => alpha(t.palette.text.primary, 0.06),
+                              },
+                            }}
+                          >
+                            <CloseIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
                       </Box>
-                    </Box>
-                  </>
-                )}
+                    </>
+                  )}
+                </Box>
               </Box>
-            </Box>
+            )}
 
-            <Box sx={{ mt: 3, px: 2 }}>
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1.5 }}>
-                Bezpieczeństwo konta
-              </Typography>
-              <Button
-                variant="outlined"
-                color="info"
-                startIcon={<LockResetIcon />}
-                onClick={resetStudentPassword}
-                disabled={editStudentLoading}
-                fullWidth
-                sx={{ 
-                  ...buttonSx, 
-                  py: 1.25, 
-                  borderWidth: 1.5, 
-                  "&:hover": { borderWidth: 1.5 },
-                  justifyContent: "center"
-                }}
-              >
-                Wyślij link do resetu hasła
-              </Button>
-            </Box>
+            {!editStudentLoading && (
+              <Box sx={{ mt: 3, px: 2 }}>
+                <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1.5 }}>
+                  Bezpieczeństwo konta
+                </Typography>
+                <Button
+                  variant="outlined"
+                  color="info"
+                  startIcon={<LockResetIcon />}
+                  onClick={resetStudentPassword}
+                  disabled={editStudentLoading}
+                  fullWidth
+                  sx={{ 
+                    ...buttonSx, 
+                    py: 1.25, 
+                    borderWidth: 1.5, 
+                    "&:hover": { borderWidth: 1.5 },
+                    justifyContent: "center"
+                  }}
+                >
+                  Wyślij link do resetu hasła
+                </Button>
+              </Box>
+            )}
+
           </AppDialogBody>
           <AppDialogFooter>
             <FormActions>
@@ -2007,19 +1998,18 @@ export function TeacherStudentsView() {
                         color="text.secondary"
                         display="block"
                       >
-                        Opis
+                        Opis grupy
                       </Typography>
                       <Typography
                         variant="body2"
                         fontWeight={500}
-                        color={
-                          editGroupDraft.description
-                            ? "text.primary"
-                            : "text.secondary"
-                        }
-                        sx={{ fontStyle: editGroupDraft.description ? "normal" : "italic" }}
+                        sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
                       >
-                        {editGroupDraft.description || "Brak opisu"}
+                        {editGroupDraft.description || (
+                          <Box component="span" sx={{ color: "text.disabled" }}>
+                            Brak opisu
+                          </Box>
+                        )}
                       </Typography>
                     </Box>
                     <Button
@@ -2052,7 +2042,7 @@ export function TeacherStudentsView() {
                       display="block"
                       sx={{ mb: 0.75 }}
                     >
-                      Edycja opisu
+                      Edycja opisu grupy
                     </Typography>
                     <Box
                       sx={{
@@ -2081,7 +2071,7 @@ export function TeacherStudentsView() {
                         minRows={3}
                         multiline
                         disabled={editGroupLoading}
-                        placeholder="Wprowadź opis"
+                        placeholder="Wprowadź opis grupy"
                       />
                       <Box
                         sx={{ display: "flex", gap: 0.5, flexShrink: 0, mt: 0.5 }}
