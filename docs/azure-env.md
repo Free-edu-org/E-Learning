@@ -34,7 +34,6 @@ Zmienne definiowane podczas budowania aplikacji (plik `.env.production`).
 | Zmienna | Opis | Przykład |
 | :--- | :--- | :--- |
 | `VITE_API_BASE_URL` | Adres URL API backendu | `https://api.freeedu.pl` |
-| `VITE_STT_BASE_URL` | Adres URL serwisu STT | `https://stt.freeedu.pl` |
 
 ## 3. STT Service (FastAPI)
 

@@ -6,13 +6,13 @@ Ten dokument zawiera finalne zestawienie zmian wprowadzonych w celu przygotowani
 
 | Obszar | Plik | Opis Zmiany |
 | :--- | :--- | :--- |
-| **Backend** | `backend/Dockerfile` | Multi-stage build (JDK -> JRE), `HEALTHCHECK`, profil `prod`. |
+| **Backend** | `backend/Dockerfile.prod` | Multi-stage build (JDK -> JRE), `HEALTHCHECK`, profil `prod`. |
 | | `backend/src/main/java/pl/freeedu/backend/security/config/SecurityConfig.java` | Dynamiczny CORS z `allowed-origins` (wiele originów). |
 | | `backend/src/main/resources/application-prod.yaml` | Produkcyjna konfiguracja, wyłączenie seedów, hardening. |
-| **Frontend** | `frontend/Dockerfile` | Multi-stage build (Node -> Nginx), `HEALTHCHECK`. |
+| **Frontend** | `frontend/Dockerfile.prod` | Multi-stage build (Node -> Nginx), `HEALTHCHECK`. |
 | | `frontend/nginx.conf` | **[NOWY]** Konfiguracja Nginx pod SPA (routing `try_files`). |
 | | `frontend/.env.production.example` | **[NOWY]** Szablon zmiennych dla Vite na produkcji. |
-| **STT Service** | `stt-service/Dockerfile` | Pre-download modelu Whisper, `HEALTHCHECK`. |
+| **STT Service** | `stt-service/Dockerfile.prod` | Pre-download modelu Whisper, `HEALTHCHECK`. |
 | | `stt-service/.env.production.example` | **[NOWY]** Szablon zmiennych dla serwisu STT. |
 | **Infrastruktura** | `docker-compose.prod.yml` | **[NOWY]** Cały stack w trybie produkcyjnym do testów lokalnych. |
 | | `.gitignore` | Zaktualizowane reguły dla sekretów i plików `.env`. |

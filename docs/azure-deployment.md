@@ -13,7 +13,7 @@ Dokument opisuje proces wdrożenia aplikacji FreeEdu na platformę Azure przy u�
 
 1. **Resource Group**: Wspólna grupa dla wszystkich zasobów.
 2. **Azure Container Registry**: Do przechowywania obrazów Docker.
-3. **Azure Database for MySQL**: Skonfigurować sieć (Allow access to Azure services).
+3. **Azure Database for MySQL**: Wybrać **Flexible Server** (wspierana wersja **8.0**). Skonfigurować sieć (Allow access to Azure services).
 4. **Azure Storage Account**: Kontener dla plików (Blob Storage).
 5. **Azure Container Apps Environment**: Środowisko dla kontenerów.
 
@@ -57,6 +57,9 @@ az containerapp create \
     FRONTEND_BASE_URL=https://freeedu.pl \
     STT_BASE_URL=http://freeedu-stt \
     SPRING_PROFILES_ACTIVE=prod
+
+> [!IMPORTANT]
+> Wszystkie sekrety (jak `DB_PASSWORD` czy `JWT_SECRET_KEY`) muszą zostać nadpisane rzeczywistymi, bezpiecznymi wartościami w panelu Azure (lub zaciągnięte z Azure Key Vault). Wartości w `docker-compose.prod.yml` służą wyłącznie do lokalnych testów. Nie używaj domyślnych haseł w środowisku produkcyjnym.
 ```
 
 ## 5. Konfiguracja Domen i HTTPS

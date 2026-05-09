@@ -1,6 +1,6 @@
 services:
   mysql:
-    image: mysql:9.6
+    image: mysql:8.0
     container_name: freeedu-mysql-prod
     environment:
       MYSQL_DATABASE: freeedu
