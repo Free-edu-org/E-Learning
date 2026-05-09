@@ -273,16 +273,16 @@ const toolbarFieldSx = {
     minHeight: 40,
     bgcolor: (theme: Theme) =>
       theme.palette.mode === "light"
-        ? alpha(theme.palette.common.white, 0.94)
+        ? alpha(theme.palette.common.white, 0.98)
         : "#151a2c",
     border: "1px solid",
     borderColor: (theme: Theme) =>
       theme.palette.mode === "light"
-        ? alpha(theme.palette.text.primary, 0.08)
+        ? alpha(theme.palette.text.primary, 0.06)
         : alpha(theme.palette.common.white, 0.06),
     boxShadow: (theme: Theme) =>
       theme.palette.mode === "light"
-        ? "0 1px 2px rgba(15, 23, 42, 0.03)"
+        ? "0 2px 8px rgba(15, 23, 42, 0.035)"
         : "inset 0 1px 0 rgba(255,255,255,0.02)",
     transition:
       "border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease",
@@ -292,17 +292,15 @@ const toolbarFieldSx = {
     "&:hover": {
       borderColor: (theme: Theme) =>
         theme.palette.mode === "light"
-          ? alpha(theme.palette.primary.main, 0.18)
+          ? alpha(theme.palette.primary.main, 0.14)
           : alpha(theme.palette.common.white, 0.1),
       bgcolor: (theme: Theme) =>
-        theme.palette.mode === "light"
-          ? theme.palette.common.white
-          : "#171d2f",
+        theme.palette.mode === "light" ? theme.palette.common.white : "#171d2f",
     },
     "&.Mui-focused": {
       borderColor: (theme: Theme) =>
         theme.palette.mode === "light"
-          ? alpha(theme.palette.primary.main, 0.28)
+          ? alpha(theme.palette.primary.main, 0.22)
           : alpha(theme.palette.primary.light, 0.2),
       boxShadow: (theme: Theme) =>
         theme.palette.mode === "light"
@@ -314,7 +312,7 @@ const toolbarFieldSx = {
     opacity: 1,
     color: (theme: Theme) =>
       theme.palette.mode === "light"
-        ? alpha(theme.palette.text.secondary, 0.92)
+        ? alpha(theme.palette.text.secondary, 0.8)
         : alpha(theme.palette.common.white, 0.38),
   },
 };
@@ -360,9 +358,7 @@ const segmentedGroupSx = {
     },
     "&.Mui-selected:hover": {
       bgcolor: (theme: Theme) =>
-        theme.palette.mode === "light"
-          ? theme.palette.common.white
-          : "#171d2f",
+        theme.palette.mode === "light" ? theme.palette.common.white : "#171d2f",
     },
   },
 };
@@ -384,9 +380,7 @@ const segmentedStandaloneButtonSx = {
     "background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease",
   "&:hover": {
     bgcolor: (theme: Theme) =>
-      theme.palette.mode === "light"
-        ? theme.palette.common.white
-        : "#151a2c",
+      theme.palette.mode === "light" ? theme.palette.common.white : "#151a2c",
     borderColor: (theme: Theme) =>
       theme.palette.mode === "light"
         ? alpha(theme.palette.text.primary, 0.12)
@@ -435,6 +429,13 @@ const inviteBadgeSx = {
   bgcolor: (theme: Theme) => alpha(theme.palette.primary.main, 0.1),
   color: "primary.main",
   borderColor: (theme: Theme) => alpha(theme.palette.primary.main, 0.16),
+};
+
+const standardFormDialogPaperSx: SxProps<Theme> = {
+  width: {
+    xs: "calc(100% - 24px)",
+    sm: 700,
+  },
 };
 
 const userCardActionButtonSx: SxProps<Theme> = {
@@ -494,7 +495,7 @@ const userCardSurfaceSx: SxProps<Theme> = {
   minHeight: 196,
   backgroundImage: (theme: Theme) =>
     theme.palette.mode === "light"
-      ? "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,253,0.97) 100%)"
+      ? "linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(249,251,255,0.985) 100%)"
       : "linear-gradient(180deg, rgba(255,255,255,0.042) 0%, rgba(255,255,255,0.016) 100%)",
   "&::before": {
     content: '""',
@@ -569,7 +570,7 @@ const userCardFooterSx: SxProps<Theme> = {
       : alpha(theme.palette.common.white, 0.05),
   bgcolor: (theme: Theme) =>
     theme.palette.mode === "light"
-      ? alpha(theme.palette.common.white, 0.46)
+      ? alpha("#f8faff", 0.78)
       : alpha(theme.palette.common.white, 0.012),
   backdropFilter: "blur(8px)",
 };
@@ -913,11 +914,11 @@ export function AdminDashboard() {
       borderColor: (theme: Theme) => alpha(theme.palette.text.primary, 0.08),
       background: (theme: Theme) =>
         theme.palette.mode === "light"
-          ? "linear-gradient(180deg, rgba(255,255,255,0.97) 0%, rgba(249,250,253,0.94) 100%)"
+          ? "linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(249,251,255,0.97) 100%)"
           : "linear-gradient(180deg, rgba(24,30,45,0.96) 0%, rgba(20,26,39,0.98) 100%)",
       boxShadow: (theme: Theme) =>
         theme.palette.mode === "light"
-          ? "0 8px 20px rgba(15, 23, 42, 0.05), 0 2px 8px rgba(15, 23, 42, 0.025), inset 0 1px 0 rgba(255,255,255,0.76)"
+          ? "0 10px 24px rgba(15, 23, 42, 0.05), 0 2px 8px rgba(15, 23, 42, 0.022), inset 0 1px 0 rgba(255,255,255,0.86)"
           : "0 6px 16px rgba(0, 0, 0, 0.16)",
       transition:
         "transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease, background-color 0.25s ease",
@@ -927,7 +928,7 @@ export function AdminDashboard() {
         inset: 0,
         background: (theme: Theme) =>
           theme.palette.mode === "light"
-            ? "linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 28%)"
+            ? "linear-gradient(180deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 24%)"
             : "linear-gradient(180deg, rgba(255,255,255,0.025) 0%, rgba(255,255,255,0) 26%)",
         pointerEvents: "none",
       },
@@ -936,7 +937,7 @@ export function AdminDashboard() {
         borderColor: (theme: Theme) => alpha(theme.palette.primary.main, 0.14),
         boxShadow: (theme: Theme) =>
           theme.palette.mode === "light"
-            ? "0 12px 24px rgba(15, 23, 42, 0.08), 0 4px 14px rgba(76, 92, 149, 0.04)"
+            ? "0 12px 24px rgba(15, 23, 42, 0.07), 0 4px 14px rgba(76, 92, 149, 0.035)"
             : "0 9px 20px rgba(0, 0, 0, 0.2)",
       },
       "&:hover .quick-action-arrow": {
@@ -1447,10 +1448,7 @@ export function AdminDashboard() {
     }
   };
 
-  const pageBg =
-    theme.palette.mode === "light"
-      ? "#e8eef7"
-      : "#07090f";
+  const pageBg = theme.palette.mode === "light" ? "#f3f6fb" : "#07090f";
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: pageBg, pb: 6 }}>
@@ -1515,24 +1513,28 @@ export function AdminDashboard() {
             onClick={() => openCreateUserDialog("TEACHER")}
             sx={quickActionTileSx}
           >
-            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="flex-start"
+            >
               <Box
                 className="quick-action-icon-shell"
                 sx={{
-                  width: 48,
-                  height: 48,
+                  width: 42,
+                  height: 42,
                   borderRadius: 3,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   color: "common.white",
                   background:
-                    "linear-gradient(135deg, rgba(59,130,246,0.84) 0%, rgba(37,99,235,0.9) 100%)",
-                  boxShadow: "0 10px 18px rgba(37, 99, 235, 0.16)",
+                    "linear-gradient(135deg, rgba(103,153,235,0.78) 0%, rgba(69,116,218,0.74) 100%)",
+                  boxShadow: "0 6px 12px rgba(37, 99, 235, 0.1)",
                   transition: "transform 0.25s ease, box-shadow 0.25s ease",
                 }}
               >
-                <SchoolIcon sx={{ fontSize: 24 }} />
+                <SchoolIcon sx={{ fontSize: 21 }} />
               </Box>
               <Box
                 className="quick-action-arrow"
@@ -1571,7 +1573,11 @@ export function AdminDashboard() {
               >
                 Zaproszenie nauczyciela
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.45, fontSize: "0.83rem" }}>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ lineHeight: 1.45, fontSize: "0.83rem" }}
+              >
                 Wyślij zaproszenie e-mail do aktywacji konta nauczyciela.
               </Typography>
             </Stack>
@@ -1581,24 +1587,28 @@ export function AdminDashboard() {
             onClick={() => openCreateUserDialog("STUDENT")}
             sx={quickActionTileSx}
           >
-            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="flex-start"
+            >
               <Box
                 className="quick-action-icon-shell"
                 sx={{
-                  width: 48,
-                  height: 48,
+                  width: 42,
+                  height: 42,
                   borderRadius: 3,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   color: "common.white",
                   background:
-                    "linear-gradient(135deg, rgba(34,197,94,0.84) 0%, rgba(22,163,74,0.9) 100%)",
-                  boxShadow: "0 10px 18px rgba(22, 163, 74, 0.16)",
+                    "linear-gradient(135deg, rgba(90,201,131,0.78) 0%, rgba(48,164,94,0.74) 100%)",
+                  boxShadow: "0 6px 12px rgba(22, 163, 74, 0.1)",
                   transition: "transform 0.25s ease, box-shadow 0.25s ease",
                 }}
               >
-                <PersonIcon sx={{ fontSize: 24 }} />
+                <PersonIcon sx={{ fontSize: 21 }} />
               </Box>
               <Box
                 className="quick-action-arrow"
@@ -1637,7 +1647,11 @@ export function AdminDashboard() {
               >
                 Zaproszenie ucznia
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.45, fontSize: "0.83rem" }}>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ lineHeight: 1.45, fontSize: "0.83rem" }}
+              >
                 Wyślij zaproszenie e-mail i opcjonalnie przypisz grupę.
               </Typography>
             </Stack>
@@ -1647,24 +1661,28 @@ export function AdminDashboard() {
             onClick={openCreateGroupDialog}
             sx={quickActionTileSx}
           >
-            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="flex-start"
+            >
               <Box
                 className="quick-action-icon-shell"
                 sx={{
-                  width: 48,
-                  height: 48,
+                  width: 42,
+                  height: 42,
                   borderRadius: 3,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   color: "common.white",
                   background:
-                    "linear-gradient(135deg, rgba(249,115,22,0.84) 0%, rgba(234,88,12,0.9) 100%)",
-                  boxShadow: "0 10px 18px rgba(234, 88, 12, 0.16)",
+                    "linear-gradient(135deg, rgba(241,151,87,0.8) 0%, rgba(222,111,54,0.74) 100%)",
+                  boxShadow: "0 6px 12px rgba(234, 88, 12, 0.1)",
                   transition: "transform 0.25s ease, box-shadow 0.25s ease",
                 }}
               >
-                <GroupIcon sx={{ fontSize: 24 }} />
+                <GroupIcon sx={{ fontSize: 21 }} />
               </Box>
               <Box
                 className="quick-action-arrow"
@@ -1703,7 +1721,11 @@ export function AdminDashboard() {
               >
                 Nowa grupa
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.45, fontSize: "0.83rem" }}>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ lineHeight: 1.45, fontSize: "0.83rem" }}
+              >
                 Zbuduj grupę i ustaw właściciela w kilku krokach.
               </Typography>
             </Stack>
@@ -1713,24 +1735,28 @@ export function AdminDashboard() {
             onClick={() => navigate("/admin/achievements")}
             sx={quickActionTileSx}
           >
-            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="flex-start"
+            >
               <Box
                 className="quick-action-icon-shell"
                 sx={{
-                  width: 48,
-                  height: 48,
+                  width: 42,
+                  height: 42,
                   borderRadius: 3,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   color: "common.white",
                   background:
-                    "linear-gradient(135deg, rgba(168,85,247,0.88) 0%, rgba(245,158,11,0.88) 100%)",
-                  boxShadow: "0 10px 18px rgba(168, 85, 247, 0.15)",
+                    "linear-gradient(135deg, rgba(183,123,235,0.78) 0%, rgba(231,171,98,0.74) 100%)",
+                  boxShadow: "0 6px 12px rgba(168, 85, 247, 0.1)",
                   transition: "transform 0.25s ease, box-shadow 0.25s ease",
                 }}
               >
-                <SparklesIcon sx={{ fontSize: 24 }} />
+                <SparklesIcon sx={{ fontSize: 21 }} />
               </Box>
               <Box
                 className="quick-action-arrow"
@@ -1769,7 +1795,11 @@ export function AdminDashboard() {
               >
                 Osiągnięcia
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.45, fontSize: "0.83rem" }}>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ lineHeight: 1.45, fontSize: "0.83rem" }}
+              >
                 Zarządzaj listą osiągnięć i ich aktywnością.
               </Typography>
             </Stack>
@@ -1777,11 +1807,17 @@ export function AdminDashboard() {
         </Box>
 
         <Card elevation={0} sx={panelSurfaceSx}>
-          <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+          <CardContent
+            sx={{
+              px: { xs: 2, md: 3 },
+              pb: { xs: 2, md: 3 },
+              pt: { xs: 1.4, md: 1.8 },
+            }}
+          >
             <Tabs
               value={activeTab}
               onChange={(_, value: AdminTab) => setActiveTab(value)}
-              sx={{ mb: 3 }}
+              sx={{ mb: 2.4 }}
             >
               <Tab
                 value="users"
@@ -1804,13 +1840,9 @@ export function AdminDashboard() {
                   spacing={2}
                   justifyContent="space-between"
                 >
-                  <Stack spacing={1}>
+                  <Stack spacing={0.4}>
                     <Typography variant="h6" fontWeight={800}>
                       Konta nauczycieli i uczniów
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Filtruj listę, wyszukuj po nazwie lub emailu i otwieraj
-                      edycje w modalach.
                     </Typography>
                   </Stack>
 
@@ -1982,7 +2014,11 @@ export function AdminDashboard() {
                     }}
                     color="primary"
                     size="small"
-                    sx={{ ...segmentedGroupSx, flexShrink: 0, alignSelf: "center" }}
+                    sx={{
+                      ...segmentedGroupSx,
+                      flexShrink: 0,
+                      alignSelf: "center",
+                    }}
                   >
                     <ToggleButton value="ALL" sx={segmentedStandaloneButtonSx}>
                       Wszyscy
@@ -2037,7 +2073,11 @@ export function AdminDashboard() {
                     >
                       <GridIcon fontSize="small" />
                     </ToggleButton>
-                    <ToggleButton value="list" aria-label="Widok listy" sx={segmentedStandaloneButtonSx}>
+                    <ToggleButton
+                      value="list"
+                      aria-label="Widok listy"
+                      sx={segmentedStandaloneButtonSx}
+                    >
                       <ListIcon fontSize="small" />
                     </ToggleButton>
                   </ToggleButtonGroup>
@@ -2362,8 +2402,14 @@ export function AdminDashboard() {
                                           fontSize: "0.82rem",
                                           color: (theme) =>
                                             theme.palette.mode === "light"
-                                              ? alpha(theme.palette.text.secondary, 0.88)
-                                              : alpha(theme.palette.common.white, 0.54),
+                                              ? alpha(
+                                                  theme.palette.text.secondary,
+                                                  0.88,
+                                                )
+                                              : alpha(
+                                                  theme.palette.common.white,
+                                                  0.54,
+                                                ),
                                         }}
                                       >
                                         {user.email}
@@ -2383,7 +2429,9 @@ export function AdminDashboard() {
                                     }
                                     label={getRoleLabel(user.role as UserRole)}
                                     size="small"
-                                    sx={getUserRoleBadgeSx(user.role as UserRole)}
+                                    sx={getUserRoleBadgeSx(
+                                      user.role as UserRole,
+                                    )}
                                   />
                                 </Stack>
 
@@ -2403,11 +2451,19 @@ export function AdminDashboard() {
                                       textTransform: "uppercase",
                                       color: (theme) =>
                                         theme.palette.mode === "light"
-                                          ? alpha(theme.palette.text.secondary, 0.72)
-                                          : alpha(theme.palette.common.white, 0.4),
+                                          ? alpha(
+                                              theme.palette.text.secondary,
+                                              0.72,
+                                            )
+                                          : alpha(
+                                              theme.palette.common.white,
+                                              0.4,
+                                            ),
                                     }}
                                   >
-                                    {user.role === "STUDENT" ? "Grupa" : "Typ konta"}
+                                    {user.role === "STUDENT"
+                                      ? "Grupa"
+                                      : "Typ konta"}
                                   </Typography>
                                   {user.role === "STUDENT" ? (
                                     <Chip
@@ -2428,11 +2484,19 @@ export function AdminDashboard() {
                                         fontWeight: 600,
                                         color: (theme) =>
                                           theme.palette.mode === "light"
-                                            ? alpha(theme.palette.text.primary, 0.82)
-                                            : alpha(theme.palette.common.white, 0.74),
+                                            ? alpha(
+                                                theme.palette.text.primary,
+                                                0.82,
+                                              )
+                                            : alpha(
+                                                theme.palette.common.white,
+                                                0.74,
+                                              ),
                                       }}
                                     >
-                                      {getRoleAccountLabel(user.role as UserRole)}
+                                      {getRoleAccountLabel(
+                                        user.role as UserRole,
+                                      )}
                                     </Typography>
                                   )}
                                 </Stack>
@@ -2447,7 +2511,9 @@ export function AdminDashboard() {
                                 sx={{ width: "100%" }}
                               >
                                 <Box sx={subtleMetaRowSx}>
-                                  <CalendarIcon sx={{ fontSize: 15, opacity: 0.72 }} />
+                                  <CalendarIcon
+                                    sx={{ fontSize: 15, opacity: 0.72 }}
+                                  />
                                   <Typography
                                     component="span"
                                     sx={{
@@ -2472,12 +2538,24 @@ export function AdminDashboard() {
                                         fontWeight: 700,
                                         borderColor: (theme) =>
                                           theme.palette.mode === "light"
-                                            ? alpha(theme.palette.warning.main, 0.22)
-                                            : alpha(theme.palette.warning.light, 0.24),
+                                            ? alpha(
+                                                theme.palette.warning.main,
+                                                0.22,
+                                              )
+                                            : alpha(
+                                                theme.palette.warning.light,
+                                                0.24,
+                                              ),
                                         bgcolor: (theme) =>
                                           theme.palette.mode === "light"
-                                            ? alpha(theme.palette.warning.main, 0.05)
-                                            : alpha(theme.palette.warning.light, 0.08),
+                                            ? alpha(
+                                                theme.palette.warning.main,
+                                                0.05,
+                                              )
+                                            : alpha(
+                                                theme.palette.warning.light,
+                                                0.08,
+                                              ),
                                       }}
                                     />
                                   )}
@@ -2495,7 +2573,7 @@ export function AdminDashboard() {
                                     startIcon={<SendIcon fontSize="small" />}
                                     fullWidth
                                     onClick={() => resendUserInvite(user)}
-                                sx={{ ...userCardActionButtonSx, order: 3 }}
+                                    sx={{ ...userCardActionButtonSx, order: 3 }}
                                   >
                                     Wyślij ponownie
                                   </Button>
@@ -2764,7 +2842,11 @@ export function AdminDashboard() {
                     >
                       <GridIcon fontSize="small" />
                     </ToggleButton>
-                    <ToggleButton value="list" aria-label="Widok listy" sx={segmentedStandaloneButtonSx}>
+                    <ToggleButton
+                      value="list"
+                      aria-label="Widok listy"
+                      sx={segmentedStandaloneButtonSx}
+                    >
                       <ListIcon fontSize="small" />
                     </ToggleButton>
                   </ToggleButtonGroup>
@@ -3130,13 +3212,8 @@ export function AdminDashboard() {
           open={userDialogOpen}
           onClose={closeUserDialog}
           onExited={resetUserDialogState}
-          maxWidth="sm"
-          paperSx={{
-            width: {
-              xs: "calc(100% - 24px)",
-              sm: uiTokens.modal.comfortableWidth,
-            },
-          }}
+          maxWidth="md"
+          paperSx={standardFormDialogPaperSx}
         >
           <AppDialogHeader
             icon={userDialogMode === "create" ? <SparklesIcon /> : <EditIcon />}
@@ -3865,13 +3942,8 @@ export function AdminDashboard() {
         <AppDialog
           open={groupDialogOpen}
           onClose={closeGroupDialog}
-          maxWidth="sm"
-          paperSx={{
-            width: {
-              xs: "calc(100% - 24px)",
-              sm: uiTokens.modal.comfortableWidth,
-            },
-          }}
+          maxWidth="md"
+          paperSx={standardFormDialogPaperSx}
         >
           <AppDialogHeader
             icon={<GroupIcon />}
@@ -3891,7 +3963,8 @@ export function AdminDashboard() {
                   px: 0.5,
                   bgcolor: (theme) => alpha(theme.palette.warning.main, 0.1),
                   color: "warning.dark",
-                  borderColor: (theme) => alpha(theme.palette.warning.main, 0.18),
+                  borderColor: (theme) =>
+                    alpha(theme.palette.warning.main, 0.18),
                 }}
               />
             }
@@ -3920,7 +3993,10 @@ export function AdminDashboard() {
                       }));
                       setGroupDraft((current) => ({
                         ...current,
-                        name: event.target.value.slice(0, INPUT_LIMITS.groupName),
+                        name: event.target.value.slice(
+                          0,
+                          INPUT_LIMITS.groupName,
+                        ),
                       }));
                     }}
                     inputProps={{ maxLength: INPUT_LIMITS.groupName }}
@@ -3936,9 +4012,18 @@ export function AdminDashboard() {
                             width: "100%",
                           }}
                         >
-                          <Box component="span">Krótka, konkretna nazwa ułatwi szybkie odnalezienie grupy.</Box>
+                          <Box component="span">
+                            Krótka, konkretna nazwa ułatwi szybkie odnalezienie
+                            grupy.
+                          </Box>
                           {groupDraft.name.length > 0 && (
-                            <Box component="span" sx={{ color: "text.secondary", whiteSpace: "nowrap" }}>
+                            <Box
+                              component="span"
+                              sx={{
+                                color: "text.secondary",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
                               {groupDraft.name.length}/{INPUT_LIMITS.groupName}
                             </Box>
                           )}
@@ -3990,10 +4075,20 @@ export function AdminDashboard() {
                             width: "100%",
                           }}
                         >
-                          <Box component="span">Dodaj kilka zdań o przeznaczeniu, poziomie lub trybie pracy grupy.</Box>
+                          <Box component="span">
+                            Dodaj kilka zdań o przeznaczeniu, poziomie lub
+                            trybie pracy grupy.
+                          </Box>
                           {groupDraft.description.length > 0 && (
-                            <Box component="span" sx={{ color: "text.secondary", whiteSpace: "nowrap" }}>
-                              {groupDraft.description.length}/{INPUT_LIMITS.groupDescription}
+                            <Box
+                              component="span"
+                              sx={{
+                                color: "text.secondary",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {groupDraft.description.length}/
+                              {INPUT_LIMITS.groupDescription}
                             </Box>
                           )}
                         </Box>
@@ -4006,7 +4101,10 @@ export function AdminDashboard() {
                     slotProps={{
                       input: {
                         startAdornment: (
-                          <InputAdornment position="start" sx={{ alignSelf: "flex-start", mt: 1.5 }}>
+                          <InputAdornment
+                            position="start"
+                            sx={{ alignSelf: "flex-start", mt: 1.5 }}
+                          >
                             <EditIcon sx={{ color: "text.secondary" }} />
                           </InputAdornment>
                         ),
@@ -4075,7 +4173,11 @@ export function AdminDashboard() {
                         value={teacher.publicId}
                         sx={{ py: 1.25 }}
                       >
-                        <Stack direction="row" spacing={1.5} alignItems="center">
+                        <Stack
+                          direction="row"
+                          spacing={1.5}
+                          alignItems="center"
+                        >
                           <UserAvatar
                             avatarUrl={teacher.avatarUrl}
                             username={teacher.username}
@@ -4085,7 +4187,11 @@ export function AdminDashboard() {
                             <Typography variant="body2" fontWeight={600} noWrap>
                               {teacher.username}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary" noWrap>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              noWrap
+                            >
                               {teacher.email}
                             </Typography>
                           </Box>
@@ -4107,7 +4213,13 @@ export function AdminDashboard() {
               </Button>
               <Button
                 variant="contained"
-                startIcon={groupDialogMode === "create" ? <AddCircleIcon /> : <SaveIcon />}
+                startIcon={
+                  groupDialogMode === "create" ? (
+                    <AddCircleIcon />
+                  ) : (
+                    <SaveIcon />
+                  )
+                }
                 onClick={submitGroupDialog}
                 disabled={groupDialogLoading}
                 sx={panelFooterButtonSx}

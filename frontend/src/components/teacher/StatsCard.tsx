@@ -25,8 +25,9 @@ function resolveMetricMeta(label: string, fallbackColor: string) {
     return {
       icon: UsersIcon,
       helper: "Pełna baza kont w systemie",
-      gradient: "linear-gradient(135deg, rgba(96,165,250,0.92) 0%, rgba(37,99,235,0.88) 100%)",
-      glow: alpha("#3b82f6", 0.12),
+      gradient:
+        "linear-gradient(135deg, rgba(153,167,196,0.82) 0%, rgba(107,124,157,0.76) 100%)",
+      glow: alpha("#64748b", 0.07),
     };
   }
 
@@ -34,8 +35,9 @@ function resolveMetricMeta(label: string, fallbackColor: string) {
     return {
       icon: AdminIcon,
       helper: "Konta z pełnym dostępem",
-      gradient: "linear-gradient(135deg, rgba(192,132,252,0.9) 0%, rgba(139,92,246,0.86) 100%)",
-      glow: alpha("#8b5cf6", 0.12),
+      gradient:
+        "linear-gradient(135deg, rgba(204,154,247,0.8) 0%, rgba(157,118,236,0.74) 100%)",
+      glow: alpha("#8b5cf6", 0.075),
     };
   }
 
@@ -43,8 +45,9 @@ function resolveMetricMeta(label: string, fallbackColor: string) {
     return {
       icon: TeacherIcon,
       helper: "Aktywni prowadzący zajęcia",
-      gradient: "linear-gradient(135deg, rgba(129,140,248,0.9) 0%, rgba(79,70,229,0.86) 100%)",
-      glow: alpha("#4f46e5", 0.12),
+      gradient:
+        "linear-gradient(135deg, rgba(151,160,243,0.8) 0%, rgba(100,94,222,0.74) 100%)",
+      glow: alpha("#4f46e5", 0.075),
     };
   }
 
@@ -52,8 +55,9 @@ function resolveMetricMeta(label: string, fallbackColor: string) {
     return {
       icon: StudentIcon,
       helper: "Konta uczniów i zaproszenia",
-      gradient: "linear-gradient(135deg, rgba(74,222,128,0.9) 0%, rgba(22,163,74,0.86) 100%)",
-      glow: alpha("#16a34a", 0.12),
+      gradient:
+        "linear-gradient(135deg, rgba(107,218,146,0.8) 0%, rgba(47,169,95,0.74) 100%)",
+      glow: alpha("#16a34a", 0.075),
     };
   }
 
@@ -61,8 +65,9 @@ function resolveMetricMeta(label: string, fallbackColor: string) {
     return {
       icon: GroupIcon,
       helper: "Przestrzenie klas i zespołów",
-      gradient: "linear-gradient(135deg, rgba(251,146,60,0.9) 0%, rgba(234,88,12,0.86) 100%)",
-      glow: alpha("#ea580c", 0.12),
+      gradient:
+        "linear-gradient(135deg, rgba(247,164,96,0.82) 0%, rgba(226,110,47,0.76) 100%)",
+      glow: alpha("#ea580c", 0.075),
     };
   }
 
@@ -70,8 +75,9 @@ function resolveMetricMeta(label: string, fallbackColor: string) {
     return {
       icon: LessonsIcon,
       helper: "Materiały gotowe do pracy",
-      gradient: "linear-gradient(135deg, rgba(96,165,250,0.9) 0%, rgba(37,99,235,0.86) 100%)",
-      glow: alpha("#2563eb", 0.11),
+      gradient:
+        "linear-gradient(135deg, rgba(125,177,247,0.82) 0%, rgba(72,123,229,0.76) 100%)",
+      glow: alpha("#2563eb", 0.07),
     };
   }
 
@@ -79,16 +85,17 @@ function resolveMetricMeta(label: string, fallbackColor: string) {
     return {
       icon: TasksIcon,
       helper: "Zadania przypisane do lekcji",
-      gradient: "linear-gradient(135deg, rgba(52,211,153,0.9) 0%, rgba(5,150,105,0.86) 100%)",
-      glow: alpha("#059669", 0.11),
+      gradient:
+        "linear-gradient(135deg, rgba(91,204,167,0.82) 0%, rgba(38,156,122,0.76) 100%)",
+      glow: alpha("#059669", 0.07),
     };
   }
 
   return {
     icon: SparklesIcon,
     helper: "Kluczowy wskaźnik panelu",
-    gradient: `linear-gradient(135deg, ${alpha(fallbackColor, 0.86)} 0%, ${alpha(fallbackColor, 0.78)} 100%)`,
-    glow: alpha(fallbackColor, 0.1),
+    gradient: `linear-gradient(135deg, ${alpha(fallbackColor, 0.76)} 0%, ${alpha(fallbackColor, 0.68)} 100%)`,
+    glow: alpha(fallbackColor, 0.065),
   };
 }
 
@@ -116,14 +123,14 @@ export function StatsCard({ label, value, highlightColor }: StatsCardProps) {
         overflow: "hidden",
         minHeight: 124,
         display: "flex",
-        bgcolor: theme.palette.mode === "light" ? undefined : "#182133",
+        bgcolor: theme.palette.mode === "light" ? "#ffffff" : "#182133",
         backgroundImage:
           theme.palette.mode === "light"
-            ? "linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(249,250,255,0.92) 100%)"
+            ? "linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(248,250,255,0.96) 100%)"
             : "linear-gradient(180deg, rgba(255,255,255,0.026) 0%, rgba(255,255,255,0.004) 100%)",
         boxShadow:
           theme.palette.mode === "light"
-            ? "0 8px 18px rgba(15, 23, 42, 0.05), inset 0 1px 0 rgba(255,255,255,0.82)"
+            ? "0 10px 22px rgba(15, 23, 42, 0.045), inset 0 1px 0 rgba(255,255,255,0.88)"
             : "0 5px 14px rgba(0, 0, 0, 0.13)",
         transition:
           "transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease",
@@ -133,7 +140,7 @@ export function StatsCard({ label, value, highlightColor }: StatsCardProps) {
           inset: 0,
           background:
             theme.palette.mode === "light"
-              ? "linear-gradient(180deg, rgba(255,255,255,0.34) 0%, rgba(255,255,255,0) 42%)"
+              ? "linear-gradient(180deg, rgba(255,255,255,0.26) 0%, rgba(255,255,255,0) 38%)"
               : "linear-gradient(180deg, rgba(255,255,255,0.022) 0%, rgba(255,255,255,0) 38%)",
           pointerEvents: "none",
         },
@@ -141,9 +148,12 @@ export function StatsCard({ label, value, highlightColor }: StatsCardProps) {
           transform: "translateY(-2px)",
           boxShadow:
             theme.palette.mode === "light"
-              ? `0 12px 24px rgba(15, 23, 42, 0.08), 0 0 0 1px ${alpha(accentColor, 0.05)}`
+              ? `0 12px 24px rgba(15, 23, 42, 0.07), 0 0 0 1px ${alpha(accentColor, 0.06)}`
               : `0 9px 18px rgba(0, 0, 0, 0.18), 0 0 0 1px ${alpha(accentColor, 0.06)}`,
-          borderColor: alpha(accentColor, theme.palette.mode === "light" ? 0.14 : 0.1),
+          borderColor: alpha(
+            accentColor,
+            theme.palette.mode === "light" ? 0.14 : 0.1,
+          ),
         },
       }}
     >
@@ -157,22 +167,27 @@ export function StatsCard({ label, value, highlightColor }: StatsCardProps) {
           justifyContent: "space-between",
         }}
       >
-        <Stack direction="row" spacing={0.75} alignItems="center" sx={{ minHeight: 26 }}>
+        <Stack
+          direction="row"
+          spacing={0.75}
+          alignItems="center"
+          sx={{ minHeight: 26 }}
+        >
           <Box
             sx={{
-              width: 36,
-              height: 36,
+              width: 31,
+              height: 31,
               borderRadius: 2.75,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               color: "common.white",
               background: metricMeta.gradient,
-              boxShadow: `0 6px 12px ${metricMeta.glow}`,
+              boxShadow: `0 4px 8px ${metricMeta.glow}`,
               flexShrink: 0,
             }}
           >
-            <MetricIcon sx={{ fontSize: 18 }} />
+            <MetricIcon sx={{ fontSize: 15.5 }} />
           </Box>
           <Typography
             variant="body2"
@@ -182,7 +197,7 @@ export function StatsCard({ label, value, highlightColor }: StatsCardProps) {
               letterSpacing: "-0.01em",
               color:
                 theme.palette.mode === "light"
-                  ? alpha(theme.palette.text.secondary, 0.96)
+                  ? alpha(theme.palette.text.secondary, 0.98)
                   : alpha(theme.palette.common.white, 0.62),
             }}
           >
@@ -196,8 +211,9 @@ export function StatsCard({ label, value, highlightColor }: StatsCardProps) {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            py: 0.05,
+            py: 0,
             minHeight: 40,
+            transform: "translateY(-2px)",
           }}
         >
           <Typography
@@ -209,7 +225,7 @@ export function StatsCard({ label, value, highlightColor }: StatsCardProps) {
               color:
                 highlightColor ??
                 (theme.palette.mode === "light"
-                  ? theme.palette.text.primary
+                  ? alpha(theme.palette.text.primary, 0.96)
                   : alpha(theme.palette.common.white, 0.98)),
             }}
           >
@@ -226,7 +242,7 @@ export function StatsCard({ label, value, highlightColor }: StatsCardProps) {
             textAlign: "center",
             color:
               theme.palette.mode === "light"
-                ? alpha(theme.palette.text.secondary, 0.72)
+                ? alpha(theme.palette.text.secondary, 0.68)
                 : alpha(theme.palette.common.white, 0.36),
           }}
         >

@@ -12,11 +12,7 @@ import {
 import type { DialogProps } from "@mui/material";
 import { alpha, type SxProps, type Theme } from "@mui/material/styles";
 import { CloseOutlined as CloseIcon } from "@mui/icons-material";
-import {
-  createContext,
-  type ReactNode,
-  useContext,
-} from "react";
+import { createContext, type ReactNode, useContext } from "react";
 import { uiTokens } from "@/theme/uiTokens";
 
 const AppDialogContext = createContext<{ onClose: () => void } | null>(null);
@@ -350,7 +346,8 @@ export function AppDialogHeader({
                 "&:hover": {
                   transform: "translateY(-1px)",
                   bgcolor: (theme) => alpha(theme.palette.common.white, 0.92),
-                  borderColor: (theme) => alpha(theme.palette.primary.main, 0.18),
+                  borderColor: (theme) =>
+                    alpha(theme.palette.primary.main, 0.18),
                   color: "primary.main",
                 },
               }}

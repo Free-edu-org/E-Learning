@@ -77,7 +77,11 @@ export function FormSection({
             </Typography>
           )}
           {description && (
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75, lineHeight: 1.6 }}>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ mt: 0.75, lineHeight: 1.6 }}
+            >
               {description}
             </Typography>
           )}

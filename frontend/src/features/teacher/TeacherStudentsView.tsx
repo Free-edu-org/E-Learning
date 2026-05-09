@@ -338,15 +338,13 @@ export function TeacherStudentsView() {
 
     return groupsWithStudents
       .map((group) => {
-        const groupMatches = [
-          group.name,
-          group.description ?? "",
-        ].some((value) => value.toLowerCase().includes(query));
+        const groupMatches = [group.name, group.description ?? ""].some(
+          (value) => value.toLowerCase().includes(query),
+        );
         const matchingStudents = group.students.filter((student) =>
-          [
-            student.username ?? "",
-            student.email,
-          ].some((value) => value.toLowerCase().includes(query)),
+          [student.username ?? "", student.email].some((value) =>
+            value.toLowerCase().includes(query),
+          ),
         );
 
         return {
@@ -1300,7 +1298,8 @@ export function TeacherStudentsView() {
                   px: 0.5,
                   bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
                   color: "primary.main",
-                  borderColor: (theme) => alpha(theme.palette.primary.main, 0.16),
+                  borderColor: (theme) =>
+                    alpha(theme.palette.primary.main, 0.16),
                 }}
               />
             }
@@ -1385,7 +1384,8 @@ export function TeacherStudentsView() {
                     helperText={
                       createStudentFieldErrors.emailConfirm ??
                       (createStudentDraft.emailConfirm.length > 0 &&
-                      createStudentDraft.email !== createStudentDraft.emailConfirm
+                      createStudentDraft.email !==
+                        createStudentDraft.emailConfirm
                         ? "Adresy e-mail nie są zgodne"
                         : "Dzięki temu unikniesz wysłania zaproszenia na zły adres.")
                     }
