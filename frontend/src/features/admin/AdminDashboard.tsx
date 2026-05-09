@@ -8,6 +8,7 @@ import {
   CardActions,
   CardContent,
   Chip,
+  Collapse,
   CircularProgress,
   Container,
   Divider,
@@ -60,6 +61,7 @@ import {
   type AdminTeacherProfile,
   type AdminUpdateStudentRequest,
 } from "@/api/adminService";
+import { authService } from "@/api/authService";
 import { ApiError } from "@/api/apiClient";
 import { StatsCard } from "@/components/teacher/StatsCard";
 import { userGroupService, type UserGroup } from "@/api/userGroupService";
@@ -114,6 +116,7 @@ type UserFilter = "ALL" | UserRole;
 type AdminTab = "users" | "groups";
 type AdminListUser = AdminTeacherProfile | AdminStudentProfile;
 type AdminViewMode = "grid" | "list";
+type GroupEditableField = "name" | "description" | "teacherPublicId";
 
 interface UserDraft {
   username: string;
@@ -438,6 +441,52 @@ const standardFormDialogPaperSx: SxProps<Theme> = {
   },
 };
 
+const inlineEditActionButtonsSx: SxProps<Theme> = {
+  display: "flex",
+  gap: 0.5,
+  flexShrink: 0,
+  alignItems: "flex-start",
+  pt: 0.25,
+};
+
+const inlineEditIconButtonSx = {
+  width: 34,
+  height: 34,
+  borderRadius: 1.75,
+  border: "1px solid",
+  borderColor: (theme: Theme) => alpha(theme.palette.text.primary, 0.08),
+  bgcolor: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.common.white, 0.9)
+      : alpha(theme.palette.common.white, 0.03),
+  boxShadow: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? "0 6px 14px rgba(15, 23, 42, 0.06)"
+      : "none",
+  "& .MuiSvgIcon-root": {
+    fontSize: 18,
+  },
+};
+
+const inlineEditConfirmButtonSx = {
+  ...inlineEditIconButtonSx,
+  color: "success.main",
+  "&:hover": {
+    bgcolor: (theme: Theme) => alpha(theme.palette.success.main, 0.12),
+    borderColor: (theme: Theme) => alpha(theme.palette.success.main, 0.2),
+  },
+  "&.Mui-disabled": { opacity: 0.35 },
+};
+
+const inlineEditCancelButtonSx = {
+  ...inlineEditIconButtonSx,
+  color: "text.secondary",
+  "&:hover": {
+    bgcolor: (theme: Theme) => alpha(theme.palette.text.primary, 0.06),
+    borderColor: (theme: Theme) => alpha(theme.palette.text.primary, 0.12),
+  },
+};
+
 const userCardActionButtonSx: SxProps<Theme> = {
   ...(panelFooterButtonSx as object),
   justifyContent: "center",
@@ -701,12 +750,19 @@ export function AdminDashboard() {
   const [userDialogEditingFields, setUserDialogEditingFields] = useState<
     string[]
   >([]);
+  const [userInlineSavingField, setUserInlineSavingField] = useState<
+    "username" | "email" | "group" | null
+  >(null);
+  const [passwordResetLoading, setPasswordResetLoading] = useState(false);
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [groupDialogMode, setGroupDialogMode] = useState<"create" | "edit">(
     "create",
   );
   const [selectedGroup, setSelectedGroup] = useState<UserGroup | null>(null);
   const [groupDraft, setGroupDraft] = useState<GroupDraft>(emptyGroupDraft);
+  const [groupDialogEditingFields, setGroupDialogEditingFields] = useState<
+    GroupEditableField[]
+  >([]);
   const [groupDialogLoading, setGroupDialogLoading] = useState(false);
   const [groupDialogFeedback, setGroupDialogFeedback] =
     useState<DialogFeedbackState | null>(null);
@@ -1053,6 +1109,7 @@ export function AdminDashboard() {
     setSelectedUser(null);
     setUserDraft(emptyUserDraft);
     setUserDialogConfirmEmail("");
+    setUserDialogEditingFields([]);
     setUserFieldErrors({});
     setUserDialogFeedback(null);
     setUserDialogOpen(true);
@@ -1068,7 +1125,8 @@ export function AdminDashboard() {
       password: "",
       groupPublicId: "groupPublicId" in user ? (user.groupPublicId ?? "") : "",
     });
-    setUserDialogConfirmEmail(user.email);
+    setUserDialogConfirmEmail("");
+    setUserDialogEditingFields([]);
     setUserFieldErrors({});
     setUserDialogFeedback(null);
     setUserDialogOpen(true);
@@ -1079,6 +1137,9 @@ export function AdminDashboard() {
     setUserDraft(emptyUserDraft);
     setUserDialogConfirmEmail("");
     setUserFieldErrors({});
+    setUserDialogEditingFields([]);
+    setUserInlineSavingField(null);
+    setPasswordResetLoading(false);
     setUserDialogRole("TEACHER");
     setUserDialogMode("create");
     setUserDialogFeedback(null);
@@ -1110,6 +1171,124 @@ export function AdminDashboard() {
     setUserDialogOpen(false);
   };
 
+  const saveUserInlineSection = async (
+    field: "username" | "email" | "group",
+  ) => {
+    if (!selectedUser || userInlineSavingField || userDialogLoading) {
+      return;
+    }
+
+    const nextFieldErrors: UserFieldErrors = {};
+
+    if (field === "username") {
+      if (!userDraft.username.trim() || userDraft.username.trim().length < 3) {
+        nextFieldErrors.username = "Minimalna długość nazwy użytkownika to 3 znaki.";
+      }
+    }
+
+    if (field === "email") {
+      if (!EMAIL_REGEX.test(userDraft.email.trim())) {
+        nextFieldErrors.email = "Podaj prawidłowy adres e-mail.";
+      }
+
+      if (!EMAIL_REGEX.test(userDialogConfirmEmail.trim())) {
+        nextFieldErrors.emailConfirm =
+          "Podaj prawidłowy adres e-mail w polu potwierdzenia.";
+      } else if (userDraft.email.trim() !== userDialogConfirmEmail.trim()) {
+        nextFieldErrors.emailConfirm = "Adresy e-mail nie są identyczne.";
+      }
+    }
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setUserFieldErrors(nextFieldErrors);
+      return;
+    }
+
+    setUserFieldErrors({});
+    setUserDialogFeedback(null);
+    setUserInlineSavingField(field);
+
+    try {
+      let updated: AdminListUser;
+
+      if (selectedUser.role === "STUDENT") {
+        updated = await adminService.updateStudent(selectedUser.publicId, {
+          username: userDraft.username,
+          email: userDraft.email,
+          groupPublicId:
+            userDraft.groupPublicId === "" ? null : userDraft.groupPublicId,
+        });
+      } else {
+        updated = await userService.updateUser(selectedUser.publicId, {
+          username: userDraft.username,
+          email: userDraft.email,
+        });
+      }
+
+      setSelectedUser(updated);
+      setUserDraft({
+        username: updated.username,
+        email: updated.email,
+        password: "",
+        groupPublicId:
+          "groupPublicId" in updated ? (updated.groupPublicId ?? "") : "",
+      });
+      setUserDialogConfirmEmail("");
+      setUserDialogEditingFields((prev) => prev.filter((item) => item !== field));
+      setUserDialogFeedback({
+        severity: "success",
+        message: "Zmiana została zapisana.",
+      });
+      await Promise.all([loadUsers(), loadAdminStats()]);
+    } catch (error) {
+      if (error instanceof ApiError) {
+        const nextErrors = parseUserApiFieldErrors(error);
+        if (Object.keys(nextErrors).length > 0) {
+          setUserFieldErrors(nextErrors);
+          return;
+        }
+      }
+
+      setUserDialogFeedback({
+        severity: "error",
+        message: getErrorMessage(error, "Nie udało się zapisać zmiany."),
+      });
+    } finally {
+      setUserInlineSavingField(null);
+    }
+  };
+
+  const sendPasswordResetLink = async () => {
+    if (!selectedUser || passwordResetLoading) {
+      return;
+    }
+
+    setPasswordResetLoading(true);
+    setUserDialogFeedback(null);
+
+    try {
+      await authService.forgotPassword({ email: userDraft.email.trim() });
+      setPageFeedback({
+        severity: "success",
+        message: `Wysłano link do resetu hasła na adres: ${userDraft.email.trim()}`,
+      });
+      setUserDialogFeedback({
+        severity: "success",
+        message: "Link resetujący został wysłany.",
+      });
+    } catch (error) {
+      setUserDialogFeedback({
+        severity: "error",
+        message: getErrorMessage(
+          error,
+          "Nie udało się wysłać linku resetującego. Spróbuj ponownie.",
+        ),
+      });
+    } finally {
+      setPasswordResetLoading(false);
+    }
+  };
+
   const submitUserDialog = async () => {
     if (userDialogLoading) {
       return;
@@ -1129,6 +1308,32 @@ export function AdminDashboard() {
 
       if (userDraft.email.trim() !== userDialogConfirmEmail.trim()) {
         nextFieldErrors.emailConfirm = "Adresy e-mail nie są identyczne.";
+      }
+
+      if (Object.keys(nextFieldErrors).length > 0) {
+        setUserFieldErrors(nextFieldErrors);
+        return;
+      }
+    }
+
+    if (userDialogMode === "edit") {
+      const nextFieldErrors: UserFieldErrors = {};
+
+      if (!userDraft.username.trim() || userDraft.username.trim().length < 3) {
+        nextFieldErrors.username = "Minimalna długość nazwy użytkownika to 3 znaki.";
+      }
+
+      if (!EMAIL_REGEX.test(userDraft.email.trim())) {
+        nextFieldErrors.email = "Podaj prawidłowy adres e-mail.";
+      }
+
+      if (userDialogEditingFields.includes("email")) {
+        if (!EMAIL_REGEX.test(userDialogConfirmEmail.trim())) {
+          nextFieldErrors.emailConfirm =
+            "Podaj prawidłowy adres e-mail w polu potwierdzenia.";
+        } else if (userDraft.email.trim() !== userDialogConfirmEmail.trim()) {
+          nextFieldErrors.emailConfirm = "Adresy e-mail nie są identyczne.";
+        }
       }
 
       if (Object.keys(nextFieldErrors).length > 0) {
@@ -1232,6 +1437,7 @@ export function AdminDashboard() {
     setGroupDialogMode("create");
     setSelectedGroup(null);
     setGroupDraft(emptyGroupDraft);
+    setGroupDialogEditingFields([]);
     setGroupFieldErrors({});
     setGroupDialogFeedback(null);
     setGroupDialogOpen(true);
@@ -1245,6 +1451,7 @@ export function AdminDashboard() {
       description: group.description,
       teacherPublicId: group.teacherPublicId ?? "",
     });
+    setGroupDialogEditingFields([]);
     setGroupFieldErrors({});
     setGroupDialogFeedback(null);
     setGroupDialogOpen(true);
@@ -1257,6 +1464,7 @@ export function AdminDashboard() {
     setGroupDialogOpen(false);
     setSelectedGroup(null);
     setGroupDraft(emptyGroupDraft);
+    setGroupDialogEditingFields([]);
     setGroupFieldErrors({});
     setGroupDialogFeedback(null);
   };
@@ -3467,7 +3675,8 @@ export function AdminDashboard() {
                   }}
                 >
                   {userDialogEditingFields.includes("username") ? (
-                    <>
+                    <Collapse in timeout={180}>
+                      <Stack spacing={1}>
                       <Typography
                         variant="caption"
                         color="text.secondary"
@@ -3483,6 +3692,22 @@ export function AdminDashboard() {
                           alignItems: "flex-start",
                         }}
                       >
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          display="block"
+                          sx={{ display: "none" }}
+                        >
+                          Potwierdź adres e-mail
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          display="block"
+                          sx={{ display: "none" }}
+                        >
+                          Potwierdź adres e-mail
+                        </Typography>
                         <TextField
                           value={userDraft.username}
                           onChange={(event) =>
@@ -3512,60 +3737,47 @@ export function AdminDashboard() {
                           sx={counterFieldSx}
                         />
                         <Box
-                          sx={{
-                            display: "flex",
-                            gap: 0.5,
-                            flexShrink: 0,
-                            mt: 0.5,
-                          }}
+                          sx={inlineEditActionButtonsSx}
                         >
                           <IconButton
                             size="small"
-                            disabled={userDraft.username.trim().length < 3}
-                            onClick={() =>
-                              setUserDialogEditingFields((prev) =>
-                                prev.filter((f) => f !== "username"),
-                              )
+                            disabled={
+                              userInlineSavingField === "username" ||
+                              userDraft.username.trim().length < 3
                             }
-                            sx={{
-                              borderRadius: 1.5,
-                              color: "success.main",
-                              bgcolor: (theme) =>
-                                alpha(theme.palette.success.main, 0.08),
-                              "&:hover": {
-                                bgcolor: (theme) =>
-                                  alpha(theme.palette.success.main, 0.16),
-                              },
-                              "&.Mui-disabled": { opacity: 0.35 },
-                            }}
+                            onClick={() => void saveUserInlineSection("username")}
+                            sx={inlineEditConfirmButtonSx}
                           >
-                            <CheckIcon fontSize="small" />
+                            {userInlineSavingField === "username" ? (
+                              <CircularProgress size={16} color="inherit" />
+                            ) : (
+                              <CheckIcon fontSize="small" />
+                            )}
                           </IconButton>
                           <IconButton
                             size="small"
+                            disabled={userInlineSavingField === "username"}
                             onClick={() => {
                               setUserDraft((current) => ({
                                 ...current,
                                 username: selectedUser?.username ?? "",
                               }));
+                              setUserFieldErrors((current) => ({
+                                ...current,
+                                username: undefined,
+                              }));
                               setUserDialogEditingFields((prev) =>
                                 prev.filter((f) => f !== "username"),
                               );
                             }}
-                            sx={{
-                              borderRadius: 1.5,
-                              color: "text.secondary",
-                              "&:hover": {
-                                bgcolor: (theme) =>
-                                  alpha(theme.palette.text.primary, 0.06),
-                              },
-                            }}
+                            sx={inlineEditCancelButtonSx}
                           >
                             <CloseIcon fontSize="small" />
                           </IconButton>
                         </Box>
                       </Box>
-                    </>
+                      </Stack>
+                    </Collapse>
                   ) : (
                     <Box
                       sx={{
@@ -3636,85 +3848,91 @@ export function AdminDashboard() {
                         >
                           <TextField
                             value={userDraft.email}
-                            onChange={(event) =>
+                            onChange={(event) => {
+                              setUserFieldErrors((current) => ({
+                                ...current,
+                                email: undefined,
+                              }));
                               setUserDraft((current) => ({
                                 ...current,
-                                email: event.target.value,
-                              }))
-                            }
+                                email: event.target.value.slice(
+                                  0,
+                                  INPUT_LIMITS.email,
+                                ),
+                              }));
+                            }}
                             autoFocus
                             size="small"
                             fullWidth
                             autoComplete="off"
+                            inputProps={{ maxLength: INPUT_LIMITS.email }}
+                            error={Boolean(userFieldErrors.email)}
+                            helperText={
+                              userFieldErrors.email ??
+                              "Na ten adres będzie wysyłana komunikacja związana z kontem."
+                            }
                             placeholder="Wprowadź e-mail"
                           />
-                          <Box
-                            sx={{
-                              display: "flex",
-                              gap: 0.5,
-                              flexShrink: 0,
-                              mt: 0.5,
-                            }}
-                          >
+                          <Box sx={inlineEditActionButtonsSx}>
                             <IconButton
                               size="small"
-                              onClick={() =>
-                                setUserDialogEditingFields((prev) =>
-                                  prev.filter((f) => f !== "email"),
-                                )
-                              }
-                              sx={{
-                                borderRadius: 1.5,
-                                color: "success.main",
-                                bgcolor: (theme) =>
-                                  alpha(theme.palette.success.main, 0.08),
-                                "&:hover": {
-                                  bgcolor: (theme) =>
-                                    alpha(theme.palette.success.main, 0.16),
-                                },
-                              }}
+                              disabled={userInlineSavingField === "email"}
+                              onClick={() => void saveUserInlineSection("email")}
+                              sx={inlineEditConfirmButtonSx}
                             >
-                              <CheckIcon fontSize="small" />
+                              {userInlineSavingField === "email" ? (
+                                <CircularProgress size={16} color="inherit" />
+                              ) : (
+                                <CheckIcon fontSize="small" />
+                              )}
                             </IconButton>
                             <IconButton
                               size="small"
+                              disabled={userInlineSavingField === "email"}
                               onClick={() => {
                                 setUserDraft((current) => ({
                                   ...current,
                                   email: selectedUser?.email ?? "",
                                 }));
-                                setUserDialogConfirmEmail(
-                                  selectedUser?.email ?? "",
-                                );
+                                setUserDialogConfirmEmail("");
+                                setUserFieldErrors((current) => ({
+                                  ...current,
+                                  email: undefined,
+                                  emailConfirm: undefined,
+                                }));
                                 setUserDialogEditingFields((prev) =>
                                   prev.filter((f) => f !== "email"),
                                 );
                               }}
-                              sx={{
-                                borderRadius: 1.5,
-                                color: "text.secondary",
-                                "&:hover": {
-                                  bgcolor: (theme) =>
-                                    alpha(theme.palette.text.primary, 0.06),
-                                },
-                              }}
+                              sx={inlineEditCancelButtonSx}
                             >
                               <CloseIcon fontSize="small" />
                             </IconButton>
                           </Box>
                         </Box>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          display="block"
+                          sx={{ mb: 0.75 }}
+                        >
+                          Potwierdź adres e-mail
+                        </Typography>
                         <TextField
                           value={userDialogConfirmEmail}
-                          onChange={(event) =>
-                            setUserDialogConfirmEmail(event.target.value)
-                          }
+                          onChange={(event) => {
+                            setUserFieldErrors((current) => ({
+                              ...current,
+                              emailConfirm: undefined,
+                            }));
+                            setUserDialogConfirmEmail(
+                              event.target.value.slice(0, INPUT_LIMITS.email),
+                            );
+                          }}
                           size="small"
                           fullWidth
                           placeholder="Powtórz e-mail"
-                          error={
-                            userDialogConfirmEmail.length > 0 &&
-                            userDraft.email !== userDialogConfirmEmail
-                          }
+                          error={Boolean(userFieldErrors.emailConfirm)}
                           helperText={
                             userDialogConfirmEmail.length > 0 &&
                             userDraft.email !== userDialogConfirmEmail
@@ -3809,36 +4027,22 @@ export function AdminDashboard() {
                             ))}
                           </TextField>
                         </Box>
-                        <Box
-                          sx={{
-                            display: "flex",
-                            gap: 0.5,
-                            flexShrink: 0,
-                            mt: 3,
-                          }}
-                        >
+                        <Box sx={inlineEditActionButtonsSx}>
                           <IconButton
                             size="small"
-                            onClick={() =>
-                              setUserDialogEditingFields((prev) =>
-                                prev.filter((f) => f !== "group"),
-                              )
-                            }
-                            sx={{
-                              borderRadius: 1.5,
-                              color: "success.main",
-                              bgcolor: (theme) =>
-                                alpha(theme.palette.success.main, 0.08),
-                              "&:hover": {
-                                bgcolor: (theme) =>
-                                  alpha(theme.palette.success.main, 0.16),
-                              },
-                            }}
+                            disabled={userInlineSavingField === "group"}
+                            onClick={() => void saveUserInlineSection("group")}
+                            sx={inlineEditConfirmButtonSx}
                           >
-                            <CheckIcon fontSize="small" />
+                            {userInlineSavingField === "group" ? (
+                              <CircularProgress size={16} color="inherit" />
+                            ) : (
+                              <CheckIcon fontSize="small" />
+                            )}
                           </IconButton>
                           <IconButton
                             size="small"
+                            disabled={userInlineSavingField === "group"}
                             onClick={() => {
                               setUserDraft((current) => ({
                                 ...current,
@@ -3852,14 +4056,7 @@ export function AdminDashboard() {
                                 prev.filter((f) => f !== "group"),
                               );
                             }}
-                            sx={{
-                              borderRadius: 1.5,
-                              color: "text.secondary",
-                              "&:hover": {
-                                bgcolor: (theme) =>
-                                  alpha(theme.palette.text.primary, 0.06),
-                              },
-                            }}
+                            sx={inlineEditCancelButtonSx}
                           >
                             <CloseIcon fontSize="small" />
                           </IconButton>
@@ -3907,6 +4104,56 @@ export function AdminDashboard() {
                     )}
                   </Box>
                 )}
+                <Box
+                  sx={{
+                    px: 2,
+                    py: 1.5,
+                    borderTop: userDialogRole === "STUDENT" ? "1px solid" : "none",
+                    borderColor: "divider",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 2,
+                    }}
+                  >
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        display="block"
+                      >
+                        Reset hasła
+                      </Typography>
+                      <Typography variant="body2" fontWeight={500}>
+                        Wyślij użytkownikowi wiadomość e-mail z linkiem do ustawienia nowego hasła.
+                      </Typography>
+                    </Box>
+                    <Button
+                      size="small"
+                      startIcon={
+                        passwordResetLoading ? (
+                          <CircularProgress size={16} color="inherit" />
+                        ) : (
+                          <EmailIcon fontSize="small" />
+                        )
+                      }
+                      onClick={() => void sendPasswordResetLink()}
+                      disabled={passwordResetLoading || !EMAIL_REGEX.test(userDraft.email.trim())}
+                      sx={{
+                        ...userCardActionButtonSx,
+                        minHeight: 34,
+                        px: 1.4,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {passwordResetLoading ? "Wysyłanie..." : "Wyślij link resetujący"}
+                    </Button>
+                  </Box>
+                </Box>
               </Box>
             )}
           </AppDialogBody>
@@ -3916,25 +4163,23 @@ export function AdminDashboard() {
                 onClick={closeUserDialog}
                 sx={{ ...panelFooterButtonSx, color: "text.secondary" }}
               >
-                Anuluj
+                {userDialogMode === "create" ? "Anuluj" : "Zamknij"}
               </Button>
-              <Button
-                variant="contained"
-                startIcon={
-                  userDialogMode === "create" ? <SendIcon /> : <SaveIcon />
-                }
-                onClick={submitUserDialog}
-                disabled={userDialogLoading}
-                sx={panelFooterButtonSx}
-              >
-                {userDialogLoading
-                  ? "Zapisywanie..."
-                  : isCreateTeacherDialog
-                    ? "Zaproś nauczyciela"
-                    : isCreateStudentDialog
-                      ? "Zaproś ucznia"
-                      : "Zapisz zmiany"}
-              </Button>
+              {userDialogMode === "create" && (
+                <Button
+                  variant="contained"
+                  startIcon={<SendIcon />}
+                  onClick={submitUserDialog}
+                  disabled={userDialogLoading}
+                  sx={panelFooterButtonSx}
+                >
+                  {userDialogLoading
+                    ? "Zapisywanie..."
+                    : isCreateTeacherDialog
+                      ? "Zaproś nauczyciela"
+                      : "Zaproś ucznia"}
+                </Button>
+              )}
             </FormActions>
           </AppDialogFooter>
         </AppDialog>
@@ -3975,7 +4220,8 @@ export function AdminDashboard() {
                 {groupDialogFeedback.message}
               </AppDialogStatus>
             )}
-            <Stack spacing={1.75}>
+            {groupDialogMode === "create" ? (
+              <Stack spacing={1.75}>
               <FormSection
                 title="Informacje o grupie"
                 description="Nadaj grupie nazwę i krótki opis."
@@ -4095,7 +4341,7 @@ export function AdminDashboard() {
                       )
                     }
                     multiline
-                    minRows={2}
+                    minRows={3}
                     fullWidth
                     placeholder="Np. Grupa dla uczniów przygotowujących się do działu z geometrii i zadań tekstowych."
                     slotProps={{
@@ -4103,7 +4349,7 @@ export function AdminDashboard() {
                         startAdornment: (
                           <InputAdornment
                             position="start"
-                            sx={{ alignSelf: "flex-start", mt: 1.5 }}
+                            sx={{ alignSelf: "flex-start", mt: 1.7 }}
                           >
                             <EditIcon sx={{ color: "text.secondary" }} />
                           </InputAdornment>
@@ -4113,12 +4359,14 @@ export function AdminDashboard() {
                     sx={{
                       "& .MuiOutlinedInput-root": {
                         alignItems: "flex-start",
-                        py: 0.125,
+                        py: 0.25,
                       },
                       "& .MuiInputBase-inputMultiline": {
-                        lineHeight: 1.6,
+                        lineHeight: 1.65,
                         resize: "vertical",
-                        minHeight: 48,
+                        minHeight: 64,
+                        pt: 1.15,
+                        pb: 0.8,
                       },
                     }}
                   />
@@ -4201,7 +4449,552 @@ export function AdminDashboard() {
                   </TextField>
                 </Box>
               </FormSection>
-            </Stack>
+              </Stack>
+            ) : (
+              <Box
+                sx={{
+                  borderRadius: 2,
+                  border: "1px solid",
+                  borderColor: "divider",
+                  overflow: "hidden",
+                }}
+              >
+                <Box
+                  sx={{
+                    px: 2,
+                    py: 1.5,
+                    borderBottom: "1px solid",
+                    borderColor: "divider",
+                  }}
+                >
+                  {groupDialogEditingFields.includes("name") ? (
+                    <>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        display="block"
+                        sx={{ mb: 0.75 }}
+                      >
+                        Edycja nazwy grupy
+                      </Typography>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          gap: 1,
+                          alignItems: "flex-start",
+                        }}
+                      >
+                        <TextField
+                          value={groupDraft.name}
+                          onChange={(event) => {
+                            setGroupFieldErrors((current) => ({
+                              ...current,
+                              name: undefined,
+                            }));
+                            setGroupDraft((current) => ({
+                              ...current,
+                              name: event.target.value.slice(
+                                0,
+                                INPUT_LIMITS.groupName,
+                              ),
+                            }));
+                          }}
+                          autoFocus
+                          size="small"
+                          fullWidth
+                          inputProps={{ maxLength: INPUT_LIMITS.groupName }}
+                          error={Boolean(groupFieldErrors.name)}
+                          helperText={
+                            groupFieldErrors.name ??
+                            `${groupDraft.name.length}/${INPUT_LIMITS.groupName}`
+                          }
+                          sx={counterFieldSx}
+                        />
+                        <Box
+                          sx={{
+                            display: "flex",
+                            gap: 0.5,
+                            flexShrink: 0,
+                            mt: 0.5,
+                          }}
+                        >
+                          <IconButton
+                            size="small"
+                            onClick={() =>
+                              setGroupDialogEditingFields((prev) =>
+                                prev.filter((field) => field !== "name"),
+                              )
+                            }
+                            sx={{
+                              borderRadius: 1.5,
+                              color: "success.main",
+                              bgcolor: (theme) =>
+                                alpha(theme.palette.success.main, 0.08),
+                              "&:hover": {
+                                bgcolor: (theme) =>
+                                  alpha(theme.palette.success.main, 0.16),
+                              },
+                            }}
+                          >
+                            <CheckIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={() => {
+                              setGroupDraft((current) => ({
+                                ...current,
+                                name: selectedGroup?.name ?? "",
+                              }));
+                              setGroupFieldErrors((current) => ({
+                                ...current,
+                                name: undefined,
+                              }));
+                              setGroupDialogEditingFields((prev) =>
+                                prev.filter((field) => field !== "name"),
+                              );
+                            }}
+                            sx={{
+                              borderRadius: 1.5,
+                              color: "text.secondary",
+                              "&:hover": {
+                                bgcolor: (theme) =>
+                                  alpha(theme.palette.text.primary, 0.06),
+                              },
+                            }}
+                          >
+                            <CloseIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                      </Box>
+                    </>
+                  ) : (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 2,
+                      }}
+                    >
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          display="block"
+                        >
+                          Nazwa grupy
+                        </Typography>
+                        <Typography variant="body2" fontWeight={500}>
+                          {groupDraft.name || "—"}
+                        </Typography>
+                      </Box>
+                      <Button
+                        size="small"
+                        onClick={() =>
+                          setGroupDialogEditingFields((prev) => [
+                            ...prev,
+                            "name",
+                          ])
+                        }
+                        sx={{
+                          textTransform: "none",
+                          fontWeight: 500,
+                          fontSize: "0.8rem",
+                          flexShrink: 0,
+                        }}
+                      >
+                        Zmień
+                      </Button>
+                    </Box>
+                  )}
+                </Box>
+
+                <Box
+                  sx={{
+                    px: 2,
+                    py: 1.5,
+                    borderBottom: "1px solid",
+                    borderColor: "divider",
+                  }}
+                >
+                  {groupDialogEditingFields.includes("description") ? (
+                    <>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        display="block"
+                        sx={{ mb: 0.75 }}
+                      >
+                        Edycja opisu grupy
+                      </Typography>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          gap: 1,
+                          alignItems: "flex-start",
+                        }}
+                      >
+                        <TextField
+                          value={groupDraft.description}
+                          onChange={(event) => {
+                            setGroupFieldErrors((current) => ({
+                              ...current,
+                              description: undefined,
+                            }));
+                            setGroupDraft((current) => ({
+                              ...current,
+                              description: event.target.value.slice(
+                                0,
+                                INPUT_LIMITS.groupDescription,
+                              ),
+                            }));
+                          }}
+                          multiline
+                          minRows={3}
+                          autoFocus
+                          size="small"
+                          fullWidth
+                          inputProps={{ maxLength: INPUT_LIMITS.groupDescription }}
+                          error={Boolean(groupFieldErrors.description)}
+                          helperText={
+                            groupFieldErrors.description ??
+                            `${groupDraft.description.length}/${INPUT_LIMITS.groupDescription}`
+                          }
+                          sx={{
+                            ...counterFieldSx,
+                            "& .MuiOutlinedInput-root": {
+                              alignItems: "flex-start",
+                              py: 0.3,
+                            },
+                            "& .MuiInputBase-inputMultiline": {
+                              lineHeight: 1.65,
+                              resize: "vertical",
+                              minHeight: 72,
+                              pt: 1.2,
+                              pb: 0.85,
+                            },
+                          }}
+                        />
+                        <Box
+                          sx={{
+                            display: "flex",
+                            gap: 0.5,
+                            flexShrink: 0,
+                            mt: 0.5,
+                          }}
+                        >
+                          <IconButton
+                            size="small"
+                            onClick={() =>
+                              setGroupDialogEditingFields((prev) =>
+                                prev.filter((field) => field !== "description"),
+                              )
+                            }
+                            sx={{
+                              borderRadius: 1.5,
+                              color: "success.main",
+                              bgcolor: (theme) =>
+                                alpha(theme.palette.success.main, 0.08),
+                              "&:hover": {
+                                bgcolor: (theme) =>
+                                  alpha(theme.palette.success.main, 0.16),
+                              },
+                            }}
+                          >
+                            <CheckIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={() => {
+                              setGroupDraft((current) => ({
+                                ...current,
+                                description: selectedGroup?.description ?? "",
+                              }));
+                              setGroupFieldErrors((current) => ({
+                                ...current,
+                                description: undefined,
+                              }));
+                              setGroupDialogEditingFields((prev) =>
+                                prev.filter((field) => field !== "description"),
+                              );
+                            }}
+                            sx={{
+                              borderRadius: 1.5,
+                              color: "text.secondary",
+                              "&:hover": {
+                                bgcolor: (theme) =>
+                                  alpha(theme.palette.text.primary, 0.06),
+                              },
+                            }}
+                          >
+                            <CloseIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                      </Box>
+                    </>
+                  ) : (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        justifyContent: "space-between",
+                        gap: 2,
+                      }}
+                    >
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          display="block"
+                        >
+                          Opis grupy
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          fontWeight={500}
+                          sx={{ color: "text.primary", whiteSpace: "pre-wrap" }}
+                        >
+                          {groupDraft.description?.trim() || "Brak opisu grupy."}
+                        </Typography>
+                      </Box>
+                      <Button
+                        size="small"
+                        onClick={() =>
+                          setGroupDialogEditingFields((prev) => [
+                            ...prev,
+                            "description",
+                          ])
+                        }
+                        sx={{
+                          textTransform: "none",
+                          fontWeight: 500,
+                          fontSize: "0.8rem",
+                          flexShrink: 0,
+                          mt: 0.125,
+                        }}
+                      >
+                        Zmień
+                      </Button>
+                    </Box>
+                  )}
+                </Box>
+
+                <Box sx={{ px: 2, py: 1.5 }}>
+                  {groupDialogEditingFields.includes("teacherPublicId") ? (
+                    <>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        display="block"
+                        sx={{ mb: 0.75 }}
+                      >
+                        Edycja nauczyciela prowadzącego
+                      </Typography>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          gap: 1,
+                          alignItems: "flex-start",
+                        }}
+                      >
+                        <TextField
+                          select
+                          value={groupDraft.teacherPublicId}
+                          onChange={(event) => {
+                            setGroupFieldErrors((current) => ({
+                              ...current,
+                              teacherPublicId: undefined,
+                            }));
+                            setGroupDraft((current) => ({
+                              ...current,
+                              teacherPublicId: event.target.value,
+                            }));
+                          }}
+                          SelectProps={{
+                            displayEmpty: true,
+                            IconComponent: ExpandMoreIcon,
+                          }}
+                          fullWidth
+                          size="small"
+                          autoFocus
+                          error={Boolean(groupFieldErrors.teacherPublicId)}
+                          helperText={
+                            groupFieldErrors.teacherPublicId ??
+                            "Możesz przypisać nowego opiekuna lub pozostawić grupę bez nauczyciela."
+                          }
+                        >
+                          <MenuItem value="">Bez przypisanego nauczyciela</MenuItem>
+                          {teachers.map((teacher) => (
+                            <MenuItem
+                              key={teacher.publicId}
+                              value={teacher.publicId}
+                              sx={{ py: 1.25 }}
+                            >
+                              <Stack
+                                direction="row"
+                                spacing={1.5}
+                                alignItems="center"
+                              >
+                                <UserAvatar
+                                  avatarUrl={teacher.avatarUrl}
+                                  username={teacher.username}
+                                  size={26}
+                                />
+                                <Box sx={{ minWidth: 0 }}>
+                                  <Typography variant="body2" fontWeight={600} noWrap>
+                                    {teacher.username}
+                                  </Typography>
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    noWrap
+                                  >
+                                    {teacher.email}
+                                  </Typography>
+                                </Box>
+                              </Stack>
+                            </MenuItem>
+                          ))}
+                        </TextField>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            gap: 0.5,
+                            flexShrink: 0,
+                            mt: 0.5,
+                          }}
+                        >
+                          <IconButton
+                            size="small"
+                            onClick={() =>
+                              setGroupDialogEditingFields((prev) =>
+                                prev.filter(
+                                  (field) => field !== "teacherPublicId",
+                                ),
+                              )
+                            }
+                            sx={{
+                              borderRadius: 1.5,
+                              color: "success.main",
+                              bgcolor: (theme) =>
+                                alpha(theme.palette.success.main, 0.08),
+                              "&:hover": {
+                                bgcolor: (theme) =>
+                                  alpha(theme.palette.success.main, 0.16),
+                              },
+                            }}
+                          >
+                            <CheckIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={() => {
+                              setGroupDraft((current) => ({
+                                ...current,
+                                teacherPublicId:
+                                  selectedGroup?.teacherPublicId ?? "",
+                              }));
+                              setGroupFieldErrors((current) => ({
+                                ...current,
+                                teacherPublicId: undefined,
+                              }));
+                              setGroupDialogEditingFields((prev) =>
+                                prev.filter(
+                                  (field) => field !== "teacherPublicId",
+                                ),
+                              );
+                            }}
+                            sx={{
+                              borderRadius: 1.5,
+                              color: "text.secondary",
+                              "&:hover": {
+                                bgcolor: (theme) =>
+                                  alpha(theme.palette.text.primary, 0.06),
+                              },
+                            }}
+                          >
+                            <CloseIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                      </Box>
+                    </>
+                  ) : (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 2,
+                      }}
+                    >
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          display="block"
+                        >
+                          Nauczyciel prowadzący
+                        </Typography>
+                        {groupDraft.teacherPublicId ? (
+                          <Stack
+                            direction="row"
+                            spacing={1.25}
+                            alignItems="center"
+                          >
+                            <UserAvatar
+                              avatarUrl={teacherAvatarById.get(
+                                groupDraft.teacherPublicId,
+                              )}
+                              username={teacherNameById.get(
+                                groupDraft.teacherPublicId,
+                              )}
+                              size={26}
+                            />
+                            <Box sx={{ minWidth: 0 }}>
+                              <Typography variant="body2" fontWeight={500} noWrap>
+                                {teacherNameById.get(groupDraft.teacherPublicId) ??
+                                  "Brak danych"}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                noWrap
+                              >
+                                {teachers.find(
+                                  (teacher) =>
+                                    teacher.publicId === groupDraft.teacherPublicId,
+                                )?.email ?? "Brak danych"}
+                              </Typography>
+                            </Box>
+                          </Stack>
+                        ) : (
+                          <Typography variant="body2" fontWeight={500}>
+                            Bez przypisanego nauczyciela
+                          </Typography>
+                        )}
+                      </Box>
+                      <Button
+                        size="small"
+                        onClick={() =>
+                          setGroupDialogEditingFields((prev) => [
+                            ...prev,
+                            "teacherPublicId",
+                          ])
+                        }
+                        sx={{
+                          textTransform: "none",
+                          fontWeight: 500,
+                          fontSize: "0.8rem",
+                          flexShrink: 0,
+                        }}
+                      >
+                        Zmień
+                      </Button>
+                    </Box>
+                  )}
+                </Box>
+              </Box>
+            )}
           </AppDialogBody>
           <AppDialogFooter>
             <FormActions>
@@ -4238,11 +5031,33 @@ export function AdminDashboard() {
           open={Boolean(deleteDialog)}
           onClose={closeDeleteDialog}
           maxWidth="xs"
+          paperSx={{
+            width: {
+              xs: "calc(100% - 28px)",
+              sm: 460,
+            },
+          }}
         >
           <AppDialogHeader
-            icon={<DeleteIcon sx={{ color: "error.main" }} />}
+            icon={<DeleteIcon sx={{ color: "common.white" }} />}
+            iconContainerSx={{
+              width: 50,
+              height: 50,
+              borderRadius: 3,
+              backgroundImage:
+                "linear-gradient(135deg, rgba(239,68,68,0.94) 0%, rgba(220,38,38,0.9) 100%)",
+              boxShadow: (theme) =>
+                `0 14px 28px ${alpha(theme.palette.error.main, 0.22)}, inset 0 1px 0 ${alpha(theme.palette.common.white, 0.24)}`,
+              "&::after": {
+                background: (theme) =>
+                  `radial-gradient(circle, ${alpha(theme.palette.error.main, 0.18)} 0%, transparent 72%)`,
+              },
+              "& .MuiSvgIcon-root": {
+                fontSize: 24,
+              },
+            }}
             title={deleteDialog?.type === "user" ? "Usuń konto" : "Usuń grupę"}
-            subtitle="Ta operacja jest nieodwracalna i natychmiast usuwa wskazany element."
+            subtitle="Ta operacja jest nieodwracalna."
             badge={
               <Chip
                 label="Ostrzeżenie"
@@ -4298,7 +5113,7 @@ export function AdminDashboard() {
                 </>
               )}
             </FormSection>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
               {deleteDialog?.type === "user"
                 ? "Usunięcie konta skasuje dostęp tego użytkownika do systemu."
                 : "Usunięcie grupy wyczyści też jej skład i przypisania."}
@@ -4470,7 +5285,12 @@ export function AdminDashboard() {
                 title="Dodaj ucznia"
                 description="Lista pokazuje tylko uczniów przypisanych do właściciela tej grupy."
               >
-                <Autocomplete
+                <Stack
+                  direction={{ xs: "column", sm: "row" }}
+                  spacing={1}
+                  alignItems={{ xs: "stretch", sm: "flex-start" }}
+                >
+                  <Autocomplete
                   size="small"
                   options={availableMembershipStudents.filter(
                     (student) =>
@@ -4499,7 +5319,24 @@ export function AdminDashboard() {
                       helperText="Wybór ucznia od razu przygotuje go do dodania do tej grupy."
                     />
                   )}
-                />
+                  />
+                  <Button
+                    variant="contained"
+                    startIcon={<AddCircleIcon />}
+                    onClick={addMembershipStudent}
+                    disabled={membershipLoading || membershipStudentPublicId === ""}
+                    sx={{
+                      ...panelFooterButtonSx,
+                      minHeight: 40,
+                      px: 1.6,
+                      mt: { xs: 0, sm: 0.15 },
+                      alignSelf: { xs: "stretch", sm: "flex-start" },
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {membershipLoading ? "Dodawanie..." : "Dodaj"}
+                  </Button>
+                </Stack>
               </FormSection>
             </Stack>
           </AppDialogBody>
@@ -4510,15 +5347,6 @@ export function AdminDashboard() {
                 sx={{ ...panelFooterButtonSx, color: "text.secondary" }}
               >
                 Anuluj
-              </Button>
-              <Button
-                variant="contained"
-                startIcon={<AddCircleIcon />}
-                onClick={addMembershipStudent}
-                disabled={membershipLoading}
-                sx={panelFooterButtonSx}
-              >
-                {membershipLoading ? "Zapisywanie..." : "Dodaj ucznia"}
               </Button>
             </FormActions>
           </AppDialogFooter>

@@ -243,6 +243,7 @@ type AppDialogHeaderProps = {
   subtitle?: string;
   badge?: ReactNode;
   hideCloseButton?: boolean;
+  iconContainerSx?: SxProps<Theme>;
 };
 
 export function AppDialogHeader({
@@ -251,6 +252,7 @@ export function AppDialogHeader({
   subtitle,
   badge,
   hideCloseButton = false,
+  iconContainerSx,
 }: AppDialogHeaderProps) {
   const hasSubtitle = Boolean(subtitle);
   const dialogContext = useContext(AppDialogContext);
@@ -270,33 +272,40 @@ export function AppDialogHeader({
           sx={{ minWidth: 0, flex: 1 }}
         >
           <Box
-            sx={{
-              width: 58,
-              height: 58,
-              borderRadius: 3.5,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-              color: "common.white",
-              backgroundImage:
-                "linear-gradient(135deg, #7c6cff 0%, #4f8cff 55%, #2bc8ff 100%)",
-              boxShadow: (theme) =>
-                `0 18px 32px ${alpha(theme.palette.primary.main, 0.26)}, inset 0 1px 0 ${alpha(theme.palette.common.white, 0.34)}`,
-              "&::after": {
-                content: '""',
-                position: "absolute",
-                inset: -8,
-                borderRadius: "inherit",
-                background: (theme) =>
-                  `radial-gradient(circle, ${alpha(theme.palette.primary.main, 0.2)} 0%, transparent 72%)`,
-                zIndex: -1,
+            sx={[
+              {
+                width: 58,
+                height: 58,
+                borderRadius: 3.5,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                color: "common.white",
+                backgroundImage:
+                  "linear-gradient(135deg, #7c6cff 0%, #4f8cff 55%, #2bc8ff 100%)",
+                boxShadow: (theme) =>
+                  `0 18px 32px ${alpha(theme.palette.primary.main, 0.26)}, inset 0 1px 0 ${alpha(theme.palette.common.white, 0.34)}`,
+                "&::after": {
+                  content: '""',
+                  position: "absolute",
+                  inset: -8,
+                  borderRadius: "inherit",
+                  background: (theme) =>
+                    `radial-gradient(circle, ${alpha(theme.palette.primary.main, 0.2)} 0%, transparent 72%)`,
+                  zIndex: -1,
+                },
+                position: "relative",
+                "& .MuiSvgIcon-root": {
+                  fontSize: 28,
+                },
               },
-              position: "relative",
-              "& .MuiSvgIcon-root": {
-                fontSize: 28,
-              },
-            }}
+              ...(Array.isArray(iconContainerSx)
+                ? iconContainerSx
+                : iconContainerSx
+                  ? [iconContainerSx]
+                  : []),
+            ]}
           >
             {icon}
           </Box>
