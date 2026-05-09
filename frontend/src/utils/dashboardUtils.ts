@@ -143,6 +143,13 @@ const ERROR_CODE_TRANSLATIONS: Record<string, string> = {
   INVITATION_LIMIT_REACHED: "Ten link osiągnął limit użyć.",
   INVITATION_INACTIVE: "Ten link zaproszenia nie jest już aktywny.",
   INVITATION_ACCESS_DENIED: "Brak dostępu do tego zaproszenia.",
+  EMAIL_VERIFICATION_TOKEN_INVALID: "Link weryfikacyjny jest nieprawidłowy.",
+  EMAIL_VERIFICATION_TOKEN_EXPIRED: "Link weryfikacyjny wygasł.",
+  EMAIL_VERIFICATION_TOKEN_USED: "Ten link weryfikacyjny został już użyty.",
+  EMAIL_ALREADY_VERIFIED: "Adres email został już potwierdzony.",
+  EMAIL_VERIFICATION_REQUIRED: "Potwierdź adres email, aby aktywować konto.",
+  EMAIL_VERIFICATION_NOT_PENDING:
+    "To konto nie oczekuje już na weryfikację emaila.",
 };
 
 function translateValidationMessage(

@@ -40,9 +40,10 @@ export interface TeacherStats {
 
 export interface TeacherStudentResponse {
   publicId: string;
-  username: string;
+  username: string | null;
   email: string;
   role: string;
+  status: "ACTIVE" | "INVITED" | "EMAIL_VERIFICATION_PENDING";
   createdAt: string;
   groupPublicId: string;
   avatarUrl?: string | null;
@@ -69,9 +70,7 @@ export interface LessonStatsResponse {
 export type { LessonResultDetailsResponse };
 
 export interface CreateTeacherStudentRequest {
-  username: string;
   email: string;
-  password: string;
   groupPublicId: string;
 }
 
@@ -168,6 +167,17 @@ export const lessonService = {
     fetchApi<TeacherStudentStatsResponse>(
       `/api/v1/teacher/students/${studentPublicId}/stats`,
     ),
+  resendTeacherStudentInvite: (studentPublicId: string) =>
+    fetchApi<void>(
+      `/api/v1/teacher/students/${studentPublicId}/resend-invite`,
+      {
+        method: "POST",
+      },
+    ),
+  cancelTeacherStudentInvitation: (studentPublicId: string) =>
+    fetchApi<void>(`/api/v1/teacher/students/${studentPublicId}`, {
+      method: "DELETE",
+    }),
   resetStudentLessonProgress: (lessonPublicId: string, userPublicId: string) =>
     fetchApi<void>(
       `/api/v1/lessons/${lessonPublicId}/users/${userPublicId}/reset`,

@@ -23,10 +23,10 @@ public class User {
 	@Column(nullable = false, unique = true)
 	private String email;
 
-	@Column(nullable = false)
+	@Column
 	private String username;
 
-	@Column(nullable = false)
+	@Column
 	private String password;
 
 	@Column(name = "token_version", nullable = false)
@@ -36,6 +36,11 @@ public class User {
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
 	private Role role;
+
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false)
+	@Builder.Default
+	private UserStatus status = UserStatus.ACTIVE;
 
 	@Column(name = "created_at", insertable = false, updatable = false)
 	private LocalDateTime createdAt;

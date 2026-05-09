@@ -33,6 +33,7 @@ import {
   EmailOutlined as EmailIcon,
   ExpandMoreOutlined as ExpandMoreIcon,
   GroupOutlined as GroupIcon,
+  HourglassEmptyOutlined as PendingIcon,
   PersonOutlined as PersonIcon,
   PersonAddOutlined as PersonAddIcon,
   RefreshOutlined as RefreshIcon,
@@ -40,6 +41,8 @@ import {
   SearchOutlined as SearchIcon,
   SchoolOutlined as SchoolIcon,
   LockResetOutlined as LockResetIcon,
+  SendOutlined as SendIcon,
+  CancelOutlined as CancelIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { ApiError } from "@/api/apiClient";
@@ -113,10 +116,8 @@ const counterFieldSx = {
 } as const;
 
 const emptyStudentDraft = {
-  username: "",
   email: "",
   emailConfirm: "",
-  password: "",
   groupPublicId: "" as string | "",
 };
 
@@ -250,9 +251,11 @@ export function TeacherStudentsView() {
           group.publicId,
         ].some((value) => value.toLowerCase().includes(query));
         const matchingStudents = group.students.filter((student) =>
-          [student.username, student.email, String(student.publicId)].some(
-            (value) => value.toLowerCase().includes(query),
-          ),
+          [
+            student.username ?? "",
+            student.email,
+            String(student.publicId),
+          ].some((value) => value.toLowerCase().includes(query)),
         );
 
         return {
@@ -283,14 +286,10 @@ export function TeacherStudentsView() {
 
   const submitCreateStudent = async () => {
     if (createStudentLoading) return;
-    if (
-      !createStudentDraft.username.trim() ||
-      !createStudentDraft.email.trim() ||
-      !createStudentDraft.password.trim()
-    ) {
+    if (!createStudentDraft.email.trim()) {
       setCreateStudentFeedback({
         severity: "error",
-        message: "Wypełnij wszystkie pola formularza.",
+        message: "Podaj adres e-mail ucznia.",
       });
       return;
     }
@@ -313,21 +312,23 @@ export function TeacherStudentsView() {
     setCreateStudentLoading(true);
     try {
       await lessonService.createTeacherStudent({
-        username: createStudentDraft.username.trim(),
         email: createStudentDraft.email.trim(),
-        password: createStudentDraft.password.trim(),
         groupPublicId: createStudentDraft.groupPublicId,
       });
       setCreateStudentFeedback({
         severity: "success",
-        message: "Uczeń został dodany.",
+        message:
+          "Zaproszenie wysłane. Uczeń aktywuje konto przez link w e-mailu.",
       });
       await fetchData();
-      window.setTimeout(() => closeCreateStudentDialog(), 700);
+      window.setTimeout(() => closeCreateStudentDialog(), 1500);
     } catch (error) {
       setCreateStudentFeedback({
         severity: "error",
-        message: getOperationErrorMessage(error, "Nie udało się dodać ucznia."),
+        message: getOperationErrorMessage(
+          error,
+          "Nie udało się zaprosić ucznia.",
+        ),
       });
     } finally {
       setCreateStudentLoading(false);
@@ -337,7 +338,7 @@ export function TeacherStudentsView() {
   const openEditStudentDialog = (student: TeacherStudentResponse) => {
     seteditingStudent(student);
     setEditStudentDraft({
-      username: student.username,
+      username: student.username ?? "",
       email: student.email,
       emailConfirm: student.email,
       groupPublicId: student.groupPublicId,
@@ -429,6 +430,55 @@ export function TeacherStudentsView() {
     setCreateGroupDraft(emptyGroupDraft);
     setCreateGroupFeedback(null);
     setCreateGroupOpen(true);
+  };
+
+  const resendStudentInvite = async (student: TeacherStudentResponse) => {
+    try {
+      await lessonService.resendTeacherStudentInvite(student.publicId);
+      setPageFeedback({
+        severity: "success",
+        message: `Zaproszenie ponownie wysłane na ${student.email}.`,
+      });
+    } catch (error) {
+      setPageFeedback({
+        severity: "error",
+        message: getOperationErrorMessage(
+          error,
+          "Nie udało się wysłać zaproszenia.",
+        ),
+      });
+    }
+  };
+
+  const [cancelInviteTarget, setCancelInviteTarget] =
+    useState<TeacherStudentResponse | null>(null);
+  const [cancelInviteLoading, setCancelInviteLoading] = useState(false);
+
+  const cancelStudentInvitation = async () => {
+    if (!cancelInviteTarget || cancelInviteLoading) return;
+    setCancelInviteLoading(true);
+    try {
+      await lessonService.cancelTeacherStudentInvitation(
+        cancelInviteTarget.publicId,
+      );
+      setCancelInviteTarget(null);
+      setPageFeedback({
+        severity: "success",
+        message: `Zaproszenie dla ${cancelInviteTarget.email} zostało anulowane.`,
+      });
+      await fetchData();
+    } catch (error) {
+      setPageFeedback({
+        severity: "error",
+        message: getOperationErrorMessage(
+          error,
+          "Nie udało się anulować zaproszenia.",
+        ),
+      });
+      setCancelInviteTarget(null);
+    } finally {
+      setCancelInviteLoading(false);
+    }
   };
 
   const closeCreateGroupDialog = () => {
@@ -550,7 +600,7 @@ export function TeacherStudentsView() {
 
     try {
       await lessonService.updateTeacherStudent(student.publicId, {
-        username: student.username,
+        username: student.username ?? "",
         email: student.email,
         groupPublicId: targetGroupPublicId,
       });
@@ -951,18 +1001,45 @@ export function TeacherStudentsView() {
                                 />
                                 <UserAvatar
                                   avatarUrl={student.avatarUrl}
-                                  username={student.username}
+                                  username={student.username ?? student.email}
                                   size={32}
                                   sx={{ flexShrink: 0 }}
                                 />
                                 <Box sx={{ minWidth: 0 }}>
-                                  <Typography
-                                    variant="body1"
-                                    fontWeight={700}
-                                    sx={{ overflowWrap: "anywhere" }}
+                                  <Stack
+                                    direction="row"
+                                    spacing={1}
+                                    alignItems="center"
                                   >
-                                    {student.username}
-                                  </Typography>
+                                    <Typography
+                                      variant="body1"
+                                      fontWeight={700}
+                                      sx={{ overflowWrap: "anywhere" }}
+                                    >
+                                      {student.username ?? "(oczekuje)"}
+                                    </Typography>
+                                    {student.status === "INVITED" && (
+                                      <Chip
+                                        label="Zaproszony"
+                                        size="small"
+                                        icon={<PendingIcon />}
+                                        color="warning"
+                                        variant="outlined"
+                                        sx={{ height: 20, fontSize: "0.65rem" }}
+                                      />
+                                    )}
+                                    {student.status ===
+                                      "EMAIL_VERIFICATION_PENDING" && (
+                                      <Chip
+                                        label="Czeka na email"
+                                        size="small"
+                                        icon={<PendingIcon />}
+                                        color="info"
+                                        variant="outlined"
+                                        sx={{ height: 20, fontSize: "0.65rem" }}
+                                      />
+                                    )}
+                                  </Stack>
                                   <Stack
                                     direction="row"
                                     spacing={0.5}
@@ -993,6 +1070,34 @@ export function TeacherStudentsView() {
                                 sx={{ flexShrink: 0 }}
                               >
                                 {isMoving && <CircularProgress size={18} />}
+                                {student.status === "INVITED" && (
+                                  <>
+                                    <IconButton
+                                      aria-label="Wyślij ponownie zaproszenie"
+                                      size="small"
+                                      color="warning"
+                                      onClick={() =>
+                                        resendStudentInvite(student)
+                                      }
+                                      disabled={isMoving}
+                                      title="Wyślij ponownie zaproszenie"
+                                    >
+                                      <SendIcon fontSize="small" />
+                                    </IconButton>
+                                    <IconButton
+                                      aria-label="Anuluj zaproszenie"
+                                      size="small"
+                                      color="error"
+                                      onClick={() =>
+                                        setCancelInviteTarget(student)
+                                      }
+                                      disabled={isMoving}
+                                      title="Anuluj zaproszenie i usuń konto"
+                                    >
+                                      <CancelIcon fontSize="small" />
+                                    </IconButton>
+                                  </>
+                                )}
                                 <IconButton
                                   aria-label="Profil ucznia"
                                   size="small"
@@ -1010,7 +1115,9 @@ export function TeacherStudentsView() {
                                   size="small"
                                   color="primary"
                                   onClick={() => openEditStudentDialog(student)}
-                                  disabled={isMoving}
+                                  disabled={
+                                    isMoving || student.status === "INVITED"
+                                  }
                                 >
                                   <EditIcon fontSize="small" />
                                 </IconButton>
@@ -1045,8 +1152,8 @@ export function TeacherStudentsView() {
         >
           <AppDialogHeader
             icon={<PersonAddIcon />}
-            title="Dodaj ucznia"
-            subtitle="Utworzenie konta ucznia i przypisanie do grupy."
+            title="Zaproś ucznia"
+            subtitle="Wyślij zaproszenie e-mail. Uczeń sam ustawi nazwę i hasło."
           />
           <AppDialogBody>
             {createStudentFeedback && (
@@ -1062,44 +1169,6 @@ export function TeacherStudentsView() {
                 overflow: "hidden",
               }}
             >
-              <Box
-                sx={{
-                  px: 2,
-                  py: 1.5,
-                  borderBottom: "1px solid",
-                  borderColor: "divider",
-                }}
-              >
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  display="block"
-                  sx={{ mb: 0.75 }}
-                >
-                  Nazwa użytkownika
-                </Typography>
-                <TextField
-                  name="teacher-create-student-username"
-                  autoComplete="off"
-                  value={createStudentDraft.username}
-                  onChange={(event) =>
-                    setCreateStudentDraft((draft) => ({
-                      ...draft,
-                      username: event.target.value.slice(
-                        0,
-                        INPUT_LIMITS.username,
-                      ),
-                    }))
-                  }
-                  inputProps={{ maxLength: INPUT_LIMITS.username }}
-                  helperText={`${createStudentDraft.username.length}/${INPUT_LIMITS.username}`}
-                  sx={counterFieldSx}
-                  fullWidth
-                  size="small"
-                  disabled={createStudentLoading}
-                  placeholder="Wprowadź nazwę użytkownika"
-                />
-              </Box>
               <Box
                 sx={{
                   px: 2,
@@ -1174,38 +1243,6 @@ export function TeacherStudentsView() {
                       ? "Adresy e-mail nie są zgodne"
                       : undefined
                   }
-                />
-              </Box>
-              <Box
-                sx={{
-                  px: 2,
-                  py: 1.5,
-                  borderBottom: "1px solid",
-                  borderColor: "divider",
-                }}
-              >
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  display="block"
-                  sx={{ mb: 0.75 }}
-                >
-                  Hasło
-                </Typography>
-                <TextField
-                  name="teacher-create-student-password"
-                  autoComplete="new-password"
-                  type="password"
-                  value={createStudentDraft.password}
-                  onChange={(event) =>
-                    setCreateStudentDraft((draft) => ({
-                      ...draft,
-                      password: event.target.value,
-                    }))
-                  }
-                  fullWidth
-                  size="small"
-                  disabled={createStudentLoading}
                 />
               </Box>
               <Box sx={{ px: 2, py: 1.5 }}>
@@ -2236,6 +2273,42 @@ export function TeacherStudentsView() {
                 sx={buttonSx}
               >
                 Utwórz grupę
+              </Button>
+            </FormActions>
+          </AppDialogFooter>
+        </AppDialog>
+
+        <AppDialog
+          open={cancelInviteTarget !== null}
+          onClose={() => {
+            if (!cancelInviteLoading) setCancelInviteTarget(null);
+          }}
+          maxWidth="xs"
+          paperSx={{ width: { xs: "calc(100% - 24px)", sm: 440 } }}
+        >
+          <AppDialogHeader
+            icon={<CancelIcon />}
+            title="Anuluj zaproszenie"
+            subtitle={`Konto ${cancelInviteTarget?.email ?? ""} zostanie trwale usunięte, a link aktywacyjny straci ważność.`}
+          />
+          <AppDialogFooter>
+            <FormActions>
+              <Button
+                onClick={() => setCancelInviteTarget(null)}
+                disabled={cancelInviteLoading}
+                sx={{ ...buttonSx, color: "text.secondary" }}
+              >
+                Wróć
+              </Button>
+              <Button
+                variant="contained"
+                color="error"
+                onClick={cancelStudentInvitation}
+                disabled={cancelInviteLoading}
+                startIcon={<CancelIcon />}
+                sx={buttonSx}
+              >
+                Anuluj zaproszenie
               </Button>
             </FormActions>
           </AppDialogFooter>

@@ -6,12 +6,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
+import pl.freeedu.backend.accountinvitation.service.AccountActivationService;
 import pl.freeedu.backend.lesson.dto.LessonResponse;
 import pl.freeedu.backend.lesson.exception.LessonErrorCode;
 import pl.freeedu.backend.lesson.exception.LessonException;
@@ -32,6 +32,7 @@ import pl.freeedu.backend.user.exception.UserErrorCode;
 import pl.freeedu.backend.user.exception.UserException;
 import pl.freeedu.backend.user.model.Role;
 import pl.freeedu.backend.user.model.User;
+import pl.freeedu.backend.user.model.UserStatus;
 import pl.freeedu.backend.user.repository.UserRepository;
 import pl.freeedu.backend.user.service.UserMapper;
 import pl.freeedu.backend.usergroup.model.UserGroup;
@@ -86,6 +87,9 @@ class TeacherServiceTest {
 
 	@Mock
 	private UserGroupPublicIdLookupService userGroupPublicIdLookupService;
+
+	@Mock
+	private AccountActivationService accountActivationService;
 
 	@InjectMocks
 	private TeacherService teacherService;
@@ -168,21 +172,17 @@ class TeacherServiceTest {
 	@Test
 	void shouldCreateStudentSucceed() {
 		// given
-		TeacherCreateStudentRequest req = TeacherCreateStudentRequest.builder().email("s@e.com").username("s")
-				.password("p").groupPublicId("group-public-id").build();
+		TeacherCreateStudentRequest req = TeacherCreateStudentRequest.builder().email("s@e.com")
+				.groupPublicId("group-public-id").build();
 		UserGroup group = UserGroup.builder().id(5).publicId("group-public-id").teacherId(10).build();
+		User savedStudent = User.builder().id(1).publicId("pub-1").email("s@e.com").role(Role.STUDENT)
+				.status(UserStatus.INVITED).build();
 
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
-		when(userRepository.existsByEmail(any())).thenReturn(false);
-		when(userRepository.existsByUsername(any())).thenReturn(false);
+		when(userRepository.existsByEmail("s@e.com")).thenReturn(false);
 		when(userGroupPublicIdLookupService.getRequiredGroup("group-public-id")).thenReturn(group);
-		when(passwordEncoder.encode("p")).thenReturn("enc");
-		when(userRepository.save(any())).thenAnswer(inv -> {
-			User u = inv.getArgument(0);
-			u.setId(1);
-			u.setPublicId("pub-1");
-			return u;
-		});
+		when(accountActivationService.createInvitedUser("s@e.com")).thenReturn("plain-token");
+		when(userRepository.findByEmail("s@e.com")).thenReturn(Optional.of(savedStudent));
 
 		// when
 		Mono<TeacherStudentResponse> result = teacherService.createStudent(Mono.just(req));
@@ -190,26 +190,20 @@ class TeacherServiceTest {
 		// then
 		StepVerifier.create(result).assertNext(resp -> {
 			assertEquals("pub-1", resp.getPublicId());
-			assertEquals("s", resp.getUsername());
+			assertNull(resp.getUsername());
 			assertEquals("group-public-id", resp.getGroupPublicId());
 			verify(userInGroupRepository).save(any());
 		}).verifyComplete();
 	}
 
 	@Test
-	void shouldHandleDataIntegrityViolationOnCreate() {
+	void shouldRejectCreateStudentWhenEmailTaken() {
 		// given
-		TeacherCreateStudentRequest req = TeacherCreateStudentRequest.builder().email("s@e.com").username("s")
+		TeacherCreateStudentRequest req = TeacherCreateStudentRequest.builder().email("s@e.com")
 				.groupPublicId("group-public-id").build();
-		UserGroup group = UserGroup.builder().id(5).publicId("group-public-id").teacherId(10).build();
 
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
-		when(userGroupPublicIdLookupService.getRequiredGroup("group-public-id")).thenReturn(group);
-		when(userRepository.save(any())).thenThrow(new DataIntegrityViolationException("Duplicate"));
-
-		// First call returns false (pass through), second call (in catch) returns true
-		when(userRepository.existsByEmail("s@e.com")).thenReturn(false, true);
-		when(userRepository.existsByUsername("s")).thenReturn(false);
+		when(userRepository.existsByEmail("s@e.com")).thenReturn(true);
 
 		// when
 		Mono<TeacherStudentResponse> result = teacherService.createStudent(Mono.just(req));
@@ -296,6 +290,7 @@ class TeacherServiceTest {
 		when(proj.getCreatedAt()).thenReturn(null);
 		when(proj.getGroupPublicId()).thenReturn("group-public-id");
 		when(proj.getAvatarUrl()).thenReturn("preset:avatar_3");
+		when(proj.getStatus()).thenReturn(UserStatus.ACTIVE);
 		when(userRepository.findStudentsWithGroupByTeacherId(10, Role.STUDENT)).thenReturn(List.of(proj));
 
 		// when

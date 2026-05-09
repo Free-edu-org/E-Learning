@@ -36,15 +36,13 @@ Authorization: Bearer {{teacher_token}}
 GET http://localhost:8080/api/v1/teacher/students
 Authorization: Bearer {{teacher_token}}
 
-### Create student in teacher's own group (Requires TEACHER, groupPublicId mandatory)
+### Create student in teacher's own group — sends invitation email (Requires TEACHER, groupPublicId mandatory)
 POST http://localhost:8080/api/v1/teacher/students
 Authorization: Bearer {{teacher_token}}
 Content-Type: application/json
 
 {
-  "username": "teacher_created_student",
   "email": "teacher.created@example.com",
-  "password": "password123",
   "groupPublicId": "{{group_public_id}}"
 }
 
@@ -54,9 +52,7 @@ Authorization: Bearer {{teacher_token}}
 Content-Type: application/json
 
 {
-  "username": "teacher_no_group",
-  "email": "teacher.nogroup@example.com",
-  "password": "password123"
+  "email": "teacher.nogroup@example.com"
 }
 
 ### Create student - forbidden (ADMIN token -> 403)
@@ -65,11 +61,17 @@ Authorization: Bearer {{admin_token}}
 Content-Type: application/json
 
 {
-  "username": "admin_attempt",
   "email": "admin.attempt@example.com",
-  "password": "password123",
   "groupPublicId": "{{group_public_id}}"
 }
+
+### Resend invitation to INVITED student (Teacher)
+POST http://localhost:8080/api/v1/teacher/students/{{student_public_id}}/resend-invite
+Authorization: Bearer {{teacher_token}}
+
+### Resend invitation - student not owned (403 Forbidden)
+POST http://localhost:8080/api/v1/teacher/students/{{unauthorized_student_public_id}}/resend-invite
+Authorization: Bearer {{teacher_token}}
 
 ### Update student in teacher's own group (Requires TEACHER, groupPublicId mandatory)
 PUT http://localhost:8080/api/v1/teacher/students/{{student_public_id}}

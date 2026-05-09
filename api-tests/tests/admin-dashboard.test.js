@@ -125,22 +125,13 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
         it('should create student WITHOUT groupPublicId for ADMIN (201)', async () => {
             setAuthToken(adminToken);
             const response = await apiClient.post('/admin/students', {
-                email: `admin.student.nogroup.${uniqueId}@example.com`,
-                username: `admin_student_nogroup_${uniqueId}`,
-                password: 'password123'
+                email: `admin.student.nogroup.${uniqueId}@example.com`
             });
 
             expect(response.status).toBe(201);
             expect(response.data.role).toBe('STUDENT');
+            expect(response.data.status).toBe('INVITED');
             createdStudentPublicId = response.data.publicId;
-
-            // Verify student can login
-            setAuthToken(null);
-            const loginResponse = await apiClient.post('/auth/login', {
-                identifier: `admin_student_nogroup_${uniqueId}`,
-                password: 'password123'
-            });
-            expect(loginResponse.status).toBe(200);
         });
 
         it('should create student WITH groupPublicId for ADMIN (201)', async () => {
@@ -152,8 +143,6 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
 
             const response = await apiClient.post('/admin/students', {
                 email: `admin.student.grp.${uniqueId}@example.com`,
-                username: `admin_student_grp_${uniqueId}`,
-                password: 'password123',
                 groupPublicId: seedGroupPublicId
             });
 
@@ -166,8 +155,6 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
             setAuthToken(adminToken);
             const response = await apiClient.post('/admin/students', {
                 email: `admin.student.badgrp.${uniqueId}@example.com`,
-                username: `admin_student_badgrp_${uniqueId}`,
-                password: 'password123',
                 groupPublicId: 'missing-group-public-id'
             });
             expect(response.status).toBe(404);
@@ -177,23 +164,10 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
         it('should return 409 for EMAIL_ALREADY_TAKEN', async () => {
             setAuthToken(adminToken);
             const response = await apiClient.post('/admin/students', {
-                email: `admin.student.grp.${uniqueId}@example.com`, // same email as created student
-                username: `admin_student_dup_${uniqueId}`,
-                password: 'password123'
+                email: `admin.student.grp.${uniqueId}@example.com` // same email as created student
             });
             expect(response.status).toBe(409);
             expect(response.data.code).toBe('EMAIL_ALREADY_TAKEN');
-        });
-
-        it('should return 409 for USERNAME_ALREADY_TAKEN', async () => {
-            setAuthToken(adminToken);
-            const response = await apiClient.post('/admin/students', {
-                email: `admin.student.dup2.${uniqueId}@example.com`,
-                username: `admin_student_grp_${uniqueId}`, // same username as created student
-                password: 'password123'
-            });
-            expect(response.status).toBe(409);
-            expect(response.data.code).toBe('USERNAME_ALREADY_TAKEN');
         });
 
         it('should return 400 for VALIDATION_FAILED (missing fields)', async () => {

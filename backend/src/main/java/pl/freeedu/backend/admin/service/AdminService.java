@@ -1,9 +1,9 @@
 package pl.freeedu.backend.admin.service;
 
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
+import pl.freeedu.backend.accountinvitation.service.AccountActivationService;
 import pl.freeedu.backend.admin.dto.AdminCreateStudentRequest;
 import pl.freeedu.backend.admin.dto.AdminStudentResponse;
 import pl.freeedu.backend.admin.dto.AdminStatsResponse;
@@ -40,9 +40,12 @@ public class AdminService {
 	private final TransactionTemplate transactionTemplate;
 	private final UserGroupPublicIdLookupService userGroupPublicIdLookupService;
 
+	private final AccountActivationService accountActivationService;
+
 	public AdminService(UserRepository userRepository, UserGroupRepository userGroupRepository,
 			UserInGroupRepository userInGroupRepository, UserMapper userMapper, PasswordEncoder passwordEncoder,
-			TransactionTemplate transactionTemplate, UserGroupPublicIdLookupService userGroupPublicIdLookupService) {
+			TransactionTemplate transactionTemplate, UserGroupPublicIdLookupService userGroupPublicIdLookupService,
+			AccountActivationService accountActivationService) {
 		this.userRepository = userRepository;
 		this.userGroupRepository = userGroupRepository;
 		this.userInGroupRepository = userInGroupRepository;
@@ -50,6 +53,7 @@ public class AdminService {
 		this.passwordEncoder = passwordEncoder;
 		this.transactionTemplate = transactionTemplate;
 		this.userGroupPublicIdLookupService = userGroupPublicIdLookupService;
+		this.accountActivationService = accountActivationService;
 	}
 
 	public Mono<AdminStatsResponse> getStats() {
@@ -79,14 +83,10 @@ public class AdminService {
 
 	public Mono<AdminStudentResponse> createStudent(AdminCreateStudentRequest request) {
 		return Mono.fromCallable(() -> transactionTemplate.execute(status -> {
-			log.info("Admin creating new student account: '{}'", request.getUsername());
+			log.info("Admin inviting new student account via email: '{}'", request.getEmail());
 			if (userRepository.existsByEmail(request.getEmail())) {
 				log.warn("Student creation failed: Email already taken");
 				throw new UserException(UserErrorCode.EMAIL_ALREADY_TAKEN);
-			}
-			if (userRepository.existsByUsername(request.getUsername())) {
-				log.warn("Student creation failed: Username already taken");
-				throw new UserException(UserErrorCode.USERNAME_ALREADY_TAKEN);
 			}
 
 			UserGroup group = null;
@@ -94,33 +94,30 @@ public class AdminService {
 				group = userGroupPublicIdLookupService.getRequiredGroup(request.getGroupPublicId());
 			}
 
-			User student = User.builder().email(request.getEmail()).username(request.getUsername())
-					.password(passwordEncoder.encode(request.getPassword())).role(Role.STUDENT).build();
+			String plainToken = accountActivationService.createInvitedUser(request.getEmail());
+			User savedStudent = userRepository.findByEmail(request.getEmail())
+					.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 
-			try {
-				User savedStudent = userRepository.save(student);
-				if (group != null) {
-					log.debug("Linking new student ID: {} to group ID: {}", savedStudent.getId(), group.getId());
-					userInGroupRepository
-							.save(UserInGroup.builder().userId(savedStudent.getId()).groupId(group.getId()).build());
-				}
-				log.info("Student account created successfully by admin. Student ID: {}", savedStudent.getId());
-				return AdminStudentResponse.builder().publicId(savedStudent.getPublicId())
-						.email(savedStudent.getEmail()).username(savedStudent.getUsername())
-						.role(savedStudent.getRole()).groupPublicId(group != null ? group.getPublicId() : null)
-						.groupName(group != null ? group.getName() : null).createdAt(savedStudent.getCreatedAt())
-						.avatarUrl(savedStudent.getAvatarUrl()).build();
-			} catch (DataIntegrityViolationException ex) {
-				log.warn("Student creation failed: Data integrity violation");
-				if (userRepository.existsByEmail(request.getEmail())) {
-					throw new UserException(UserErrorCode.EMAIL_ALREADY_TAKEN);
-				}
-				if (userRepository.existsByUsername(request.getUsername())) {
-					throw new UserException(UserErrorCode.USERNAME_ALREADY_TAKEN);
-				}
-				throw ex;
+			if (group != null) {
+				log.debug("Linking invited student ID: {} to group ID: {}", savedStudent.getId(), group.getId());
+				userInGroupRepository
+						.save(UserInGroup.builder().userId(savedStudent.getId()).groupId(group.getId()).build());
 			}
+
+			accountActivationService.sendInvitationEmail(savedStudent.getEmail(), plainToken);
+			log.info("Student invitation sent by admin. Student ID: {}", savedStudent.getId());
+
+			final UserGroup finalGroup = group;
+			return AdminStudentResponse.builder().publicId(savedStudent.getPublicId()).email(savedStudent.getEmail())
+					.username(savedStudent.getUsername()).role(savedStudent.getRole()).status(savedStudent.getStatus())
+					.groupPublicId(finalGroup != null ? finalGroup.getPublicId() : null)
+					.groupName(finalGroup != null ? finalGroup.getName() : null).createdAt(savedStudent.getCreatedAt())
+					.avatarUrl(savedStudent.getAvatarUrl()).build();
 		})).subscribeOn(Schedulers.boundedElastic());
+	}
+
+	public Mono<Void> resendInvite(Integer studentId) {
+		return accountActivationService.resendInvite(studentId);
 	}
 
 	public Mono<AdminStudentResponse> updateStudent(Integer id, AdminUpdateStudentRequest request) {
@@ -139,7 +136,7 @@ public class AdminService {
 				log.warn("Student update failed: New email already taken");
 				throw new UserException(UserErrorCode.EMAIL_ALREADY_TAKEN);
 			}
-			if (!student.getUsername().equals(request.getUsername())
+			if (!java.util.Objects.equals(student.getUsername(), request.getUsername()) && request.getUsername() != null
 					&& userRepository.existsByUsername(request.getUsername())) {
 				log.warn("Student update failed: New username already taken");
 				throw new UserException(UserErrorCode.USERNAME_ALREADY_TAKEN);
@@ -198,7 +195,7 @@ public class AdminService {
 		UserGroup group = groupId != null ? groupMap.get(groupId) : null;
 
 		return AdminStudentResponse.builder().publicId(student.getPublicId()).email(student.getEmail())
-				.username(student.getUsername()).role(student.getRole())
+				.username(student.getUsername()).role(student.getRole()).status(student.getStatus())
 				.groupPublicId(group != null ? group.getPublicId() : null)
 				.groupName(group != null ? group.getName() : null).createdAt(student.getCreatedAt())
 				.avatarUrl(student.getAvatarUrl()).build();

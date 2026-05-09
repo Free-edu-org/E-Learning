@@ -54,24 +54,27 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
         secondTeacherPublicId = res.data.publicId;
 
         // Create a group for the lesson
-        setAuthToken(adminToken);
+        setAuthToken(teacherToken);
         res = await apiClient.post('/user-groups', { name: `Task Group ${uniqueId}`, description: 'Group for task hint image tests' });
         groupPublicId = res.data.publicId;
 
-        // Create dedicated student in that group
-        const dedicatedStudent = {
+        // Create dedicated student in that group (must be ACTIVE to login)
+        setAuthToken(adminToken);
+        res = await apiClient.post('/users/register', {
             email: `task.student.${uniqueId}@example.com`,
             username: `task_student_${uniqueId}`,
-            password: 'password123',
-            groupPublicId: groupPublicId
-        };
-        res = await apiClient.post('/admin/students', dedicatedStudent);
-        dedicatedStudentPublicId = res.data.publicId;
+            password: 'password123'
+        });
         res = await apiClient.post('/auth/login', {
-            identifier: dedicatedStudent.username,
-            password: dedicatedStudent.password
+            identifier: `task_student_${uniqueId}`,
+            password: 'password123'
         });
         dedicatedStudentToken = res.data.token;
+        setAuthToken(dedicatedStudentToken);
+        res = await apiClient.get('/users/me');
+        dedicatedStudentPublicId = res.data.publicId;
+        setAuthToken(teacherToken);
+        await apiClient.post(`/user-groups/${groupPublicId}/members/${dedicatedStudentPublicId}`);
 
         // Create lesson as teacher with the group assigned
         setAuthToken(teacherToken);

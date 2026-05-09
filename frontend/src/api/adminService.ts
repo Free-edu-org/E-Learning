@@ -52,9 +52,7 @@ export interface SetAchievementActiveRequest {
 }
 
 export interface AdminCreateStudentRequest {
-  username: string;
   email: string;
-  password: string;
   groupPublicId: string | null;
 }
 
@@ -67,6 +65,7 @@ export interface AdminUpdateStudentRequest {
 export interface AdminStudentProfile extends UserProfile {
   groupPublicId?: string | null;
   groupName?: string | null;
+  status?: "ACTIVE" | "INVITED" | "EMAIL_VERIFICATION_PENDING";
 }
 
 export const adminService = {
@@ -101,5 +100,9 @@ export const adminService = {
     fetchApi<AdminStudentProfile>(`/api/v1/admin/students/${publicId}`, {
       method: "PUT",
       body: JSON.stringify(payload),
+    }),
+  resendStudentInvite: (studentPublicId: string) =>
+    fetchApi<void>(`/api/v1/admin/students/${studentPublicId}/resend-invite`, {
+      method: "POST",
     }),
 };

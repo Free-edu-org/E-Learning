@@ -103,4 +103,15 @@ public class AdminDashboardController {
 		return userPublicIdLookupService.getInternalId(studentPublicId)
 				.flatMap(id -> request.flatMap(payload -> adminService.updateStudent(id, payload)));
 	}
+
+	@Operation(summary = "Resend invitation email to a pending student")
+	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Invitation resent successfully"),
+			@ApiResponse(responseCode = "404", description = "Not Found - USER_NOT_FOUND", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "409", description = "Account is already active", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
+	@PostMapping("/students/{studentPublicId}/resend-invite")
+	@PreAuthorize("hasRole('ADMIN')")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public Mono<Void> resendInvite(@PathVariable String studentPublicId) {
+		return userPublicIdLookupService.getInternalId(studentPublicId).flatMap(adminService::resendInvite);
+	}
 }

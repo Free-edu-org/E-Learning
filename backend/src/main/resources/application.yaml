@@ -56,6 +56,10 @@ application:
     from-name: "${MAIL_FROM_NAME:FreeEdu}"
   password-reset:
     expiration-minutes: "${PASSWORD_RESET_EXPIRATION_MINUTES:30}"
+  invitation:
+    expiration-hours: "${INVITATION_EXPIRATION_HOURS:72}"
+  email-verification:
+    expiration-hours: "${EMAIL_VERIFICATION_EXPIRATION_HOURS:24}"
   stt:
     base-url: "${STT_BASE_URL:http://localhost:8000}"
     min-score: "${STT_MIN_SCORE:0.85}"

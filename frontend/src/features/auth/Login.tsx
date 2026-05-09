@@ -180,7 +180,7 @@ export function Login() {
               gutterBottom
               color={theme.palette.text.primary}
             >
-              English Learning Platform
+              FreeEdu
             </Typography>
             <Typography variant="body2" color={theme.palette.text.secondary}>
               Zaloguj się, aby kontynuować

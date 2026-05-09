@@ -303,15 +303,14 @@ describe('Teacher Dashboard Access API (/api/v1/teacher/*)', () => {
             setAuthToken(teacherToken);
             const response = await apiClient.post('/teacher/students', {
                 email: `teacher.new.student.${uniqueId}@example.com`,
-                username: `teacher_new_student_${uniqueId}`,
-                password: 'password123',
                 groupPublicId: firstTeacherGroupPublicId
             });
 
             expect(response.status).toBe(201);
             expect(response.data.role).toBe('STUDENT');
             expect(response.data.email).toBe(`teacher.new.student.${uniqueId}@example.com`);
-            expect(response.data.username).toBe(`teacher_new_student_${uniqueId}`);
+            expect(response.data.username).toBeNull();
+            expect(response.data.status).toBe('INVITED');
             expect(response.data).toHaveProperty('publicId');
             expect(response.data).toHaveProperty('createdAt');
             expect(response.data).toHaveProperty('avatarUrl');
@@ -374,24 +373,10 @@ describe('Teacher Dashboard Access API (/api/v1/teacher/*)', () => {
             setAuthToken(teacherToken);
             const response = await apiClient.post('/teacher/students', {
                 email: `teacher.new.student.${uniqueId}@example.com`,
-                username: `teacher_dup_check_${uniqueId}`,
-                password: 'password123',
                 groupPublicId: firstTeacherGroupPublicId
             });
             expect(response.status).toBe(409);
             expect(response.data.code).toBe('EMAIL_ALREADY_TAKEN');
-        });
-
-        it('should return 409 for USERNAME_ALREADY_TAKEN', async () => {
-            setAuthToken(teacherToken);
-            const response = await apiClient.post('/teacher/students', {
-                email: `teacher.dup.username.${uniqueId}@example.com`,
-                username: `teacher_new_student_${uniqueId}`,
-                password: 'password123',
-                groupPublicId: firstTeacherGroupPublicId
-            });
-            expect(response.status).toBe(409);
-            expect(response.data.code).toBe('USERNAME_ALREADY_TAKEN');
         });
     });
 
@@ -402,8 +387,6 @@ describe('Teacher Dashboard Access API (/api/v1/teacher/*)', () => {
             setAuthToken(teacherToken);
             const res = await apiClient.post('/teacher/students', {
                 email: `teacher.upd.base.${uniqueId}@example.com`,
-                username: `teacher_upd_base_${uniqueId}`,
-                password: 'password123',
                 groupPublicId: firstTeacherGroupPublicId
             });
             expect(res.status).toBe(201);

@@ -19,6 +19,8 @@ import { ForgotPassword } from "./features/auth/ForgotPassword";
 import { Login } from "./features/auth/Login";
 import { RegisterWithInvitation } from "./features/auth/RegisterWithInvitation";
 import { ResetPassword } from "./features/auth/ResetPassword";
+import { AccountActivationPage } from "./features/auth/AccountActivationPage";
+import { EmailVerificationPage } from "./features/auth/EmailVerificationPage";
 import { TeacherDashboard } from "./features/teacher/TeacherDashboard";
 import { TeacherLessonCreateView } from "./features/teacher/TeacherLessonCreateView";
 import { TeacherLessonEditView } from "./features/teacher/TeacherLessonEditView";
@@ -95,7 +97,12 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/activate" element={<AccountActivationPage />} />
                 <Route path="/register" element={<RegisterWithInvitation />} />
+                <Route
+                  path="/verify-email"
+                  element={<EmailVerificationPage />}
+                />
 
                 <Route element={<ProtectedRoute />}>
                   <Route path="/" element={<RoleBasedRedirect />} />

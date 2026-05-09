@@ -101,3 +101,87 @@ Content-Type: application/json
   "newPassword": "",
   "confirmPassword": ""
 }
+
+### Validate invitation token (200 returns email)
+GET http://localhost:8080/api/v1/auth/invite/paste-token-from-email-here
+
+### Validate invitation token - invalid token (400 INVITATION_TOKEN_INVALID)
+GET http://localhost:8080/api/v1/auth/invite/invalid-token-value
+
+### Activate invited account
+POST http://localhost:8080/api/v1/auth/activate
+Content-Type: application/json
+
+{
+  "token": "paste-token-from-email-here",
+  "username": "new_student_username",
+  "password": "strongPassword123"
+}
+
+### Activate account - invalid token (400 INVITATION_TOKEN_INVALID)
+POST http://localhost:8080/api/v1/auth/activate
+Content-Type: application/json
+
+{
+  "token": "invalid-token",
+  "username": "new_student_username",
+  "password": "strongPassword123"
+}
+
+### Activate account - validation fail (400 VALIDATION_FAILED)
+POST http://localhost:8080/api/v1/auth/activate
+Content-Type: application/json
+
+{
+  "token": "",
+  "username": "",
+  "password": ""
+}
+
+### Login as INVITED account - blocked (401 ACCOUNT_NOT_ACTIVE)
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "identifier": "invited.student@example.com",
+  "password": "anyPassword"
+}
+
+### Get email verification token info
+GET http://localhost:8080/api/v1/auth/email-verification/paste-verification-token-here
+
+### Get email verification token info - invalid token (400 EMAIL_VERIFICATION_TOKEN_INVALID)
+GET http://localhost:8080/api/v1/auth/email-verification/invalid-token-value
+
+### Confirm email verification
+POST http://localhost:8080/api/v1/auth/email-verification/confirm
+Content-Type: application/json
+
+{
+  "token": "paste-verification-token-here"
+}
+
+### Confirm email verification - used token (400 EMAIL_VERIFICATION_TOKEN_USED)
+POST http://localhost:8080/api/v1/auth/email-verification/confirm
+Content-Type: application/json
+
+{
+  "token": "used-verification-token"
+}
+
+### Resend email verification
+POST http://localhost:8080/api/v1/auth/email-verification/resend
+Content-Type: application/json
+
+{
+  "email": "pending.student@example.com"
+}
+
+### Login as EMAIL_VERIFICATION_PENDING account - blocked (401 EMAIL_VERIFICATION_REQUIRED)
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "identifier": "pending.student@example.com",
+  "password": "anyPassword"
+}
