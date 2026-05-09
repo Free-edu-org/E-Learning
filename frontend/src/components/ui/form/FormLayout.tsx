@@ -43,34 +43,41 @@ export function FormSection({
     <Box
       sx={{
         display: "grid",
-        gap: 2,
-        px: 2.5,
-        py: 2,
+        gap: 2.25,
+        px: { xs: 2.25, sm: 2.75 },
+        py: { xs: 2.25, sm: 2.75 },
         borderRadius: uiTokens.radius.section,
-        bgcolor: "background.paper",
+        bgcolor: (theme) =>
+          theme.palette.mode === "light"
+            ? "rgba(255, 255, 255, 0.78)"
+            : "rgba(255, 255, 255, 0.03)",
         border: "1px solid",
-        borderColor: "divider",
+        borderColor: (theme) =>
+          theme.palette.mode === "light"
+            ? "rgba(148, 163, 184, 0.14)"
+            : "rgba(255, 255, 255, 0.06)",
+        backdropFilter: "blur(14px)",
         boxShadow: (theme) =>
           theme.palette.mode === "light"
-            ? "0 1px 3px rgba(15, 23, 42, 0.05)"
-            : "0 1px 3px rgba(0, 0, 0, 0.2)",
+            ? "0 16px 32px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255,255,255,0.6)"
+            : "0 12px 24px rgba(0, 0, 0, 0.18)",
       }}
     >
       {(title || description) && (
         <Box>
           {title && (
             <Typography
-              variant="subtitle2"
+              variant="subtitle1"
               fontWeight={700}
-              fontSize="0.82rem"
-              letterSpacing="0.02em"
-              sx={{ textTransform: "uppercase", color: "text.secondary" }}
+              fontSize="0.95rem"
+              letterSpacing="-0.01em"
+              sx={{ color: "text.primary" }}
             >
               {title}
             </Typography>
           )}
           {description && (
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75, lineHeight: 1.6 }}>
               {description}
             </Typography>
           )}
@@ -88,7 +95,7 @@ export function FormActions({ children }: { children: ReactNode }) {
       spacing={uiTokens.form.actionGap}
       justifyContent="flex-end"
       alignItems="center"
-      sx={{ width: "100%" }}
+      sx={{ width: "100%", flexWrap: "wrap", rowGap: 1 }}
     >
       {children}
     </Stack>

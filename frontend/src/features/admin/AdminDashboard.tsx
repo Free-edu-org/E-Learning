@@ -26,12 +26,16 @@ import {
 } from "@mui/material";
 import {
   AddCircleOutline as AddCircleIcon,
+  ArrowOutwardOutlined as ArrowOutwardIcon,
   AutoAwesomeOutlined as SparklesIcon,
+  CalendarMonthOutlined as CalendarIcon,
   CheckOutlined as CheckIcon,
   CloseOutlined as CloseIcon,
   CancelOutlined as CancelIcon,
   DeleteOutline as DeleteIcon,
   EditOutlined as EditIcon,
+  EmailOutlined as EmailIcon,
+  ExpandMoreOutlined as ExpandMoreIcon,
   GroupOutlined as GroupIcon,
   HourglassEmptyOutlined as PendingIcon,
   ListOutlined as ListIcon,
@@ -91,7 +95,6 @@ import {
   panelInlineActionsSx,
   panelListRowSx,
   panelSingleLineSx,
-  panelSurfaceActionSx,
   panelSurfaceSx,
   panelToolbarSx,
   panelTitleSx,
@@ -268,6 +271,141 @@ const toolbarFieldSx = {
   "& .MuiOutlinedInput-root": {
     borderRadius: 2,
     minHeight: 40,
+    bgcolor: (theme: Theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.common.white, 0.94)
+        : "#151a2c",
+    border: "1px solid",
+    borderColor: (theme: Theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.text.primary, 0.08)
+        : alpha(theme.palette.common.white, 0.06),
+    boxShadow: (theme: Theme) =>
+      theme.palette.mode === "light"
+        ? "0 1px 2px rgba(15, 23, 42, 0.03)"
+        : "inset 0 1px 0 rgba(255,255,255,0.02)",
+    transition:
+      "border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease",
+    "& fieldset": {
+      border: "none",
+    },
+    "&:hover": {
+      borderColor: (theme: Theme) =>
+        theme.palette.mode === "light"
+          ? alpha(theme.palette.primary.main, 0.18)
+          : alpha(theme.palette.common.white, 0.1),
+      bgcolor: (theme: Theme) =>
+        theme.palette.mode === "light"
+          ? theme.palette.common.white
+          : "#171d2f",
+    },
+    "&.Mui-focused": {
+      borderColor: (theme: Theme) =>
+        theme.palette.mode === "light"
+          ? alpha(theme.palette.primary.main, 0.28)
+          : alpha(theme.palette.primary.light, 0.2),
+      boxShadow: (theme: Theme) =>
+        theme.palette.mode === "light"
+          ? `0 0 0 3px ${alpha(theme.palette.primary.main, 0.08)}`
+          : `0 0 0 3px ${alpha(theme.palette.primary.light, 0.08)}`,
+    },
+  },
+  "& .MuiInputBase-input::placeholder": {
+    opacity: 1,
+    color: (theme: Theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.text.secondary, 0.92)
+        : alpha(theme.palette.common.white, 0.38),
+  },
+};
+
+const segmentedGroupSx = {
+  p: 0.375,
+  borderRadius: 2.5,
+  bgcolor: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.common.black, 0.03)
+      : alpha(theme.palette.common.white, 0.03),
+  border: "1px solid",
+  borderColor: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.text.primary, 0.06)
+      : alpha(theme.palette.common.white, 0.05),
+  gap: 0.375,
+  "& .MuiToggleButtonGroup-grouped": {
+    border: 0,
+    borderRadius: "10px !important",
+    minHeight: 32,
+    px: 1.25,
+    textTransform: "none",
+    color: "text.secondary",
+    transition:
+      "background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease",
+    "&:hover": {
+      bgcolor: (theme: Theme) =>
+        theme.palette.mode === "light"
+          ? alpha(theme.palette.common.black, 0.04)
+          : alpha(theme.palette.common.white, 0.05),
+    },
+    "&.Mui-selected": {
+      color: "text.primary",
+      bgcolor: (theme: Theme) =>
+        theme.palette.mode === "light"
+          ? alpha(theme.palette.common.white, 0.92)
+          : "#151a2c",
+      boxShadow: (theme: Theme) =>
+        theme.palette.mode === "light"
+          ? "0 2px 8px rgba(15, 23, 42, 0.06)"
+          : "0 4px 10px rgba(0, 0, 0, 0.16)",
+    },
+    "&.Mui-selected:hover": {
+      bgcolor: (theme: Theme) =>
+        theme.palette.mode === "light"
+          ? theme.palette.common.white
+          : "#171d2f",
+    },
+  },
+};
+
+const segmentedStandaloneButtonSx = {
+  textTransform: "none",
+  borderRadius: 2.5,
+  flexShrink: 0,
+  borderColor: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.text.primary, 0.08)
+      : alpha(theme.palette.common.white, 0.06),
+  color: "text.secondary",
+  bgcolor: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.common.white, 0.8)
+      : "#111625",
+  transition:
+    "background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease",
+  "&:hover": {
+    bgcolor: (theme: Theme) =>
+      theme.palette.mode === "light"
+        ? theme.palette.common.white
+        : "#151a2c",
+    borderColor: (theme: Theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.text.primary, 0.12)
+        : alpha(theme.palette.common.white, 0.1),
+  },
+  "&.Mui-selected": {
+    color: "text.primary",
+    bgcolor: (theme: Theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.primary.main, 0.08)
+        : alpha(theme.palette.primary.light, 0.1),
+    borderColor: (theme: Theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.primary.main, 0.18)
+        : alpha(theme.palette.primary.light, 0.18),
+    boxShadow: (theme: Theme) =>
+      theme.palette.mode === "light"
+        ? "none"
+        : "0 4px 10px rgba(0, 0, 0, 0.12)",
   },
 };
 
@@ -283,6 +421,233 @@ const counterFieldSx = {
     pr: 1.5,
   },
 };
+
+const dialogFieldLabelSx = {
+  fontSize: "0.82rem",
+  fontWeight: 700,
+  color: "text.primary",
+  letterSpacing: "0.01em",
+};
+
+const inviteBadgeSx = {
+  fontWeight: 700,
+  px: 0.5,
+  bgcolor: (theme: Theme) => alpha(theme.palette.primary.main, 0.1),
+  color: "primary.main",
+  borderColor: (theme: Theme) => alpha(theme.palette.primary.main, 0.16),
+};
+
+const userCardActionButtonSx: SxProps<Theme> = {
+  ...(panelFooterButtonSx as object),
+  justifyContent: "center",
+  px: 0.95,
+  minHeight: 30,
+  width: "auto",
+  flex: "0 0 auto",
+  borderRadius: 999,
+  color: "text.secondary",
+  fontWeight: 600,
+  borderColor: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.text.primary, 0.06)
+      : alpha(theme.palette.common.white, 0.045),
+  bgcolor: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.common.white, 0.54)
+      : alpha(theme.palette.common.white, 0.024),
+  boxShadow: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? "inset 0 1px 0 rgba(255,255,255,0.58)"
+      : "inset 0 1px 0 rgba(255,255,255,0.02)",
+  whiteSpace: "nowrap",
+  transition:
+    "background-color 0.22s ease, border-color 0.22s ease, color 0.22s ease, transform 0.22s ease",
+  "&:hover": {
+    bgcolor: (theme: Theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.common.white, 0.74)
+        : alpha(theme.palette.common.white, 0.04),
+    borderColor: (theme: Theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.text.primary, 0.1)
+        : alpha(theme.palette.common.white, 0.08),
+    color: "text.primary",
+    transform: "translateY(-1px)",
+  },
+};
+
+const subtleMetaRowSx = {
+  display: "flex",
+  alignItems: "center",
+  gap: 0.55,
+  color: "text.secondary",
+  fontSize: "0.77rem",
+  lineHeight: 1.45,
+};
+
+const userCardSurfaceSx: SxProps<Theme> = {
+  ...(panelGridCardSx as object),
+  display: "flex",
+  flexDirection: "column",
+  position: "relative",
+  overflow: "hidden",
+  minHeight: 196,
+  backgroundImage: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,253,0.97) 100%)"
+      : "linear-gradient(180deg, rgba(255,255,255,0.042) 0%, rgba(255,255,255,0.016) 100%)",
+  "&::before": {
+    content: '""',
+    position: "absolute",
+    inset: 0,
+    background: (theme: Theme) =>
+      theme.palette.mode === "light"
+        ? "linear-gradient(180deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 20%)"
+        : "linear-gradient(180deg, rgba(255,255,255,0.026) 0%, rgba(255,255,255,0) 22%)",
+    pointerEvents: "none",
+  },
+};
+
+const userCardContentSx: SxProps<Theme> = {
+  ...(panelGridCardContentSx as object),
+  position: "relative",
+  zIndex: 1,
+  flex: "1 1 auto",
+  height: "auto",
+  px: 2,
+  pt: 1.7,
+  pb: 1.05,
+};
+
+const userCardRoleChipSx = {
+  flexShrink: 0,
+  alignSelf: "flex-start",
+  height: 28,
+  borderRadius: 999,
+  fontWeight: 700,
+  "& .MuiChip-label": {
+    px: 1.1,
+  },
+};
+
+const userCardGroupTagSx = {
+  borderRadius: 999,
+  maxWidth: "100%",
+  height: 26,
+  fontSize: "0.72rem",
+  fontWeight: 700,
+  bgcolor: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.primary.main, 0.07)
+      : alpha(theme.palette.primary.light, 0.1),
+  color: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? theme.palette.primary.dark
+      : alpha(theme.palette.primary.light, 0.92),
+  border: "1px solid",
+  borderColor: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.primary.main, 0.12)
+      : alpha(theme.palette.primary.light, 0.14),
+  "& .MuiChip-label": {
+    px: 1.2,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  },
+};
+
+const userCardFooterSx: SxProps<Theme> = {
+  ...(panelCardFooterSx as object),
+  position: "relative",
+  zIndex: 1,
+  px: 2,
+  py: 1.1,
+  mt: 0,
+  borderColor: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.text.primary, 0.06)
+      : alpha(theme.palette.common.white, 0.05),
+  bgcolor: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.common.white, 0.46)
+      : alpha(theme.palette.common.white, 0.012),
+  backdropFilter: "blur(8px)",
+};
+
+const userCardActionsWrapSx: SxProps<Theme> = {
+  ...(panelFooterButtonsSx as object),
+  gap: 0.65,
+  flexWrap: "wrap",
+  justifyContent: "flex-end",
+};
+
+const userCardDeleteButtonSx: SxProps<Theme> = {
+  ...(userCardActionButtonSx as object),
+  order: 1,
+  color: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.error.dark, 0.68)
+      : alpha(theme.palette.error.light, 0.7),
+  borderColor: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.error.main, 0.08)
+      : alpha(theme.palette.error.light, 0.08),
+  bgcolor: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.error.main, 0.024)
+      : alpha(theme.palette.error.light, 0.04),
+  "&:hover": {
+    color: (theme: Theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.error.dark, 0.84)
+        : alpha(theme.palette.error.light, 0.82),
+    borderColor: (theme: Theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.error.main, 0.14)
+        : alpha(theme.palette.error.light, 0.14),
+    bgcolor: (theme: Theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.error.main, 0.04)
+        : alpha(theme.palette.error.light, 0.06),
+    transform: "translateY(-1px)",
+  },
+};
+
+function getUserRoleBadgeSx(role: UserRole): SxProps<Theme> {
+  if (role === "STUDENT") {
+    return {
+      ...userCardRoleChipSx,
+      color: (theme) =>
+        theme.palette.mode === "light"
+          ? alpha(theme.palette.success.dark, 0.88)
+          : alpha(theme.palette.success.light, 0.88),
+      borderColor: (theme) =>
+        theme.palette.mode === "light"
+          ? alpha(theme.palette.success.main, 0.18)
+          : alpha(theme.palette.success.light, 0.18),
+      bgcolor: (theme) =>
+        theme.palette.mode === "light"
+          ? alpha(theme.palette.success.main, 0.07)
+          : alpha(theme.palette.success.light, 0.1),
+    };
+  }
+
+  return {
+    ...userCardRoleChipSx,
+    color: (theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.primary.dark, 0.88)
+        : alpha(theme.palette.primary.light, 0.9),
+    borderColor: (theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.primary.main, 0.18)
+        : alpha(theme.palette.primary.light, 0.18),
+    bgcolor: (theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.primary.main, 0.07)
+        : alpha(theme.palette.primary.light, 0.1),
+  };
+}
 
 export function AdminDashboard() {
   const { logout } = useAuth();
@@ -454,8 +819,7 @@ export function AdminDashboard() {
 
       return (
         (user.username ?? "").toLowerCase().includes(normalizedQuery) ||
-        user.email.toLowerCase().includes(normalizedQuery) ||
-        String(user.publicId).includes(normalizedQuery)
+        user.email.toLowerCase().includes(normalizedQuery)
       );
     });
   }, [
@@ -487,8 +851,7 @@ export function AdminDashboard() {
 
       return (
         group.name.toLowerCase().includes(normalizedQuery) ||
-        group.description.toLowerCase().includes(normalizedQuery) ||
-        group.publicId.toLowerCase().includes(normalizedQuery)
+        group.description.toLowerCase().includes(normalizedQuery)
       );
     });
   }, [groupSearch, groups, selectedTeacherFilters]);
@@ -533,8 +896,67 @@ export function AdminDashboard() {
 
   const quickActionTileSx = [
     panelSurfaceSx,
-    panelSurfaceActionSx,
-    { flex: 1, minWidth: 210 },
+    {
+      flex: 1,
+      minWidth: 220,
+      minHeight: 142,
+      p: { xs: 1.5, md: 1.75 },
+      borderRadius: 3,
+      position: "relative",
+      overflow: "hidden",
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "flex-start",
+      alignItems: "stretch",
+      gap: 1,
+      cursor: "pointer",
+      borderColor: (theme: Theme) => alpha(theme.palette.text.primary, 0.08),
+      background: (theme: Theme) =>
+        theme.palette.mode === "light"
+          ? "linear-gradient(180deg, rgba(255,255,255,0.97) 0%, rgba(249,250,253,0.94) 100%)"
+          : "linear-gradient(180deg, rgba(24,30,45,0.96) 0%, rgba(20,26,39,0.98) 100%)",
+      boxShadow: (theme: Theme) =>
+        theme.palette.mode === "light"
+          ? "0 8px 20px rgba(15, 23, 42, 0.05), 0 2px 8px rgba(15, 23, 42, 0.025), inset 0 1px 0 rgba(255,255,255,0.76)"
+          : "0 6px 16px rgba(0, 0, 0, 0.16)",
+      transition:
+        "transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease, background-color 0.25s ease",
+      "&::before": {
+        content: '""',
+        position: "absolute",
+        inset: 0,
+        background: (theme: Theme) =>
+          theme.palette.mode === "light"
+            ? "linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 28%)"
+            : "linear-gradient(180deg, rgba(255,255,255,0.025) 0%, rgba(255,255,255,0) 26%)",
+        pointerEvents: "none",
+      },
+      "&:hover": {
+        transform: "translateY(-2px)",
+        borderColor: (theme: Theme) => alpha(theme.palette.primary.main, 0.14),
+        boxShadow: (theme: Theme) =>
+          theme.palette.mode === "light"
+            ? "0 12px 24px rgba(15, 23, 42, 0.08), 0 4px 14px rgba(76, 92, 149, 0.04)"
+            : "0 9px 20px rgba(0, 0, 0, 0.2)",
+      },
+      "&:hover .quick-action-arrow": {
+        transform: "translate(1px, -1px)",
+        color: "text.primary",
+        bgcolor: (theme: Theme) =>
+          theme.palette.mode === "light"
+            ? alpha(theme.palette.common.white, 0.94)
+            : alpha(theme.palette.common.white, 0.1),
+        borderColor: (theme: Theme) =>
+          theme.palette.mode === "light"
+            ? alpha(theme.palette.text.primary, 0.12)
+            : alpha(theme.palette.common.white, 0.14),
+      },
+      "&:hover .quick-action-icon-shell": {
+        transform: "translateY(-1px)",
+        boxShadow: (theme: Theme) =>
+          `0 8px 14px ${alpha(theme.palette.primary.main, 0.08)}`,
+      },
+    },
   ] as SxProps<Theme>;
 
   const groupFilterOptions = useMemo(() => {
@@ -1028,7 +1450,7 @@ export function AdminDashboard() {
   const pageBg =
     theme.palette.mode === "light"
       ? "#e8eef7"
-      : theme.palette.background.default;
+      : "#07090f";
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: pageBg, pb: 6 }}>
@@ -1087,66 +1509,270 @@ export function AdminDashboard() {
           </Box>
         )}
 
-        <Box sx={{ display: "flex", gap: 2, mb: 4, flexWrap: "wrap" }}>
+        <Box sx={{ display: "flex", gap: 2, mb: 3.5, flexWrap: "wrap" }}>
           <Paper
             elevation={0}
             onClick={() => openCreateUserDialog("TEACHER")}
             sx={quickActionTileSx}
           >
-            <Box sx={{ color: "info.main", mb: 0.5 }}>
-              <SchoolIcon sx={{ fontSize: 30 }} />
-            </Box>
-            <Typography variant="body1" fontWeight={700} align="center">
-              Zaproszenie nauczyciela
-            </Typography>
-            <Typography variant="caption" color="text.secondary" align="center">
-              Wyślij zaproszenie e-mail do aktywacji konta nauczyciela
-            </Typography>
+            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+              <Box
+                className="quick-action-icon-shell"
+                sx={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 3,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "common.white",
+                  background:
+                    "linear-gradient(135deg, rgba(59,130,246,0.84) 0%, rgba(37,99,235,0.9) 100%)",
+                  boxShadow: "0 10px 18px rgba(37, 99, 235, 0.16)",
+                  transition: "transform 0.25s ease, box-shadow 0.25s ease",
+                }}
+              >
+                <SchoolIcon sx={{ fontSize: 24 }} />
+              </Box>
+              <Box
+                className="quick-action-arrow"
+                sx={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 999,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: (theme) =>
+                    theme.palette.mode === "light"
+                      ? alpha(theme.palette.text.primary, 0.72)
+                      : alpha(theme.palette.common.white, 0.78),
+                  bgcolor: (theme) =>
+                    theme.palette.mode === "light"
+                      ? alpha(theme.palette.common.white, 0.82)
+                      : alpha(theme.palette.common.white, 0.06),
+                  border: "1px solid",
+                  borderColor: (theme) =>
+                    theme.palette.mode === "light"
+                      ? alpha(theme.palette.text.primary, 0.08)
+                      : alpha(theme.palette.common.white, 0.1),
+                  transition:
+                    "transform 0.25s ease, color 0.25s ease, background-color 0.25s ease, border-color 0.25s ease",
+                }}
+              >
+                <ArrowOutwardIcon sx={{ fontSize: 16 }} />
+              </Box>
+            </Stack>
+            <Stack spacing={0.5} sx={{ maxWidth: 220 }}>
+              <Typography
+                variant="subtitle1"
+                fontWeight={800}
+                sx={{ lineHeight: 1.2, letterSpacing: "-0.01em" }}
+              >
+                Zaproszenie nauczyciela
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.45, fontSize: "0.83rem" }}>
+                Wyślij zaproszenie e-mail do aktywacji konta nauczyciela.
+              </Typography>
+            </Stack>
           </Paper>
           <Paper
             elevation={0}
             onClick={() => openCreateUserDialog("STUDENT")}
             sx={quickActionTileSx}
           >
-            <Box sx={{ color: "success.main", mb: 0.5 }}>
-              <PersonIcon sx={{ fontSize: 30 }} />
-            </Box>
-            <Typography variant="body1" fontWeight={700} align="center">
-              Zaproszenie ucznia
-            </Typography>
-            <Typography variant="caption" color="text.secondary" align="center">
-              Wyślij zaproszenie e-mail i opcjonalnie przypisz grupę
-            </Typography>
+            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+              <Box
+                className="quick-action-icon-shell"
+                sx={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 3,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "common.white",
+                  background:
+                    "linear-gradient(135deg, rgba(34,197,94,0.84) 0%, rgba(22,163,74,0.9) 100%)",
+                  boxShadow: "0 10px 18px rgba(22, 163, 74, 0.16)",
+                  transition: "transform 0.25s ease, box-shadow 0.25s ease",
+                }}
+              >
+                <PersonIcon sx={{ fontSize: 24 }} />
+              </Box>
+              <Box
+                className="quick-action-arrow"
+                sx={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 999,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: (theme) =>
+                    theme.palette.mode === "light"
+                      ? alpha(theme.palette.text.primary, 0.72)
+                      : alpha(theme.palette.common.white, 0.78),
+                  bgcolor: (theme) =>
+                    theme.palette.mode === "light"
+                      ? alpha(theme.palette.common.white, 0.82)
+                      : alpha(theme.palette.common.white, 0.06),
+                  border: "1px solid",
+                  borderColor: (theme) =>
+                    theme.palette.mode === "light"
+                      ? alpha(theme.palette.text.primary, 0.08)
+                      : alpha(theme.palette.common.white, 0.1),
+                  transition:
+                    "transform 0.25s ease, color 0.25s ease, background-color 0.25s ease, border-color 0.25s ease",
+                }}
+              >
+                <ArrowOutwardIcon sx={{ fontSize: 16 }} />
+              </Box>
+            </Stack>
+            <Stack spacing={0.5} sx={{ maxWidth: 220 }}>
+              <Typography
+                variant="subtitle1"
+                fontWeight={800}
+                sx={{ lineHeight: 1.2, letterSpacing: "-0.01em" }}
+              >
+                Zaproszenie ucznia
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.45, fontSize: "0.83rem" }}>
+                Wyślij zaproszenie e-mail i opcjonalnie przypisz grupę.
+              </Typography>
+            </Stack>
           </Paper>
           <Paper
             elevation={0}
             onClick={openCreateGroupDialog}
             sx={quickActionTileSx}
           >
-            <Box sx={{ color: "warning.main", mb: 0.5 }}>
-              <GroupIcon sx={{ fontSize: 30 }} />
-            </Box>
-            <Typography variant="body1" fontWeight={700} align="center">
-              Nowa grupa
-            </Typography>
-            <Typography variant="caption" color="text.secondary" align="center">
-              Zbuduj grupę i ustaw właściciela
-            </Typography>
+            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+              <Box
+                className="quick-action-icon-shell"
+                sx={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 3,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "common.white",
+                  background:
+                    "linear-gradient(135deg, rgba(249,115,22,0.84) 0%, rgba(234,88,12,0.9) 100%)",
+                  boxShadow: "0 10px 18px rgba(234, 88, 12, 0.16)",
+                  transition: "transform 0.25s ease, box-shadow 0.25s ease",
+                }}
+              >
+                <GroupIcon sx={{ fontSize: 24 }} />
+              </Box>
+              <Box
+                className="quick-action-arrow"
+                sx={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 999,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: (theme) =>
+                    theme.palette.mode === "light"
+                      ? alpha(theme.palette.text.primary, 0.72)
+                      : alpha(theme.palette.common.white, 0.78),
+                  bgcolor: (theme) =>
+                    theme.palette.mode === "light"
+                      ? alpha(theme.palette.common.white, 0.82)
+                      : alpha(theme.palette.common.white, 0.06),
+                  border: "1px solid",
+                  borderColor: (theme) =>
+                    theme.palette.mode === "light"
+                      ? alpha(theme.palette.text.primary, 0.08)
+                      : alpha(theme.palette.common.white, 0.1),
+                  transition:
+                    "transform 0.25s ease, color 0.25s ease, background-color 0.25s ease, border-color 0.25s ease",
+                }}
+              >
+                <ArrowOutwardIcon sx={{ fontSize: 16 }} />
+              </Box>
+            </Stack>
+            <Stack spacing={0.5} sx={{ maxWidth: 220 }}>
+              <Typography
+                variant="subtitle1"
+                fontWeight={800}
+                sx={{ lineHeight: 1.2, letterSpacing: "-0.01em" }}
+              >
+                Nowa grupa
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.45, fontSize: "0.83rem" }}>
+                Zbuduj grupę i ustaw właściciela w kilku krokach.
+              </Typography>
+            </Stack>
           </Paper>
           <Paper
             elevation={0}
             onClick={() => navigate("/admin/achievements")}
             sx={quickActionTileSx}
           >
-            <Box sx={{ color: "warning.main", mb: 0.5 }}>
-              <SparklesIcon sx={{ fontSize: 30 }} />
-            </Box>
-            <Typography variant="body1" fontWeight={700} align="center">
-              Osiągnięcia
-            </Typography>
-            <Typography variant="caption" color="text.secondary" align="center">
-              Zarządzaj listą osiągnięć i ich aktywnością
-            </Typography>
+            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+              <Box
+                className="quick-action-icon-shell"
+                sx={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 3,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "common.white",
+                  background:
+                    "linear-gradient(135deg, rgba(168,85,247,0.88) 0%, rgba(245,158,11,0.88) 100%)",
+                  boxShadow: "0 10px 18px rgba(168, 85, 247, 0.15)",
+                  transition: "transform 0.25s ease, box-shadow 0.25s ease",
+                }}
+              >
+                <SparklesIcon sx={{ fontSize: 24 }} />
+              </Box>
+              <Box
+                className="quick-action-arrow"
+                sx={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 999,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: (theme) =>
+                    theme.palette.mode === "light"
+                      ? alpha(theme.palette.text.primary, 0.72)
+                      : alpha(theme.palette.common.white, 0.78),
+                  bgcolor: (theme) =>
+                    theme.palette.mode === "light"
+                      ? alpha(theme.palette.common.white, 0.82)
+                      : alpha(theme.palette.common.white, 0.06),
+                  border: "1px solid",
+                  borderColor: (theme) =>
+                    theme.palette.mode === "light"
+                      ? alpha(theme.palette.text.primary, 0.08)
+                      : alpha(theme.palette.common.white, 0.1),
+                  transition:
+                    "transform 0.25s ease, color 0.25s ease, background-color 0.25s ease, border-color 0.25s ease",
+                }}
+              >
+                <ArrowOutwardIcon sx={{ fontSize: 16 }} />
+              </Box>
+            </Stack>
+            <Stack spacing={0.5} sx={{ maxWidth: 220 }}>
+              <Typography
+                variant="subtitle1"
+                fontWeight={800}
+                sx={{ lineHeight: 1.2, letterSpacing: "-0.01em" }}
+              >
+                Osiągnięcia
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.45, fontSize: "0.83rem" }}>
+                Zarządzaj listą osiągnięć i ich aktywnością.
+              </Typography>
+            </Stack>
           </Paper>
         </Box>
 
@@ -1218,7 +1844,7 @@ export function AdminDashboard() {
                 <Paper elevation={0} sx={panelToolbarSx}>
                   <TextField
                     size="small"
-                    placeholder="Szukaj po nazwie, emailu lub ID"
+                    placeholder="Szukaj po nazwie lub emailu"
                     value={userSearch}
                     onChange={(event) => setUserSearch(event.target.value)}
                     slotProps={{
@@ -1356,27 +1982,20 @@ export function AdminDashboard() {
                     }}
                     color="primary"
                     size="small"
-                    sx={{ flexShrink: 0, alignSelf: "center" }}
+                    sx={{ ...segmentedGroupSx, flexShrink: 0, alignSelf: "center" }}
                   >
-                    <ToggleButton
-                      value="ALL"
-                      sx={{
-                        textTransform: "none",
-                        px: 1.5,
-                        borderRadius: 2,
-                      }}
-                    >
+                    <ToggleButton value="ALL" sx={segmentedStandaloneButtonSx}>
                       Wszyscy
                     </ToggleButton>
                     <ToggleButton
                       value="TEACHER"
-                      sx={{ textTransform: "none", px: 1.5, borderRadius: 2 }}
+                      sx={segmentedStandaloneButtonSx}
                     >
                       Nauczyciele
                     </ToggleButton>
                     <ToggleButton
                       value="STUDENT"
-                      sx={{ textTransform: "none", px: 1.5, borderRadius: 2 }}
+                      sx={segmentedStandaloneButtonSx}
                     >
                       Uczniowie
                     </ToggleButton>
@@ -1389,11 +2008,7 @@ export function AdminDashboard() {
                       setShowUngroupedStudents((current) => !current)
                     }
                     size="small"
-                    sx={{
-                      textTransform: "none",
-                      borderRadius: 2,
-                      flexShrink: 0,
-                    }}
+                    sx={segmentedStandaloneButtonSx}
                   >
                     Bez grupy
                   </ToggleButton>
@@ -1413,16 +2028,16 @@ export function AdminDashboard() {
                       }
                     }}
                     size="small"
-                    sx={{ flexShrink: 0 }}
+                    sx={{ ...segmentedGroupSx, flexShrink: 0 }}
                   >
                     <ToggleButton
                       value="grid"
                       aria-label="Widok siatki"
-                      sx={{ borderRadius: "8px !important" }}
+                      sx={segmentedStandaloneButtonSx}
                     >
                       <GridIcon fontSize="small" />
                     </ToggleButton>
-                    <ToggleButton value="list" aria-label="Widok listy">
+                    <ToggleButton value="list" aria-label="Widok listy" sx={segmentedStandaloneButtonSx}>
                       <ListIcon fontSize="small" />
                     </ToggleButton>
                   </ToggleButtonGroup>
@@ -1692,120 +2307,157 @@ export function AdminDashboard() {
                         key={`${user.role}-${user.publicId}`}
                         size={{ xs: 12, md: 6, xl: 4 }}
                       >
-                        <Card
-                          elevation={0}
-                          sx={{
-                            ...panelGridCardSx,
-                            display: "flex",
-                            flexDirection: "column",
-                          }}
-                        >
-                          <CardContent
-                            sx={{
-                              ...panelGridCardContentSx,
-                              flex: "1 1 auto",
-                              height: "auto",
-                              pb: 1,
-                            }}
-                          >
+                        <Card elevation={0} sx={userCardSurfaceSx}>
+                          <CardContent sx={userCardContentSx}>
                             <Stack
-                              spacing={1.5}
-                              sx={{ width: "100%", minHeight: "100%" }}
+                              spacing={1.05}
+                              sx={{
+                                width: "100%",
+                                minHeight: "100%",
+                                height: "100%",
+                                flex: 1,
+                                justifyContent: "space-between",
+                              }}
                             >
-                              <Stack
-                                direction="row"
-                                justifyContent="space-between"
-                                alignItems="flex-start"
-                                spacing={2}
-                              >
-                                <Box sx={{ minWidth: 0, flex: 1 }}>
+                              <Stack spacing={0.65}>
+                                <Stack
+                                  direction="row"
+                                  justifyContent="space-between"
+                                  alignItems="flex-start"
+                                  spacing={1.5}
+                                >
                                   <Stack
                                     direction="row"
                                     spacing={1.5}
-                                    alignItems="center"
+                                    alignItems="flex-start"
+                                    sx={{ minWidth: 0, flex: 1 }}
                                   >
                                     <UserAvatar
                                       avatarUrl={user.avatarUrl}
                                       username={user.username ?? user.email}
-                                      size={28}
+                                      size={42}
+                                      sx={{ flexShrink: 0 }}
                                     />
-                                    <Typography
-                                      variant="body1"
-                                      fontWeight={700}
-                                      color="primary.main"
-                                      sx={panelTitleSx}
+                                    <Stack
+                                      spacing={0.45}
+                                      sx={{ minWidth: 0, flex: 1, pt: 0.15 }}
                                     >
-                                      {user.username ?? "(oczekuje)"}
-                                    </Typography>
+                                      <Typography
+                                        variant="subtitle1"
+                                        fontWeight={800}
+                                        color="text.primary"
+                                        sx={{
+                                          ...panelTitleSx,
+                                          letterSpacing: "-0.02em",
+                                          lineHeight: 1.15,
+                                        }}
+                                      >
+                                        {user.username ?? "(oczekuje)"}
+                                      </Typography>
+                                      <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                        sx={{
+                                          ...panelSingleLineSx,
+                                          fontSize: "0.82rem",
+                                          color: (theme) =>
+                                            theme.palette.mode === "light"
+                                              ? alpha(theme.palette.text.secondary, 0.88)
+                                              : alpha(theme.palette.common.white, 0.54),
+                                        }}
+                                      >
+                                        {user.email}
+                                      </Typography>
+                                    </Stack>
                                   </Stack>
-                                  <Typography
-                                    variant="body2"
-                                    color="text.secondary"
-                                    sx={panelSingleLineSx}
-                                  >
-                                    {user.email}
-                                  </Typography>
-                                </Box>
-                                <Chip
-                                  color={getRoleChipColor(
-                                    user.role as UserRole,
-                                  )}
-                                  icon={
-                                    user.role === "TEACHER" ? (
-                                      <SchoolIcon />
-                                    ) : (
-                                      <PersonIcon />
-                                    )
-                                  }
-                                  label={getRoleLabel(user.role as UserRole)}
-                                  size="small"
-                                  sx={{ flexShrink: 0 }}
-                                />
-                              </Stack>
+                                  <Chip
+                                    color={getRoleChipColor(
+                                      user.role as UserRole,
+                                    )}
+                                    icon={
+                                      user.role === "TEACHER" ? (
+                                        <SchoolIcon />
+                                      ) : (
+                                        <PersonIcon />
+                                      )
+                                    }
+                                    label={getRoleLabel(user.role as UserRole)}
+                                    size="small"
+                                    sx={getUserRoleBadgeSx(user.role as UserRole)}
+                                  />
+                                </Stack>
 
-                              <Box sx={{ minHeight: 28 }}>
-                                {user.role === "STUDENT" ? (
+                                <Stack
+                                  direction="row"
+                                  spacing={1}
+                                  alignItems="center"
+                                  flexWrap="wrap"
+                                  useFlexGap
+                                >
                                   <Typography
-                                    variant="body2"
-                                    color="text.secondary"
-                                    sx={panelSingleLineSx}
+                                    component="span"
+                                    sx={{
+                                      fontSize: "0.74rem",
+                                      fontWeight: 700,
+                                      letterSpacing: "0.03em",
+                                      textTransform: "uppercase",
+                                      color: (theme) =>
+                                        theme.palette.mode === "light"
+                                          ? alpha(theme.palette.text.secondary, 0.72)
+                                          : alpha(theme.palette.common.white, 0.4),
+                                    }}
                                   >
-                                    Grupa:{" "}
-                                    <Box
-                                      component="span"
+                                    {user.role === "STUDENT" ? "Grupa" : "Typ konta"}
+                                  </Typography>
+                                  {user.role === "STUDENT" ? (
+                                    <Chip
+                                      label={
+                                        "groupName" in user && user.groupName
+                                          ? user.groupName
+                                          : "Bez grupy"
+                                      }
+                                      size="small"
+                                      sx={userCardGroupTagSx}
+                                    />
+                                  ) : (
+                                    <Typography
+                                      variant="body2"
                                       sx={{
-                                        fontWeight: 700,
-                                        color: "text.primary",
+                                        ...panelSingleLineSx,
+                                        fontSize: "0.84rem",
+                                        fontWeight: 600,
+                                        color: (theme) =>
+                                          theme.palette.mode === "light"
+                                            ? alpha(theme.palette.text.primary, 0.82)
+                                            : alpha(theme.palette.common.white, 0.74),
                                       }}
                                     >
-                                      {"groupName" in user && user.groupName
-                                        ? user.groupName
-                                        : "Bez grupy"}
-                                    </Box>
-                                  </Typography>
-                                ) : (
-                                  <Typography
-                                    variant="body2"
-                                    color="text.secondary"
-                                    sx={panelSingleLineSx}
-                                  >
-                                    {getRoleAccountLabel(user.role as UserRole)}
-                                  </Typography>
-                                )}
-                              </Box>
+                                      {getRoleAccountLabel(user.role as UserRole)}
+                                    </Typography>
+                                  )}
+                                </Stack>
+                              </Stack>
 
                               <Stack
                                 direction="row"
-                                spacing={1}
+                                spacing={1.2}
                                 flexWrap="wrap"
                                 useFlexGap
+                                alignItems="center"
+                                sx={{ width: "100%" }}
                               >
-                                <Chip
-                                  label={`Utworzono ${formatDate(user.createdAt)}`}
-                                  size="small"
-                                  variant="outlined"
-                                  sx={outlinedMetaChipSx}
-                                />
+                                <Box sx={subtleMetaRowSx}>
+                                  <CalendarIcon sx={{ fontSize: 15, opacity: 0.72 }} />
+                                  <Typography
+                                    component="span"
+                                    sx={{
+                                      fontSize: "0.79rem",
+                                      color: "inherit",
+                                    }}
+                                  >
+                                    Utworzono {formatDate(user.createdAt)}
+                                  </Typography>
+                                </Box>
                                 {"status" in user &&
                                   user.status === "INVITED" && (
                                     <Chip
@@ -1814,25 +2466,26 @@ export function AdminDashboard() {
                                       size="small"
                                       color="warning"
                                       variant="outlined"
+                                      sx={{
+                                        ...outlinedMetaChipSx,
+                                        height: 26,
+                                        fontWeight: 700,
+                                        borderColor: (theme) =>
+                                          theme.palette.mode === "light"
+                                            ? alpha(theme.palette.warning.main, 0.22)
+                                            : alpha(theme.palette.warning.light, 0.24),
+                                        bgcolor: (theme) =>
+                                          theme.palette.mode === "light"
+                                            ? alpha(theme.palette.warning.main, 0.05)
+                                            : alpha(theme.palette.warning.light, 0.08),
+                                      }}
                                     />
                                   )}
                               </Stack>
                             </Stack>
                           </CardContent>
-                          <CardActions
-                            sx={{
-                              ...panelCardFooterSx,
-                              px: 1.75,
-                              pb: 1.5,
-                              mt: 0,
-                            }}
-                          >
-                            <Box
-                              sx={{
-                                ...panelFooterButtonsSx,
-                                flexWrap: "nowrap",
-                              }}
-                            >
+                          <CardActions sx={userCardFooterSx}>
+                            <Box sx={userCardActionsWrapSx}>
                               {"status" in user &&
                                 user.status === "INVITED" && (
                                   <Button
@@ -1842,7 +2495,7 @@ export function AdminDashboard() {
                                     startIcon={<SendIcon fontSize="small" />}
                                     fullWidth
                                     onClick={() => resendUserInvite(user)}
-                                    sx={panelFooterButtonSx}
+                                sx={{ ...userCardActionButtonSx, order: 3 }}
                                   >
                                     Wyślij ponownie
                                   </Button>
@@ -1853,7 +2506,7 @@ export function AdminDashboard() {
                                 startIcon={<EditIcon fontSize="small" />}
                                 fullWidth
                                 onClick={() => openEditUserDialog(user)}
-                                sx={panelFooterButtonSx}
+                                sx={{ ...userCardActionButtonSx, order: 2 }}
                                 disabled={
                                   "status" in user && user.status === "INVITED"
                                 }
@@ -1888,7 +2541,7 @@ export function AdminDashboard() {
                                         ],
                                       })
                                     }
-                                    sx={panelDeleteButtonSx}
+                                    sx={userCardDeleteButtonSx}
                                   >
                                     Anuluj
                                   </Button>
@@ -1934,7 +2587,7 @@ export function AdminDashboard() {
                                         ],
                                       })
                                     }
-                                    sx={panelDeleteButtonSx}
+                                    sx={userCardDeleteButtonSx}
                                   >
                                     Usuń
                                   </Button>
@@ -1964,7 +2617,7 @@ export function AdminDashboard() {
                                       ],
                                     })
                                   }
-                                  sx={panelDeleteButtonSx}
+                                  sx={userCardDeleteButtonSx}
                                 >
                                   Usuń
                                 </Button>
@@ -2015,7 +2668,7 @@ export function AdminDashboard() {
                 <Paper elevation={0} sx={panelToolbarSx}>
                   <TextField
                     size="small"
-                    placeholder="Filtruj grupy po nazwie, opisie lub ID"
+                    placeholder="Filtruj grupy po nazwie lub opisie"
                     value={groupSearch}
                     onChange={(event) => setGroupSearch(event.target.value)}
                     slotProps={{
@@ -2102,16 +2755,16 @@ export function AdminDashboard() {
                       }
                     }}
                     size="small"
-                    sx={{ flexShrink: 0 }}
+                    sx={{ ...segmentedGroupSx, flexShrink: 0 }}
                   >
                     <ToggleButton
                       value="grid"
                       aria-label="Widok siatki"
-                      sx={{ borderRadius: "8px !important" }}
+                      sx={segmentedStandaloneButtonSx}
                     >
                       <GridIcon fontSize="small" />
                     </ToggleButton>
-                    <ToggleButton value="list" aria-label="Widok listy">
+                    <ToggleButton value="list" aria-label="Widok listy" sx={segmentedStandaloneButtonSx}>
                       <ListIcon fontSize="small" />
                     </ToggleButton>
                   </ToggleButtonGroup>
@@ -2477,9 +3130,12 @@ export function AdminDashboard() {
           open={userDialogOpen}
           onClose={closeUserDialog}
           onExited={resetUserDialogState}
-          maxWidth="xs"
+          maxWidth="sm"
           paperSx={{
-            width: { xs: "calc(100% - 24px)", sm: uiTokens.modal.compactWidth },
+            width: {
+              xs: "calc(100% - 24px)",
+              sm: uiTokens.modal.comfortableWidth,
+            },
           }}
         >
           <AppDialogHeader
@@ -2513,7 +3169,8 @@ export function AdminDashboard() {
                   ((selectedUser?.role as UserRole | undefined) ??
                     userDialogRole) as UserRole,
                 )}
-                sx={{ fontWeight: 700 }}
+                variant="outlined"
+                sx={inviteBadgeSx}
               />
             }
           />
@@ -2524,122 +3181,103 @@ export function AdminDashboard() {
               </AppDialogStatus>
             )}
             {userDialogMode === "create" ? (
-              /* ── CREATE MODE: Box-based layout ── */
-              <Box
-                sx={{
-                  borderRadius: 2,
-                  border: "1px solid",
-                  borderColor: "divider",
-                  overflow: "hidden",
-                }}
-              >
+              <Stack spacing={2.25}>
                 {!isCreateInviteDialog && (
-                  <Box
-                    sx={{
-                      px: 2,
-                      py: 1.5,
-                      borderBottom: "1px solid",
-                      borderColor: "divider",
-                    }}
+                  <FormSection
+                    title="Tożsamość konta"
+                    description="Uzupełnij dane startowe konta, które zostaną zapisane przed wysłaniem zaproszenia."
                   >
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      display="block"
-                      sx={{ mb: 0.75 }}
-                    >
-                      Nazwa użytkownika
-                    </Typography>
-                    <TextField
-                      name="admin-user-dialog-username"
-                      autoComplete="off"
-                      value={userDraft.username}
-                      onChange={(event) =>
-                        setUserDraft((current) => ({
-                          ...current,
-                          username: event.target.value.slice(
-                            0,
-                            INPUT_LIMITS.username,
-                          ),
-                        }))
-                      }
-                      inputProps={{ maxLength: INPUT_LIMITS.username }}
-                      error={
-                        userDraft.username.length > 0 &&
-                        userDraft.username.trim().length < 3
-                      }
-                      helperText={
-                        userDraft.username.length > 0 &&
-                        userDraft.username.trim().length < 3
-                          ? "Minimalna długość to 3 znaki"
-                          : `${userDraft.username.length}/${INPUT_LIMITS.username}`
-                      }
-                      sx={counterFieldSx}
-                      size="small"
-                      fullWidth
-                      placeholder="Wprowadź nazwę użytkownika"
-                    />
-                  </Box>
+                    <Stack spacing={1}>
+                      <Typography sx={dialogFieldLabelSx}>
+                        Nazwa użytkownika
+                      </Typography>
+                      <TextField
+                        name="admin-user-dialog-username"
+                        autoComplete="off"
+                        value={userDraft.username}
+                        onChange={(event) =>
+                          setUserDraft((current) => ({
+                            ...current,
+                            username: event.target.value.slice(
+                              0,
+                              INPUT_LIMITS.username,
+                            ),
+                          }))
+                        }
+                        inputProps={{ maxLength: INPUT_LIMITS.username }}
+                        error={
+                          userDraft.username.length > 0 &&
+                          userDraft.username.trim().length < 3
+                        }
+                        helperText={
+                          userDraft.username.length > 0 &&
+                          userDraft.username.trim().length < 3
+                            ? "Minimalna długość to 3 znaki"
+                            : "Nazwa będzie widoczna w systemie od razu po utworzeniu konta."
+                        }
+                        fullWidth
+                        placeholder="Np. anna.nowak"
+                      />
+                    </Stack>
+                  </FormSection>
                 )}
-                <Box
-                  sx={{
-                    px: 2,
-                    py: 1.5,
-                    borderBottom:
-                      userDialogRole === "STUDENT" ||
-                      (userDialogMode === "create" &&
-                        userDialogRole === "TEACHER")
-                        ? "1px solid"
-                        : "none",
-                    borderColor: "divider",
-                  }}
+                <FormSection
+                  title={
+                    userDialogRole === "STUDENT"
+                      ? "Dane zaproszenia"
+                      : "Dane nauczyciela"
+                  }
+                  description={
+                    userDialogRole === "STUDENT"
+                      ? "Zaproszenie zostanie wysłane e-mailem. Uczeń sam ustawi nazwę użytkownika i hasło po otwarciu linku aktywacyjnego."
+                      : "Wyślij profesjonalne zaproszenie e-mail i pozwól nauczycielowi dokończyć aktywację konta we własnym tempie."
+                  }
                 >
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    display="block"
-                    sx={{ mb: 0.75 }}
-                  >
-                    Adres e-mail
-                  </Typography>
                   <Stack spacing={1.25}>
-                    <TextField
-                      name="admin-user-dialog-email"
-                      autoComplete="off"
-                      type="email"
-                      value={userDraft.email}
-                      onChange={(event) => {
-                        setUserFieldErrors((current) => ({
-                          ...current,
-                          email: undefined,
-                        }));
-                        setUserDraft((current) => ({
-                          ...current,
-                          email: event.target.value.slice(
-                            0,
-                            INPUT_LIMITS.email,
-                          ),
-                        }));
-                      }}
-                      inputProps={{ maxLength: INPUT_LIMITS.email }}
-                      error={Boolean(userFieldErrors.email)}
-                      helperText={
-                        userFieldErrors.email ??
-                        `${userDraft.email.length}/${INPUT_LIMITS.email}`
-                      }
-                      sx={counterFieldSx}
-                      fullWidth
-                      size="small"
-                      placeholder="Wprowadź e-mail"
-                    />
                     <Box>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        display="block"
-                        sx={{ mb: 0.75 }}
-                      >
+                      <Typography sx={{ ...dialogFieldLabelSx, mb: 1 }}>
                         Adres e-mail
+                      </Typography>
+                      <TextField
+                        name="admin-user-dialog-email"
+                        autoComplete="off"
+                        type="email"
+                        value={userDraft.email}
+                        onChange={(event) => {
+                          setUserFieldErrors((current) => ({
+                            ...current,
+                            email: undefined,
+                          }));
+                          setUserDraft((current) => ({
+                            ...current,
+                            email: event.target.value.slice(
+                              0,
+                              INPUT_LIMITS.email,
+                            ),
+                          }));
+                        }}
+                        inputProps={{ maxLength: INPUT_LIMITS.email }}
+                        error={Boolean(userFieldErrors.email)}
+                        helperText={
+                          userFieldErrors.email ??
+                          "Na ten adres wyślemy jednorazowy link aktywacyjny."
+                        }
+                        fullWidth
+                        placeholder="np. uczen@szkola.pl"
+                        slotProps={{
+                          input: {
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <EmailIcon sx={{ color: "text.secondary" }} />
+                              </InputAdornment>
+                            ),
+                          },
+                        }}
+                      />
+                    </Box>
+                    <Box>
+                      <Typography sx={{ ...dialogFieldLabelSx, mb: 1 }}>
+                        Potwierdź adres e-mail
                       </Typography>
                       <TextField
                         name="admin-user-dialog-confirm-email"
@@ -2659,61 +3297,79 @@ export function AdminDashboard() {
                         error={Boolean(userFieldErrors.emailConfirm)}
                         helperText={
                           userFieldErrors.emailConfirm ??
-                          `${userDialogConfirmEmail.length}/${INPUT_LIMITS.email}`
+                          "Dzięki temu unikniesz wysłania zaproszenia na błędny adres."
                         }
-                        sx={counterFieldSx}
-                        size="small"
                         fullWidth
-                        placeholder="Powtórz e-mail"
+                        placeholder="Wpisz ten sam adres jeszcze raz"
+                        slotProps={{
+                          input: {
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <EmailIcon sx={{ color: "text.secondary" }} />
+                              </InputAdornment>
+                            ),
+                          },
+                        }}
                       />
                     </Box>
                   </Stack>
-                </Box>
+                </FormSection>
 
                 {userDialogRole === "STUDENT" && (
-                  <Box sx={{ px: 2, py: 1.5 }}>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      display="block"
-                      sx={{ mb: 0.75 }}
-                    >
-                      Grupa
-                    </Typography>
-                    <TextField
-                      select
-                      SelectProps={{ displayEmpty: true }}
-                      value={userDraft.groupPublicId}
-                      onChange={(event) => {
-                        setUserFieldErrors((current) => ({
-                          ...current,
-                          groupPublicId: undefined,
-                        }));
-                        setUserDraft((current) => ({
-                          ...current,
-                          groupPublicId: event.target.value as string | "",
-                        }));
-                      }}
-                      error={Boolean(userFieldErrors.groupPublicId)}
-                      size="small"
-                      fullWidth
-                      helperText={
-                        userFieldErrors.groupPublicId ??
-                        (assignableGroups.length === 0
-                          ? "Brak grup do wyboru"
-                          : "Wybór grupy jest opcjonalny.")
-                      }
-                    >
-                      <MenuItem value="">Wybierz grupę (opcjonalnie)</MenuItem>
-                      {assignableGroups.map((group) => (
-                        <MenuItem key={group.publicId} value={group.publicId}>
-                          {group.name}
-                        </MenuItem>
-                      ))}
-                    </TextField>
-                  </Box>
+                  <FormSection
+                    title="Grupa ucznia"
+                    description="Możesz od razu przypisać ucznia do grupy. To pole jest opcjonalne."
+                  >
+                    <Box>
+                      <Typography sx={{ ...dialogFieldLabelSx, mb: 1 }}>
+                        Wybierz grupę
+                      </Typography>
+                      <TextField
+                        select
+                        SelectProps={{
+                          displayEmpty: true,
+                          IconComponent: ExpandMoreIcon,
+                        }}
+                        value={userDraft.groupPublicId}
+                        onChange={(event) => {
+                          setUserFieldErrors((current) => ({
+                            ...current,
+                            groupPublicId: undefined,
+                          }));
+                          setUserDraft((current) => ({
+                            ...current,
+                            groupPublicId: event.target.value as string | "",
+                          }));
+                        }}
+                        error={Boolean(userFieldErrors.groupPublicId)}
+                        fullWidth
+                        helperText={
+                          userFieldErrors.groupPublicId ??
+                          (assignableGroups.length === 0
+                            ? "Aktualnie nie ma dostępnych grup do przypisania."
+                            : "Uczeń może też zostać przypisany do grupy później.")
+                        }
+                        slotProps={{
+                          input: {
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <GroupIcon sx={{ color: "text.secondary" }} />
+                              </InputAdornment>
+                            ),
+                          },
+                        }}
+                      >
+                        <MenuItem value="">Bez przypisanej grupy</MenuItem>
+                        {assignableGroups.map((group) => (
+                          <MenuItem key={group.publicId} value={group.publicId}>
+                            {group.name}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                    </Box>
+                  </FormSection>
                 )}
-              </Box>
+              </Stack>
             ) : (
               /* ── EDIT MODE: inline-edit rows (wzorzec AccountSettings) ── */
               <Box
@@ -3187,7 +3843,9 @@ export function AdminDashboard() {
               </Button>
               <Button
                 variant="contained"
-                startIcon={<SaveIcon />}
+                startIcon={
+                  userDialogMode === "create" ? <SendIcon /> : <SaveIcon />
+                }
                 onClick={submitUserDialog}
                 disabled={userDialogLoading}
                 sx={panelFooterButtonSx}
@@ -3207,21 +3865,34 @@ export function AdminDashboard() {
         <AppDialog
           open={groupDialogOpen}
           onClose={closeGroupDialog}
-          maxWidth="xs"
+          maxWidth="sm"
           paperSx={{
-            width: { xs: "calc(100% - 24px)", sm: uiTokens.modal.compactWidth },
+            width: {
+              xs: "calc(100% - 24px)",
+              sm: uiTokens.modal.comfortableWidth,
+            },
           }}
         >
           <AppDialogHeader
             icon={<GroupIcon />}
             title={groupDialogMode === "create" ? "Nowa grupa" : "Edycja grupy"}
-            subtitle="Nadaj grupie czytelną nazwę i krótki opis zgodny z jej przeznaczeniem."
+            subtitle={
+              groupDialogMode === "create"
+                ? "Skonfiguruj grupę w lekkim, uporządkowanym flow i od razu przypisz nauczyciela prowadzącego."
+                : "Zaktualizuj nazwę, opis i opiekuna grupy bez zmiany jej dotychczasowego działania."
+            }
             badge={
               <Chip
                 label={groupDialogMode === "create" ? "Nowa grupa" : "Edycja"}
                 size="small"
-                color="warning"
-                sx={{ fontWeight: 700 }}
+                variant="outlined"
+                sx={{
+                  fontWeight: 700,
+                  px: 0.5,
+                  bgcolor: (theme) => alpha(theme.palette.warning.main, 0.1),
+                  color: "warning.dark",
+                  borderColor: (theme) => alpha(theme.palette.warning.main, 0.18),
+                }}
               />
             }
           />
@@ -3231,160 +3902,200 @@ export function AdminDashboard() {
                 {groupDialogFeedback.message}
               </AppDialogStatus>
             )}
-            <Box
-              sx={{
-                borderRadius: 2,
-                border: "1px solid",
-                borderColor: "divider",
-                overflow: "hidden",
-              }}
-            >
-              <Box
-                sx={{
-                  px: 2,
-                  py: 1.5,
-                  borderBottom: "1px solid",
-                  borderColor: "divider",
-                }}
+            <Stack spacing={1.75}>
+              <FormSection
+                title="Informacje o grupie"
+                description="Nadaj grupie nazwę i krótki opis."
               >
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  display="block"
-                  sx={{ mb: 0.75 }}
-                >
-                  Nazwa grupy
-                </Typography>
-                <TextField
-                  value={groupDraft.name}
-                  onChange={(event) => {
-                    setGroupFieldErrors((current) => ({
-                      ...current,
-                      name: undefined,
-                    }));
-                    setGroupDraft((current) => ({
-                      ...current,
-                      name: event.target.value.slice(0, INPUT_LIMITS.groupName),
-                    }));
-                  }}
-                  inputProps={{ maxLength: INPUT_LIMITS.groupName }}
-                  error={Boolean(groupFieldErrors.name)}
-                  helperText={
-                    groupFieldErrors.name ??
-                    `${groupDraft.name.length}/${INPUT_LIMITS.groupName}`
-                  }
-                  sx={counterFieldSx}
-                  size="small"
-                  fullWidth
-                  placeholder="Wprowadź nazwę grupy"
-                />
-              </Box>
-              <Box
-                sx={{
-                  px: 2,
-                  py: 1.5,
-                  borderBottom: "1px solid",
-                  borderColor: "divider",
-                }}
+                <Box>
+                  <Typography sx={{ ...dialogFieldLabelSx, mb: 1 }}>
+                    Nazwa grupy
+                  </Typography>
+                  <TextField
+                    value={groupDraft.name}
+                    onChange={(event) => {
+                      setGroupFieldErrors((current) => ({
+                        ...current,
+                        name: undefined,
+                      }));
+                      setGroupDraft((current) => ({
+                        ...current,
+                        name: event.target.value.slice(0, INPUT_LIMITS.groupName),
+                      }));
+                    }}
+                    inputProps={{ maxLength: INPUT_LIMITS.groupName }}
+                    error={Boolean(groupFieldErrors.name)}
+                    helperText={
+                      groupFieldErrors.name ?? (
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            gap: 1,
+                            alignItems: "center",
+                            width: "100%",
+                          }}
+                        >
+                          <Box component="span">Krótka, konkretna nazwa ułatwi szybkie odnalezienie grupy.</Box>
+                          {groupDraft.name.length > 0 && (
+                            <Box component="span" sx={{ color: "text.secondary", whiteSpace: "nowrap" }}>
+                              {groupDraft.name.length}/{INPUT_LIMITS.groupName}
+                            </Box>
+                          )}
+                        </Box>
+                      )
+                    }
+                    fullWidth
+                    placeholder="Np. Matematyka 6A"
+                    slotProps={{
+                      input: {
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <GroupIcon sx={{ color: "text.secondary" }} />
+                          </InputAdornment>
+                        ),
+                      },
+                    }}
+                  />
+                </Box>
+                <Box>
+                  <Typography sx={{ ...dialogFieldLabelSx, mb: 1 }}>
+                    Opis grupy
+                  </Typography>
+                  <TextField
+                    value={groupDraft.description}
+                    onChange={(event) => {
+                      setGroupFieldErrors((current) => ({
+                        ...current,
+                        description: undefined,
+                      }));
+                      setGroupDraft((current) => ({
+                        ...current,
+                        description: event.target.value.slice(
+                          0,
+                          INPUT_LIMITS.groupDescription,
+                        ),
+                      }));
+                    }}
+                    inputProps={{ maxLength: INPUT_LIMITS.groupDescription }}
+                    error={Boolean(groupFieldErrors.description)}
+                    helperText={
+                      groupFieldErrors.description ?? (
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            gap: 1,
+                            alignItems: "center",
+                            width: "100%",
+                          }}
+                        >
+                          <Box component="span">Dodaj kilka zdań o przeznaczeniu, poziomie lub trybie pracy grupy.</Box>
+                          {groupDraft.description.length > 0 && (
+                            <Box component="span" sx={{ color: "text.secondary", whiteSpace: "nowrap" }}>
+                              {groupDraft.description.length}/{INPUT_LIMITS.groupDescription}
+                            </Box>
+                          )}
+                        </Box>
+                      )
+                    }
+                    multiline
+                    minRows={2}
+                    fullWidth
+                    placeholder="Np. Grupa dla uczniów przygotowujących się do działu z geometrii i zadań tekstowych."
+                    slotProps={{
+                      input: {
+                        startAdornment: (
+                          <InputAdornment position="start" sx={{ alignSelf: "flex-start", mt: 1.5 }}>
+                            <EditIcon sx={{ color: "text.secondary" }} />
+                          </InputAdornment>
+                        ),
+                      },
+                    }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        alignItems: "flex-start",
+                        py: 0.125,
+                      },
+                      "& .MuiInputBase-inputMultiline": {
+                        lineHeight: 1.6,
+                        resize: "vertical",
+                        minHeight: 48,
+                      },
+                    }}
+                  />
+                </Box>
+              </FormSection>
+
+              <FormSection
+                title="Nauczyciel prowadzący"
+                description="Wybierz opiekuna grupy."
               >
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  display="block"
-                  sx={{ mb: 0.75 }}
-                >
-                  Opis grupy
-                </Typography>
-                <TextField
-                  value={groupDraft.description}
-                  onChange={(event) => {
-                    setGroupFieldErrors((current) => ({
-                      ...current,
-                      description: undefined,
-                    }));
-                    setGroupDraft((current) => ({
-                      ...current,
-                      description: event.target.value.slice(
-                        0,
-                        INPUT_LIMITS.groupDescription,
-                      ),
-                    }));
-                  }}
-                  inputProps={{ maxLength: INPUT_LIMITS.groupDescription }}
-                  error={Boolean(groupFieldErrors.description)}
-                  helperText={
-                    groupFieldErrors.description ??
-                    `${groupDraft.description.length}/${INPUT_LIMITS.groupDescription}`
-                  }
-                  sx={counterFieldSx}
-                  multiline
-                  minRows={4}
-                  size="small"
-                  fullWidth
-                  placeholder="Opisz przeznaczenie grupy"
-                />
-              </Box>
-              <Box sx={{ px: 2, py: 1.5 }}>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  display="block"
-                  sx={{ mb: 0.75 }}
-                >
-                  Nauczyciel prowadzący
-                </Typography>
-                <TextField
-                  select
-                  value={groupDraft.teacherPublicId}
-                  onChange={(event) => {
-                    setGroupFieldErrors((current) => ({
-                      ...current,
-                      teacherPublicId: undefined,
-                    }));
-                    setGroupDraft((current) => ({
-                      ...current,
-                      teacherPublicId: event.target.value,
-                    }));
-                  }}
-                  SelectProps={{ displayEmpty: true }}
-                  error={Boolean(groupFieldErrors.teacherPublicId)}
-                  helperText={
-                    groupFieldErrors.teacherPublicId ??
-                    "Wybierz nauczyciela, który ma zarządzać grupą."
-                  }
-                  sx={{
-                    "& .MuiFormHelperText-root": {
-                      mt: 0.75,
-                      mx: 0,
-                      pl: 1.5,
-                      pr: 1.5,
-                    },
-                  }}
-                  size="small"
-                  fullWidth
-                >
-                  <MenuItem value="">Wybierz nauczyciela</MenuItem>
-                  {teachers.map((teacher) => (
-                    <MenuItem
-                      key={teacher.publicId}
-                      value={teacher.publicId}
-                      sx={{ py: 1 }}
-                    >
-                      <Stack direction="row" spacing={1.5} alignItems="center">
-                        <UserAvatar
-                          avatarUrl={teacher.avatarUrl}
-                          username={teacher.username}
-                          size={24}
-                        />
-                        <Typography variant="body2">
-                          {teacher.username}
-                        </Typography>
-                      </Stack>
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </Box>
-            </Box>
+                <Box>
+                  <Typography sx={{ ...dialogFieldLabelSx, mb: 1 }}>
+                    Wybierz nauczyciela
+                  </Typography>
+                  <TextField
+                    select
+                    value={groupDraft.teacherPublicId}
+                    onChange={(event) => {
+                      setGroupFieldErrors((current) => ({
+                        ...current,
+                        teacherPublicId: undefined,
+                      }));
+                      setGroupDraft((current) => ({
+                        ...current,
+                        teacherPublicId: event.target.value,
+                      }));
+                    }}
+                    SelectProps={{
+                      displayEmpty: true,
+                      IconComponent: ExpandMoreIcon,
+                    }}
+                    error={Boolean(groupFieldErrors.teacherPublicId)}
+                    helperText={
+                      groupFieldErrors.teacherPublicId ??
+                      "Przypisanie nauczyciela jest opcjonalne na etapie tworzenia, ale ułatwia dalsze zarządzanie grupą."
+                    }
+                    fullWidth
+                    slotProps={{
+                      input: {
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <SchoolIcon sx={{ color: "text.secondary" }} />
+                          </InputAdornment>
+                        ),
+                      },
+                    }}
+                  >
+                    <MenuItem value="">Bez przypisanego nauczyciela</MenuItem>
+                    {teachers.map((teacher) => (
+                      <MenuItem
+                        key={teacher.publicId}
+                        value={teacher.publicId}
+                        sx={{ py: 1.25 }}
+                      >
+                        <Stack direction="row" spacing={1.5} alignItems="center">
+                          <UserAvatar
+                            avatarUrl={teacher.avatarUrl}
+                            username={teacher.username}
+                            size={26}
+                          />
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography variant="body2" fontWeight={600} noWrap>
+                              {teacher.username}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" noWrap>
+                              {teacher.email}
+                            </Typography>
+                          </Box>
+                        </Stack>
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Box>
+              </FormSection>
+            </Stack>
           </AppDialogBody>
           <AppDialogFooter>
             <FormActions>
@@ -3396,7 +4107,7 @@ export function AdminDashboard() {
               </Button>
               <Button
                 variant="contained"
-                startIcon={<SaveIcon />}
+                startIcon={groupDialogMode === "create" ? <AddCircleIcon /> : <SaveIcon />}
                 onClick={submitGroupDialog}
                 disabled={groupDialogLoading}
                 sx={panelFooterButtonSx}
@@ -3404,7 +4115,7 @@ export function AdminDashboard() {
                 {groupDialogLoading
                   ? "Zapisywanie..."
                   : groupDialogMode === "create"
-                    ? "Utwórz"
+                    ? "Utwórz grupę"
                     : "Zapisz zmiany"}
               </Button>
             </FormActions>

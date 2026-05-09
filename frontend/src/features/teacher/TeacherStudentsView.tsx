@@ -62,7 +62,7 @@ import {
   AppDialogHeader,
   AppDialogStatus,
 } from "@/components/ui/dialog/AppDialog";
-import { FormActions } from "@/components/ui/form/FormLayout";
+import { FormActions, FormSection } from "@/components/ui/form/FormLayout";
 import { DashboardHeader } from "@/components/ui/panel/DashboardHeader";
 import { DashboardTopBar } from "@/components/ui/panel/DashboardTopBar";
 import {
@@ -118,6 +118,13 @@ const emptyStudentDraft = {
   email: "",
   emailConfirm: "",
   groupPublicId: "" as string | "",
+};
+
+const dialogFieldLabelSx = {
+  fontSize: "0.82rem",
+  fontWeight: 700,
+  color: "text.primary",
+  letterSpacing: "0.01em",
 };
 
 type StudentFieldErrors = Partial<
@@ -334,13 +341,11 @@ export function TeacherStudentsView() {
         const groupMatches = [
           group.name,
           group.description ?? "",
-          group.publicId,
         ].some((value) => value.toLowerCase().includes(query));
         const matchingStudents = group.students.filter((student) =>
           [
             student.username ?? "",
             student.email,
-            String(student.publicId),
           ].some((value) => value.toLowerCase().includes(query)),
         );
 
@@ -902,7 +907,7 @@ export function TeacherStudentsView() {
           <Box sx={{ ...panelToolbarSx, mb: 2 }}>
             <TextField
               size="small"
-              placeholder="Szukaj grupy, ucznia, e-maila lub ID"
+              placeholder="Szukaj grupy, ucznia lub e-maila"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               slotProps={{
@@ -1285,6 +1290,20 @@ export function TeacherStudentsView() {
             icon={<PersonAddIcon />}
             title="Zaproś ucznia"
             subtitle="Wyślij zaproszenie e-mail. Uczeń sam ustawi nazwę i hasło."
+            badge={
+              <Chip
+                label="Uczeń"
+                size="small"
+                variant="outlined"
+                sx={{
+                  fontWeight: 700,
+                  px: 0.5,
+                  bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+                  color: "primary.main",
+                  borderColor: (theme) => alpha(theme.palette.primary.main, 0.16),
+                }}
+              />
+            }
           />
           <AppDialogBody>
             {createStudentFeedback && (
@@ -1292,142 +1311,148 @@ export function TeacherStudentsView() {
                 {createStudentFeedback.message}
               </AppDialogStatus>
             )}
-            <Box
-              sx={{
-                borderRadius: 2,
-                border: "1px solid",
-                borderColor: "divider",
-                overflow: "hidden",
-              }}
-            >
-              <Box
-                sx={{
-                  px: 2,
-                  py: 1.5,
-                  borderBottom: "1px solid",
-                  borderColor: "divider",
-                }}
+            <Stack spacing={2.25}>
+              <FormSection
+                title="Dane zaproszenia"
+                description="Zaproszenie zostanie wysłane e-mailem. Uczeń sam dokończy aktywację konta po otwarciu linku."
               >
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  display="block"
-                  sx={{ mb: 0.75 }}
-                >
-                  Adres e-mail
-                </Typography>
-                <TextField
-                  name="teacher-create-student-email"
-                  autoComplete="off"
-                  type="email"
-                  value={createStudentDraft.email}
-                  onChange={(event) => {
-                    setCreateStudentFieldErrors((current) => ({
-                      ...current,
-                      email: undefined,
-                    }));
-                    setCreateStudentDraft((draft) => ({
-                      ...draft,
-                      email: event.target.value,
-                    }));
-                  }}
-                  error={Boolean(createStudentFieldErrors.email)}
-                  helperText={createStudentFieldErrors.email}
-                  fullWidth
-                  size="small"
-                  disabled={createStudentLoading}
-                  placeholder="Wprowadź e-mail"
-                />
-              </Box>
-              <Box
-                sx={{
-                  px: 2,
-                  py: 1.5,
-                  borderBottom: "1px solid",
-                  borderColor: "divider",
-                }}
+                <Box>
+                  <Typography sx={{ ...dialogFieldLabelSx, mb: 1 }}>
+                    Adres e-mail
+                  </Typography>
+                  <TextField
+                    name="teacher-create-student-email"
+                    autoComplete="off"
+                    type="email"
+                    value={createStudentDraft.email}
+                    onChange={(event) => {
+                      setCreateStudentFieldErrors((current) => ({
+                        ...current,
+                        email: undefined,
+                      }));
+                      setCreateStudentDraft((draft) => ({
+                        ...draft,
+                        email: event.target.value,
+                      }));
+                    }}
+                    error={Boolean(createStudentFieldErrors.email)}
+                    helperText={
+                      createStudentFieldErrors.email ??
+                      "Na ten adres wyślemy jednorazowy link aktywacyjny."
+                    }
+                    fullWidth
+                    disabled={createStudentLoading}
+                    placeholder="np. uczen@szkola.pl"
+                    slotProps={{
+                      input: {
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <EmailIcon sx={{ color: "text.secondary" }} />
+                          </InputAdornment>
+                        ),
+                      },
+                    }}
+                  />
+                </Box>
+                <Box>
+                  <Typography sx={{ ...dialogFieldLabelSx, mb: 1 }}>
+                    Potwierdź adres e-mail
+                  </Typography>
+                  <TextField
+                    name="teacher-create-student-email-confirm"
+                    autoComplete="off"
+                    type="email"
+                    value={createStudentDraft.emailConfirm}
+                    onChange={(event) => {
+                      setCreateStudentFieldErrors((current) => ({
+                        ...current,
+                        emailConfirm: undefined,
+                      }));
+                      setCreateStudentDraft((draft) => ({
+                        ...draft,
+                        emailConfirm: event.target.value,
+                      }));
+                    }}
+                    fullWidth
+                    disabled={createStudentLoading}
+                    placeholder="Wpisz ten sam adres jeszcze raz"
+                    error={
+                      Boolean(createStudentFieldErrors.emailConfirm) ||
+                      (createStudentDraft.emailConfirm.length > 0 &&
+                        createStudentDraft.email !==
+                          createStudentDraft.emailConfirm)
+                    }
+                    helperText={
+                      createStudentFieldErrors.emailConfirm ??
+                      (createStudentDraft.emailConfirm.length > 0 &&
+                      createStudentDraft.email !== createStudentDraft.emailConfirm
+                        ? "Adresy e-mail nie są zgodne"
+                        : "Dzięki temu unikniesz wysłania zaproszenia na zły adres.")
+                    }
+                    slotProps={{
+                      input: {
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <EmailIcon sx={{ color: "text.secondary" }} />
+                          </InputAdornment>
+                        ),
+                      },
+                    }}
+                  />
+                </Box>
+              </FormSection>
+              <FormSection
+                title="Grupa ucznia"
+                description="Możesz od razu przypisać ucznia do jednej z dostępnych grup lub zrobić to później."
               >
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  display="block"
-                  sx={{ mb: 0.75 }}
-                >
-                  Powtórz e-mail
-                </Typography>
-                <TextField
-                  name="teacher-create-student-email-confirm"
-                  autoComplete="off"
-                  type="email"
-                  value={createStudentDraft.emailConfirm}
-                  onChange={(event) => {
-                    setCreateStudentFieldErrors((current) => ({
-                      ...current,
-                      emailConfirm: undefined,
-                    }));
-                    setCreateStudentDraft((draft) => ({
-                      ...draft,
-                      emailConfirm: event.target.value,
-                    }));
-                  }}
-                  fullWidth
-                  size="small"
-                  disabled={createStudentLoading}
-                  placeholder="Powtórz e-mail"
-                  error={
-                    Boolean(createStudentFieldErrors.emailConfirm) ||
-                    (createStudentDraft.emailConfirm.length > 0 &&
-                      createStudentDraft.email !==
-                        createStudentDraft.emailConfirm)
-                  }
-                  helperText={
-                    createStudentFieldErrors.emailConfirm ??
-                    (createStudentDraft.emailConfirm.length > 0 &&
-                    createStudentDraft.email !== createStudentDraft.emailConfirm
-                      ? "Adresy e-mail nie są zgodne"
-                      : undefined)
-                  }
-                />
-              </Box>
-              <Box sx={{ px: 2, py: 1.5 }}>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  display="block"
-                  sx={{ mb: 0.75 }}
-                >
-                  Grupa ucznia
-                </Typography>
-                <TextField
-                  select
-                  value={createStudentDraft.groupPublicId}
-                  onChange={(event) => {
-                    setCreateStudentFieldErrors((current) => ({
-                      ...current,
-                      groupPublicId: undefined,
-                    }));
-                    setCreateStudentDraft((draft) => ({
-                      ...draft,
-                      groupPublicId: event.target.value,
-                    }));
-                  }}
-                  error={Boolean(createStudentFieldErrors.groupPublicId)}
-                  helperText={createStudentFieldErrors.groupPublicId}
-                  fullWidth
-                  size="small"
-                  disabled={createStudentLoading}
-                >
-                  <MenuItem value="">
-                    <em>Wybierz grupę</em>
-                  </MenuItem>
-                  {availableGroups.map((group) => (
-                    <MenuItem key={group.publicId} value={group.publicId}>
-                      {group.name}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </Box>
-            </Box>
+                <Box>
+                  <Typography sx={{ ...dialogFieldLabelSx, mb: 1 }}>
+                    Wybierz grupę
+                  </Typography>
+                  <TextField
+                    select
+                    value={createStudentDraft.groupPublicId}
+                    onChange={(event) => {
+                      setCreateStudentFieldErrors((current) => ({
+                        ...current,
+                        groupPublicId: undefined,
+                      }));
+                      setCreateStudentDraft((draft) => ({
+                        ...draft,
+                        groupPublicId: event.target.value,
+                      }));
+                    }}
+                    error={Boolean(createStudentFieldErrors.groupPublicId)}
+                    helperText={
+                      createStudentFieldErrors.groupPublicId ??
+                      "To pole jest opcjonalne."
+                    }
+                    fullWidth
+                    disabled={createStudentLoading}
+                    SelectProps={{
+                      displayEmpty: true,
+                      IconComponent: ExpandMoreIcon,
+                    }}
+                    slotProps={{
+                      input: {
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <GroupIcon sx={{ color: "text.secondary" }} />
+                          </InputAdornment>
+                        ),
+                      },
+                    }}
+                  >
+                    <MenuItem value="">Bez przypisanej grupy</MenuItem>
+                    {availableGroups.map((group) => (
+                      <MenuItem key={group.publicId} value={group.publicId}>
+                        {group.name}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Box>
+              </FormSection>
+            </Stack>
           </AppDialogBody>
           <AppDialogFooter>
             <FormActions>
@@ -1441,10 +1466,10 @@ export function TeacherStudentsView() {
                 variant="contained"
                 onClick={submitCreateStudent}
                 disabled={createStudentLoading}
-                startIcon={<SaveIcon />}
+                startIcon={<SendIcon />}
                 sx={buttonSx}
               >
-                Utwórz
+                Wyślij zaproszenie
               </Button>
             </FormActions>
           </AppDialogFooter>
