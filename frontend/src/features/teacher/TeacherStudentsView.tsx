@@ -39,9 +39,11 @@ import {
   SaveOutlined as SaveIcon,
   SearchOutlined as SearchIcon,
   SchoolOutlined as SchoolIcon,
+  LockResetOutlined as LockResetIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { ApiError } from "@/api/apiClient";
+import { authService } from "@/api/authService";
 import {
   lessonService,
   type Group,
@@ -113,6 +115,7 @@ const counterFieldSx = {
 const emptyStudentDraft = {
   username: "",
   email: "",
+  emailConfirm: "",
   password: "",
   groupPublicId: "" as string | "",
 };
@@ -154,6 +157,7 @@ export function TeacherStudentsView() {
   const [editStudentDraft, setEditStudentDraft] = useState({
     username: "",
     email: "",
+    emailConfirm: "",
     groupPublicId: "" as string | "",
   });
   const [editStudentLoading, setEditStudentLoading] = useState(false);
@@ -290,6 +294,13 @@ export function TeacherStudentsView() {
       });
       return;
     }
+    if (createStudentDraft.email.trim() !== createStudentDraft.emailConfirm.trim()) {
+      setCreateStudentFeedback({
+        severity: "error",
+        message: "Adresy e-mail nie są zgodne.",
+      });
+      return;
+    }
     if (createStudentDraft.groupPublicId === "") {
       setCreateStudentFeedback({
         severity: "error",
@@ -328,6 +339,7 @@ export function TeacherStudentsView() {
     setEditStudentDraft({
       username: student.username,
       email: student.email,
+      emailConfirm: student.email,
       groupPublicId: student.groupPublicId,
     });
     setEditStudentFeedback(null);
@@ -359,6 +371,14 @@ export function TeacherStudentsView() {
       return;
     }
 
+    if (editStudentDraft.email.trim() !== editStudentDraft.emailConfirm.trim()) {
+      setEditStudentFeedback({
+        severity: "error",
+        message: "Adresy e-mail nie są zgodne.",
+      });
+      return;
+    }
+
     setEditStudentFeedback(null);
     setEditStudentLoading(true);
     try {
@@ -380,6 +400,25 @@ export function TeacherStudentsView() {
           error,
           "Nie udało się zapisać zmian ucznia.",
         ),
+      });
+    } finally {
+      setEditStudentLoading(false);
+    }
+  };
+
+  const resetStudentPassword = async () => {
+    if (!editingStudent || editStudentLoading) return;
+    try {
+      setEditStudentLoading(true);
+      await authService.forgotPassword({ email: editingStudent.email });
+      setEditStudentFeedback({
+        severity: "success",
+        message: "Link do resetu hasła został wysłany na adres e-mail ucznia.",
+      });
+    } catch (error) {
+      setEditStudentFeedback({
+        severity: "error",
+        message: getOperationErrorMessage(error, "Nie udało się wysłać linku do resetu hasła."),
       });
     } finally {
       setEditStudentLoading(false);
@@ -1058,7 +1097,7 @@ export function TeacherStudentsView() {
                   fullWidth
                   size="small"
                   disabled={createStudentLoading}
-                  placeholder="np. jan.kowalski"
+                  placeholder="Wprowadź nazwę użytkownika"
                 />
               </Box>
               <Box
@@ -1091,7 +1130,50 @@ export function TeacherStudentsView() {
                   fullWidth
                   size="small"
                   disabled={createStudentLoading}
-                  placeholder="np. jan@szkola.pl"
+                  placeholder="Wprowadź e-mail"
+                />
+              </Box>
+              <Box
+                sx={{
+                  px: 2,
+                  py: 1.5,
+                  borderBottom: "1px solid",
+                  borderColor: "divider",
+                }}
+              >
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  display="block"
+                  sx={{ mb: 0.75 }}
+                >
+                  Powtórz e-mail
+                </Typography>
+                <TextField
+                  name="teacher-create-student-email-confirm"
+                  autoComplete="off"
+                  type="email"
+                  value={createStudentDraft.emailConfirm}
+                  onChange={(event) =>
+                    setCreateStudentDraft((draft) => ({
+                      ...draft,
+                      emailConfirm: event.target.value,
+                    }))
+                  }
+                  fullWidth
+                  size="small"
+                  disabled={createStudentLoading}
+                  placeholder="Powtórz e-mail"
+                  error={
+                    createStudentDraft.emailConfirm.length > 0 &&
+                    createStudentDraft.email !== createStudentDraft.emailConfirm
+                  }
+                  helperText={
+                    createStudentDraft.emailConfirm.length > 0 &&
+                    createStudentDraft.email !== createStudentDraft.emailConfirm
+                      ? "Adresy e-mail nie są zgodne"
+                      : undefined
+                  }
                 />
               </Box>
               <Box
@@ -1148,6 +1230,9 @@ export function TeacherStudentsView() {
                   size="small"
                   disabled={createStudentLoading}
                 >
+                  <MenuItem value="">
+                    <em>Wybierz grupę</em>
+                  </MenuItem>
                   {availableGroups.map((group) => (
                     <MenuItem key={group.publicId} value={group.publicId}>
                       {group.name}
@@ -1295,6 +1380,7 @@ export function TeacherStudentsView() {
                         fullWidth
                         size="small"
                         disabled={editStudentLoading}
+                        placeholder="Wprowadź nazwę użytkownika"
                       />
                       <Box
                         sx={{ display: "flex", gap: 0.5, flexShrink: 0, mt: 0.5 }}
@@ -1413,82 +1499,103 @@ export function TeacherStudentsView() {
                     >
                       Edycja adresu e-mail
                     </Typography>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        gap: 1,
-                        alignItems: "flex-start",
-                      }}
-                    >
+                    <Stack spacing={1.5}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          gap: 1,
+                          alignItems: "flex-start",
+                        }}
+                      >
+                        <TextField
+                          autoFocus
+                          value={editStudentDraft.email}
+                          onChange={(event) =>
+                            setEditStudentDraft((draft) => ({
+                              ...draft,
+                              email: event.target.value,
+                            }))
+                          }
+                          placeholder="Wprowadź e-mail"
+                          fullWidth
+                          size="small"
+                          disabled={editStudentLoading}
+                        />
+                        <Box
+                          sx={{ display: "flex", gap: 0.5, flexShrink: 0, mt: 0.5 }}
+                        >
+                          <IconButton
+                            size="small"
+                            disabled={editStudentLoading}
+                            onClick={() =>
+                              setEditStudentEditingFields((prev) =>
+                                prev.filter((f) => f !== "email"),
+                              )
+                            }
+                            sx={{
+                              borderRadius: 1.5,
+                              color: "success.main",
+                              bgcolor: (t) =>
+                                alpha(t.palette.success.main, 0.08),
+                              "&:hover": {
+                                bgcolor: (t) =>
+                                  alpha(t.palette.success.main, 0.16),
+                              },
+                            }}
+                          >
+                            <CheckIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            disabled={editStudentLoading}
+                            onClick={() => {
+                              setEditStudentDraft((draft) => ({
+                                ...draft,
+                                email: editingStudent?.email ?? "",
+                                emailConfirm: editingStudent?.email ?? "",
+                              }));
+                              setEditStudentEditingFields((prev) =>
+                                prev.filter((f) => f !== "email"),
+                              );
+                            }}
+                            sx={{
+                              borderRadius: 1.5,
+                              color: "text.secondary",
+                              "&:hover": {
+                                bgcolor: (t) =>
+                                  alpha(t.palette.text.primary, 0.06),
+                              },
+                            }}
+                          >
+                            <CloseIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                      </Box>
                       <TextField
-                        name="teacher-edit-student-email"
-                        autoComplete="off"
-                        type="email"
-                        autoFocus
-                        value={editStudentDraft.email}
+                        label="Powtórz e-mail"
+                        value={editStudentDraft.emailConfirm}
                         onChange={(event) =>
                           setEditStudentDraft((draft) => ({
                             ...draft,
-                            email: event.target.value,
+                            emailConfirm: event.target.value,
                           }))
                         }
+                        placeholder="Powtórz e-mail"
                         fullWidth
                         size="small"
                         disabled={editStudentLoading}
+                        error={
+                          editStudentDraft.emailConfirm.length > 0 &&
+                          editStudentDraft.email !== editStudentDraft.emailConfirm
+                        }
+                        helperText={
+                          editStudentDraft.emailConfirm.length > 0 &&
+                          editStudentDraft.email !== editStudentDraft.emailConfirm
+                            ? "Adresy e-mail nie są zgodne"
+                            : undefined
+                        }
                       />
-                      <Box
-                        sx={{ display: "flex", gap: 0.5, flexShrink: 0, mt: 0.5 }}
-                      >
-                        <IconButton
-                          size="small"
-                          disabled={
-                            editStudentLoading ||
-                            !editStudentDraft.email.includes("@")
-                          }
-                          onClick={() =>
-                            setEditStudentEditingFields((prev) =>
-                              prev.filter((f) => f !== "email"),
-                            )
-                          }
-                          sx={{
-                            borderRadius: 1.5,
-                            color: "success.main",
-                            bgcolor: (t) =>
-                              alpha(t.palette.success.main, 0.08),
-                            "&:hover": {
-                              bgcolor: (t) =>
-                                alpha(t.palette.success.main, 0.16),
-                            },
-                            "&.Mui-disabled": { opacity: 0.35 },
-                          }}
-                        >
-                          <CheckIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          disabled={editStudentLoading}
-                          onClick={() => {
-                            setEditStudentDraft((draft) => ({
-                              ...draft,
-                              email: editingStudent?.email ?? "",
-                            }));
-                            setEditStudentEditingFields((prev) =>
-                              prev.filter((f) => f !== "email"),
-                            );
-                          }}
-                          sx={{
-                            borderRadius: 1.5,
-                            color: "text.secondary",
-                            "&:hover": {
-                              bgcolor: (t) =>
-                                alpha(t.palette.text.primary, 0.06),
-                            },
-                          }}
-                        >
-                          <CloseIcon fontSize="small" />
-                        </IconButton>
-                      </Box>
-                    </Box>
+                    </Stack>
                   </>
                 )}
               </Box>
@@ -1631,6 +1738,29 @@ export function TeacherStudentsView() {
                 )}
               </Box>
             </Box>
+
+            <Box sx={{ mt: 3, px: 2 }}>
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1.5 }}>
+                Bezpieczeństwo konta
+              </Typography>
+              <Button
+                variant="outlined"
+                color="info"
+                startIcon={<LockResetIcon />}
+                onClick={resetStudentPassword}
+                disabled={editStudentLoading}
+                fullWidth
+                sx={{ 
+                  ...buttonSx, 
+                  py: 1.25, 
+                  borderWidth: 1.5, 
+                  "&:hover": { borderWidth: 1.5 },
+                  justifyContent: "center"
+                }}
+              >
+                Wyślij link do resetu hasła
+              </Button>
+            </Box>
           </AppDialogBody>
           <AppDialogFooter>
             <FormActions>
@@ -1765,6 +1895,7 @@ export function TeacherStudentsView() {
                         fullWidth
                         size="small"
                         disabled={editGroupLoading}
+                        placeholder="Wprowadź nazwę grupy"
                       />
                       <Box
                         sx={{ display: "flex", gap: 0.5, flexShrink: 0, mt: 0.5 }}
@@ -1913,6 +2044,7 @@ export function TeacherStudentsView() {
                         minRows={3}
                         multiline
                         disabled={editGroupLoading}
+                        placeholder="Wprowadź opis"
                       />
                       <Box
                         sx={{ display: "flex", gap: 0.5, flexShrink: 0, mt: 0.5 }}
@@ -2052,7 +2184,7 @@ export function TeacherStudentsView() {
                   fullWidth
                   size="small"
                   disabled={createGroupLoading}
-                  placeholder="np. Klasa 2A"
+                  placeholder="Wprowadź nazwę grupy"
                 />
               </Box>
               <Box sx={{ px: 2, py: 1.5 }}>
@@ -2083,7 +2215,7 @@ export function TeacherStudentsView() {
                   minRows={3}
                   multiline
                   disabled={createGroupLoading}
-                  placeholder="Krótki opis grupy..."
+                  placeholder="Wprowadź opis grupy..."
                 />
               </Box>
             </Box>

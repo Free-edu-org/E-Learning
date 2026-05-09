@@ -2198,7 +2198,7 @@ export function AdminDashboard() {
                     sx={counterFieldSx}
                     size="small"
                     fullWidth
-                    placeholder="np. jan.kowalski"
+                    placeholder="Wprowadź nazwę użytkownika"
                   />
                 </Box>
                 <Box
@@ -2241,7 +2241,7 @@ export function AdminDashboard() {
                       }
                       size="small"
                       fullWidth
-                      placeholder="np. jan@szkola.pl"
+                      placeholder="Wprowadź e-mail"
                       sx={counterFieldSx}
                     />
                     <TextField
@@ -3001,7 +3001,7 @@ export function AdminDashboard() {
                     sx={counterFieldSx}
                     size="small"
                     fullWidth
-                    placeholder="np. Klasa 3B"
+                    placeholder="Wprowadź nazwę grupy (np. Klasa 3B)"
                   />
                 </Box>
                 <Box
