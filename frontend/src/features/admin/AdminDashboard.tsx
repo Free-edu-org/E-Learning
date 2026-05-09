@@ -102,7 +102,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { uiTokens } from "@/theme/uiTokens";
 import { UserAvatar } from "@/components/ui/avatar/UserAvatar";
-import { getApiErrorMessage } from "@/utils/dashboardUtils";
+import { getApiErrorMessage, translateApiMessage } from "@/utils/dashboardUtils";
 import { INPUT_LIMITS } from "@/utils/inputLimits";
 import { PasswordStrengthIndicator } from "@/components/ui/form/PasswordStrengthIndicator";
 
@@ -130,7 +130,14 @@ interface DeleteDialogState {
   publicId: string;
   label: string;
   detail?: string | null;
+  fields?: Array<{
+    label: string;
+    value: string;
+    secondary?: boolean;
+  }>;
 }
+
+type GroupFieldErrors = Partial<Record<keyof GroupDraft, string>>;
 
 interface MembershipDialogState {
   groupPublicId: string;
@@ -174,6 +181,34 @@ function getErrorMessage(error: unknown, fallback: string) {
     return "Brak połączenia z serwerem.";
   }
   return fallback;
+}
+
+function parseGroupApiFieldErrors(error: ApiError): GroupFieldErrors {
+  const detail = error.problem.detail ?? "";
+  if (!detail.startsWith("Validation failed:")) {
+    return {};
+  }
+
+  return detail
+    .replace("Validation failed:", "")
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .reduce<GroupFieldErrors>((acc, part) => {
+      const separatorIndex = part.indexOf(":");
+      if (separatorIndex === -1) {
+        return acc;
+      }
+
+      const field = part.slice(0, separatorIndex).trim() as keyof GroupFieldErrors;
+      const validationDetail = part.slice(separatorIndex + 1).trim();
+      if (!(field in emptyGroupDraft)) {
+        return acc;
+      }
+
+      acc[field] = translateApiMessage(validationDetail);
+      return acc;
+    }, {});
 }
 
 function formatDate(value?: string) {
@@ -270,6 +305,7 @@ export function AdminDashboard() {
   const [groupDialogLoading, setGroupDialogLoading] = useState(false);
   const [groupDialogFeedback, setGroupDialogFeedback] =
     useState<DialogFeedbackState | null>(null);
+  const [groupFieldErrors, setGroupFieldErrors] = useState<GroupFieldErrors>({});
   const [deleteDialog, setDeleteDialog] = useState<DeleteDialogState | null>(
     null,
   );
@@ -715,6 +751,7 @@ export function AdminDashboard() {
     setGroupDialogMode("create");
     setSelectedGroup(null);
     setGroupDraft(emptyGroupDraft);
+    setGroupFieldErrors({});
     setGroupDialogFeedback(null);
     setGroupDialogOpen(true);
   };
@@ -727,6 +764,7 @@ export function AdminDashboard() {
       description: group.description,
       teacherPublicId: group.teacherPublicId ?? "",
     });
+    setGroupFieldErrors({});
     setGroupDialogFeedback(null);
     setGroupDialogOpen(true);
   };
@@ -738,6 +776,7 @@ export function AdminDashboard() {
     setGroupDialogOpen(false);
     setSelectedGroup(null);
     setGroupDraft(emptyGroupDraft);
+    setGroupFieldErrors({});
     setGroupDialogFeedback(null);
   };
 
@@ -746,6 +785,7 @@ export function AdminDashboard() {
       return;
     }
 
+    setGroupFieldErrors({});
     setGroupDialogFeedback(null);
     setGroupDialogLoading(true);
     try {
@@ -773,6 +813,14 @@ export function AdminDashboard() {
       await Promise.all([loadGroups(), loadAdminStats()]);
       closeDialogWithSuccessDelay(closeGroupDialog);
     } catch (error) {
+      if (error instanceof ApiError) {
+        const nextFieldErrors = parseGroupApiFieldErrors(error);
+        if (Object.keys(nextFieldErrors).length > 0) {
+          setGroupFieldErrors(nextFieldErrors);
+          return;
+        }
+      }
+
       setGroupDialogFeedback({
         severity: "error",
         message: getErrorMessage(error, "Nie udało się zapisać zmian grupy."),
@@ -1490,6 +1538,15 @@ export function AdminDashboard() {
                                     label: user.email,
                                     detail:
                                       "Konto oczekujące — link aktywacyjny straci ważność.",
+                                    fields: [
+                                      { label: "E-mail", value: user.email },
+                                      {
+                                        label: "Status",
+                                        value:
+                                          "Konto oczekujące — link aktywacyjny straci ważność.",
+                                        secondary: true,
+                                      },
+                                    ],
                                   })
                                 }
                                 sx={panelDeleteButtonSx}
@@ -1512,6 +1569,21 @@ export function AdminDashboard() {
                                       user.groupName
                                         ? `Uczeń w grupie ${user.groupName}`
                                         : user.email,
+                                    fields: [
+                                      { label: "Nazwa", value: user.username },
+                                      { label: "E-mail", value: user.email },
+                                      ...(user.role === "STUDENT" &&
+                                      "groupName" in user &&
+                                      user.groupName
+                                        ? [
+                                            {
+                                              label: "Grupa",
+                                              value: user.groupName,
+                                              secondary: true,
+                                            },
+                                          ]
+                                        : []),
+                                    ],
                                   })
                                 }
                                 sx={panelDeleteButtonSx}
@@ -1529,6 +1601,10 @@ export function AdminDashboard() {
                                     publicId: user.publicId,
                                     label: user.username,
                                     detail: user.email,
+                                    fields: [
+                                      { label: "Nazwa", value: user.username },
+                                      { label: "E-mail", value: user.email, secondary: true },
+                                    ],
                                   })
                                 }
                                 sx={panelDeleteButtonSx}
@@ -1730,6 +1806,15 @@ export function AdminDashboard() {
                                         label: user.email,
                                         detail:
                                           "Konto oczekujące — link aktywacyjny straci ważność.",
+                                        fields: [
+                                          { label: "E-mail", value: user.email },
+                                          {
+                                            label: "Status",
+                                            value:
+                                              "Konto oczekujące — link aktywacyjny straci ważność.",
+                                            secondary: true,
+                                          },
+                                        ],
                                       })
                                     }
                                     sx={panelDeleteButtonSx}
@@ -1755,6 +1840,21 @@ export function AdminDashboard() {
                                           user.groupName
                                             ? `Uczeń w grupie ${user.groupName}`
                                             : user.email,
+                                        fields: [
+                                          { label: "Nazwa", value: user.username },
+                                          { label: "E-mail", value: user.email },
+                                          ...(user.role === "STUDENT" &&
+                                          "groupName" in user &&
+                                          user.groupName
+                                            ? [
+                                                {
+                                                  label: "Grupa",
+                                                  value: user.groupName,
+                                                  secondary: true,
+                                                },
+                                              ]
+                                            : []),
+                                        ],
                                       })
                                     }
                                     sx={panelDeleteButtonSx}
@@ -1774,6 +1874,10 @@ export function AdminDashboard() {
                                       publicId: user.publicId,
                                       label: user.username,
                                       detail: user.email,
+                                      fields: [
+                                        { label: "Nazwa", value: user.username },
+                                        { label: "E-mail", value: user.email, secondary: true },
+                                      ],
                                     })
                                   }
                                   sx={panelDeleteButtonSx}
@@ -2078,6 +2182,14 @@ export function AdminDashboard() {
                                     publicId: group.publicId,
                                     label: group.name,
                                     detail: group.description,
+                                    fields: [
+                                      { label: "Nazwa", value: group.name },
+                                      {
+                                        label: "Opis",
+                                        value: group.description?.trim() || "Brak opisu",
+                                        secondary: true,
+                                      },
+                                    ],
                                   })
                                 }
                                 sx={panelDeleteButtonSx}
@@ -2247,6 +2359,14 @@ export function AdminDashboard() {
                                     publicId: group.publicId,
                                     label: group.name,
                                     detail: group.description,
+                                    fields: [
+                                      { label: "Nazwa", value: group.name },
+                                      {
+                                        label: "Opis",
+                                        value: group.description?.trim() || "Brak opisu",
+                                        secondary: true,
+                                      },
+                                    ],
                                   })
                                 }
                                 sx={panelDeleteButtonSx}
@@ -3015,16 +3135,26 @@ export function AdminDashboard() {
                 <TextField
                   value={groupDraft.name}
                   onChange={(event) =>
-                    setGroupDraft((current) => ({
-                      ...current,
-                      name: event.target.value.slice(
-                        0,
-                        INPUT_LIMITS.groupName,
-                      ),
-                    }))
+                    {
+                      setGroupFieldErrors((current) => ({
+                        ...current,
+                        name: undefined,
+                      }));
+                      setGroupDraft((current) => ({
+                        ...current,
+                        name: event.target.value.slice(
+                          0,
+                          INPUT_LIMITS.groupName,
+                        ),
+                      }));
+                    }
                   }
                   inputProps={{ maxLength: INPUT_LIMITS.groupName }}
-                  helperText={`${groupDraft.name.length}/${INPUT_LIMITS.groupName}`}
+                  error={Boolean(groupFieldErrors.name)}
+                  helperText={
+                    groupFieldErrors.name ??
+                    `${groupDraft.name.length}/${INPUT_LIMITS.groupName}`
+                  }
                   sx={counterFieldSx}
                   size="small"
                   fullWidth
@@ -3050,16 +3180,26 @@ export function AdminDashboard() {
                 <TextField
                   value={groupDraft.description}
                   onChange={(event) =>
-                    setGroupDraft((current) => ({
-                      ...current,
-                      description: event.target.value.slice(
-                        0,
-                        INPUT_LIMITS.groupDescription,
-                      ),
-                    }))
+                    {
+                      setGroupFieldErrors((current) => ({
+                        ...current,
+                        description: undefined,
+                      }));
+                      setGroupDraft((current) => ({
+                        ...current,
+                        description: event.target.value.slice(
+                          0,
+                          INPUT_LIMITS.groupDescription,
+                        ),
+                      }));
+                    }
                   }
                   inputProps={{ maxLength: INPUT_LIMITS.groupDescription }}
-                  helperText={`${groupDraft.description.length}/${INPUT_LIMITS.groupDescription}`}
+                  error={Boolean(groupFieldErrors.description)}
+                  helperText={
+                    groupFieldErrors.description ??
+                    `${groupDraft.description.length}/${INPUT_LIMITS.groupDescription}`
+                  }
                   sx={counterFieldSx}
                   multiline
                   minRows={4}
@@ -3081,13 +3221,23 @@ export function AdminDashboard() {
                   select
                   value={groupDraft.teacherPublicId}
                   onChange={(event) =>
-                    setGroupDraft((current) => ({
-                      ...current,
-                      teacherPublicId: event.target.value,
-                    }))
+                    {
+                      setGroupFieldErrors((current) => ({
+                        ...current,
+                        teacherPublicId: undefined,
+                      }));
+                      setGroupDraft((current) => ({
+                        ...current,
+                        teacherPublicId: event.target.value,
+                      }));
+                    }
                   }
                   SelectProps={{ displayEmpty: true }}
-                  helperText="Wybierz nauczyciela, który ma zarządzać grupą."
+                  error={Boolean(groupFieldErrors.teacherPublicId)}
+                  helperText={
+                    groupFieldErrors.teacherPublicId ??
+                    "Wybierz nauczyciela, który ma zarządzać grupą."
+                  }
                   sx={{
                     "& .MuiFormHelperText-root": {
                       mt: 0.75,
@@ -3176,24 +3326,25 @@ export function AdminDashboard() {
               </AppDialogStatus>
             )}
             <FormSection>
-              {deleteDialog?.type === "group" ? (
+              {deleteDialog?.fields && deleteDialog.fields.length > 0 ? (
                 <Stack spacing={1}>
-                  <Typography variant="body2" sx={{ overflowWrap: "anywhere" }}>
-                    <Box component="span" fontWeight={700}>
-                      Nazwa:
-                    </Box>{" "}
-                    {deleteDialog.label}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ overflowWrap: "anywhere" }}
-                  >
-                    <Box component="span" fontWeight={700} color="text.primary">
-                      Opis:
-                    </Box>{" "}
-                    {deleteDialog.detail?.trim() || "Brak opisu"}
-                  </Typography>
+                  {deleteDialog.fields.map((field) => (
+                    <Typography
+                      key={`${field.label}-${field.value}`}
+                      variant="body2"
+                      color={field.secondary ? "text.secondary" : "text.primary"}
+                      sx={{ overflowWrap: "anywhere" }}
+                    >
+                      <Box
+                        component="span"
+                        fontWeight={700}
+                        color="text.primary"
+                      >
+                        {field.label}:
+                      </Box>{" "}
+                      {field.value}
+                    </Typography>
+                  ))}
                 </Stack>
               ) : (
                 <>
