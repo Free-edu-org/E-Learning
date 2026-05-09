@@ -5,7 +5,6 @@ import {
   type SxProps,
   type Theme,
 } from "@mui/material";
-import { alpha } from "@mui/material/styles";
 import type { ReactNode } from "react";
 import { uiTokens } from "@/theme/uiTokens";
 
@@ -44,36 +43,34 @@ export function FormSection({
     <Box
       sx={{
         display: "grid",
-        gap: 1.5,
-        px: 2,
-        py: 1.5,
+        gap: 2,
+        px: 2.5,
+        py: 2,
         borderRadius: uiTokens.radius.section,
-        bgcolor: (theme) =>
-          alpha(
-            theme.palette.common.white,
-            theme.palette.mode === "dark" ? 0.015 : 0.38,
-          ),
+        bgcolor: "background.paper",
         border: "1px solid",
-        borderColor: (theme) =>
-          alpha(
-            theme.palette.divider,
-            theme.palette.mode === "dark" ? 0.22 : 0.32,
-          ),
+        borderColor: "divider",
+        boxShadow: (theme) =>
+          theme.palette.mode === "light"
+            ? "0 1px 3px rgba(15, 23, 42, 0.05)"
+            : "0 1px 3px rgba(0, 0, 0, 0.2)",
       }}
     >
       {(title || description) && (
         <Box>
           {title && (
-            <Typography variant="subtitle2" fontWeight={800}>
+            <Typography
+              variant="subtitle2"
+              fontWeight={700}
+              fontSize="0.82rem"
+              letterSpacing="0.02em"
+              sx={{ textTransform: "uppercase", color: "text.secondary" }}
+            >
               {title}
             </Typography>
           )}
           {description && (
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ mt: 0.75 }}
-            >
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
               {description}
             </Typography>
           )}

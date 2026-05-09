@@ -83,6 +83,20 @@ export function DashboardHeader({
                   ...iconBoxSx,
                   position: "relative",
                   color: "primary.main",
+                  border: "1px solid",
+                  borderColor: "divider",
+                  boxShadow: (theme) =>
+                    theme.palette.mode === "light"
+                      ? "0 1px 3px rgba(15,23,42,0.06)"
+                      : "0 1px 3px rgba(0,0,0,0.25)",
+                  transition: "box-shadow 0.15s, border-color 0.15s",
+                  "&:hover": {
+                    boxShadow: (theme) =>
+                      theme.palette.mode === "light"
+                        ? "0 4px 12px rgba(15,23,42,0.1)"
+                        : "0 4px 12px rgba(0,0,0,0.35)",
+                    borderColor: "primary.main",
+                  },
                 }}
               >
                 {headerIcon}
@@ -125,11 +139,20 @@ export function DashboardHeader({
             {loading ? (
               <Skeleton width={180} height={28} />
             ) : (
-              <Typography variant="h6" fontWeight={700} lineHeight={1.2}>
+              <Typography
+                variant="h6"
+                fontWeight={700}
+                lineHeight={1.2}
+                sx={{ letterSpacing: "-0.01em" }}
+              >
                 Witaj, {username ?? fallbackName}!
               </Typography>
             )}
-            <Typography variant="caption" color="text.secondary">
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontWeight: 500, letterSpacing: "0.01em" }}
+            >
               {subtitle}
             </Typography>
           </Box>

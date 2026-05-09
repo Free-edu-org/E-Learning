@@ -28,13 +28,13 @@ const dialogPaperSx: SxProps<Theme> = {
   borderRadius: uiTokens.radius.dialog,
   overflow: "hidden",
   border: "1px solid",
-  borderColor: (theme) => alpha(theme.palette.divider, 0.75),
+  borderColor: (theme) => theme.palette.divider,
   bgcolor: "background.paper",
-  backgroundImage: (theme) =>
-    theme.palette.mode === "dark"
-      ? `linear-gradient(180deg, ${alpha(theme.palette.common.white, 0.018)} 0%, transparent 18%)`
-      : "none",
-  boxShadow: "0 24px 64px rgba(15, 23, 42, 0.24)",
+  backgroundImage: "none",
+  boxShadow: (theme) =>
+    theme.palette.mode === "light"
+      ? "0 20px 60px rgba(15, 23, 42, 0.16), 0 4px 16px rgba(15, 23, 42, 0.08)"
+      : "0 20px 60px rgba(0, 0, 0, 0.5), 0 4px 16px rgba(0, 0, 0, 0.3)",
 };
 
 const dialogHeaderSx: SxProps<Theme> = {
@@ -53,11 +53,7 @@ const dialogBodySx: SxProps<Theme> = {
   "& .MuiOutlinedInput-root": {
     minHeight: uiTokens.control.minHeight,
     borderRadius: uiTokens.radius.control,
-    bgcolor: (theme) =>
-      alpha(
-        theme.palette.common.white,
-        theme.palette.mode === "dark" ? 0.02 : 0.58,
-      ),
+    bgcolor: "background.paper",
   },
   "& .MuiInputBase-input": {
     py: 1.375,
@@ -76,9 +72,12 @@ const dialogFooterSx: SxProps<Theme> = {
   px: uiTokens.modal.footerPaddingX,
   pt: uiTokens.modal.footerPaddingTop,
   pb: uiTokens.modal.footerPaddingBottom,
-  background: (theme) =>
-    `linear-gradient(180deg, transparent 0%, ${alpha(theme.palette.common.black, theme.palette.mode === "dark" ? 0.025 : 0.015)} 100%)`,
-  boxShadow: (theme) => `inset 0 1px 0 ${alpha(theme.palette.divider, 0.22)}`,
+  borderTop: "1px solid",
+  borderColor: "divider",
+  bgcolor: (theme) =>
+    theme.palette.mode === "light"
+      ? "rgba(15, 23, 42, 0.015)"
+      : "rgba(255, 255, 255, 0.015)",
 };
 
 export function AppDialog({

@@ -919,80 +919,66 @@ export function AdminAchievementEditorView({
                   </Stack>
 
                   {/* Right: icon picker */}
-                  <Stack spacing={0.5} sx={{ flex: 1, minWidth: 0 }}>
+                  <Stack
+                    spacing={0.75}
+                    sx={{
+                      flex: 1,
+                      minWidth: 0,
+                      display: "flex",
+                      flexDirection: "column",
+                    }}
+                  >
                     <Box
                       sx={{
-                        borderRadius: 1.5,
+                        position: "relative",
+                        borderRadius: "10px",
                         border: "1px solid",
                         borderColor: fieldErrors.icon
                           ? "error.main"
-                          : (theme) =>
-                              alpha(
-                                theme.palette.divider,
-                                theme.palette.mode === "dark" ? 0.28 : 0.42,
-                              ),
-                        overflow: "hidden",
-                        display: "flex",
-                        flexDirection: "column",
-                        height: "100%",
+                          : "divider",
+                        flex: 1,
+                        bgcolor: "background.paper",
+                        overflow: "visible",
+                        boxShadow: (theme) =>
+                          theme.palette.mode === "light"
+                            ? "0 1px 3px rgba(15,23,42,0.05)"
+                            : "0 1px 3px rgba(0,0,0,0.2)",
                       }}
                     >
-                      <Stack
-                        direction="row"
+                      {/* Floating label – jak w MUI outlined */}
+                      <Typography
+                        variant="caption"
+                        component="span"
                         sx={{
-                          borderBottom: "1px solid",
-                          borderColor: (theme) =>
-                            alpha(
-                              theme.palette.divider,
-                              theme.palette.mode === "dark" ? 0.16 : 0.3,
-                            ),
-                          px: 1.5,
-                          py: 0.75,
-                          bgcolor: (theme) =>
-                            alpha(theme.palette.background.paper, 0.6),
-                          flexShrink: 0,
+                          position: "absolute",
+                          top: -9,
+                          left: 10,
+                          px: 0.5,
+                          lineHeight: 1,
+                          fontSize: "0.75rem",
+                          color: fieldErrors.icon
+                            ? "error.main"
+                            : "text.secondary",
+                          bgcolor: "background.paper",
+                          pointerEvents: "none",
+                          zIndex: 1,
                         }}
-                        alignItems="center"
-                        justifyContent="space-between"
                       >
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          fontWeight={500}
-                        >
-                          Ikona
-                        </Typography>
-                        <Box
-                          sx={{
-                            width: 32,
-                            height: 32,
-                            borderRadius: 1.5,
-                            display: "grid",
-                            placeItems: "center",
-                            fontSize: "1.1rem",
-                            bgcolor: alpha(draftColorVisuals.accent, 0.1),
-                            border: "1.5px solid",
-                            borderColor: alpha(draftColorVisuals.accent, 0.3),
-                            boxShadow: `0 2px 8px ${alpha(draftColorVisuals.accent, 0.18)}`,
-                            transition: "all 0.2s ease",
-                          }}
-                        >
-                          {draftPreviewIcon}
-                        </Box>
-                      </Stack>
+                        Ikona
+                      </Typography>
                       <Box
                         sx={{
                           display: "grid",
                           gridTemplateColumns: "repeat(6, 1fr)",
-                          gap: 0.75,
-                          p: 1,
-                          flex: 1,
+                          gridAutoRows: "40px",
+                          gap: "4px",
+                          p: "8px",
                           overflowY: "auto",
-                          alignContent: "start",
+                          maxHeight: 240,
                           "&::-webkit-scrollbar": { width: 3 },
                           "&::-webkit-scrollbar-thumb": {
                             bgcolor: (theme) =>
-                              alpha(theme.palette.divider, 0.2),
+                              alpha(theme.palette.divider, 0.3),
                             borderRadius: 2,
                           },
                         }}
@@ -1014,41 +1000,34 @@ export function AdminAchievementEditorView({
                                 }));
                               }}
                               sx={{
-                                height: 34,
+                                width: "100%",
+                                height: "40px",
                                 display: "grid",
                                 placeItems: "center",
-                                fontSize: "1rem",
-                                borderRadius: 1.25,
+                                fontSize: "1.15rem",
+                                borderRadius: "12px",
                                 cursor: "pointer",
                                 userSelect: "none",
-                                border: "1.5px solid",
+                                border: "1px solid",
                                 borderColor: isIconSelected
-                                  ? alpha(draftColorVisuals.accent, 0.6)
-                                  : (theme) =>
-                                      alpha(theme.palette.divider, 0.1),
+                                  ? "primary.main"
+                                  : "transparent",
                                 bgcolor: isIconSelected
-                                  ? alpha(draftColorVisuals.accent, 0.12)
-                                  : (theme) =>
-                                      alpha(
-                                        theme.palette.text.primary,
-                                        theme.palette.mode === "dark"
-                                          ? 0.04
-                                          : 0.02,
-                                      ),
-                                boxShadow: isIconSelected
-                                  ? `0 0 0 2px ${alpha(draftColorVisuals.accent, 0.2)}`
-                                  : "none",
-                                transition: "all 0.12s ease",
+                                  ? (theme) =>
+                                      alpha(theme.palette.primary.main, 0.1)
+                                  : "transparent",
+                                transition:
+                                  "background-color 0.1s ease, border-color 0.1s ease",
                                 "&:hover": {
                                   bgcolor: isIconSelected
-                                    ? alpha(draftColorVisuals.accent, 0.18)
+                                    ? (theme) =>
+                                        alpha(theme.palette.primary.main, 0.15)
                                     : (theme) =>
-                                        alpha(theme.palette.primary.main, 0.07),
+                                        alpha(theme.palette.text.primary, 0.06),
                                   borderColor: isIconSelected
-                                    ? alpha(draftColorVisuals.accent, 0.75)
+                                    ? "primary.main"
                                     : (theme) =>
-                                        alpha(theme.palette.primary.main, 0.3),
-                                  transform: "scale(1.08)",
+                                        alpha(theme.palette.text.primary, 0.1),
                                 },
                               }}
                             >
@@ -1058,14 +1037,24 @@ export function AdminAchievementEditorView({
                         })}
                       </Box>
                     </Box>
-                    <Typography
-                      variant="caption"
-                      color={fieldErrors.icon ? "error" : "text.secondary"}
-                      sx={{ px: 1.75, lineHeight: 1.4 }}
-                    >
-                      {fieldErrors.icon ??
-                        "Wybierz gotową ikonę albo wpisz własne emoji w polu tekstowym."}
-                    </Typography>
+                    {fieldErrors.icon && (
+                      <Typography
+                        variant="caption"
+                        color="error"
+                        sx={{ px: 0.25, lineHeight: 1.4 }}
+                      >
+                        {fieldErrors.icon}
+                      </Typography>
+                    )}
+                    {!fieldErrors.icon && (
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ px: 0.25, lineHeight: 1.4 }}
+                      >
+                        Wybierz ikonę lub wpisz własne emoji w polu kodu.
+                      </Typography>
+                    )}
                   </Stack>
                 </Stack>
 
@@ -1143,8 +1132,8 @@ export function AdminAchievementEditorView({
                             <MenuItem key={option.value} value={option.value}>
                               <Stack
                                 direction="row"
-                                spacing={1.25}
                                 alignItems="center"
+                                sx={{ gap: 1.25 }}
                               >
                                 <Box
                                   sx={{
@@ -1153,6 +1142,7 @@ export function AdminAchievementEditorView({
                                     borderRadius: "50%",
                                     bgcolor: optionVisuals.accent,
                                     flexShrink: 0,
+                                    mr: 0.75,
                                     boxShadow: `0 0 0 2px ${alpha(optionVisuals.accent, 0.2)}`,
                                   }}
                                 />
@@ -1257,7 +1247,7 @@ export function AdminAchievementEditorView({
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
                             {draft.active
-                              ? "Achievement jest widoczny dla uczniów."
+                              ? "Osiągnięcie jest widoczne dla uczniów."
                               : "Achievement jest ukryty dla uczniów."}
                           </Typography>
                         </Stack>

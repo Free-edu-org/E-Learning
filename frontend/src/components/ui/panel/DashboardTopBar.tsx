@@ -44,6 +44,7 @@ export function DashboardTopBar({
             color:
               theme.palette.mode === "light" ? "primary.main" : "text.disabled",
             mr: 0.5,
+            fontSize: 16,
           }}
         />
         <Switch
@@ -57,6 +58,7 @@ export function DashboardTopBar({
             color:
               theme.palette.mode === "dark" ? "primary.main" : "text.disabled",
             ml: 0.5,
+            fontSize: 16,
           }}
         />
       </Box>
@@ -69,8 +71,19 @@ export function DashboardTopBar({
           sx={{
             borderRadius: 2,
             textTransform: "none",
-            fontWeight: 600,
+            fontWeight: 500,
+            fontSize: "0.8125rem",
             bgcolor: "background.paper",
+            color: "text.secondary",
+            borderColor: "divider",
+            "&:hover": {
+              borderColor: "divider",
+              bgcolor: (t) =>
+                t.palette.mode === "light"
+                  ? "rgba(15,23,42,0.04)"
+                  : "rgba(255,255,255,0.05)",
+              color: "text.primary",
+            },
           }}
         >
           Wyloguj
