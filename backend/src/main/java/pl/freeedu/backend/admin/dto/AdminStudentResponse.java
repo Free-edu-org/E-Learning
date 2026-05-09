@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import pl.freeedu.backend.user.model.Role;
+import pl.freeedu.backend.user.model.UserStatus;
 
 @Data
 @Builder
@@ -21,6 +22,8 @@ public class AdminStudentResponse {
 	private String username;
 
 	private Role role;
+
+	private UserStatus status;
 
 	private String groupPublicId;
 

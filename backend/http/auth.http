@@ -101,3 +101,48 @@ Content-Type: application/json
   "newPassword": "",
   "confirmPassword": ""
 }
+
+### Validate invitation token (200 returns email)
+GET http://localhost:8080/api/v1/auth/invite/paste-token-from-email-here
+
+### Validate invitation token - invalid token (400 INVITATION_TOKEN_INVALID)
+GET http://localhost:8080/api/v1/auth/invite/invalid-token-value
+
+### Activate invited account
+POST http://localhost:8080/api/v1/auth/activate
+Content-Type: application/json
+
+{
+  "token": "paste-token-from-email-here",
+  "username": "new_student_username",
+  "password": "strongPassword123"
+}
+
+### Activate account - invalid token (400 INVITATION_TOKEN_INVALID)
+POST http://localhost:8080/api/v1/auth/activate
+Content-Type: application/json
+
+{
+  "token": "invalid-token",
+  "username": "new_student_username",
+  "password": "strongPassword123"
+}
+
+### Activate account - validation fail (400 VALIDATION_FAILED)
+POST http://localhost:8080/api/v1/auth/activate
+Content-Type: application/json
+
+{
+  "token": "",
+  "username": "",
+  "password": ""
+}
+
+### Login as INVITED account - blocked (401 ACCOUNT_NOT_ACTIVE)
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "identifier": "invited.student@example.com",
+  "password": "anyPassword"
+}

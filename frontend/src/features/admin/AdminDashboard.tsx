@@ -27,9 +27,11 @@ import {
 import {
   AddCircleOutline as AddCircleIcon,
   AutoAwesomeOutlined as SparklesIcon,
+  CancelOutlined as CancelIcon,
   DeleteOutline as DeleteIcon,
   EditOutlined as EditIcon,
   GroupOutlined as GroupIcon,
+  HourglassEmptyOutlined as PendingIcon,
   ListOutlined as ListIcon,
   PeopleOutline as PeopleIcon,
   PersonOutline as PersonIcon,
@@ -37,6 +39,7 @@ import {
   SaveOutlined as SaveIcon,
   SchoolOutlined as SchoolIcon,
   SearchOutlined as SearchIcon,
+  SendOutlined as SendIcon,
   GridViewOutlined as GridIcon,
 } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
@@ -217,6 +220,9 @@ export function AdminDashboard() {
   const [loadingCurrentUser, setLoadingCurrentUser] = useState(true);
   const [adminStats, setAdminStats] = useState<AdminStats | null>(null);
   const [statsError, setStatsError] = useState<string | null>(null);
+  const [pageFeedback, setPageFeedback] = useState<DialogFeedbackState | null>(
+    null,
+  );
 
   const [teachers, setTeachers] = useState<UserProfile[]>([]);
   const [students, setStudents] = useState<AdminStudentProfile[]>([]);
@@ -547,6 +553,21 @@ export function AdminDashboard() {
     setUserDialogFeedback(null);
   };
 
+  const resendStudentInvite = async (user: AdminListUser) => {
+    try {
+      await adminService.resendStudentInvite(user.publicId);
+      setPageFeedback({
+        severity: "success",
+        message: `Zaproszenie wysłane ponownie na ${user.email}.`,
+      });
+    } catch {
+      setPageFeedback({
+        severity: "error",
+        message: "Nie udało się wysłać zaproszenia.",
+      });
+    }
+  };
+
   const closeUserDialog = () => {
     if (userDialogLoading) {
       return;
@@ -576,9 +597,7 @@ export function AdminDashboard() {
           });
         } else {
           const payload: AdminCreateStudentRequest = {
-            username: userDraft.username,
             email: userDraft.email,
-            password: userDraft.password,
             groupPublicId:
               userDraft.groupPublicId === "" ? null : userDraft.groupPublicId,
           };
@@ -586,7 +605,8 @@ export function AdminDashboard() {
           await adminService.createStudent(payload);
           setUserDialogFeedback({
             severity: "success",
-            message: "Uczeń został utworzony.",
+            message:
+              "Zaproszenie wysłane. Uczeń aktywuje konto przez link w e-mailu.",
           });
         }
       } else if (selectedUser) {
@@ -1025,6 +1045,15 @@ export function AdminDashboard() {
 
                 {usersError && <Alert severity="warning">{usersError}</Alert>}
 
+                {pageFeedback && (
+                  <Alert
+                    severity={pageFeedback.severity}
+                    onClose={() => setPageFeedback(null)}
+                  >
+                    {pageFeedback.message}
+                  </Alert>
+                )}
+
                 <Paper elevation={0} sx={panelToolbarSx}>
                   <TextField
                     size="small"
@@ -1277,7 +1306,7 @@ export function AdminDashboard() {
                             >
                               <UserAvatar
                                 avatarUrl={user.avatarUrl}
-                                username={user.username}
+                                username={user.username ?? user.email}
                                 size={20}
                               />
                               <Typography
@@ -1286,7 +1315,7 @@ export function AdminDashboard() {
                                 color="primary.main"
                                 sx={{ overflowWrap: "anywhere" }}
                               >
-                                {user.username}
+                                {user.username ?? "(oczekuje)"}
                               </Typography>
                               <Chip
                                 color={getRoleChipColor(user.role as UserRole)}
@@ -1308,6 +1337,16 @@ export function AdminDashboard() {
                                 variant="outlined"
                                 sx={outlinedMetaChipSx}
                               />
+                              {"status" in user &&
+                                user.status === "INVITED" && (
+                                  <Chip
+                                    icon={<PendingIcon />}
+                                    label="Zaproszony"
+                                    size="small"
+                                    color="warning"
+                                    variant="outlined"
+                                  />
+                                )}
                             </Stack>
                             <Typography
                               variant="body2"
@@ -1352,34 +1391,85 @@ export function AdminDashboard() {
                           </Stack>
 
                           <Box sx={panelInlineActionsSx}>
+                            {"status" in user && user.status === "INVITED" && (
+                              <Button
+                                size="small"
+                                color="warning"
+                                startIcon={<SendIcon fontSize="small" />}
+                                onClick={() => resendStudentInvite(user)}
+                                sx={panelFooterButtonSx}
+                              >
+                                Wyślij ponownie
+                              </Button>
+                            )}
                             <Button
                               size="small"
                               startIcon={<EditIcon fontSize="small" />}
                               onClick={() => openEditUserDialog(user)}
                               sx={panelFooterButtonSx}
+                              disabled={
+                                "status" in user && user.status === "INVITED"
+                              }
                             >
                               Edytuj
                             </Button>
-                            <Button
-                              size="small"
-                              startIcon={<DeleteIcon fontSize="small" />}
-                              onClick={() =>
-                                openDeleteDialog({
-                                  type: "user",
-                                  publicId: user.publicId,
-                                  label: user.username,
-                                  detail:
-                                    user.role === "STUDENT" &&
-                                    "groupName" in user &&
-                                    user.groupName
-                                      ? `Uczeń w grupie ${user.groupName}`
-                                      : user.email,
-                                })
-                              }
-                              sx={panelDeleteButtonSx}
-                            >
-                              Usuń
-                            </Button>
+                            {"status" in user && user.status === "INVITED" && (
+                              <Button
+                                size="small"
+                                startIcon={<CancelIcon fontSize="small" />}
+                                onClick={() =>
+                                  openDeleteDialog({
+                                    type: "user",
+                                    publicId: user.publicId,
+                                    label: user.email,
+                                    detail:
+                                      "Konto oczekujące — link aktywacyjny straci ważność.",
+                                  })
+                                }
+                                sx={panelDeleteButtonSx}
+                              >
+                                Anuluj
+                              </Button>
+                            )}
+                            {"status" in user && user.status !== "INVITED" && (
+                              <Button
+                                size="small"
+                                startIcon={<DeleteIcon fontSize="small" />}
+                                onClick={() =>
+                                  openDeleteDialog({
+                                    type: "user",
+                                    publicId: user.publicId,
+                                    label: user.username,
+                                    detail:
+                                      user.role === "STUDENT" &&
+                                      "groupName" in user &&
+                                      user.groupName
+                                        ? `Uczeń w grupie ${user.groupName}`
+                                        : user.email,
+                                  })
+                                }
+                                sx={panelDeleteButtonSx}
+                              >
+                                Usuń
+                              </Button>
+                            )}
+                            {!("status" in user) && (
+                              <Button
+                                size="small"
+                                startIcon={<DeleteIcon fontSize="small" />}
+                                onClick={() =>
+                                  openDeleteDialog({
+                                    type: "user",
+                                    publicId: user.publicId,
+                                    label: user.username,
+                                    detail: user.email,
+                                  })
+                                }
+                                sx={panelDeleteButtonSx}
+                              >
+                                Usuń
+                              </Button>
+                            )}
                           </Box>
                         </Stack>
                       </Paper>
@@ -1426,7 +1516,7 @@ export function AdminDashboard() {
                                   >
                                     <UserAvatar
                                       avatarUrl={user.avatarUrl}
-                                      username={user.username}
+                                      username={user.username ?? user.email}
                                       size={28}
                                     />
                                     <Typography
@@ -1435,7 +1525,7 @@ export function AdminDashboard() {
                                       color="primary.main"
                                       sx={panelTitleSx}
                                     >
-                                      {user.username}
+                                      {user.username ?? "(oczekuje)"}
                                     </Typography>
                                   </Stack>
                                   <Typography
@@ -1506,6 +1596,16 @@ export function AdminDashboard() {
                                   variant="outlined"
                                   sx={outlinedMetaChipSx}
                                 />
+                                {"status" in user &&
+                                  user.status === "INVITED" && (
+                                    <Chip
+                                      icon={<PendingIcon />}
+                                      label="Zaproszony"
+                                      size="small"
+                                      color="warning"
+                                      variant="outlined"
+                                    />
+                                  )}
                               </Stack>
                             </Stack>
                           </CardContent>
@@ -1523,6 +1623,20 @@ export function AdminDashboard() {
                                 flexWrap: "nowrap",
                               }}
                             >
+                              {"status" in user &&
+                                user.status === "INVITED" && (
+                                  <Button
+                                    size="small"
+                                    variant="outlined"
+                                    color="warning"
+                                    startIcon={<SendIcon fontSize="small" />}
+                                    fullWidth
+                                    onClick={() => resendStudentInvite(user)}
+                                    sx={panelFooterButtonSx}
+                                  >
+                                    Wyślij ponownie
+                                  </Button>
+                                )}
                               <Button
                                 size="small"
                                 variant="outlined"
@@ -1530,31 +1644,77 @@ export function AdminDashboard() {
                                 fullWidth
                                 onClick={() => openEditUserDialog(user)}
                                 sx={panelFooterButtonSx}
+                                disabled={
+                                  "status" in user && user.status === "INVITED"
+                                }
                               >
                                 Edytuj
                               </Button>
-                              <Button
-                                size="small"
-                                variant="outlined"
-                                startIcon={<DeleteIcon fontSize="small" />}
-                                fullWidth
-                                onClick={() =>
-                                  openDeleteDialog({
-                                    type: "user",
-                                    publicId: user.publicId,
-                                    label: user.username,
-                                    detail:
-                                      user.role === "STUDENT" &&
-                                      "groupName" in user &&
-                                      user.groupName
-                                        ? `Uczeń w grupie ${user.groupName}`
-                                        : user.email,
-                                  })
-                                }
-                                sx={panelDeleteButtonSx}
-                              >
-                                Usuń
-                              </Button>
+                              {"status" in user &&
+                                user.status === "INVITED" && (
+                                  <Button
+                                    size="small"
+                                    variant="outlined"
+                                    startIcon={<CancelIcon fontSize="small" />}
+                                    fullWidth
+                                    onClick={() =>
+                                      openDeleteDialog({
+                                        type: "user",
+                                        publicId: user.publicId,
+                                        label: user.email,
+                                        detail:
+                                          "Konto oczekujące — link aktywacyjny straci ważność.",
+                                      })
+                                    }
+                                    sx={panelDeleteButtonSx}
+                                  >
+                                    Anuluj
+                                  </Button>
+                                )}
+                              {"status" in user &&
+                                user.status !== "INVITED" && (
+                                  <Button
+                                    size="small"
+                                    variant="outlined"
+                                    startIcon={<DeleteIcon fontSize="small" />}
+                                    fullWidth
+                                    onClick={() =>
+                                      openDeleteDialog({
+                                        type: "user",
+                                        publicId: user.publicId,
+                                        label: user.username,
+                                        detail:
+                                          user.role === "STUDENT" &&
+                                          "groupName" in user &&
+                                          user.groupName
+                                            ? `Uczeń w grupie ${user.groupName}`
+                                            : user.email,
+                                      })
+                                    }
+                                    sx={panelDeleteButtonSx}
+                                  >
+                                    Usuń
+                                  </Button>
+                                )}
+                              {!("status" in user) && (
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  startIcon={<DeleteIcon fontSize="small" />}
+                                  fullWidth
+                                  onClick={() =>
+                                    openDeleteDialog({
+                                      type: "user",
+                                      publicId: user.publicId,
+                                      label: user.username,
+                                      detail: user.email,
+                                    })
+                                  }
+                                  sx={panelDeleteButtonSx}
+                                >
+                                  Usuń
+                                </Button>
+                              )}
                             </Box>
                           </CardActions>
                         </Card>
@@ -2054,13 +2214,15 @@ export function AdminDashboard() {
               userDialogMode === "create"
                 ? userDialogRole === "TEACHER"
                   ? "Nowe konto nauczyciela"
-                  : "Nowe konto ucznia"
+                  : "Zaproś ucznia"
                 : `Edycja konta ${selectedUser?.username ?? ""}`
             }
             subtitle={
               userDialogRole === "TEACHER"
                 ? "Utwórz lub zaktualizuj konto nauczyciela."
-                : "Zarządzaj danymi ucznia, przypisaną grupą i dostępem."
+                : userDialogMode === "create"
+                  ? "Wyślij zaproszenie e-mail. Uczeń sam ustawi nazwę i hasło."
+                  : "Zarządzaj danymi ucznia, przypisaną grupą i dostępem."
             }
             badge={
               <Chip
@@ -2088,26 +2250,30 @@ export function AdminDashboard() {
             <Stack spacing={2.25}>
               <FormSection>
                 <Stack spacing={2.25}>
-                  <FormField>
-                    <TextField
-                      label="Nazwa użytkownika"
-                      name="admin-user-dialog-username"
-                      autoComplete="off"
-                      value={userDraft.username}
-                      onChange={(event) =>
-                        setUserDraft((current) => ({
-                          ...current,
-                          username: event.target.value.slice(
-                            0,
-                            INPUT_LIMITS.username,
-                          ),
-                        }))
-                      }
-                      inputProps={{ maxLength: INPUT_LIMITS.username }}
-                      helperText={`${userDraft.username.length}/${INPUT_LIMITS.username}`}
-                      fullWidth
-                    />
-                  </FormField>
+                  {!(
+                    userDialogMode === "create" && userDialogRole === "STUDENT"
+                  ) && (
+                    <FormField>
+                      <TextField
+                        label="Nazwa użytkownika"
+                        name="admin-user-dialog-username"
+                        autoComplete="off"
+                        value={userDraft.username}
+                        onChange={(event) =>
+                          setUserDraft((current) => ({
+                            ...current,
+                            username: event.target.value.slice(
+                              0,
+                              INPUT_LIMITS.username,
+                            ),
+                          }))
+                        }
+                        inputProps={{ maxLength: INPUT_LIMITS.username }}
+                        helperText={`${userDraft.username.length}/${INPUT_LIMITS.username}`}
+                        fullWidth
+                      />
+                    </FormField>
+                  )}
                   <FormField>
                     <TextField
                       label="Adres e-mail"
@@ -2124,62 +2290,53 @@ export function AdminDashboard() {
                       fullWidth
                     />
                   </FormField>
+                  {userDialogMode === "create" &&
+                    userDialogRole === "TEACHER" && (
+                      <FormField>
+                        <TextField
+                          label="Hasło"
+                          name="admin-user-dialog-password"
+                          autoComplete="new-password"
+                          type="password"
+                          value={userDraft.password}
+                          onChange={(event) =>
+                            setUserDraft((current) => ({
+                              ...current,
+                              password: event.target.value,
+                            }))
+                          }
+                          fullWidth
+                        />
+                      </FormField>
+                    )}
                   {(userDialogMode === "create" ||
                     userDialogRole === "STUDENT") && (
-                    <>
-                      {userDialogMode === "create" && (
-                        <FormField>
-                          <TextField
-                            label="Hasło"
-                            name="admin-user-dialog-password"
-                            autoComplete="new-password"
-                            type="password"
-                            value={userDraft.password}
-                            onChange={(event) =>
-                              setUserDraft((current) => ({
-                                ...current,
-                                password: event.target.value,
-                              }))
-                            }
-                            fullWidth
-                          />
-                        </FormField>
-                      )}
-
-                      {userDialogRole === "STUDENT" && (
-                        <FormField>
-                          <TextField
-                            select
-                            label="Grupa"
-                            value={userDraft.groupPublicId}
-                            onChange={(event) =>
-                              setUserDraft((current) => ({
-                                ...current,
-                                groupPublicId: event.target.value as
-                                  | string
-                                  | "",
-                              }))
-                            }
-                            fullWidth
-                            helperText={
-                              assignableGroups.length === 0
-                                ? "Brak grup do wyboru"
-                                : "Wybór grupy jest opcjonalny."
-                            }
-                          >
-                            <MenuItem value="">Bez grupy</MenuItem>
-                            {assignableGroups.map((group) => (
-                              <MenuItem
-                                key={group.publicId}
-                                value={group.publicId}
-                              >
-                                {group.name}
-                              </MenuItem>
-                            ))}
-                          </TextField>
-                        </FormField>
-                      )}
-                    </>
+                    <FormField>
+                      <TextField
+                        select
+                        label="Grupa"
+                        value={userDraft.groupPublicId}
+                        onChange={(event) =>
+                          setUserDraft((current) => ({
+                            ...current,
+                            groupPublicId: event.target.value as string | "",
+                          }))
+                        }
+                        fullWidth
+                        helperText={
+                          assignableGroups.length === 0
+                            ? "Brak grup do wyboru"
+                            : "Wybór grupy jest opcjonalny."
+                        }
+                      >
+                        <MenuItem value="">Bez grupy</MenuItem>
+                        {assignableGroups.map((group) => (
+                          <MenuItem key={group.publicId} value={group.publicId}>
+                            {group.name}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                    </FormField>
                   )}
                 </Stack>
               </FormSection>

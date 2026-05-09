@@ -31,6 +31,7 @@ Default local development base URL is `http://localhost:8080`
 
 **Known Errors:**
 - `INVALID_CREDENTIALS` (401 Unauthorized): Wrong username/email or password.
+- `ACCOUNT_NOT_ACTIVE` (401 Unauthorized): Account is in `INVITED` state — login is blocked until activation is complete.
 - `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
 
 ---
@@ -82,6 +83,52 @@ Default local development base URL is `http://localhost:8080`
 - `PASSWORD_RESET_TOKEN_INVALID` (400 Bad Request): Reset token does not exist or is invalid.
 - `PASSWORD_RESET_TOKEN_EXPIRED` (400 Bad Request): Reset token has expired.
 - `PASSWORD_RESET_TOKEN_USED` (400 Bad Request): Reset token has already been used.
+
+---
+
+### 1.4. Validate Invitation Token *(no auth required)*
+- **URL**: `/api/v1/auth/invite/{token}`
+- **Method**: `GET`
+- **Description**: Validates an account activation token and returns the associated email. Used by the activation page to pre-fill the email field before the student sets their credentials.
+
+**Success (200 OK):**
+```json
+{
+  "email": "student@example.com"
+}
+```
+
+**Known Errors:**
+- `INVITATION_TOKEN_INVALID` (400 Bad Request): Token does not exist or is malformed.
+- `INVITATION_TOKEN_EXPIRED` (400 Bad Request): Token has passed its expiration time.
+- `INVITATION_TOKEN_USED` (400 Bad Request): Token has already been used.
+
+---
+
+### 1.5. Activate Account *(no auth required)*
+- **URL**: `/api/v1/auth/activate`
+- **Method**: `POST`
+- **Description**: Finalizes an invited student account. The student provides the token from the email link, chooses a username and password. The account status changes from `INVITED` to `ACTIVE` and the token is invalidated.
+
+**Request Body (JSON):**
+```json
+{
+  "token": "activation-token-from-email",
+  "username": "jan_kowalski",
+  "password": "strongPassword123"
+}
+```
+
+**Success (204 No Content):**
+*(Empty Response Body)*
+
+**Known Errors:**
+- `INVITATION_TOKEN_INVALID` (400 Bad Request): Token does not exist or is malformed.
+- `INVITATION_TOKEN_EXPIRED` (400 Bad Request): Token has passed its expiration time.
+- `INVITATION_TOKEN_USED` (400 Bad Request): Token has already been used.
+- `ACCOUNT_ALREADY_ACTIVE` (409 Conflict): Account is already active.
+- `USERNAME_ALREADY_TAKEN` (409 Conflict): Chosen username is already in use.
+- `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
 
 ---
 
@@ -947,18 +994,16 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
 
 ---
 
-### 5.6. Create Student (Teacher API)
+### 5.6. Create Student / Send Invitation (Teacher API)
 - **URL**: `/api/v1/teacher/students`
 - **Method**: `POST`
-- **Description**: Tworzy konto ucznia i od razu przypisuje go do wskazanej grupy należącej do aktualnie zalogowanego nauczyciela. Pole `groupId` jest **wymagane**.
+- **Description**: Tworzy konto ucznia w stanie `INVITED` i wysyła email z linkiem aktywacyjnym. Uczeń musi kliknąć link i ustawić username oraz hasło, zanim konto stanie się `ACTIVE`. Pole `groupPublicId` jest **wymagane** i musi wskazywać grupę należącą do aktualnie zalogowanego nauczyciela.
 - **Authorization**: `TEACHER`
 
 **Request Body (JSON):**
 ```json
 {
-  "username": "new_student",
   "email": "new.student@example.com",
-  "password": "password123",
   "groupPublicId": "11111111-1111-1111-1111-111111111111"
 }
 ```
@@ -967,23 +1012,40 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
 ```json
 {
   "publicId": "33333333-3333-3333-3333-333333333333",
-  "username": "new_student",
+  "username": null,
   "email": "new.student@example.com",
   "role": "STUDENT",
+  "status": "INVITED",
   "createdAt": "2026-03-30T20:15:00",
   "groupPublicId": "11111111-1111-1111-1111-111111111111",
-  "avatarUrl": "preset:avatar_1"
+  "avatarUrl": null
 }
 ```
 
 **Known Errors:**
-- `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid (w tym brak `groupId`).
+- `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid (w tym brak `groupPublicId`).
 - `INVALID_ROLE_FOR_GROUP` (400 Bad Request): Wskazana grupa nie należy do aktualnego nauczyciela.
 - `USER_GROUP_NOT_FOUND` (404 Not Found): Grupa o podanym ID nie istnieje.
 - `EMAIL_ALREADY_TAKEN` (409 Conflict): Email already exists.
-- `USERNAME_ALREADY_TAKEN` (409 Conflict): Username already exists.
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
 - `FORBIDDEN` (403 Forbidden): Token role does not permit access.
+
+---
+
+### 5.8. Resend Invitation (Teacher API)
+- **URL**: `/api/v1/teacher/students/{studentPublicId}/resend-invite`
+- **Method**: `POST`
+- **Description**: Unieważnia poprzedni token i wysyła nowy email aktywacyjny do ucznia o statusie `INVITED`. Uczeń musi należeć do jednej z grup aktualnie zalogowanego nauczyciela.
+- **Authorization**: `TEACHER`
+
+**Success (204 No Content):**
+*(Empty Response Body)*
+
+**Known Errors:**
+- `USER_NOT_FOUND` (404 Not Found): Uczeń o podanym ID nie istnieje.
+- `ACCOUNT_NOT_INVITED` (409 Conflict): Konto ucznia nie ma statusu `INVITED` (już aktywne).
+- `FORBIDDEN` (403 Forbidden): Uczeń nie należy do żadnej grupy tego nauczyciela.
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
 
 ---
 
@@ -1090,6 +1152,7 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
     "username": "student1",
     "email": "user@example.com",
     "role": "STUDENT",
+    "status": "ACTIVE",
     "groupPublicId": "11111111-1111-1111-1111-111111111111",
     "groupName": "Angielski A1",
     "createdAt": "2026-03-02T21:00:00"
@@ -1097,22 +1160,22 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
 ]
 ```
 
+> `status` is `"ACTIVE"` or `"INVITED"`. Invited students have `username: null` and cannot log in until they complete account activation.
+
 **Known Errors:**
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
 - `FORBIDDEN` (403 Forbidden): Token role does not permit access.
 
 ---
-### 6.4. Create Student (Admin API)
+### 6.4. Create Student / Send Invitation (Admin API)
 - **URL**: `/api/v1/admin/students`
 - **Method**: `POST`
-- **Description**: Tworzy konto ucznia. Opcjonalnie przypisuje do grupy. Wymaga `ADMIN`.
+- **Description**: Tworzy konto ucznia w stanie `INVITED` i wysyła email z linkiem aktywacyjnym. Opcjonalnie przypisuje do grupy. Uczeń musi kliknąć link i ustawić username oraz hasło, zanim konto stanie się `ACTIVE`. Wymaga `ADMIN`.
 
 **Request Body (JSON):**
 ```json
 {
-  "username": "new_student",
   "email": "new.student@example.com",
-  "password": "password123",
   "groupPublicId": "11111111-1111-1111-1111-111111111111"
 }
 ```
@@ -1122,9 +1185,10 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
 ```json
 {
   "publicId": "33333333-3333-3333-3333-333333333333",
-  "username": "new_student",
+  "username": null,
   "email": "new.student@example.com",
   "role": "STUDENT",
+  "status": "INVITED",
   "createdAt": "2026-03-26T20:15:00"
 }
 ```
@@ -1133,7 +1197,21 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
 - `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
 - `USER_GROUP_NOT_FOUND` (404 Not Found): Group does not exist.
 - `EMAIL_ALREADY_TAKEN` (409 Conflict): Email already exists.
-- `USERNAME_ALREADY_TAKEN` (409 Conflict): Username already exists.
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
+
+---
+### 6.4.1. Resend Invitation (Admin API)
+- **URL**: `/api/v1/admin/students/{studentPublicId}/resend-invite`
+- **Method**: `POST`
+- **Description**: Unieważnia poprzedni token i wysyła nowy email aktywacyjny do ucznia o statusie `INVITED`. Wymaga `ADMIN`.
+
+**Success (204 No Content):**
+*(Empty Response Body)*
+
+**Known Errors:**
+- `USER_NOT_FOUND` (404 Not Found): Uczeń o podanym ID nie istnieje.
+- `ACCOUNT_NOT_INVITED` (409 Conflict): Konto ucznia nie ma statusu `INVITED` (już aktywne).
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
 - `FORBIDDEN` (403 Forbidden): Token role does not permit access.
 
