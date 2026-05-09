@@ -148,9 +148,7 @@ public class InvitationService {
 			});
 			String verificationToken = emailVerificationService.createVerificationForUser(createdStudent);
 			emailVerificationService.sendVerificationEmail(createdStudent, verificationToken);
-			return MessageResponse.builder()
-					.message("Account created successfully. Please verify your email address to activate the account.")
-					.build();
+			return MessageResponse.builder().message("Email verification required.").build();
 		}).subscribeOn(Schedulers.boundedElastic()));
 	}
 

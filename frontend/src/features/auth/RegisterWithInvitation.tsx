@@ -47,7 +47,7 @@ export function RegisterWithInvitation() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [isRegistered, setIsRegistered] = useState(false);
   const [resendMsg, setResendMsg] = useState<string | null>(null);
   const [resendLoading, setResendLoading] = useState(false);
 
@@ -115,17 +115,17 @@ export function RegisterWithInvitation() {
 
     setErrorMsg(null);
     setResendMsg(null);
-    setSuccessMsg(null);
+    setIsRegistered(false);
     setIsLoading(true);
 
     try {
-      const response = await invitationService.registerWithInvitation({
+      await invitationService.registerWithInvitation({
         token,
         email,
         username,
         password,
       });
-      setSuccessMsg(response.message);
+      setIsRegistered(true);
     } catch (err: unknown) {
       if (err instanceof ApiError && err.problem.code) {
         setErrorMsg(
@@ -225,9 +225,8 @@ export function RegisterWithInvitation() {
                 </Alert>
               )}
 
-              {successMsg ? (
+              {isRegistered ? (
                 <Stack spacing={2}>
-                  <Alert severity="success">{successMsg}</Alert>
                   <Alert severity="info">
                     Sprawdź skrzynkę <strong>{email}</strong> i kliknij link
                     weryfikacyjny, aby aktywować konto.

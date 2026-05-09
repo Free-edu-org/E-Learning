@@ -94,9 +94,7 @@ class InvitationServiceTest {
 						.email("student@edu.pl").username("student1").password("secret123").build()));
 
 		StepVerifier.create(result)
-				.assertNext(response -> assertEquals(
-						"Account created successfully. Please verify your email address to activate the account.",
-						response.getMessage()))
+				.assertNext(response -> assertEquals("Email verification required.", response.getMessage()))
 				.verifyComplete();
 
 		verify(userInGroupRepository).save(any());

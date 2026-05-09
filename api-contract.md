@@ -2244,7 +2244,7 @@ Nauczyciel generuje zaproszenia do grupy. Uczeń używa linku z tokenem do stwor
 **Success (201 Created):**
 ```json
 {
-  "message": "Account created successfully. Please verify your email address to activate the account."
+  "message": "Email verification required."
 }
 ```
 
