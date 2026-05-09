@@ -984,6 +984,17 @@ export function TeacherStudentsView() {
                                         sx={{ height: 20, fontSize: "0.65rem" }}
                                       />
                                     )}
+                                    {student.status ===
+                                      "EMAIL_VERIFICATION_PENDING" && (
+                                      <Chip
+                                        label="Czeka na email"
+                                        size="small"
+                                        icon={<PendingIcon />}
+                                        color="info"
+                                        variant="outlined"
+                                        sx={{ height: 20, fontSize: "0.65rem" }}
+                                      />
+                                    )}
                                   </Stack>
                                   <Stack
                                     direction="row"

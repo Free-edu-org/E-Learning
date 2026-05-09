@@ -31,7 +31,8 @@ Default local development base URL is `http://localhost:8080`
 
 **Known Errors:**
 - `INVALID_CREDENTIALS` (401 Unauthorized): Wrong username/email or password.
-- `ACCOUNT_NOT_ACTIVE` (401 Unauthorized): Account is in `INVITED` state — login is blocked until activation is complete.
+- `ACCOUNT_NOT_ACTIVE` (401 Unauthorized): Account is in `INVITED` state and still requires initial activation.
+- `EMAIL_VERIFICATION_REQUIRED` (401 Unauthorized): Account exists, but the student has not confirmed their email address yet.
 - `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
 
 ---
@@ -128,6 +129,79 @@ Default local development base URL is `http://localhost:8080`
 - `INVITATION_TOKEN_USED` (400 Bad Request): Token has already been used.
 - `ACCOUNT_ALREADY_ACTIVE` (409 Conflict): Account is already active.
 - `USERNAME_ALREADY_TAKEN` (409 Conflict): Chosen username is already in use.
+- `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
+
+---
+
+### 1.6. Get Email Verification Token Info *(no auth required)*
+- **URL**: `/api/v1/auth/email-verification/{token}`
+- **Method**: `GET`
+- **Description**: Returns the current state of an email verification token and the email address linked to it. Used by the public verification screen reached from the email link.
+
+**Success (200 OK):**
+```json
+{
+  "email": "student@example.com",
+  "status": "VALID"
+}
+```
+
+**Possible `status` values:**
+- `VALID`
+- `EXPIRED`
+- `USED`
+- `ALREADY_VERIFIED`
+
+**Known Errors:**
+- `EMAIL_VERIFICATION_TOKEN_INVALID` (400 Bad Request): Token does not exist or is malformed.
+
+---
+
+### 1.7. Confirm Email Verification *(no auth required)*
+- **URL**: `/api/v1/auth/email-verification/confirm`
+- **Method**: `POST`
+- **Description**: Confirms a student's email address using a valid verification token. On success, the account status changes from `EMAIL_VERIFICATION_PENDING` to `ACTIVE`.
+
+**Request Body (JSON):**
+```json
+{
+  "token": "email-verification-token"
+}
+```
+
+**Success (204 No Content):**
+*(Empty Response Body)*
+
+**Known Errors:**
+- `EMAIL_VERIFICATION_TOKEN_INVALID` (400 Bad Request): Token does not exist or is malformed.
+- `EMAIL_VERIFICATION_TOKEN_EXPIRED` (400 Bad Request): Token has passed its expiration time.
+- `EMAIL_VERIFICATION_TOKEN_USED` (400 Bad Request): Token has already been used.
+- `EMAIL_ALREADY_VERIFIED` (409 Conflict): Account has already completed email verification.
+- `EMAIL_VERIFICATION_NOT_PENDING` (409 Conflict): Account is not in `EMAIL_VERIFICATION_PENDING` state.
+- `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
+
+---
+
+### 1.8. Resend Email Verification *(no auth required)*
+- **URL**: `/api/v1/auth/email-verification/resend`
+- **Method**: `POST`
+- **Description**: Resends the email verification link for an account awaiting email confirmation. For security reasons, the endpoint always returns the same accepted response, regardless of whether the email belongs to a pending account.
+
+**Request Body (JSON):**
+```json
+{
+  "email": "student@example.com"
+}
+```
+
+**Success (202 Accepted):**
+```json
+{
+  "message": "If the account is awaiting email verification, a verification link has been sent."
+}
+```
+
+**Known Errors:**
 - `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
 
 ---
@@ -2155,7 +2229,7 @@ Nauczyciel generuje zaproszenia do grupy. Uczeń używa linku z tokenem do stwor
 ### 9.5. Register Student via Invitation *(no auth required)*
 - **URL**: `/api/v1/invitations/register`
 - **Method**: `POST`
-- **Description**: Creates a new student account and immediately assigns it to the group associated with the invitation. Returns a JWT so the student is logged in straight away.
+- **Description**: Creates a new student account and assigns it to the group associated with the invitation. The account is created in `EMAIL_VERIFICATION_PENDING` state, a verification email is sent to the address provided by the student, and the student must confirm that email before logging in.
 
 **Request Body (JSON):**
 ```json
@@ -2170,8 +2244,7 @@ Nauczyciel generuje zaproszenia do grupy. Uczeń używa linku z tokenem do stwor
 **Success (201 Created):**
 ```json
 {
-  "token": "eyJhbGci... (JWT token)",
-  "role": "STUDENT"
+  "message": "Account created successfully. Please verify your email address to activate the account."
 }
 ```
 

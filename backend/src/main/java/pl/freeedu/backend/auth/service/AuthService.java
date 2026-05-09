@@ -23,6 +23,8 @@ import pl.freeedu.backend.auth.exception.AuthErrorCode;
 import pl.freeedu.backend.auth.exception.AuthException;
 import pl.freeedu.backend.auth.model.PasswordResetToken;
 import pl.freeedu.backend.auth.repository.PasswordResetTokenRepository;
+import pl.freeedu.backend.emailverification.exception.EmailVerificationErrorCode;
+import pl.freeedu.backend.emailverification.exception.EmailVerificationException;
 import pl.freeedu.backend.security.jwt.JwtService;
 import pl.freeedu.backend.user.model.User;
 import pl.freeedu.backend.user.model.UserStatus;
@@ -74,6 +76,10 @@ public class AuthService {
 			if (user.getStatus() == UserStatus.INVITED) {
 				log.warn("Login blocked: account not yet activated. User ID: {}", user.getId());
 				throw new AccountInvitationException(AccountInvitationErrorCode.ACCOUNT_NOT_ACTIVE);
+			}
+			if (user.getStatus() == UserStatus.EMAIL_VERIFICATION_PENDING) {
+				log.warn("Login blocked: email not verified yet. User ID: {}", user.getId());
+				throw new EmailVerificationException(EmailVerificationErrorCode.EMAIL_VERIFICATION_REQUIRED);
 			}
 
 			if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {

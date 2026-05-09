@@ -16,14 +16,10 @@ import {
   HowToRegOutlined as RegisterIcon,
   MenuBook as BookIcon,
 } from "@mui/icons-material";
-import {
-  Link as RouterLink,
-  useNavigate,
-  useSearchParams,
-} from "react-router-dom";
+import { Link as RouterLink, useSearchParams } from "react-router-dom";
+import { authService } from "@/api/authService";
 import { invitationService } from "@/api/invitationService";
 import { ApiError } from "@/api/apiClient";
-import { useAuth } from "@/context/AuthContext";
 import "./RegisterWithInvitation.css";
 
 const REGISTER_ERROR_MESSAGES: Record<string, string> = {
@@ -37,9 +33,7 @@ const REGISTER_ERROR_MESSAGES: Record<string, string> = {
 
 export function RegisterWithInvitation() {
   const theme = useTheme();
-  const navigate = useNavigate();
   const [params] = useSearchParams();
-  const { login } = useAuth();
 
   const token = params.get("token") ?? "";
 
@@ -53,6 +47,9 @@ export function RegisterWithInvitation() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [resendMsg, setResendMsg] = useState<string | null>(null);
+  const [resendLoading, setResendLoading] = useState(false);
 
   const passwordStrength = useMemo(() => {
     if (!password) return 0;
@@ -93,6 +90,7 @@ export function RegisterWithInvitation() {
       setTokenLoading(false);
       return;
     }
+
     invitationService
       .getInvitationInfo(token)
       .then((info) => {
@@ -114,8 +112,12 @@ export function RegisterWithInvitation() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) return;
+
     setErrorMsg(null);
+    setResendMsg(null);
+    setSuccessMsg(null);
     setIsLoading(true);
+
     try {
       const response = await invitationService.registerWithInvitation({
         token,
@@ -123,8 +125,7 @@ export function RegisterWithInvitation() {
         username,
         password,
       });
-      login(response.token, response.role);
-      navigate("/");
+      setSuccessMsg(response.message);
     } catch (err: unknown) {
       if (err instanceof ApiError && err.problem.code) {
         setErrorMsg(
@@ -136,6 +137,21 @@ export function RegisterWithInvitation() {
       }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    setErrorMsg(null);
+    setResendMsg(null);
+    setResendLoading(true);
+
+    try {
+      const response = await authService.resendEmailVerification({ email });
+      setResendMsg(response.message);
+    } catch {
+      setErrorMsg("Nie udało się wysłać maila weryfikacyjnego ponownie.");
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -208,97 +224,123 @@ export function RegisterWithInvitation() {
                   {errorMsg}
                 </Alert>
               )}
-              <form onSubmit={handleSubmit}>
-                <TextField
-                  label="Adres e-mail"
-                  type="email"
-                  autoComplete="email"
-                  fullWidth
-                  margin="normal"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  disabled={isLoading}
-                />
-                <TextField
-                  label="Nazwa użytkownika"
-                  type="text"
-                  autoComplete="username"
-                  fullWidth
-                  margin="normal"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
-                  disabled={isLoading}
-                  inputProps={{ minLength: 3, maxLength: 50 }}
-                />
-                <TextField
-                  label="Hasło"
-                  type="password"
-                  autoComplete="new-password"
-                  fullWidth
-                  margin="normal"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  disabled={isLoading}
-                  inputProps={{ minLength: 8 }}
-                />
-                {password && (
-                  <Box className="strength-container">
-                    <Box className="strength-bar">
-                      <Box
-                        className="strength-progress"
-                        sx={{
-                          width: `${passwordStrength}%`,
-                          backgroundColor: strengthColor,
-                        }}
-                      />
+
+              {successMsg ? (
+                <Stack spacing={2}>
+                  <Alert severity="success">{successMsg}</Alert>
+                  <Alert severity="info">
+                    Sprawdź skrzynkę <strong>{email}</strong> i kliknij link
+                    weryfikacyjny, aby aktywować konto.
+                  </Alert>
+                  {resendMsg && <Alert severity="info">{resendMsg}</Alert>}
+                  <Button
+                    variant="outlined"
+                    onClick={handleResendVerification}
+                    disabled={resendLoading}
+                  >
+                    {resendLoading ? (
+                      <CircularProgress size={20} color="inherit" />
+                    ) : (
+                      "Wyślij mail weryfikacyjny ponownie"
+                    )}
+                  </Button>
+                  <Button component={RouterLink} to="/login">
+                    Przejdź do logowania
+                  </Button>
+                </Stack>
+              ) : (
+                <form onSubmit={handleSubmit}>
+                  <TextField
+                    label="Adres e-mail"
+                    type="email"
+                    autoComplete="email"
+                    fullWidth
+                    margin="normal"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    disabled={isLoading}
+                  />
+                  <TextField
+                    label="Nazwa użytkownika"
+                    type="text"
+                    autoComplete="username"
+                    fullWidth
+                    margin="normal"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    required
+                    disabled={isLoading}
+                    inputProps={{ minLength: 3, maxLength: 50 }}
+                  />
+                  <TextField
+                    label="Hasło"
+                    type="password"
+                    autoComplete="new-password"
+                    fullWidth
+                    margin="normal"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    disabled={isLoading}
+                    inputProps={{ minLength: 8 }}
+                  />
+                  {password && (
+                    <Box className="strength-container">
+                      <Box className="strength-bar">
+                        <Box
+                          className="strength-progress"
+                          sx={{
+                            width: `${passwordStrength}%`,
+                            backgroundColor: strengthColor,
+                          }}
+                        />
+                      </Box>
+                      <Typography className="strength-text">
+                        Siła hasła: {strengthLabel}
+                      </Typography>
                     </Box>
-                    <Typography className="strength-text">
-                      Siła hasła: {strengthLabel}
-                    </Typography>
-                  </Box>
-                )}
-                <TextField
-                  label="Powtórz hasło"
-                  type="password"
-                  autoComplete="new-password"
-                  fullWidth
-                  margin="normal"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                  disabled={isLoading}
-                  error={!!confirmError}
-                  helperText={confirmError}
-                />
-                <Button
-                  type="submit"
-                  variant="contained"
-                  color="primary"
-                  fullWidth
-                  size="large"
-                  startIcon={isLoading ? undefined : <RegisterIcon />}
-                  sx={{ mt: 3 }}
-                  disabled={isLoading || !!confirmError || !confirmPassword}
-                >
-                  {isLoading ? (
-                    <CircularProgress size={24} color="inherit" />
-                  ) : (
-                    "Zarejestruj się"
                   )}
-                </Button>
-                <Button
-                  component={RouterLink}
-                  to="/login"
-                  fullWidth
-                  sx={{ mt: 1 }}
-                  disabled={isLoading}
-                >
-                  Masz już konto? Zaloguj się
-                </Button>
-              </form>
+                  <TextField
+                    label="Powtórz hasło"
+                    type="password"
+                    autoComplete="new-password"
+                    fullWidth
+                    margin="normal"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    disabled={isLoading}
+                    error={!!confirmError}
+                    helperText={confirmError}
+                  />
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    color="primary"
+                    fullWidth
+                    size="large"
+                    startIcon={isLoading ? undefined : <RegisterIcon />}
+                    sx={{ mt: 3 }}
+                    disabled={isLoading || !!confirmError || !confirmPassword}
+                  >
+                    {isLoading ? (
+                      <CircularProgress size={24} color="inherit" />
+                    ) : (
+                      "Zarejestruj się"
+                    )}
+                  </Button>
+                  <Button
+                    component={RouterLink}
+                    to="/login"
+                    fullWidth
+                    sx={{ mt: 1 }}
+                    disabled={isLoading}
+                  >
+                    Masz już konto? Zaloguj się
+                  </Button>
+                </form>
+              )}
             </>
           )}
         </Paper>

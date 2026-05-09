@@ -35,6 +35,11 @@ Content-Type: application/json
   "password": "StrongPass123"
 }
 
+### After successful registration:
+### - response is 201 Created with a message,
+### - account status becomes EMAIL_VERIFICATION_PENDING,
+### - student must confirm email through /api/v1/auth/email-verification/* before login.
+
 ### --- Error scenarios ---
 
 ### Create invitation - token expired (gone)
