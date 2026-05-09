@@ -246,9 +246,11 @@ export function TeacherStudentsView() {
           group.publicId,
         ].some((value) => value.toLowerCase().includes(query));
         const matchingStudents = group.students.filter((student) =>
-          [student.username ?? "", student.email, String(student.publicId)].some(
-            (value) => value.toLowerCase().includes(query),
-          ),
+          [
+            student.username ?? "",
+            student.email,
+            String(student.publicId),
+          ].some((value) => value.toLowerCase().includes(query)),
         );
 
         return {
