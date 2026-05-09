@@ -77,7 +77,6 @@ import {
 } from "@/components/ui/chips/roleLabels";
 import {
   FormActions,
-  FormField,
   FormSection,
 } from "@/components/ui/form/FormLayout";
 import { DashboardHeader } from "@/components/ui/panel/DashboardHeader";
@@ -205,9 +204,12 @@ const toolbarFieldSx = {
 const counterFieldSx = {
   "& .MuiFormHelperText-root": {
     display: "flex",
-    justifyContent: "flex-end",
-    textAlign: "right",
-    mr: 0,
+    justifyContent: "flex-start",
+    textAlign: "left",
+    mt: 0.75,
+    mx: 0,
+    pl: 1.5,
+    pr: 1.5,
   },
 };
 
@@ -712,10 +714,7 @@ export function AdminDashboard() {
   const openCreateGroupDialog = () => {
     setGroupDialogMode("create");
     setSelectedGroup(null);
-    setGroupDraft({
-      ...emptyGroupDraft,
-      teacherPublicId: teachers.length === 1 ? teachers[0].publicId : "",
-    });
+    setGroupDraft(emptyGroupDraft);
     setGroupDialogFeedback(null);
     setGroupDialogOpen(true);
   };
@@ -2989,88 +2988,143 @@ export function AdminDashboard() {
                 {groupDialogFeedback.message}
               </AppDialogStatus>
             )}
-            <FormSection>
-              <Stack spacing={2.25}>
-                <FormField>
-                  <TextField
-                    label="Nazwa grupy"
-                    value={groupDraft.name}
-                    onChange={(event) =>
-                      setGroupDraft((current) => ({
-                        ...current,
-                        name: event.target.value.slice(
-                          0,
-                          INPUT_LIMITS.groupName,
-                        ),
-                      }))
-                    }
-                    inputProps={{ maxLength: INPUT_LIMITS.groupName }}
-                    helperText={`${groupDraft.name.length}/${INPUT_LIMITS.groupName}`}
-                    fullWidth
-                    placeholder="Wprowadź nazwę grupy"
-                  />
-                </FormField>
-                <FormField>
-                  <TextField
-                    label="Opis grupy"
-                    value={groupDraft.description}
-                    onChange={(event) =>
-                      setGroupDraft((current) => ({
-                        ...current,
-                        description: event.target.value.slice(
-                          0,
-                          INPUT_LIMITS.groupDescription,
-                        ),
-                      }))
-                    }
-                    inputProps={{ maxLength: INPUT_LIMITS.groupDescription }}
-                    helperText={`${groupDraft.description.length}/${INPUT_LIMITS.groupDescription}`}
-                    multiline
-                    minRows={4}
-                    fullWidth
-                  />
-                </FormField>
-                <FormField>
-                  <TextField
-                    select
-                    label="Właściciel grupy"
-                    value={groupDraft.teacherPublicId}
-                    onChange={(event) =>
-                      setGroupDraft((current) => ({
-                        ...current,
-                        teacherPublicId: event.target.value,
-                      }))
-                    }
-                    helperText="Wybierz nauczyciela, który ma zarządzać grupą."
-                    fullWidth
-                  >
-                    <MenuItem value="">Bez właściciela</MenuItem>
-                    {teachers.map((teacher) => (
-                      <MenuItem
-                        key={teacher.publicId}
-                        value={teacher.publicId}
-                        sx={{ py: 1 }}
+            <Box
+              sx={{
+                borderRadius: 2,
+                border: "1px solid",
+                borderColor: "divider",
+                overflow: "hidden",
+              }}
+            >
+              <Box
+                sx={{
+                  px: 2,
+                  py: 1.5,
+                  borderBottom: "1px solid",
+                  borderColor: "divider",
+                }}
+              >
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  display="block"
+                  sx={{ mb: 0.75 }}
+                >
+                  Nazwa grupy
+                </Typography>
+                <TextField
+                  value={groupDraft.name}
+                  onChange={(event) =>
+                    setGroupDraft((current) => ({
+                      ...current,
+                      name: event.target.value.slice(
+                        0,
+                        INPUT_LIMITS.groupName,
+                      ),
+                    }))
+                  }
+                  inputProps={{ maxLength: INPUT_LIMITS.groupName }}
+                  helperText={`${groupDraft.name.length}/${INPUT_LIMITS.groupName}`}
+                  sx={counterFieldSx}
+                  size="small"
+                  fullWidth
+                  placeholder="Wprowadź nazwę grupy"
+                />
+              </Box>
+              <Box
+                sx={{
+                  px: 2,
+                  py: 1.5,
+                  borderBottom: "1px solid",
+                  borderColor: "divider",
+                }}
+              >
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  display="block"
+                  sx={{ mb: 0.75 }}
+                >
+                  Opis grupy
+                </Typography>
+                <TextField
+                  value={groupDraft.description}
+                  onChange={(event) =>
+                    setGroupDraft((current) => ({
+                      ...current,
+                      description: event.target.value.slice(
+                        0,
+                        INPUT_LIMITS.groupDescription,
+                      ),
+                    }))
+                  }
+                  inputProps={{ maxLength: INPUT_LIMITS.groupDescription }}
+                  helperText={`${groupDraft.description.length}/${INPUT_LIMITS.groupDescription}`}
+                  sx={counterFieldSx}
+                  multiline
+                  minRows={4}
+                  size="small"
+                  fullWidth
+                  placeholder="Opisz przeznaczenie grupy"
+                />
+              </Box>
+              <Box sx={{ px: 2, py: 1.5 }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  display="block"
+                  sx={{ mb: 0.75 }}
+                >
+                  Nauczyciel prowadzący
+                </Typography>
+                <TextField
+                  select
+                  value={groupDraft.teacherPublicId}
+                  onChange={(event) =>
+                    setGroupDraft((current) => ({
+                      ...current,
+                      teacherPublicId: event.target.value,
+                    }))
+                  }
+                  SelectProps={{ displayEmpty: true }}
+                  helperText="Wybierz nauczyciela, który ma zarządzać grupą."
+                  sx={{
+                    "& .MuiFormHelperText-root": {
+                      mt: 0.75,
+                      mx: 0,
+                      pl: 1.5,
+                      pr: 1.5,
+                    },
+                  }}
+                  size="small"
+                  fullWidth
+                >
+                  <MenuItem value="">Wybierz nauczyciela</MenuItem>
+                  {teachers.map((teacher) => (
+                    <MenuItem
+                      key={teacher.publicId}
+                      value={teacher.publicId}
+                      sx={{ py: 1 }}
+                    >
+                      <Stack
+                        direction="row"
+                        spacing={1.5}
+                        alignItems="center"
                       >
-                        <Stack
-                          direction="row"
-                          spacing={1.5}
-                          alignItems="center"
-                        >
-                          <UserAvatar
-                            avatarUrl={teacher.avatarUrl}
-                            username={teacher.username}
-                            size={24}
-                          />
-                          <Typography variant="body2">
-                            {teacher.username}
-                          </Typography>
-                        </Stack>
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                </FormField>
-              </Stack>
-            </FormSection>
+                        <UserAvatar
+                          avatarUrl={teacher.avatarUrl}
+                          username={teacher.username}
+                          size={24}
+                        />
+                        <Typography variant="body2">
+                          {teacher.username}
+                        </Typography>
+                      </Stack>
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Box>
+            </Box>
           </AppDialogBody>
           <AppDialogFooter>
             <FormActions>
@@ -3087,7 +3141,11 @@ export function AdminDashboard() {
                 disabled={groupDialogLoading}
                 sx={panelFooterButtonSx}
               >
-                {groupDialogLoading ? "Zapisywanie..." : "Zapisz zmiany"}
+                {groupDialogLoading
+                  ? "Zapisywanie..."
+                  : groupDialogMode === "create"
+                    ? "Utwórz"
+                    : "Zapisz zmiany"}
               </Button>
             </FormActions>
           </AppDialogFooter>
@@ -3118,17 +3176,40 @@ export function AdminDashboard() {
               </AppDialogStatus>
             )}
             <FormSection>
-              <Typography variant="body1" fontWeight={700} sx={{ mb: 0.5 }}>
-                {deleteDialog?.label}
-              </Typography>
-              {deleteDialog?.detail && (
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ overflowWrap: "anywhere" }}
-                >
-                  {deleteDialog.detail}
-                </Typography>
+              {deleteDialog?.type === "group" ? (
+                <Stack spacing={1}>
+                  <Typography variant="body2" sx={{ overflowWrap: "anywhere" }}>
+                    <Box component="span" fontWeight={700}>
+                      Nazwa:
+                    </Box>{" "}
+                    {deleteDialog.label}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ overflowWrap: "anywhere" }}
+                  >
+                    <Box component="span" fontWeight={700} color="text.primary">
+                      Opis:
+                    </Box>{" "}
+                    {deleteDialog.detail?.trim() || "Brak opisu"}
+                  </Typography>
+                </Stack>
+              ) : (
+                <>
+                  <Typography variant="body1" fontWeight={700} sx={{ mb: 0.5 }}>
+                    {deleteDialog?.label}
+                  </Typography>
+                  {deleteDialog?.detail && (
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ overflowWrap: "anywhere" }}
+                    >
+                      {deleteDialog.detail}
+                    </Typography>
+                  )}
+                </>
               )}
             </FormSection>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
