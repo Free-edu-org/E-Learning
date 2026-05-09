@@ -25,7 +25,7 @@ public interface UserRepository extends JpaRepository<User, Integer> {
 	@Query("SELECT u FROM User u JOIN UserInGroup uig ON u.id = uig.userId JOIN UserGroup ug ON uig.groupId = ug.id WHERE ug.teacherId = :teacherId AND u.role = :role")
 	List<User> findByGroupsTeacherIdAndRole(@Param("teacherId") Integer teacherId, @Param("role") Role role);
 
-	@Query("SELECT u.publicId as publicId, u.username as username, u.email as email, u.role as role, u.createdAt as createdAt, u.avatarUrl as avatarUrl, ug.publicId as groupPublicId FROM User u JOIN UserInGroup uig ON u.id = uig.userId JOIN UserGroup ug ON uig.groupId = ug.id WHERE ug.teacherId = :teacherId AND u.role = :role")
+	@Query("SELECT u.publicId as publicId, u.username as username, u.email as email, u.role as role, u.status as status, u.createdAt as createdAt, u.avatarUrl as avatarUrl, ug.publicId as groupPublicId FROM User u JOIN UserInGroup uig ON u.id = uig.userId JOIN UserGroup ug ON uig.groupId = ug.id WHERE ug.teacherId = :teacherId AND u.role = :role")
 	List<pl.freeedu.backend.teacher.dto.TeacherStudentProjection> findStudentsWithGroupByTeacherId(
 			@Param("teacherId") Integer teacherId, @Param("role") Role role);
 

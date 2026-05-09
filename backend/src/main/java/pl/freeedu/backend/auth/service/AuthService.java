@@ -12,6 +12,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
+import pl.freeedu.backend.accountinvitation.exception.AccountInvitationErrorCode;
+import pl.freeedu.backend.accountinvitation.exception.AccountInvitationException;
 import pl.freeedu.backend.auth.dto.AuthResponse;
 import pl.freeedu.backend.auth.dto.ForgotPasswordRequest;
 import pl.freeedu.backend.auth.dto.LoginRequest;
@@ -23,6 +25,7 @@ import pl.freeedu.backend.auth.model.PasswordResetToken;
 import pl.freeedu.backend.auth.repository.PasswordResetTokenRepository;
 import pl.freeedu.backend.security.jwt.JwtService;
 import pl.freeedu.backend.user.model.User;
+import pl.freeedu.backend.user.model.UserStatus;
 import pl.freeedu.backend.user.repository.UserRepository;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -67,6 +70,11 @@ public class AuthService {
 						log.warn("Login failed: User not found for provided identifier");
 						return new AuthException(AuthErrorCode.INVALID_CREDENTIALS);
 					}));
+
+			if (user.getStatus() == UserStatus.INVITED) {
+				log.warn("Login blocked: account not yet activated. User ID: {}", user.getId());
+				throw new AccountInvitationException(AccountInvitationErrorCode.ACCOUNT_NOT_ACTIVE);
+			}
 
 			if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
 				log.warn("Login failed: Invalid password for user ID: {}", user.getId());

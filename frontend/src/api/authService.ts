@@ -24,6 +24,16 @@ export interface ResetPasswordRequest {
   confirmPassword: string;
 }
 
+export interface InviteTokenInfoResponse {
+  email: string;
+}
+
+export interface ActivateAccountRequest {
+  token: string;
+  username: string;
+  password: string;
+}
+
 export const authService = {
   login: (data: LoginRequest) => {
     return fetchApi<LoginResponse>("/api/v1/auth/login", {
@@ -38,6 +48,15 @@ export const authService = {
     }),
   resetPassword: (data: ResetPasswordRequest) =>
     fetchApi<void>("/api/v1/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  validateInviteToken: (token: string) =>
+    fetchApi<InviteTokenInfoResponse>(
+      `/api/v1/auth/invite/${encodeURIComponent(token)}`,
+    ),
+  activateAccount: (data: ActivateAccountRequest) =>
+    fetchApi<void>("/api/v1/auth/activate", {
       method: "POST",
       body: JSON.stringify(data),
     }),

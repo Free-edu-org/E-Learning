@@ -10,12 +10,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
+import pl.freeedu.backend.accountinvitation.service.AccountActivationService;
 import pl.freeedu.backend.admin.dto.*;
 import pl.freeedu.backend.user.dto.UserResponse;
 import pl.freeedu.backend.user.exception.UserErrorCode;
 import pl.freeedu.backend.user.exception.UserException;
 import pl.freeedu.backend.user.model.Role;
 import pl.freeedu.backend.user.model.User;
+import pl.freeedu.backend.user.model.UserStatus;
 import pl.freeedu.backend.user.repository.UserRepository;
 import pl.freeedu.backend.user.service.UserMapper;
 import pl.freeedu.backend.usergroup.exception.UserGroupErrorCode;
@@ -54,6 +56,9 @@ class AdminServiceTest {
 
 	@Mock
 	private UserGroupPublicIdLookupService userGroupPublicIdLookupService;
+
+	@Mock
+	private AccountActivationService accountActivationService;
 
 	@InjectMocks
 	private AdminService adminService;
@@ -136,20 +141,16 @@ class AdminServiceTest {
 	@Test
 	void shouldCreateStudentSucceed() {
 		// given
-		AdminCreateStudentRequest req = AdminCreateStudentRequest.builder().email("s@e.com").username("s1")
-				.password("p").groupPublicId("group-public-id").build();
+		AdminCreateStudentRequest req = AdminCreateStudentRequest.builder().email("s@e.com")
+				.groupPublicId("group-public-id").build();
 		UserGroup group = UserGroup.builder().id(10).publicId("group-public-id").name("G1").build();
+		User savedStudent = User.builder().id(1).publicId("pub-1").email("s@e.com").role(Role.STUDENT)
+				.status(UserStatus.INVITED).build();
 
 		when(userRepository.existsByEmail(req.getEmail())).thenReturn(false);
-		when(userRepository.existsByUsername(req.getUsername())).thenReturn(false);
 		when(userGroupPublicIdLookupService.getRequiredGroup("group-public-id")).thenReturn(group);
-		when(passwordEncoder.encode("p")).thenReturn("encoded");
-		when(userRepository.save(any())).thenAnswer(inv -> {
-			User u = inv.getArgument(0);
-			u.setId(1);
-			u.setPublicId("pub-1");
-			return u;
-		});
+		when(accountActivationService.createInvitedUser("s@e.com")).thenReturn("plain-token");
+		when(userRepository.findByEmail("s@e.com")).thenReturn(Optional.of(savedStudent));
 
 		// when
 		Mono<AdminStudentResponse> result = adminService.createStudent(req);
@@ -175,23 +176,6 @@ class AdminServiceTest {
 		StepVerifier.create(result).expectErrorSatisfies(error -> {
 			assertTrue(error instanceof UserException);
 			assertEquals(UserErrorCode.EMAIL_ALREADY_TAKEN, ((UserException) error).getErrorCode());
-		}).verify();
-	}
-
-	@Test
-	void shouldRejectCreateStudentWhenUsernameTaken() {
-		// given
-		AdminCreateStudentRequest req = AdminCreateStudentRequest.builder().username("s1").build();
-		when(userRepository.existsByEmail(any())).thenReturn(false);
-		when(userRepository.existsByUsername("s1")).thenReturn(true);
-
-		// when
-		Mono<AdminStudentResponse> result = adminService.createStudent(req);
-
-		// then
-		StepVerifier.create(result).expectErrorSatisfies(error -> {
-			assertTrue(error instanceof UserException);
-			assertEquals(UserErrorCode.USERNAME_ALREADY_TAKEN, ((UserException) error).getErrorCode());
 		}).verify();
 	}
 
@@ -304,7 +288,8 @@ class AdminServiceTest {
 	@Test
 	void shouldRejectCreateStudentWhenGroupNotFound() {
 		// given
-		AdminCreateStudentRequest req = AdminCreateStudentRequest.builder().groupPublicId("missing-group").build();
+		AdminCreateStudentRequest req = AdminCreateStudentRequest.builder().email("s@e.com")
+				.groupPublicId("missing-group").build();
 		when(userGroupPublicIdLookupService.getRequiredGroup("missing-group"))
 				.thenThrow(new UserGroupException(UserGroupErrorCode.USER_GROUP_NOT_FOUND));
 
