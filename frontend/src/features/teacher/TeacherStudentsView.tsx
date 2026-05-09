@@ -73,7 +73,7 @@ import {
 } from "@/components/ui/panel/panelStyles";
 import { UserAvatar } from "@/components/ui/avatar/UserAvatar";
 import { uiTokens } from "@/theme/uiTokens";
-import { getApiErrorMessage } from "@/utils/dashboardUtils";
+import { getApiErrorMessage, translateApiMessage } from "@/utils/dashboardUtils";
 import { INPUT_LIMITS } from "@/utils/inputLimits";
 import { GroupInvitationsSection } from "./GroupInvitationsSection";
 
@@ -124,6 +124,8 @@ const emptyGroupDraft = {
   description: "",
 };
 
+type GroupFieldErrors = Partial<Record<keyof typeof emptyGroupDraft, string>>;
+
 const counterFieldSx = {
   "& .MuiFormHelperText-root": {
     display: "flex",
@@ -132,6 +134,34 @@ const counterFieldSx = {
     mr: 0,
   },
 };
+
+function parseGroupApiFieldErrors(error: ApiError): GroupFieldErrors {
+  const detail = error.problem.detail ?? "";
+  if (!detail.startsWith("Validation failed:")) {
+    return {};
+  }
+
+  return detail
+    .replace("Validation failed:", "")
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .reduce<GroupFieldErrors>((acc, part) => {
+      const separatorIndex = part.indexOf(":");
+      if (separatorIndex === -1) {
+        return acc;
+      }
+
+      const field = part.slice(0, separatorIndex).trim() as keyof GroupFieldErrors;
+      const validationDetail = part.slice(separatorIndex + 1).trim();
+      if (!(field in emptyGroupDraft)) {
+        return acc;
+      }
+
+      acc[field] = translateApiMessage(validationDetail);
+      return acc;
+    }, {});
+}
 
 export function TeacherStudentsView() {
   const theme = useTheme();
@@ -178,12 +208,16 @@ export function TeacherStudentsView() {
   const [createGroupLoading, setCreateGroupLoading] = useState(false);
   const [createGroupFeedback, setCreateGroupFeedback] =
     useState<DialogFeedbackState | null>(null);
+  const [createGroupFieldErrors, setCreateGroupFieldErrors] =
+    useState<GroupFieldErrors>({});
   const [editGroupOpen, setEditGroupOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
   const [editGroupDraft, setEditGroupDraft] = useState(emptyGroupDraft);
   const [editGroupLoading, setEditGroupLoading] = useState(false);
   const [editGroupFeedback, setEditGroupFeedback] =
     useState<DialogFeedbackState | null>(null);
+  const [editGroupFieldErrors, setEditGroupFieldErrors] =
+    useState<GroupFieldErrors>({});
   const [editGroupEditingFields, setEditGroupEditingFields] = useState<string[]>([]);
 
   const [draggingStudentPublicId, setDraggingStudentPublicId] = useState<
@@ -434,6 +468,7 @@ export function TeacherStudentsView() {
 
   const openCreateGroupDialog = () => {
     setCreateGroupDraft(emptyGroupDraft);
+    setCreateGroupFieldErrors({});
     setCreateGroupFeedback(null);
     setCreateGroupOpen(true);
   };
@@ -490,6 +525,7 @@ export function TeacherStudentsView() {
   const closeCreateGroupDialog = () => {
     if (createGroupLoading) return;
     setCreateGroupOpen(false);
+    setCreateGroupFieldErrors({});
   };
 
   const submitCreateGroup = async () => {
@@ -502,6 +538,7 @@ export function TeacherStudentsView() {
       return;
     }
 
+    setCreateGroupFieldErrors({});
     setCreateGroupFeedback(null);
     setCreateGroupLoading(true);
     try {
@@ -516,6 +553,14 @@ export function TeacherStudentsView() {
       await fetchData();
       window.setTimeout(() => closeCreateGroupDialog(), 700);
     } catch (error) {
+      if (error instanceof ApiError) {
+        const nextFieldErrors = parseGroupApiFieldErrors(error);
+        if (Object.keys(nextFieldErrors).length > 0) {
+          setCreateGroupFieldErrors(nextFieldErrors);
+          return;
+        }
+      }
+
       setCreateGroupFeedback({
         severity: "error",
         message: getOperationErrorMessage(error, "Nie udało się dodać grupy."),
@@ -531,6 +576,7 @@ export function TeacherStudentsView() {
       name: group.name,
       description: group.description ?? "",
     });
+    setEditGroupFieldErrors({});
     setEditGroupFeedback(null);
     setEditGroupEditingFields([]);
     setEditGroupOpen(true);
@@ -540,6 +586,7 @@ export function TeacherStudentsView() {
     if (editGroupLoading) return;
     setEditGroupOpen(false);
     setEditingGroup(null);
+    setEditGroupFieldErrors({});
   };
 
   const submitEditGroup = async () => {
@@ -552,6 +599,7 @@ export function TeacherStudentsView() {
       return;
     }
 
+    setEditGroupFieldErrors({});
     setEditGroupFeedback(null);
     setEditGroupLoading(true);
     try {
@@ -566,6 +614,14 @@ export function TeacherStudentsView() {
       await fetchData();
       window.setTimeout(() => closeEditGroupDialog(), 700);
     } catch (error) {
+      if (error instanceof ApiError) {
+        const nextFieldErrors = parseGroupApiFieldErrors(error);
+        if (Object.keys(nextFieldErrors).length > 0) {
+          setEditGroupFieldErrors(nextFieldErrors);
+          return;
+        }
+      }
+
       setEditGroupFeedback({
         severity: "error",
         message: getOperationErrorMessage(
@@ -1919,17 +1975,25 @@ export function TeacherStudentsView() {
                       <TextField
                         autoFocus
                         value={editGroupDraft.name}
-                        onChange={(event) =>
-                          setEditGroupDraft((draft) => ({
-                            ...draft,
-                            name: event.target.value.slice(
-                              0,
-                              INPUT_LIMITS.groupName,
-                            ),
-                          }))
-                        }
+                          onChange={(event) => {
+                            setEditGroupFieldErrors((current) => ({
+                              ...current,
+                              name: undefined,
+                            }));
+                            setEditGroupDraft((draft) => ({
+                              ...draft,
+                              name: event.target.value.slice(
+                                0,
+                                INPUT_LIMITS.groupName,
+                              ),
+                            }));
+                          }}
                         inputProps={{ maxLength: INPUT_LIMITS.groupName }}
-                        helperText={`${editGroupDraft.name.length}/${INPUT_LIMITS.groupName}`}
+                          error={Boolean(editGroupFieldErrors.name)}
+                          helperText={
+                            editGroupFieldErrors.name ??
+                            `${editGroupDraft.name.length}/${INPUT_LIMITS.groupName}`
+                          }
                         sx={counterFieldSx}
                         fullWidth
                         size="small"
@@ -2065,17 +2129,25 @@ export function TeacherStudentsView() {
                       <TextField
                         autoFocus
                         value={editGroupDraft.description}
-                        onChange={(event) =>
+                        onChange={(event) => {
+                          setEditGroupFieldErrors((current) => ({
+                            ...current,
+                            description: undefined,
+                          }));
                           setEditGroupDraft((draft) => ({
                             ...draft,
                             description: event.target.value.slice(
                               0,
                               INPUT_LIMITS.groupDescription,
                             ),
-                          }))
-                        }
+                          }));
+                        }}
                         inputProps={{ maxLength: INPUT_LIMITS.groupDescription }}
-                        helperText={`${editGroupDraft.description.length}/${INPUT_LIMITS.groupDescription}`}
+                        error={Boolean(editGroupFieldErrors.description)}
+                        helperText={
+                          editGroupFieldErrors.description ??
+                          `${editGroupDraft.description.length}/${INPUT_LIMITS.groupDescription}`
+                        }
                         sx={counterFieldSx}
                         fullWidth
                         size="small"
@@ -2207,17 +2279,25 @@ export function TeacherStudentsView() {
                 </Typography>
                 <TextField
                   value={createGroupDraft.name}
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    setCreateGroupFieldErrors((current) => ({
+                      ...current,
+                      name: undefined,
+                    }));
                     setCreateGroupDraft((draft) => ({
                       ...draft,
                       name: event.target.value.slice(
                         0,
                         INPUT_LIMITS.groupName,
                       ),
-                    }))
-                  }
+                    }));
+                  }}
                   inputProps={{ maxLength: INPUT_LIMITS.groupName }}
-                  helperText={`${createGroupDraft.name.length}/${INPUT_LIMITS.groupName}`}
+                  error={Boolean(createGroupFieldErrors.name)}
+                  helperText={
+                    createGroupFieldErrors.name ??
+                    `${createGroupDraft.name.length}/${INPUT_LIMITS.groupName}`
+                  }
                   sx={counterFieldSx}
                   fullWidth
                   size="small"
@@ -2236,17 +2316,25 @@ export function TeacherStudentsView() {
                 </Typography>
                 <TextField
                   value={createGroupDraft.description}
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    setCreateGroupFieldErrors((current) => ({
+                      ...current,
+                      description: undefined,
+                    }));
                     setCreateGroupDraft((draft) => ({
                       ...draft,
                       description: event.target.value.slice(
                         0,
                         INPUT_LIMITS.groupDescription,
                       ),
-                    }))
-                  }
+                    }));
+                  }}
                   inputProps={{ maxLength: INPUT_LIMITS.groupDescription }}
-                  helperText={`${createGroupDraft.description.length}/${INPUT_LIMITS.groupDescription}`}
+                  error={Boolean(createGroupFieldErrors.description)}
+                  helperText={
+                    createGroupFieldErrors.description ??
+                    `${createGroupDraft.description.length}/${INPUT_LIMITS.groupDescription}`
+                  }
                   sx={counterFieldSx}
                   fullWidth
                   size="small"
