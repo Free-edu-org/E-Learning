@@ -81,17 +81,17 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
             dark: "#2563eb",
           },
           background: {
-            default: mode === "light" ? "#f5f7fb" : "#09090b",
-            paper: mode === "light" ? "#ffffff" : "#131316",
+            default: mode === "light" ? "#f5f7fb" : "#0b0d12",
+            paper: mode === "light" ? "#ffffff" : "#151822",
           },
           text: {
-            primary: mode === "light" ? "#0f172a" : "#fafafa",
-            secondary: mode === "light" ? "#64748b" : "#a1a1aa",
+            primary: mode === "light" ? "#0f172a" : "#f8fafc",
+            secondary: mode === "light" ? "#64748b" : "#a7b0c0",
           },
           divider:
             mode === "light"
               ? "rgba(15, 23, 42, 0.08)"
-              : "rgba(255, 255, 255, 0.08)",
+              : "rgba(139, 92, 246, 0.12)",
         },
         typography: {
           fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
@@ -159,16 +159,16 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
                 borderColor:
                   mode === "light"
                     ? "rgba(15, 23, 42, 0.14)"
-                    : "rgba(255, 255, 255, 0.12)",
+                    : "rgba(139, 92, 246, 0.2)",
                 "&:hover": {
                   borderColor:
                     mode === "light"
                       ? "rgba(15, 23, 42, 0.26)"
-                      : "rgba(255, 255, 255, 0.2)",
+                      : "rgba(139, 92, 246, 0.38)",
                   backgroundColor:
                     mode === "light"
                       ? "rgba(15, 23, 42, 0.04)"
-                      : "rgba(255, 255, 255, 0.04)",
+                      : "rgba(139, 92, 246, 0.06)",
                 },
               },
               text: {
@@ -176,7 +176,7 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
                   backgroundColor:
                     mode === "light"
                       ? "rgba(15, 23, 42, 0.05)"
-                      : "rgba(255, 255, 255, 0.06)",
+                      : "rgba(139, 92, 246, 0.08)",
                 },
               },
             },
@@ -187,30 +187,30 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
                 "& .MuiOutlinedInput-root": {
                   borderRadius: "10px",
                   backgroundColor:
-                    mode === "light" ? "#ffffff" : "rgba(255, 255, 255, 0.03)",
+                    mode === "light" ? "#ffffff" : "#1b2030",
                   transition: "box-shadow 0.2s ease, border-color 0.2s ease",
                   "& fieldset": {
                     borderColor:
                       mode === "light"
                         ? "rgba(15, 23, 42, 0.14)"
-                        : "rgba(255, 255, 255, 0.1)",
+                        : "rgba(139, 92, 246, 0.18)",
                     transition: "border-color 0.2s ease",
                   },
                   "&:hover fieldset": {
                     borderColor:
                       mode === "light"
                         ? "rgba(15, 23, 42, 0.28)"
-                        : "rgba(255, 255, 255, 0.18)",
+                        : "rgba(139, 92, 246, 0.35)",
                   },
                   "&.Mui-focused fieldset": {
-                    borderColor: "#6366f1",
+                    borderColor: "#7c6cff",
                     borderWidth: "1.5px",
                   },
                   "&.Mui-focused": {
                     boxShadow:
                       mode === "light"
                         ? "0 0 0 3px rgba(99, 102, 241, 0.12)"
-                        : "0 0 0 3px rgba(99, 102, 241, 0.2)",
+                        : "0 0 0 3px rgba(124, 108, 255, 0.18)",
                   },
                   "&.Mui-disabled": {
                     backgroundColor:
@@ -279,11 +279,12 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
                 border:
                   mode === "light"
                     ? "1px solid rgba(15, 23, 42, 0.08)"
-                    : "1px solid rgba(255, 255, 255, 0.06)",
+                    : "1px solid rgba(139, 92, 246, 0.12)",
                 boxShadow:
                   mode === "light"
                     ? "0 1px 4px rgba(15, 23, 42, 0.06), 0 4px 16px rgba(15, 23, 42, 0.04)"
-                    : "0 1px 4px rgba(0, 0, 0, 0.3)",
+                    : "0 1px 4px rgba(0, 0, 0, 0.4), 0 4px 24px rgba(0, 0, 0, 0.25)",
+                backgroundColor: mode === "light" ? undefined : "#151822",
               },
             },
           },
@@ -345,7 +346,7 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
                 borderColor:
                   mode === "light"
                     ? "rgba(15, 23, 42, 0.07)"
-                    : "rgba(255, 255, 255, 0.07)",
+                    : "rgba(139, 92, 246, 0.1)",
               },
             },
           },
@@ -356,7 +357,7 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
                 backgroundColor:
                   mode === "light"
                     ? "rgba(15, 23, 42, 0.07)"
-                    : "rgba(255, 255, 255, 0.07)",
+                    : "rgba(139, 92, 246, 0.08)",
               },
             },
           },

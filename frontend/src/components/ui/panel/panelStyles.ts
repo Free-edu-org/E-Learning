@@ -42,13 +42,13 @@ export const panelListRowSx: SxProps<Theme> = {
   boxShadow: (theme) =>
     theme.palette.mode === "light"
       ? "0 1px 3px rgba(15, 23, 42, 0.05)"
-      : "0 1px 3px rgba(0, 0, 0, 0.2)",
+      : "0 1px 3px rgba(0, 0, 0, 0.4)",
   transition: "box-shadow 0.2s, transform 0.15s, border-color 0.15s",
   "&:hover": {
     boxShadow: (theme) =>
       theme.palette.mode === "light"
         ? "0 8px 24px rgba(15, 23, 42, 0.1)"
-        : "0 8px 24px rgba(0, 0, 0, 0.35)",
+        : "0 8px 24px rgba(0, 0, 0, 0.55)",
     transform: "translateY(-1px)",
     borderColor: (theme) => alpha(theme.palette.primary.main, 0.3),
   },
@@ -64,13 +64,13 @@ export const panelGridCardSx: SxProps<Theme> = {
   boxShadow: (theme) =>
     theme.palette.mode === "light"
       ? "0 1px 4px rgba(15, 23, 42, 0.06), 0 4px 16px rgba(15, 23, 42, 0.04)"
-      : "0 1px 4px rgba(0, 0, 0, 0.3)",
+      : "0 2px 8px rgba(0, 0, 0, 0.5), 0 4px 20px rgba(0, 0, 0, 0.3)",
   transition: "box-shadow 0.2s, transform 0.15s, border-color 0.15s",
   "&:hover": {
     boxShadow: (theme) =>
       theme.palette.mode === "light"
         ? "0 8px 30px rgba(15, 23, 42, 0.12)"
-        : "0 8px 30px rgba(0, 0, 0, 0.4)",
+        : "0 8px 32px rgba(0, 0, 0, 0.6)",
     transform: "translateY(-2px)",
     borderColor: (theme) => alpha(theme.palette.primary.main, 0.3),
   },
@@ -162,7 +162,7 @@ export const panelSurfaceActionSx: SxProps<Theme> = {
     boxShadow: (theme) =>
       theme.palette.mode === "light"
         ? "0 8px 28px rgba(15, 23, 42, 0.1)"
-        : "0 8px 28px rgba(0, 0, 0, 0.35)",
+        : "0 8px 28px rgba(0, 0, 0, 0.55)",
     borderColor: "primary.main",
     transform: "translateY(-2px)",
   },
@@ -202,7 +202,7 @@ export const panelToolbarSx: SxProps<Theme> = {
   boxShadow: (theme) =>
     theme.palette.mode === "light"
       ? "0 1px 3px rgba(15, 23, 42, 0.05)"
-      : "0 1px 3px rgba(0, 0, 0, 0.2)",
+      : "0 1px 3px rgba(0, 0, 0, 0.4)",
 };
 
 export const panelSurfaceSx: SxProps<Theme> = {

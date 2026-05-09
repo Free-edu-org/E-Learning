@@ -9,7 +9,6 @@ import {
   CardContent,
   Chip,
   CircularProgress,
-  Collapse,
   Container,
   Divider,
   Grid,
@@ -143,6 +142,9 @@ interface DialogFeedbackState {
   message: string;
 }
 
+const counterHelperSx = { ml: "14px", fontSize: "0.7rem", opacity: 0.65, mt: 0.75 } as const;
+const counterFieldSx = { "& .MuiFormHelperText-root": counterHelperSx } as const;
+
 const emptyUserDraft: UserDraft = {
   username: "",
   email: "",
@@ -257,6 +259,9 @@ export function AdminDashboard() {
   const [groupDialogLoading, setGroupDialogLoading] = useState(false);
   const [groupDialogFeedback, setGroupDialogFeedback] =
     useState<DialogFeedbackState | null>(null);
+  const [groupDialogEditingFields, setGroupDialogEditingFields] = useState<
+    string[]
+  >([]);
 
   const [deleteDialog, setDeleteDialog] = useState<DeleteDialogState | null>(
     null,
@@ -578,30 +583,41 @@ export function AdminDashboard() {
     setUserDialogLoading(true);
     try {
       if (userDialogMode === "create") {
+        const tempPassword =
+          crypto.randomUUID().replace(/-/g, "") +
+          crypto.randomUUID().replace(/-/g, "");
         if (userDialogRole === "TEACHER") {
           const payload: CreateUserRequest = {
             username: userDraft.username,
             email: userDraft.email,
-            password: userDraft.password,
+            password: tempPassword,
           };
           await userService.createTeacher(payload);
+          await authService.forgotPassword({ email: userDraft.email }).catch(
+            () => {},
+          );
           setUserDialogFeedback({
             severity: "success",
-            message: "Nauczyciel został utworzony.",
+            message:
+              "Nauczyciel został utworzony. Link do ustawienia hasła został wysłany na podany adres e-mail.",
           });
         } else {
           const payload: AdminCreateStudentRequest = {
             username: userDraft.username,
             email: userDraft.email,
-            password: userDraft.password,
+            password: tempPassword,
             groupPublicId:
               userDraft.groupPublicId === "" ? null : userDraft.groupPublicId,
           };
 
           await adminService.createStudent(payload);
+          await authService.forgotPassword({ email: userDraft.email }).catch(
+            () => {},
+          );
           setUserDialogFeedback({
             severity: "success",
-            message: "Uczeń został utworzony.",
+            message:
+              "Uczeń został utworzony. Link do ustawienia hasła został wysłany na podany adres e-mail.",
           });
         }
       } else if (selectedUser) {
@@ -668,6 +684,7 @@ export function AdminDashboard() {
       teacherPublicId: group.teacherPublicId ?? "",
     });
     setGroupDialogFeedback(null);
+    setGroupDialogEditingFields([]);
     setGroupDialogOpen(true);
   };
 
@@ -679,6 +696,7 @@ export function AdminDashboard() {
     setSelectedGroup(null);
     setGroupDraft(emptyGroupDraft);
     setGroupDialogFeedback(null);
+    setGroupDialogEditingFields([]);
   };
 
   const submitGroupDialog = async () => {
@@ -1043,7 +1061,7 @@ export function AdminDashboard() {
                 <Paper elevation={0} sx={panelToolbarSx}>
                   <TextField
                     size="small"
-                    placeholder="Szukaj po nazwie, emailu lub ID"
+                    placeholder="Szukaj po nazwie lub emailu"
                     value={userSearch}
                     onChange={(event) => setUserSearch(event.target.value)}
                     slotProps={{
@@ -1524,12 +1542,25 @@ export function AdminDashboard() {
                               </Stack>
                             </Stack>
                           </CardContent>
+                          <Box
+                            sx={{
+                              mx: 2,
+                              borderTop: "1px solid",
+                              borderColor: (theme) =>
+                                alpha(
+                                  theme.palette.divider,
+                                  theme.palette.mode === "dark" ? 0.1 : 0.15,
+                                ),
+                            }}
+                          />
                           <CardActions
                             sx={{
                               ...panelCardFooterSx,
                               px: 1.75,
                               pb: 1.5,
                               mt: 0,
+                              pt: 1,
+                              borderTop: "none",
                             }}
                           >
                             <Box
@@ -1991,12 +2022,25 @@ export function AdminDashboard() {
                               </Stack>
                             </Stack>
                           </CardContent>
+                          <Box
+                            sx={{
+                              mx: 2,
+                              borderTop: "1px solid",
+                              borderColor: (theme) =>
+                                alpha(
+                                  theme.palette.divider,
+                                  theme.palette.mode === "dark" ? 0.1 : 0.15,
+                                ),
+                            }}
+                          />
                           <CardActions
                             sx={{
                               ...panelCardFooterSx,
                               px: 1.75,
                               pb: 1.5,
                               mt: 0,
+                              pt: 1,
+                              borderTop: "none",
                             }}
                           >
                             <Box
@@ -2102,11 +2146,32 @@ export function AdminDashboard() {
             )}
 
             {userDialogMode === "create" ? (
-              /* ── CREATE MODE: zwykły formularz ── */
-              <Stack spacing={2}>
-                <FormField>
+              /* ── CREATE MODE ── */
+              <Box
+                sx={{
+                  borderRadius: 2,
+                  border: "1px solid",
+                  borderColor: "divider",
+                  overflow: "hidden",
+                }}
+              >
+                <Box
+                  sx={{
+                    px: 2,
+                    py: 1.5,
+                    borderBottom: "1px solid",
+                    borderColor: "divider",
+                  }}
+                >
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    display="block"
+                    sx={{ mb: 0.75 }}
+                  >
+                    Nazwa użytkownika
+                  </Typography>
                   <TextField
-                    label="Nazwa użytkownika"
                     name="admin-user-dialog-username"
                     autoComplete="off"
                     value={userDraft.username}
@@ -2120,50 +2185,110 @@ export function AdminDashboard() {
                       }))
                     }
                     inputProps={{ maxLength: INPUT_LIMITS.username }}
-                    helperText={`${userDraft.username.length}/${INPUT_LIMITS.username}`}
-                    size="small"
-                    fullWidth
-                  />
-                </FormField>
-                <FormField>
-                  <TextField
-                    label="Adres e-mail"
-                    name="admin-user-dialog-email"
-                    autoComplete="off"
-                    type="email"
-                    value={userDraft.email}
-                    onChange={(event) =>
-                      setUserDraft((current) => ({
-                        ...current,
-                        email: event.target.value,
-                      }))
+                    error={
+                      userDraft.username.length > 0 &&
+                      userDraft.username.trim().length < 3
                     }
-                    size="small"
-                    fullWidth
-                  />
-                </FormField>
-                <FormField>
-                  <TextField
-                    label="Hasło"
-                    name="admin-user-dialog-password"
-                    autoComplete="new-password"
-                    type="password"
-                    value={userDraft.password}
-                    onChange={(event) =>
-                      setUserDraft((current) => ({
-                        ...current,
-                        password: event.target.value,
-                      }))
+                    helperText={
+                      userDraft.username.length > 0 &&
+                      userDraft.username.trim().length < 3
+                        ? "Minimalna długość to 3 znaki"
+                        : `${userDraft.username.length}/${INPUT_LIMITS.username}`
                     }
+                    sx={counterFieldSx}
                     size="small"
                     fullWidth
+                    placeholder="np. jan.kowalski"
                   />
-                </FormField>
+                </Box>
+                <Box
+                  sx={{
+                    px: 2,
+                    py: 1.5,
+                    borderBottom: "1px solid",
+                    borderColor: "divider",
+                  }}
+                >
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    display="block"
+                    sx={{ mb: 0.75 }}
+                  >
+                    Adres e-mail
+                  </Typography>
+                  <Stack spacing={1.25}>
+                    <TextField
+                      name="admin-user-dialog-email"
+                      autoComplete="off"
+                      type="email"
+                      value={userDraft.email}
+                      onChange={(event) =>
+                        setUserDraft((current) => ({
+                          ...current,
+                          email: event.target.value,
+                        }))
+                      }
+                      error={
+                        userDraft.email.length > 0 &&
+                        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userDraft.email)
+                      }
+                      helperText={
+                        userDraft.email.length > 0 &&
+                        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userDraft.email)
+                          ? "Podaj prawidłowy adres e-mail"
+                          : ""
+                      }
+                      size="small"
+                      fullWidth
+                      placeholder="np. jan@szkola.pl"
+                      sx={counterFieldSx}
+                    />
+                    <TextField
+                      name="admin-user-dialog-confirm-email"
+                      autoComplete="off"
+                      type="email"
+                      value={userDialogConfirmEmail}
+                      onChange={(event) =>
+                        setUserDialogConfirmEmail(event.target.value)
+                      }
+                      error={
+                        userDialogConfirmEmail.length > 0 &&
+                        (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+                          userDialogConfirmEmail,
+                        ) ||
+                          userDraft.email !== userDialogConfirmEmail)
+                      }
+                      helperText={
+                        userDialogConfirmEmail.length > 0
+                          ? !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+                                userDialogConfirmEmail,
+                              )
+                            ? "Podaj prawidłowy adres e-mail"
+                            : userDraft.email !== userDialogConfirmEmail
+                              ? "Adresy e-mail nie są identyczne"
+                              : ""
+                          : ""
+                      }
+                      size="small"
+                      fullWidth
+                      placeholder="Powtórz adres e-mail"
+                      sx={counterFieldSx}
+                    />
+                  </Stack>
+                </Box>
                 {userDialogRole === "STUDENT" && (
-                  <FormField>
+                  <Box sx={{ px: 2, py: 1.5 }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      display="block"
+                      sx={{ mb: 0.75 }}
+                    >
+                      Grupa
+                    </Typography>
                     <TextField
                       select
-                      label="Grupa"
                       value={userDraft.groupPublicId}
                       onChange={(event) =>
                         setUserDraft((current) => ({
@@ -2178,6 +2303,7 @@ export function AdminDashboard() {
                           ? "Brak grup do wyboru"
                           : "Wybór grupy jest opcjonalny."
                       }
+                      sx={counterFieldSx}
                     >
                       <MenuItem value="">Bez grupy</MenuItem>
                       {assignableGroups.map((group) => (
@@ -2186,9 +2312,9 @@ export function AdminDashboard() {
                         </MenuItem>
                       ))}
                     </TextField>
-                  </FormField>
+                  </Box>
                 )}
-              </Stack>
+              </Box>
             ) : (
               /* ── EDIT MODE: inline-edit rows (wzorzec AccountSettings) ── */
               <Box
@@ -2210,10 +2336,8 @@ export function AdminDashboard() {
                     },
                   }}
                 >
-                  <Collapse
-                    in={userDialogEditingFields.includes("username")}
-                    unmountOnExit
-                  >
+                  {userDialogEditingFields.includes("username") && (
+                  <>
                     <Typography
                       variant="caption"
                       color="text.secondary"
@@ -2249,6 +2373,7 @@ export function AdminDashboard() {
                             ? "Minimalna długość to 3 znaki"
                             : `${userDraft.username.length}/${INPUT_LIMITS.username}`
                         }
+                        sx={counterFieldSx}
                       />
                       <Box sx={{ display: "flex", gap: 0.5, flexShrink: 0, alignSelf: "flex-start", mt: 0.5 }}>
                         <IconButton
@@ -2297,11 +2422,9 @@ export function AdminDashboard() {
                         </IconButton>
                       </Box>
                     </Box>
-                  </Collapse>
-                  <Collapse
-                    in={!userDialogEditingFields.includes("username")}
-                    unmountOnExit
-                  >
+                  </>
+                  )}
+                  {!userDialogEditingFields.includes("username") && (
                     <Box
                       sx={{
                         display: "flex",
@@ -2349,7 +2472,7 @@ export function AdminDashboard() {
                         Zmień
                       </Button>
                     </Box>
-                  </Collapse>
+                  )}
                 </Box>
 
                 {/* E-mail */}
@@ -2363,10 +2486,8 @@ export function AdminDashboard() {
                     },
                   }}
                 >
-                  <Collapse
-                    in={userDialogEditingFields.includes("email")}
-                    unmountOnExit
-                  >
+                  {userDialogEditingFields.includes("email") && (
+                  <>
                     <Typography
                       variant="caption"
                       color="text.secondary"
@@ -2478,11 +2599,9 @@ export function AdminDashboard() {
                         <CloseIcon fontSize="small" />
                       </IconButton>
                     </Box>
-                  </Collapse>
-                  <Collapse
-                    in={!userDialogEditingFields.includes("email")}
-                    unmountOnExit
-                  >
+                  </>
+                  )}
+                  {!userDialogEditingFields.includes("email") && (
                     <Box
                       sx={{
                         display: "flex",
@@ -2531,7 +2650,7 @@ export function AdminDashboard() {
                         Zmień
                       </Button>
                     </Box>
-                  </Collapse>
+                  )}
                 </Box>
 
                 {/* Resetowanie hasła */}
@@ -2631,10 +2750,8 @@ export function AdminDashboard() {
                       py: 1.5,
                     }}
                   >
-                    <Collapse
-                      in={userDialogEditingFields.includes("group")}
-                      unmountOnExit
-                    >
+                    {userDialogEditingFields.includes("group") && (
+                    <>
                       <Typography
                         variant="caption"
                         color="text.secondary"
@@ -2722,11 +2839,9 @@ export function AdminDashboard() {
                           </IconButton>
                         </Box>
                       </Box>
-                    </Collapse>
-                    <Collapse
-                      in={!userDialogEditingFields.includes("group")}
-                      unmountOnExit
-                    >
+                    </>
+                    )}
+                    {!userDialogEditingFields.includes("group") && (
                       <Box
                         sx={{
                           display: "flex",
@@ -2775,7 +2890,7 @@ export function AdminDashboard() {
                           Zmień
                         </Button>
                       </Box>
-                    </Collapse>
+                    )}
                   </Box>
                 )}
               </Box>
@@ -2835,11 +2950,33 @@ export function AdminDashboard() {
                 {groupDialogFeedback.message}
               </AppDialogStatus>
             )}
-            <FormSection>
-              <Stack spacing={2.25}>
-                <FormField>
+            {groupDialogMode === "create" ? (
+              /* ── CREATE MODE ── */
+              <Box
+                sx={{
+                  borderRadius: 2,
+                  border: "1px solid",
+                  borderColor: "divider",
+                  overflow: "hidden",
+                }}
+              >
+                <Box
+                  sx={{
+                    px: 2,
+                    py: 1.5,
+                    borderBottom: "1px solid",
+                    borderColor: "divider",
+                  }}
+                >
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    display="block"
+                    sx={{ mb: 0.75 }}
+                  >
+                    Nazwa grupy
+                  </Typography>
                   <TextField
-                    label="Nazwa grupy"
                     value={groupDraft.name}
                     onChange={(event) =>
                       setGroupDraft((current) => ({
@@ -2851,13 +2988,39 @@ export function AdminDashboard() {
                       }))
                     }
                     inputProps={{ maxLength: INPUT_LIMITS.groupName }}
-                    helperText={`${groupDraft.name.length}/${INPUT_LIMITS.groupName}`}
+                    error={
+                      groupDraft.name.length > 0 &&
+                      groupDraft.name.trim().length < 2
+                    }
+                    helperText={
+                      groupDraft.name.length > 0 &&
+                      groupDraft.name.trim().length < 2
+                        ? "Minimalna długość to 2 znaki"
+                        : `${groupDraft.name.length}/${INPUT_LIMITS.groupName}`
+                    }
+                    sx={counterFieldSx}
+                    size="small"
                     fullWidth
+                    placeholder="np. Klasa 3B"
                   />
-                </FormField>
-                <FormField>
+                </Box>
+                <Box
+                  sx={{
+                    px: 2,
+                    py: 1.5,
+                    borderBottom: "1px solid",
+                    borderColor: "divider",
+                  }}
+                >
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    display="block"
+                    sx={{ mb: 0.75 }}
+                  >
+                    Opis grupy
+                  </Typography>
                   <TextField
-                    label="Opis grupy"
                     value={groupDraft.description}
                     onChange={(event) =>
                       setGroupDraft((current) => ({
@@ -2870,15 +3033,25 @@ export function AdminDashboard() {
                     }
                     inputProps={{ maxLength: INPUT_LIMITS.groupDescription }}
                     helperText={`${groupDraft.description.length}/${INPUT_LIMITS.groupDescription}`}
+                    sx={counterFieldSx}
                     multiline
-                    minRows={4}
+                    minRows={3}
+                    size="small"
                     fullWidth
+                    placeholder="Krótki opis grupy (opcjonalnie)"
                   />
-                </FormField>
-                <FormField>
+                </Box>
+                <Box sx={{ px: 2, py: 1.5 }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    display="block"
+                    sx={{ mb: 0.75 }}
+                  >
+                    Właściciel grupy
+                  </Typography>
                   <TextField
                     select
-                    label="Właściciel grupy"
                     value={groupDraft.teacherPublicId}
                     onChange={(event) =>
                       setGroupDraft((current) => ({
@@ -2887,7 +3060,9 @@ export function AdminDashboard() {
                       }))
                     }
                     helperText="Wybierz nauczyciela, który ma zarządzać grupą."
+                    size="small"
                     fullWidth
+                    sx={counterFieldSx}
                   >
                     <MenuItem value="">Bez właściciela</MenuItem>
                     {teachers.map((teacher) => (
@@ -2896,11 +3071,7 @@ export function AdminDashboard() {
                         value={teacher.publicId}
                         sx={{ py: 1 }}
                       >
-                        <Stack
-                          direction="row"
-                          spacing={1.5}
-                          alignItems="center"
-                        >
+                        <Stack direction="row" spacing={1.5} alignItems="center">
                           <UserAvatar
                             avatarUrl={teacher.avatarUrl}
                             username={teacher.username}
@@ -2913,9 +3084,488 @@ export function AdminDashboard() {
                       </MenuItem>
                     ))}
                   </TextField>
-                </FormField>
-              </Stack>
-            </FormSection>
+                </Box>
+              </Box>
+            ) : (
+              /* ── EDIT MODE: inline-edit rows ── */
+              <Box
+                sx={{
+                  borderRadius: 2,
+                  border: "1px solid",
+                  borderColor: "divider",
+                  overflow: "hidden",
+                }}
+              >
+                {/* Nazwa */}
+                <Box
+                  sx={{
+                    px: 2,
+                    py: 1.5,
+                    "&:not(:last-child)": {
+                      borderBottom: "1px solid",
+                      borderColor: "divider",
+                    },
+                  }}
+                >
+                  {groupDialogEditingFields.includes("name") && (
+                  <>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      display="block"
+                      sx={{ mb: 0.75 }}
+                    >
+                      Edycja nazwy grupy
+                    </Typography>
+                    <Box sx={{ display: "flex", gap: 1, alignItems: "flex-start" }}>
+                      <TextField
+                        value={groupDraft.name}
+                        onChange={(event) =>
+                          setGroupDraft((current) => ({
+                            ...current,
+                            name: event.target.value.slice(
+                              0,
+                              INPUT_LIMITS.groupName,
+                            ),
+                          }))
+                        }
+                        autoFocus
+                        size="small"
+                        fullWidth
+                        autoComplete="off"
+                        inputProps={{ maxLength: INPUT_LIMITS.groupName }}
+                        error={
+                          groupDraft.name.length > 0 &&
+                          groupDraft.name.trim().length < 2
+                        }
+                        helperText={
+                          groupDraft.name.length > 0 &&
+                          groupDraft.name.trim().length < 2
+                            ? "Minimalna długość to 2 znaki"
+                            : `${groupDraft.name.length}/${INPUT_LIMITS.groupName}`
+                        }
+                        sx={counterFieldSx}
+                      />
+                      <Box
+                        sx={{
+                          display: "flex",
+                          gap: 0.5,
+                          flexShrink: 0,
+                          mt: 0.5,
+                        }}
+                      >
+                        <IconButton
+                          size="small"
+                          disabled={groupDraft.name.trim().length < 2}
+                          onClick={() =>
+                            setGroupDialogEditingFields((prev) =>
+                              prev.filter((f) => f !== "name"),
+                            )
+                          }
+                          sx={{
+                            borderRadius: 1.5,
+                            color: "success.main",
+                            bgcolor: (theme) =>
+                              alpha(theme.palette.success.main, 0.08),
+                            "&:hover": {
+                              bgcolor: (theme) =>
+                                alpha(theme.palette.success.main, 0.16),
+                            },
+                            "&.Mui-disabled": { opacity: 0.35 },
+                          }}
+                        >
+                          <CheckIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => {
+                            setGroupDraft((current) => ({
+                              ...current,
+                              name: selectedGroup?.name ?? "",
+                            }));
+                            setGroupDialogEditingFields((prev) =>
+                              prev.filter((f) => f !== "name"),
+                            );
+                          }}
+                          sx={{
+                            borderRadius: 1.5,
+                            color: "text.secondary",
+                            "&:hover": {
+                              bgcolor: (theme) =>
+                                alpha(theme.palette.text.primary, 0.06),
+                            },
+                          }}
+                        >
+                          <CloseIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    </Box>
+                  </>
+                  )}
+                  {!groupDialogEditingFields.includes("name") && (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <Box>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          display="block"
+                        >
+                          Nazwa grupy
+                        </Typography>
+                        <Typography variant="body2" fontWeight={500}>
+                          {groupDraft.name}
+                        </Typography>
+                      </Box>
+                      <Button
+                        size="small"
+                        onClick={() => {
+                          setGroupDraft((current) => ({
+                            ...current,
+                            name: "",
+                          }));
+                          setGroupDialogEditingFields((prev) => [
+                            ...prev,
+                            "name",
+                          ]);
+                        }}
+                        sx={{
+                          textTransform: "none",
+                          fontWeight: 500,
+                          fontSize: "0.8rem",
+                          color: "primary.main",
+                          flexShrink: 0,
+                          ml: 1,
+                        }}
+                      >
+                        Zmień
+                      </Button>
+                    </Box>
+                  )}
+                </Box>
+
+                {/* Opis */}
+                <Box
+                  sx={{
+                    px: 2,
+                    py: 1.5,
+                    "&:not(:last-child)": {
+                      borderBottom: "1px solid",
+                      borderColor: "divider",
+                    },
+                  }}
+                >
+                  {groupDialogEditingFields.includes("description") && (
+                  <>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      display="block"
+                      sx={{ mb: 0.75 }}
+                    >
+                      Edycja opisu grupy
+                    </Typography>
+                    <Box sx={{ display: "flex", gap: 1, alignItems: "flex-start" }}>
+                      <TextField
+                        value={groupDraft.description}
+                        onChange={(event) =>
+                          setGroupDraft((current) => ({
+                            ...current,
+                            description: event.target.value.slice(
+                              0,
+                              INPUT_LIMITS.groupDescription,
+                            ),
+                          }))
+                        }
+                        autoFocus
+                        size="small"
+                        fullWidth
+                        autoComplete="off"
+                        multiline
+                        minRows={3}
+                        inputProps={{ maxLength: INPUT_LIMITS.groupDescription }}
+                        helperText={`${groupDraft.description.length}/${INPUT_LIMITS.groupDescription}`}
+                        sx={counterFieldSx}
+                      />
+                      <Box
+                        sx={{
+                          display: "flex",
+                          gap: 0.5,
+                          flexShrink: 0,
+                          mt: 0.5,
+                        }}
+                      >
+                        <IconButton
+                          size="small"
+                          onClick={() =>
+                            setGroupDialogEditingFields((prev) =>
+                              prev.filter((f) => f !== "description"),
+                            )
+                          }
+                          sx={{
+                            borderRadius: 1.5,
+                            color: "success.main",
+                            bgcolor: (theme) =>
+                              alpha(theme.palette.success.main, 0.08),
+                            "&:hover": {
+                              bgcolor: (theme) =>
+                                alpha(theme.palette.success.main, 0.16),
+                            },
+                          }}
+                        >
+                          <CheckIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => {
+                            setGroupDraft((current) => ({
+                              ...current,
+                              description: selectedGroup?.description ?? "",
+                            }));
+                            setGroupDialogEditingFields((prev) =>
+                              prev.filter((f) => f !== "description"),
+                            );
+                          }}
+                          sx={{
+                            borderRadius: 1.5,
+                            color: "text.secondary",
+                            "&:hover": {
+                              bgcolor: (theme) =>
+                                alpha(theme.palette.text.primary, 0.06),
+                            },
+                          }}
+                        >
+                          <CloseIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    </Box>
+                  </>
+                  )}
+                  {!groupDialogEditingFields.includes("description") && (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          display="block"
+                        >
+                          Opis grupy
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          fontWeight={500}
+                          sx={{
+                            whiteSpace: "pre-wrap",
+                            wordBreak: "break-word",
+                          }}
+                        >
+                          {groupDraft.description || (
+                            <Box
+                              component="span"
+                              sx={{ color: "text.disabled" }}
+                            >
+                              Brak opisu
+                            </Box>
+                          )}
+                        </Typography>
+                      </Box>
+                      <Button
+                        size="small"
+                        onClick={() => {
+                          setGroupDraft((current) => ({
+                            ...current,
+                            description: "",
+                          }));
+                          setGroupDialogEditingFields((prev) => [
+                            ...prev,
+                            "description",
+                          ]);
+                        }}
+                        sx={{
+                          textTransform: "none",
+                          fontWeight: 500,
+                          fontSize: "0.8rem",
+                          color: "primary.main",
+                          flexShrink: 0,
+                          ml: 1,
+                        }}
+                      >
+                        Zmień
+                      </Button>
+                    </Box>
+                  )}
+                </Box>
+
+                {/* Właściciel */}
+                <Box sx={{ px: 2, py: 1.5 }}>
+                  {groupDialogEditingFields.includes("teacher") && (
+                  <>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      display="block"
+                      sx={{ mb: 0.75 }}
+                    >
+                      Zmiana właściciela grupy
+                    </Typography>
+                    <Box sx={{ display: "flex", gap: 1, alignItems: "flex-start" }}>
+                      <TextField
+                        select
+                        value={groupDraft.teacherPublicId}
+                        onChange={(event) =>
+                          setGroupDraft((current) => ({
+                            ...current,
+                            teacherPublicId: event.target.value,
+                          }))
+                        }
+                        size="small"
+                        fullWidth
+                        helperText="Wybierz nauczyciela, który ma zarządzać grupą."
+                      >
+                        <MenuItem value="">Bez właściciela</MenuItem>
+                        {teachers.map((teacher) => (
+                          <MenuItem
+                            key={teacher.publicId}
+                            value={teacher.publicId}
+                            sx={{ py: 1 }}
+                          >
+                            <Stack
+                              direction="row"
+                              spacing={1.5}
+                              alignItems="center"
+                            >
+                              <UserAvatar
+                                avatarUrl={teacher.avatarUrl}
+                                username={teacher.username}
+                                size={24}
+                              />
+                              <Typography variant="body2">
+                                {teacher.username}
+                              </Typography>
+                            </Stack>
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          gap: 0.5,
+                          flexShrink: 0,
+                          mt: 0.5,
+                        }}
+                      >
+                        <IconButton
+                          size="small"
+                          onClick={() =>
+                            setGroupDialogEditingFields((prev) =>
+                              prev.filter((f) => f !== "teacher"),
+                            )
+                          }
+                          sx={{
+                            borderRadius: 1.5,
+                            color: "success.main",
+                            bgcolor: (theme) =>
+                              alpha(theme.palette.success.main, 0.08),
+                            "&:hover": {
+                              bgcolor: (theme) =>
+                                alpha(theme.palette.success.main, 0.16),
+                            },
+                          }}
+                        >
+                          <CheckIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => {
+                            setGroupDraft((current) => ({
+                              ...current,
+                              teacherPublicId:
+                                selectedGroup?.teacherPublicId ?? "",
+                            }));
+                            setGroupDialogEditingFields((prev) =>
+                              prev.filter((f) => f !== "teacher"),
+                            );
+                          }}
+                          sx={{
+                            borderRadius: 1.5,
+                            color: "text.secondary",
+                            "&:hover": {
+                              bgcolor: (theme) =>
+                                alpha(theme.palette.text.primary, 0.06),
+                            },
+                          }}
+                        >
+                          <CloseIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    </Box>
+                  </>
+                  )}
+                  {!groupDialogEditingFields.includes("teacher") && (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <Box>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          display="block"
+                        >
+                          Właściciel grupy
+                        </Typography>
+                        <Typography variant="body2" fontWeight={500}>
+                          {teachers.find(
+                            (t) =>
+                              t.publicId === groupDraft.teacherPublicId,
+                          )?.username ?? (
+                            <Box
+                              component="span"
+                              sx={{ color: "text.disabled" }}
+                            >
+                              Bez właściciela
+                            </Box>
+                          )}
+                        </Typography>
+                      </Box>
+                      <Button
+                        size="small"
+                        onClick={() =>
+                          setGroupDialogEditingFields((prev) => [
+                            ...prev,
+                            "teacher",
+                          ])
+                        }
+                        sx={{
+                          textTransform: "none",
+                          fontWeight: 500,
+                          fontSize: "0.8rem",
+                          color: "primary.main",
+                          flexShrink: 0,
+                          ml: 1,
+                        }}
+                      >
+                        Zmień
+                      </Button>
+                    </Box>
+                  )}
+                </Box>
+              </Box>
+            )}
           </AppDialogBody>
           <AppDialogFooter>
             <FormActions>
@@ -2927,12 +3577,18 @@ export function AdminDashboard() {
               </Button>
               <Button
                 variant="contained"
-                startIcon={<SaveIcon />}
+                startIcon={
+                  groupDialogLoading ? (
+                    <CircularProgress size={16} color="inherit" />
+                  ) : (
+                    <SaveIcon />
+                  )
+                }
                 onClick={submitGroupDialog}
                 disabled={groupDialogLoading}
                 sx={panelFooterButtonSx}
               >
-                {groupDialogLoading ? "Zapisywanie..." : "Zapisz zmiany"}
+                {groupDialogMode === "create" ? "Utwórz grupę" : "Zapisz zmiany"}
               </Button>
             </FormActions>
           </AppDialogFooter>
