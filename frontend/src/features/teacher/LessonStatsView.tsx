@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import {
   Alert,
   Box,
@@ -471,20 +471,88 @@ export function LessonStatsView() {
                       }}
                     >
                       {/* Name + date */}
-                      <UserAvatar
-                        avatarUrl={student.avatarUrl}
-                        username={student.username}
-                        size={36}
-                      />
-                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Box
+                        component={RouterLink}
+                        to={`/teacher/students/${student.userPublicId}/progress?fromLessonPublicId=${lessonPublicId}`}
+                        state={{
+                          backTo: `/teacher/lessons/${lessonPublicId}/stats`,
+                          backLabel: "Wróć do wyników lekcji",
+                        }}
+                        aria-label={`Przejdź do profilu ucznia ${student.username}`}
+                        sx={{
+                          display: "inline-flex",
+                          flexShrink: 0,
+                          borderRadius: "50%",
+                          textDecoration: "none",
+                          outline: "none",
+                          "&:focus-visible": {
+                            boxShadow: (theme) =>
+                              `0 0 0 3px ${alpha(theme.palette.primary.main, 0.35)}`,
+                          },
+                        }}
+                      >
+                        <UserAvatar
+                          avatarUrl={student.avatarUrl}
+                          username={student.username}
+                          size={36}
+                          sx={{
+                            transition:
+                              "box-shadow 0.2s ease, transform 0.2s ease",
+                            "&:hover": {
+                              boxShadow: (theme) =>
+                                `0 0 0 3px ${alpha(theme.palette.primary.main, 0.18)}`,
+                              transform: "translateY(-1px)",
+                            },
+                          }}
+                        />
+                      </Box>
+                      <Box
+                        sx={{
+                          flex: 1,
+                          minWidth: 180,
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "flex-start",
+                          gap: 0.35,
+                        }}
+                      >
                         <Typography
+                          component={RouterLink}
+                          to={`/teacher/students/${student.userPublicId}/progress?fromLessonPublicId=${lessonPublicId}`}
+                          state={{
+                            backTo: `/teacher/lessons/${lessonPublicId}/stats`,
+                            backLabel: "Wróć do wyników lekcji",
+                          }}
                           variant="body2"
                           fontWeight={600}
-                          sx={{ overflowWrap: "anywhere" }}
+                          sx={{
+                            color: "text.primary",
+                            display: "block",
+                            lineHeight: 1.25,
+                            maxWidth: "100%",
+                            overflowWrap: "anywhere",
+                            textDecoration: "none",
+                            outline: "none",
+                            "&:hover": {
+                              color: "primary.main",
+                              textDecoration: "underline",
+                              textUnderlineOffset: "3px",
+                            },
+                            "&:focus-visible": {
+                              color: "primary.main",
+                              textDecoration: "underline",
+                              textUnderlineOffset: "3px",
+                            },
+                          }}
                         >
                           {student.username}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography
+                          component="span"
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ display: "block", lineHeight: 1.3 }}
+                        >
                           Ukończono: {formatDate(student.completedAt)}
                         </Typography>
                       </Box>
