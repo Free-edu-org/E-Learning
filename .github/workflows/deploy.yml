@@ -1,0 +1,100 @@
+name: Deploy FreeEdu
+
+on:
+  push:
+    branches:
+      - deploy/azure-prod
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'stt-service/**'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch: # Pozwala na ręczne odpalenie z panelu GitHub
+
+jobs:
+  # --- BACKEND DEPLOY ---
+  deploy-backend:
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.modified, 'backend/') || contains(github.event.head_commit.added, 'backend/') || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Log in to ACR
+        run: |
+          echo "${{ secrets.ACR_PASSWORD }}" | docker login ${{ secrets.ACR_LOGIN_SERVER }} -u ${{ secrets.ACR_USERNAME }} --password-stdin
+
+      - name: Build and push Backend
+        run: |
+          docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-backend:prod -f backend/Dockerfile.prod backend
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-backend:prod
+
+      - name: Deploy to Azure Container App
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          containerAppName: freeedu-backend
+          resourceGroup: freeedu-rg
+          imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-backend:prod
+
+  # --- FRONTEND DEPLOY ---
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.modified, 'frontend/') || contains(github.event.head_commit.added, 'frontend/') || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Log in to ACR
+        run: |
+          echo "${{ secrets.ACR_PASSWORD }}" | docker login ${{ secrets.ACR_LOGIN_SERVER }} -u ${{ secrets.ACR_USERNAME }} --password-stdin
+
+      - name: Build and push Frontend
+        run: |
+          docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-frontend:prod -f frontend/Dockerfile.prod frontend
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-frontend:prod
+
+      - name: Deploy to Azure Container App
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          containerAppName: freeedu-frontend
+          resourceGroup: freeedu-rg
+          imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-frontend:prod
+
+  # --- STT SERVICE DEPLOY ---
+  deploy-stt:
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.modified, 'stt-service/') || contains(github.event.head_commit.added, 'stt-service/') || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Log in to ACR
+        run: |
+          echo "${{ secrets.ACR_PASSWORD }}" | docker login ${{ secrets.ACR_LOGIN_SERVER }} -u ${{ secrets.ACR_USERNAME }} --password-stdin
+
+      - name: Build and push STT Service
+        run: |
+          docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-stt:prod -f stt-service/Dockerfile.prod stt-service
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-stt:prod
+
+      - name: Deploy to Azure Container App
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          containerAppName: freeedu-stt
+          resourceGroup: freeedu-rg
+          imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-stt:prod
