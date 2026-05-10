@@ -14,7 +14,6 @@ on:
 jobs:
   deploy-backend:
     runs-on: ubuntu-latest
-    if: contains(github.event.head_commit.modified, 'backend/') || contains(github.event.head_commit.added, 'backend/') || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -42,7 +41,6 @@ jobs:
 
   deploy-frontend:
     runs-on: ubuntu-latest
-    if: contains(github.event.head_commit.modified, 'frontend/') || contains(github.event.head_commit.added, 'frontend/') || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -70,7 +68,6 @@ jobs:
 
   deploy-stt:
     runs-on: ubuntu-latest
-    if: contains(github.event.head_commit.modified, 'stt-service/') || contains(github.event.head_commit.added, 'stt-service/') || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
