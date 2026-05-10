@@ -52,6 +52,8 @@ services:
     container_name: freeedu-frontend-prod
     ports:
       - "5173:5173"
+    environment:
+      - VITE_API_BASE_URL=http://backend:8080
     depends_on:
       - backend
 
