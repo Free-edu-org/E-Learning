@@ -97,4 +97,17 @@ jobs:
         with:
           containerAppName: freeedu-stt
           resourceGroup: freeedu-rg
-          imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-stt:prod
+
+  # --- NOTIFICATION ---
+  notify:
+    runs-on: ubuntu-latest
+    needs: [deploy-backend, deploy-frontend, deploy-stt]
+    if: always()
+    steps:
+      - name: Microsoft Teams Notification
+        uses: rjstone/discord-webhook-notify@v1
+        if: always()
+        with:
+          severity: ${{ contains(needs.*.result, 'failure') && 'error' || 'info' }}
+          details: 'Deployment finished with status: ${{ contains(needs.*.result, "failure") && "FAILED ❌" || "SUCCESS ✅" }}'
+          webhookUrl: ${{ secrets.TEAMS_WEBHOOK_URL }}
