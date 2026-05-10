@@ -105,6 +105,26 @@ jobs:
             STATUS="FAILED"
           fi
 
-          curl -X POST "${{ secrets.TEAMS_WEBHOOK_URL }}" \
+          PAYLOAD=$(cat <<EOF
+          {
+            "text": "Deployment finished with status: ${STATUS}",
+            "status": "${STATUS}",
+            "application": "FreeEdu",
+            "branch": "${GITHUB_REF_NAME}",
+            "sha": "${GITHUB_SHA}",
+            "workflow": "${GITHUB_WORKFLOW}",
+            "runNumber": "${GITHUB_RUN_NUMBER}",
+            "runId": "${GITHUB_RUN_ID}",
+            "actor": "${GITHUB_ACTOR}",
+            "repository": "${GITHUB_REPOSITORY}",
+            "runUrl": "https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          }
+          EOF
+          )
+
+          echo "Sending Teams payload:"
+          echo "${PAYLOAD}"
+
+          curl --fail-with-body -X POST "${{ secrets.TEAMS_WEBHOOK_URL }}" \
             -H "Content-Type: application/json" \
-            -d "{\"text\":\"Deployment finished with status: ${STATUS}\"}"
+            -d "${PAYLOAD}"
