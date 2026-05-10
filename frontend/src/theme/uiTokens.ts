@@ -20,8 +20,8 @@ export const uiTokens = {
     bodyPaddingTop: 1,
     bodyPaddingBottom: 4,
     footerPaddingX: 4.5,
-    footerPaddingTop: 2.5,
-    footerPaddingBottom: 4,
+    footerPaddingTop: 1.25,
+    footerPaddingBottom: 2.25,
   },
   form: {
     fieldGap: 1,

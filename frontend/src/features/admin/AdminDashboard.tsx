@@ -4018,7 +4018,7 @@ export function AdminDashboard() {
                               error={Boolean(userFieldErrors.email)}
                               helperText={
                                 userFieldErrors.email ??
-                                "Na ten adres będzie wysyłana komunikacja."
+                                "Adres służący do logowania i odzyskiwania hasła."
                               }
                               placeholder="Wprowadź nowy e-mail"
                               sx={{
@@ -5481,11 +5481,11 @@ export function AdminDashboard() {
         <AppDialog
           open={Boolean(deleteDialog)}
           onClose={closeDeleteDialog}
-          maxWidth="xs"
+          maxWidth="sm"
           paperSx={{
             width: {
               xs: "calc(100% - 28px)",
-              sm: 460,
+              sm: 520,
             },
           }}
         >
