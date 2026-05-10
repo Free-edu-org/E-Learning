@@ -9,7 +9,7 @@ on:
       - 'frontend/**'
       - 'stt-service/**'
       - '.github/workflows/deploy.yml'
-  workflow_dispatch: # Pozwala na ręczne odpalenie z panelu GitHub
+  workflow_dispatch:  # Pozwala na ręczne odpalenie z panelu GitHub
 
 jobs:
   # --- BACKEND DEPLOY ---
