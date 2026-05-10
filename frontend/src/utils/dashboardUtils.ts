@@ -96,6 +96,8 @@ const ERROR_TRANSLATIONS: Record<string, string> = {
     "Podpowiedź może mieć maksymalnie 200 znaków.",
   "Section must be at most 80 characters long":
     "Sekcja może mieć maksymalnie 80 znaków.",
+  "An unexpected error occurred":
+    "Wystąpił nieoczekiwany błąd po stronie serwera.",
 };
 
 const ERROR_CODE_TRANSLATIONS: Record<string, string> = {
@@ -150,6 +152,8 @@ const ERROR_CODE_TRANSLATIONS: Record<string, string> = {
   EMAIL_VERIFICATION_REQUIRED: "Potwierdź adres email, aby aktywować konto.",
   EMAIL_VERIFICATION_NOT_PENDING:
     "To konto nie oczekuje już na weryfikację emaila.",
+  INTERNAL_SERVER_ERROR:
+    "Wystąpił nieoczekiwany błąd serwera. Spróbuj ponownie później.",
 };
 
 function translateValidationMessage(

@@ -1,0 +1,74 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: freeedu-mysql-prod
+    environment:
+      MYSQL_DATABASE: freeedu
+      MYSQL_USER: freeedu
+      MYSQL_PASSWORD: prod_password_change_me
+      MYSQL_ROOT_PASSWORD: root_password_change_me
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_prod_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -pprod_password_change_me --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: freeedu-backend-prod
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: freeedu
+      DB_USER: freeedu
+      DB_PASSWORD: prod_password_change_me
+      JWT_SECRET_KEY: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+      JWT_EXPIRATION: 86400000
+      FRONTEND_BASE_URL: http://localhost:5173
+      STT_BASE_URL: http://stt-service:8000
+      CORS_ALLOWED_ORIGINS: http://localhost:5173
+      MAIL_ENABLED: "false"
+      MAIL_HOST: localhost
+      MAIL_PORT: 587
+      MAIL_USERNAME: dummy
+      MAIL_PASSWORD: dummy
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    container_name: freeedu-frontend-prod
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_BASE_URL=http://backend:8080
+    depends_on:
+      - backend
+
+  stt-service:
+    build:
+      context: ./stt-service
+      dockerfile: Dockerfile.prod
+    container_name: freeedu-stt-prod
+    environment:
+      STT_MODEL_SIZE: base
+      STT_DEVICE: cpu
+      STT_COMPUTE_TYPE: int8
+      STT_LANGUAGE: en
+    ports:
+      - "8000:8000"
+
+volumes:
+  mysql_prod_data:
