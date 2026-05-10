@@ -71,3 +71,4 @@ coverage/
 docs/obsidian/.obsidian/workspace.json
 docs/obsidian/.obsidian/workspaces.json
 /backend/logs/*
+frontend/nginx/default.conf

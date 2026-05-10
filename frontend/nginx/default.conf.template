@@ -1,25 +1,54 @@
 server {
-    listen 5173;
+    listen 80;
     server_name localhost;
+    
+    # DNS resolver for Azure environment
+    resolver 8.8.8.8 8.8.4.4 valid=30s;
 
+    # Root for SPA
     location / {
         root /usr/share/nginx/html;
         index index.html index.htm;
         try_files $uri $uri/ /index.html;
     }
 
+    # Reverse Proxy to Backend
+    # Use ${BACKEND_URL} for upstream host (e.g., https://freeedu-backend.azurecontainerapps.io)
     location /api/ {
-        proxy_pass ${VITE_API_BASE_URL}/api/;
+        set $backend_url ${BACKEND_URL};
+        
+        # Forward everything under /api/ to the backend
+        # Using variable in proxy_pass preserves the URI including /api/
+        proxy_pass $backend_url;
+        
         proxy_http_version 1.1;
-
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
+        
+        # Important for Azure SNI
+        proxy_ssl_server_name on;
+        proxy_ssl_protocols TLSv1.2 TLSv1.3;
+        
+        # Azure Container Apps require the Host header to match the backend FQDN
+        # $proxy_host is automatically set to the hostname part of the proxy_pass URL
         proxy_set_header Host $proxy_host;
+        
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
         proxy_cache_bypass $http_upgrade;
+        
+        # Production tuning
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+        proxy_buffers 8 16k;
+        proxy_buffer_size 32k;
     }
 
+    # Error pages
     error_page 500 502 503 504 /50x.html;
-
     location = /50x.html {
         root /usr/share/nginx/html;
     }
