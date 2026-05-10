@@ -10,6 +10,7 @@
   ToggleButton,
   ToggleButtonGroup,
 } from "@mui/material";
+import { alpha, type SxProps, type Theme } from "@mui/material/styles";
 import {
   GridViewOutlined as GridIcon,
   SearchOutlined as SearchIcon,
@@ -18,6 +19,146 @@ import {
 import type { SelectChangeEvent } from "@mui/material";
 import type { Group } from "@/api/lessonService";
 import { panelToolbarSx } from "@/components/ui/panel/panelStyles";
+
+const toolbarFieldSx: SxProps<Theme> = {
+  minWidth: 180,
+  flex: "1 1 180px",
+  "& .MuiOutlinedInput-root": {
+    borderRadius: 2,
+    minHeight: 40,
+    bgcolor: (theme: Theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.common.white, 0.98)
+        : "#151a2c",
+    border: "1px solid",
+    borderColor: (theme: Theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.text.primary, 0.06)
+        : alpha(theme.palette.common.white, 0.06),
+    boxShadow: (theme: Theme) =>
+      theme.palette.mode === "light"
+        ? "0 2px 8px rgba(15, 23, 42, 0.035)"
+        : "inset 0 1px 0 rgba(255,255,255,0.02)",
+    transition:
+      "border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease",
+    "& fieldset": {
+      border: "none",
+    },
+    "&:hover": {
+      borderColor: (theme: Theme) =>
+        theme.palette.mode === "light"
+          ? alpha(theme.palette.primary.main, 0.14)
+          : alpha(theme.palette.common.white, 0.1),
+      bgcolor: (theme: Theme) =>
+        theme.palette.mode === "light" ? theme.palette.common.white : "#171d2f",
+    },
+    "&.Mui-focused": {
+      borderColor: (theme: Theme) =>
+        theme.palette.mode === "light"
+          ? alpha(theme.palette.primary.main, 0.22)
+          : alpha(theme.palette.primary.light, 0.2),
+      boxShadow: (theme: Theme) =>
+        theme.palette.mode === "light"
+          ? `0 0 0 3px ${alpha(theme.palette.primary.main, 0.08)}`
+          : `0 0 0 3px ${alpha(theme.palette.primary.light, 0.08)}`,
+    },
+  },
+  "& .MuiInputBase-input::placeholder": {
+    opacity: 1,
+    color: (theme: Theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.text.secondary, 0.8)
+        : alpha(theme.palette.common.white, 0.38),
+  },
+};
+
+const compactToolbarFieldSx: SxProps<Theme> = {
+  "& .MuiOutlinedInput-root.MuiInputBase-root": {
+    minHeight: 38,
+  },
+  "& .MuiInputBase-input": {
+    fontSize: "0.85rem",
+  },
+};
+
+const segmentedGroupSx: SxProps<Theme> = {
+  p: 0.375,
+  borderRadius: 2.5,
+  bgcolor: "transparent",
+  border: "none",
+  gap: 0.375,
+  "& .MuiToggleButtonGroup-grouped": {
+    border: 0,
+    borderRadius: "10px !important",
+    minHeight: 32,
+    px: 1.25,
+    textTransform: "none",
+    color: "text.secondary",
+    transition:
+      "background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease",
+    "&:hover": {
+      bgcolor: (theme: Theme) =>
+        theme.palette.mode === "light"
+          ? alpha(theme.palette.common.black, 0.04)
+          : alpha(theme.palette.common.white, 0.05),
+    },
+    "&.Mui-selected": {
+      color: "text.primary",
+      bgcolor: (theme: Theme) =>
+        theme.palette.mode === "light"
+          ? alpha(theme.palette.common.white, 0.92)
+          : "#151a2c",
+      boxShadow: (theme: Theme) =>
+        theme.palette.mode === "light"
+          ? "0 2px 8px rgba(15, 23, 42, 0.06)"
+          : "0 4px 10px rgba(0, 0, 0, 0.16)",
+    },
+    "&.Mui-selected:hover": {
+      bgcolor: (theme: Theme) =>
+        theme.palette.mode === "light" ? theme.palette.common.white : "#171d2f",
+    },
+  },
+};
+
+const segmentedStandaloneButtonSx: SxProps<Theme> = {
+  textTransform: "none",
+  borderRadius: 2.5,
+  flexShrink: 0,
+  borderColor: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.text.primary, 0.08)
+      : alpha(theme.palette.common.white, 0.06),
+  color: "text.secondary",
+  bgcolor: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.common.white, 0.8)
+      : "#111625",
+  transition:
+    "background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease",
+  "&:hover": {
+    bgcolor: (theme: Theme) =>
+      theme.palette.mode === "light" ? theme.palette.common.white : "#151a2c",
+    borderColor: (theme: Theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.text.primary, 0.12)
+        : alpha(theme.palette.common.white, 0.1),
+  },
+  "&.Mui-selected": {
+    color: "text.primary",
+    bgcolor: (theme: Theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.primary.main, 0.08)
+        : alpha(theme.palette.primary.light, 0.1),
+    borderColor: (theme: Theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.primary.main, 0.18)
+        : alpha(theme.palette.primary.light, 0.18),
+    boxShadow: (theme: Theme) =>
+      theme.palette.mode === "light"
+        ? "none"
+        : "0 4px 10px rgba(0, 0, 0, 0.12)",
+  },
+};
 
 export type StatusFilter = "all" | "active" | "inactive";
 export type ViewMode = "grid" | "list";
@@ -85,16 +226,17 @@ export function LessonToolbar({
           },
         }}
         sx={{
-          minWidth: 180,
-          flex: "1 1 180px",
-          "& .MuiOutlinedInput-root": { borderRadius: 2 },
+          ...(toolbarFieldSx as object),
+          ...(compactToolbarFieldSx as object),
+          minWidth: { xs: "100%", sm: 260, lg: 320 },
+          flex: { xs: "1 1 100%", md: "1.45 1 280px" },
         }}
       />
 
       <Divider
         orientation="vertical"
         flexItem
-        sx={{ display: { xs: "none", sm: "block" } }}
+        sx={{ display: { xs: "none", md: "block" } }}
       />
 
       <Autocomplete
@@ -128,16 +270,20 @@ export function LessonToolbar({
             placeholder={
               selectedGroups.length === 0 ? "Filtruj grupy..." : undefined
             }
-            sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
           />
         )}
-        sx={{ minWidth: 190, flex: "1 1 190px" }}
+        sx={{
+          ...(toolbarFieldSx as object),
+          ...(compactToolbarFieldSx as object),
+          minWidth: { xs: "100%", sm: 220 },
+          flex: { xs: "1 1 100%", lg: "1 1 230px" },
+        }}
       />
 
       <Divider
         orientation="vertical"
         flexItem
-        sx={{ display: { xs: "none", sm: "block" } }}
+        sx={{ display: { xs: "none", md: "block" } }}
       />
 
       <ToggleButtonGroup
@@ -145,22 +291,19 @@ export function LessonToolbar({
         exclusive
         onChange={handleStatusChange}
         size="small"
-        sx={{ flexShrink: 0 }}
+        sx={{
+          ...(segmentedGroupSx as object),
+          flexShrink: 0,
+          alignSelf: "center",
+        }}
       >
-        <ToggleButton
-          value="all"
-          sx={{
-            textTransform: "none",
-            px: 1.5,
-            borderRadius: "8px !important",
-          }}
-        >
+        <ToggleButton value="all" sx={segmentedStandaloneButtonSx}>
           Wszystkie
         </ToggleButton>
-        <ToggleButton value="active" sx={{ textTransform: "none", px: 1.5 }}>
+        <ToggleButton value="active" sx={segmentedStandaloneButtonSx}>
           Aktywne
         </ToggleButton>
-        <ToggleButton value="inactive" sx={{ textTransform: "none", px: 1.5 }}>
+        <ToggleButton value="inactive" sx={segmentedStandaloneButtonSx}>
           Nieaktywne
         </ToggleButton>
       </ToggleButtonGroup>
@@ -168,7 +311,7 @@ export function LessonToolbar({
       <Divider
         orientation="vertical"
         flexItem
-        sx={{ display: { xs: "none", sm: "block" } }}
+        sx={{ display: { xs: "none", md: "block" } }}
       />
 
       <Select
@@ -176,21 +319,31 @@ export function LessonToolbar({
         value={sortMode}
         onChange={handleSortChange}
         sx={{
+          ...(toolbarFieldSx as object),
           minWidth: 170,
-          borderRadius: 2,
-          "& .MuiSelect-select": { py: "6.5px" },
+          flex: "0 0 auto",
+          fontSize: "0.82rem",
+          "& .MuiSelect-select": { py: "6.5px", fontSize: "0.82rem" },
         }}
       >
-        <MenuItem value="date_desc">Data: Najnowsze</MenuItem>
-        <MenuItem value="date_asc">Data: Najstarsze</MenuItem>
-        <MenuItem value="title_az">Tytuł: A-Z</MenuItem>
-        <MenuItem value="title_za">Tytuł: Z-A</MenuItem>
+        <MenuItem value="date_desc" sx={{ fontSize: "0.82rem" }}>
+          Data: Najnowsze
+        </MenuItem>
+        <MenuItem value="date_asc" sx={{ fontSize: "0.82rem" }}>
+          Data: Najstarsze
+        </MenuItem>
+        <MenuItem value="title_az" sx={{ fontSize: "0.82rem" }}>
+          Tytuł: A-Z
+        </MenuItem>
+        <MenuItem value="title_za" sx={{ fontSize: "0.82rem" }}>
+          Tytuł: Z-A
+        </MenuItem>
       </Select>
 
       <Divider
         orientation="vertical"
         flexItem
-        sx={{ display: { xs: "none", sm: "block" } }}
+        sx={{ display: { xs: "none", md: "block" } }}
       />
 
       <ToggleButtonGroup
@@ -198,16 +351,20 @@ export function LessonToolbar({
         exclusive
         onChange={handleViewChange}
         size="small"
-        sx={{ flexShrink: 0 }}
+        sx={{ ...(segmentedGroupSx as object), flexShrink: 0 }}
       >
         <ToggleButton
           value="grid"
           aria-label="Widok siatki"
-          sx={{ borderRadius: "8px !important" }}
+          sx={segmentedStandaloneButtonSx}
         >
           <GridIcon fontSize="small" />
         </ToggleButton>
-        <ToggleButton value="list" aria-label="Widok listy">
+        <ToggleButton
+          value="list"
+          aria-label="Widok listy"
+          sx={segmentedStandaloneButtonSx}
+        >
           <ListIcon fontSize="small" />
         </ToggleButton>
       </ToggleButtonGroup>

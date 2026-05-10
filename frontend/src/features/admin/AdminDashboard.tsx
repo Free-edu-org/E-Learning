@@ -319,6 +319,24 @@ const toolbarFieldSx = {
   },
 };
 
+const compactToolbarFieldSx = {
+  "& .MuiOutlinedInput-root.MuiInputBase-root": {
+    minHeight: 38,
+  },
+  "& .MuiInputBase-input": {
+    fontSize: "0.85rem",
+  },
+};
+
+const groupCompactToolbarFieldSx = {
+  "& .MuiOutlinedInput-root.MuiInputBase-root": {
+    minHeight: 36,
+  },
+  "& .MuiInputBase-input": {
+    fontSize: "0.82rem",
+  },
+};
+
 const segmentedGroupSx = {
   p: 0.375,
   borderRadius: 2.5,
@@ -2236,6 +2254,7 @@ export function AdminDashboard() {
                     }}
                     sx={{
                       ...toolbarFieldSx,
+                      ...compactToolbarFieldSx,
                       minWidth: { xs: "100%", sm: 260, lg: 320 },
                       flex: { xs: "1 1 100%", md: "1.5 1 280px" },
                     }}
@@ -2286,6 +2305,7 @@ export function AdminDashboard() {
                     )}
                     sx={{
                       ...toolbarFieldSx,
+                      ...compactToolbarFieldSx,
                       minWidth: { xs: "100%", sm: 220 },
                       flex: { xs: "1 1 100%", lg: "1 1 230px" },
                     }}
@@ -2336,6 +2356,7 @@ export function AdminDashboard() {
                     )}
                     sx={{
                       ...toolbarFieldSx,
+                      ...groupCompactToolbarFieldSx,
                       minWidth: { xs: "100%", sm: 220 },
                       flex: { xs: "1 1 100%", lg: "1 1 230px" },
                     }}
@@ -3067,6 +3088,7 @@ export function AdminDashboard() {
                     }}
                     sx={{
                       ...toolbarFieldSx,
+                      ...groupCompactToolbarFieldSx,
                       minWidth: { xs: "100%", sm: 260, lg: 320 },
                       flex: { xs: "1 1 100%", md: "1.4 1 280px" },
                     }}

@@ -4,6 +4,8 @@ import {
   Autocomplete,
   Box,
   Button,
+  Card,
+  CardContent,
   Chip,
   CircularProgress,
   Container,
@@ -63,6 +65,7 @@ import { DashboardTopBar } from "@/components/ui/panel/DashboardTopBar";
 import {
   panelDeleteButtonSx,
   panelFooterButtonSx,
+  panelSurfaceSx,
 } from "@/components/ui/panel/panelStyles";
 import { useAuth } from "@/context/AuthContext";
 import { uiTokens } from "@/theme/uiTokens";
@@ -924,87 +927,104 @@ export function TeacherDashboard() {
           />
         </Box>
 
-        <Typography
-          variant="subtitle1"
-          fontWeight={700}
-          color="primary.main"
-          sx={{ mb: 1.5 }}
-        >
-          Moje lekcje
-        </Typography>
-
-        <LessonToolbar
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          statusFilter={statusFilter}
-          onStatusFilterChange={setStatusFilter}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-          sortMode={sortMode}
-          onSortModeChange={setSortMode}
-          availableGroups={availableGroups}
-          selectedGroups={selectedGroups}
-          onSelectedGroupsChange={setSelectedGroups}
-        />
-
-        {loadingData ? (
-          <Grid container spacing={2}>
-            {[...Array(8)].map((_, i) => (
-              <Grid key={i} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
-                <Skeleton
-                  variant="rounded"
-                  height={220}
-                  sx={{ borderRadius: 3 }}
-                />
-              </Grid>
-            ))}
-          </Grid>
-        ) : displayedLessons.length === 0 ? (
-          <Alert severity="info" sx={{ borderRadius: 2 }}>
-            {lessons.length === 0
-              ? 'Nie masz jeszcze żadnych lekcji. Kliknij "Utwórz lekcję", aby dodać pierwszą.'
-              : "Brak lekcji pasujących do wybranych filtrów."}
-          </Alert>
-        ) : viewMode === "list" ? (
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-            {displayedLessons.map((lesson) => (
-              <LessonCard
-                key={lesson.publicId}
-                lesson={lesson}
-                listView
-                onEdit={(selectedLesson) =>
-                  navigate(`/teacher/lessons/${selectedLesson.publicId}/edit`)
-                }
-                onDelete={openDeleteDialog}
-                onToggleStatus={handleToggleLessonStatus}
-                onResults={(l) =>
-                  navigate(`/teacher/lessons/${l.publicId}/stats`)
-                }
-              />
-            ))}
-          </Box>
-        ) : (
-          <Grid container spacing={2}>
-            {displayedLessons.map((lesson) => (
-              <Grid
-                key={lesson.publicId}
-                size={{ xs: 12, sm: 6, md: 4, lg: 3 }}
+        <Card elevation={0} sx={panelSurfaceSx}>
+          <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+            <Stack spacing={3}>
+              <Stack
+                direction={{ xs: "column", lg: "row" }}
+                spacing={2}
+                justifyContent="space-between"
               >
-                <LessonCard
-                  lesson={lesson}
-                  onEdit={(selectedLesson) =>
-                    navigate(`/teacher/lessons/${selectedLesson.publicId}/edit`)
-                  }
-                  onDelete={openDeleteDialog}
-                  onToggleStatus={handleToggleLessonStatus}
-                  onResults={(l) =>
-                    navigate(`/teacher/lessons/${l.publicId}/stats`)
-                  }
-                />
-              </Grid>
-            ))}
-          </Grid>
-        )}
+                <Stack spacing={1}>
+                  <Typography variant="h6" fontWeight={800}>
+                    Moje lekcje
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Zarządzaj własnymi lekcjami, ich widocznością oraz szybkim
+                    przejściem do edycji i wyników.
+                  </Typography>
+                </Stack>
+              </Stack>
+
+              <LessonToolbar
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                statusFilter={statusFilter}
+                onStatusFilterChange={setStatusFilter}
+                viewMode={viewMode}
+                onViewModeChange={setViewMode}
+                sortMode={sortMode}
+                onSortModeChange={setSortMode}
+                availableGroups={availableGroups}
+                selectedGroups={selectedGroups}
+                onSelectedGroupsChange={setSelectedGroups}
+              />
+
+              {loadingData ? (
+                <Grid container spacing={2}>
+                  {[...Array(8)].map((_, i) => (
+                    <Grid key={i} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
+                      <Skeleton
+                        variant="rounded"
+                        height={220}
+                        sx={{ borderRadius: 3 }}
+                      />
+                    </Grid>
+                  ))}
+                </Grid>
+              ) : displayedLessons.length === 0 ? (
+                <Alert severity="info" sx={{ borderRadius: 2 }}>
+                  {lessons.length === 0
+                    ? 'Nie masz jeszcze żadnych lekcji. Kliknij "Utwórz lekcję", aby dodać pierwszą.'
+                    : "Brak lekcji pasujących do bieżących filtrów."}
+                </Alert>
+              ) : viewMode === "list" ? (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                  {displayedLessons.map((lesson) => (
+                    <LessonCard
+                      key={lesson.publicId}
+                      lesson={lesson}
+                      listView
+                      onEdit={(selectedLesson) =>
+                        navigate(
+                          `/teacher/lessons/${selectedLesson.publicId}/edit`,
+                        )
+                      }
+                      onDelete={openDeleteDialog}
+                      onToggleStatus={handleToggleLessonStatus}
+                      onResults={(l) =>
+                        navigate(`/teacher/lessons/${l.publicId}/stats`)
+                      }
+                    />
+                  ))}
+                </Box>
+              ) : (
+                <Grid container spacing={2}>
+                  {displayedLessons.map((lesson) => (
+                    <Grid
+                      key={lesson.publicId}
+                      size={{ xs: 12, sm: 6, md: 4, lg: 3 }}
+                    >
+                      <LessonCard
+                        lesson={lesson}
+                        onEdit={(selectedLesson) =>
+                          navigate(
+                            `/teacher/lessons/${selectedLesson.publicId}/edit`,
+                          )
+                        }
+                        onDelete={openDeleteDialog}
+                        onToggleStatus={handleToggleLessonStatus}
+                        onResults={(l) =>
+                          navigate(`/teacher/lessons/${l.publicId}/stats`)
+                        }
+                      />
+                    </Grid>
+                  ))}
+                </Grid>
+              )}
+            </Stack>
+          </CardContent>
+        </Card>
         <AppDialog
           open={createDialogOpen}
           onClose={closeCreateLessonDialog}

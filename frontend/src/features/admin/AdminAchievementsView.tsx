@@ -1514,7 +1514,9 @@ export function AdminAchievementsView() {
                                     </Button>
                                     <Button
                                       size="small"
-                                      onClick={() => openDeleteDialog(achievement)}
+                                      onClick={() =>
+                                        openDeleteDialog(achievement)
+                                      }
                                       sx={achievementDeleteTextActionButtonSx}
                                     >
                                       Usuń
@@ -1982,10 +1984,8 @@ export function AdminAchievementsView() {
               color="text.secondary"
               sx={{ lineHeight: 1.7 }}
             >
-              Czy na pewno chcesz usunąć osiągnięcie
-              {" "}
-              <strong>{deleteDialog?.title}</strong>
-              ?
+              Czy na pewno chcesz usunąć osiągnięcie{" "}
+              <strong>{deleteDialog?.title}</strong>?
             </Typography>
             <Typography variant="caption" color="text.secondary">
               Kod techniczny: {deleteDialog?.code}
