@@ -5,17 +5,15 @@ on:
     branches:
       - deploy/azure-prod
     paths:
-      - 'backend/**'
-      - 'frontend/**'
-      - 'stt-service/**'
-      - '.github/workflows/deploy.yml'
-  workflow_dispatch:  # Pozwala na ręczne odpalenie z panelu GitHub
+      - "backend/**"
+      - "frontend/**"
+      - "stt-service/**"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
 
 jobs:
-  # --- BACKEND DEPLOY ---
   deploy-backend:
     runs-on: ubuntu-latest
-    if: contains(github.event.head_commit.modified, 'backend/') || contains(github.event.head_commit.added, 'backend/') || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -31,20 +29,18 @@ jobs:
 
       - name: Build and push Backend
         run: |
-          docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-backend:prod -f backend/Dockerfile.prod backend
-          docker push ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-backend:prod
+          docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-backend:${{ github.sha }} -f backend/Dockerfile.prod backend
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-backend:${{ github.sha }}
 
       - name: Deploy to Azure Container App
         uses: azure/container-apps-deploy-action@v1
         with:
           containerAppName: freeedu-backend
           resourceGroup: freeedu-rg
-          imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-backend:prod
+          imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-backend:${{ github.sha }}
 
-  # --- FRONTEND DEPLOY ---
   deploy-frontend:
     runs-on: ubuntu-latest
-    if: contains(github.event.head_commit.modified, 'frontend/') || contains(github.event.head_commit.added, 'frontend/') || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -60,20 +56,18 @@ jobs:
 
       - name: Build and push Frontend
         run: |
-          docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-frontend:prod -f frontend/Dockerfile.prod frontend
-          docker push ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-frontend:prod
+          docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-frontend:${{ github.sha }} -f frontend/Dockerfile.prod frontend
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-frontend:${{ github.sha }}
 
       - name: Deploy to Azure Container App
         uses: azure/container-apps-deploy-action@v1
         with:
           containerAppName: freeedu-frontend
           resourceGroup: freeedu-rg
-          imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-frontend:prod
+          imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-frontend:${{ github.sha }}
 
-  # --- STT SERVICE DEPLOY ---
   deploy-stt:
     runs-on: ubuntu-latest
-    if: contains(github.event.head_commit.modified, 'stt-service/') || contains(github.event.head_commit.added, 'stt-service/') || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -89,25 +83,48 @@ jobs:
 
       - name: Build and push STT Service
         run: |
-          docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-stt:prod -f stt-service/Dockerfile.prod stt-service
-          docker push ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-stt:prod
+          docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-stt:${{ github.sha }} -f stt-service/Dockerfile.prod stt-service
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-stt:${{ github.sha }}
 
       - name: Deploy to Azure Container App
         uses: azure/container-apps-deploy-action@v1
         with:
           containerAppName: freeedu-stt
           resourceGroup: freeedu-rg
+          imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-stt:${{ github.sha }}
 
-  # --- NOTIFICATION ---
   notify:
     runs-on: ubuntu-latest
     needs: [deploy-backend, deploy-frontend, deploy-stt]
     if: always()
     steps:
       - name: Microsoft Teams Notification
-        uses: rjstone/discord-webhook-notify@v1
-        if: always()
-        with:
-          severity: ${{ contains(needs.*.result, 'failure') && 'error' || 'info' }}
-          details: 'Deployment finished with status: ${{ contains(needs.*.result, "failure") && "FAILED ❌" || "SUCCESS ✅" }}'
-          webhookUrl: ${{ secrets.TEAMS_WEBHOOK_URL }}
+        run: |
+          STATUS="SUCCESS"
+          if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]; then
+            STATUS="FAILED"
+          fi
+
+          PAYLOAD=$(cat <<EOF
+          {
+            "text": "Deployment finished with status: ${STATUS}",
+            "status": "${STATUS}",
+            "application": "FreeEdu",
+            "branch": "${GITHUB_REF_NAME}",
+            "sha": "${GITHUB_SHA}",
+            "workflow": "${GITHUB_WORKFLOW}",
+            "runNumber": "${GITHUB_RUN_NUMBER}",
+            "runId": "${GITHUB_RUN_ID}",
+            "actor": "${GITHUB_ACTOR}",
+            "repository": "${GITHUB_REPOSITORY}",
+            "runUrl": "https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          }
+          EOF
+          )
+
+          echo "Sending Teams payload:"
+          echo "${PAYLOAD}"
+
+          curl --fail-with-body -X POST "${{ secrets.TEAMS_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d "${PAYLOAD}"
