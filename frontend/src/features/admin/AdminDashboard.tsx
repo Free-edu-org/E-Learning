@@ -471,6 +471,101 @@ const inlineEditCancelButtonSx = {
   },
 };
 
+const compactInlineActionsWrapSx = {
+  display: "flex",
+  flexDirection: "row",
+  gap: 1,
+  alignItems: "center",
+  mt: 0.5,
+  flexShrink: 0,
+};
+
+const compactInlineConfirmButtonSx = {
+  ...inlineEditConfirmButtonSx,
+  width: 32,
+  height: 32,
+  bgcolor: alpha("#10B981", 0.08),
+  color: "#10B981",
+  border: "1px solid",
+  borderColor: alpha("#10B981", 0.2),
+  "&:hover": {
+    bgcolor: alpha("#10B981", 0.15),
+    borderColor: alpha("#10B981", 0.3),
+  },
+  "&.Mui-disabled": {
+    bgcolor: alpha("#64748B", 0.05),
+    borderColor: alpha("#64748B", 0.1),
+  },
+};
+
+const compactInlineCancelButtonSx = {
+  ...inlineEditCancelButtonSx,
+  width: 32,
+  height: 32,
+  bgcolor: alpha("#64748B", 0.06),
+  color: "#64748B",
+  border: "1px solid",
+  borderColor: alpha("#64748B", 0.15),
+  "&:hover": {
+    bgcolor: alpha("#64748B", 0.12),
+    borderColor: alpha("#64748B", 0.25),
+  },
+};
+
+const membershipHeaderBadgeSx = {
+  ...inviteBadgeSx,
+  borderRadius: "8px",
+  fontWeight: 600,
+  fontSize: "0.75rem",
+  height: 24,
+  mt: 0.5,
+  bgcolor: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.primary.main, 0.05)
+      : alpha(theme.palette.primary.main, 0.1),
+};
+
+const membershipAddButtonSx: SxProps<Theme> = {
+  ...panelFooterButtonSx,
+  height: 40,
+  px: 1.6,
+  flexShrink: 0,
+  whiteSpace: "nowrap",
+  alignSelf: { xs: "stretch", sm: "auto" },
+};
+
+const inlineEditAccentColor = "#6366F1";
+
+function getInlineEditSectionSx(isEditing: boolean): SxProps<Theme> {
+  return {
+    p: isEditing ? 2.75 : 2.25,
+    bgcolor: isEditing ? alpha(inlineEditAccentColor, 0.035) : "transparent",
+    borderLeft: isEditing ? "4px solid" : "none",
+    borderLeftColor: inlineEditAccentColor,
+    transition: "all 0.25s ease",
+    "&:hover": {
+      bgcolor: (theme: Theme) =>
+        isEditing
+          ? alpha(inlineEditAccentColor, 0.05)
+          : theme.palette.mode === "light"
+            ? alpha(theme.palette.text.primary, 0.01)
+            : alpha(theme.palette.common.white, 0.02),
+    },
+  };
+}
+
+const inlineChangeButtonSx = {
+  textTransform: "none",
+  fontWeight: 600,
+  fontSize: "0.82rem",
+  borderRadius: "10px",
+  px: 1.5,
+  bgcolor: (theme: Theme) => alpha(theme.palette.text.primary, 0.03),
+  "&:hover": {
+    bgcolor: (theme: Theme) => alpha(theme.palette.text.primary, 0.07),
+  },
+};
+
 const userCardActionButtonSx: SxProps<Theme> = {
   ...(panelFooterButtonSx as object),
   justifyContent: "center",
@@ -3637,12 +3732,12 @@ export function AdminDashboard() {
                         ? 2.75
                         : 2.25,
                       bgcolor: userDialogEditingFields.includes("username")
-                        ? alpha("#6366F1", 0.035)
+                        ? alpha(inlineEditAccentColor, 0.035)
                         : "transparent",
                       borderLeft: userDialogEditingFields.includes("username")
                         ? "4px solid"
                         : "none",
-                      borderLeftColor: "#6366F1",
+                      borderLeftColor: inlineEditAccentColor,
                       display: "flex",
                       alignItems: "flex-start",
                       gap: 2.5,
@@ -3650,7 +3745,7 @@ export function AdminDashboard() {
                       "&:hover": {
                         bgcolor: (theme) =>
                           userDialogEditingFields.includes("username")
-                            ? alpha("#6366F1", 0.05)
+                            ? alpha(inlineEditAccentColor, 0.05)
                             : theme.palette.mode === "light"
                               ? alpha(theme.palette.text.primary, 0.01)
                               : alpha(theme.palette.common.white, 0.02),
@@ -3901,12 +3996,12 @@ export function AdminDashboard() {
                         ? 2.75
                         : 2.25,
                       bgcolor: userDialogEditingFields.includes("email")
-                        ? alpha("#6366F1", 0.035)
+                        ? alpha(inlineEditAccentColor, 0.035)
                         : "transparent",
                       borderLeft: userDialogEditingFields.includes("email")
                         ? "4px solid"
                         : "none",
-                      borderLeftColor: "#6366F1",
+                      borderLeftColor: inlineEditAccentColor,
                       display: "flex",
                       alignItems: "flex-start",
                       gap: 2.5,
@@ -3914,7 +4009,7 @@ export function AdminDashboard() {
                       "&:hover": {
                         bgcolor: (theme) =>
                           userDialogEditingFields.includes("email")
-                            ? alpha("#6366F1", 0.05)
+                            ? alpha(inlineEditAccentColor, 0.05)
                             : theme.palette.mode === "light"
                               ? alpha(theme.palette.text.primary, 0.01)
                               : alpha(theme.palette.common.white, 0.02),
@@ -4209,12 +4304,12 @@ export function AdminDashboard() {
                             ? 2.75
                             : 2.25,
                           bgcolor: userDialogEditingFields.includes("group")
-                            ? alpha("#6366F1", 0.035)
+                            ? alpha(inlineEditAccentColor, 0.035)
                             : "transparent",
                           borderLeft: userDialogEditingFields.includes("group")
                             ? "4px solid"
                             : "none",
-                          borderLeftColor: "#6366F1",
+                          borderLeftColor: inlineEditAccentColor,
                           display: "flex",
                           alignItems: "flex-start",
                           gap: 2.5,
@@ -4222,7 +4317,7 @@ export function AdminDashboard() {
                           "&:hover": {
                             bgcolor: (theme) =>
                               userDialogEditingFields.includes("group")
-                                ? alpha("#6366F1", 0.05)
+                                ? alpha(inlineEditAccentColor, 0.05)
                                 : theme.palette.mode === "light"
                                   ? alpha(theme.palette.text.primary, 0.01)
                                   : alpha(theme.palette.common.white, 0.02),
@@ -4877,18 +4972,31 @@ export function AdminDashboard() {
             ) : (
               <Box
                 sx={{
-                  borderRadius: 2,
+                  borderRadius: uiTokens.radius.section,
+                  bgcolor: (theme) =>
+                    theme.palette.mode === "light"
+                      ? "rgba(255, 255, 255, 0.78)"
+                      : "rgba(255, 255, 255, 0.03)",
                   border: "1px solid",
-                  borderColor: "divider",
+                  borderColor: (theme) =>
+                    theme.palette.mode === "light"
+                      ? "rgba(148, 163, 184, 0.14)"
+                      : "rgba(255, 255, 255, 0.06)",
+                  backdropFilter: "blur(14px)",
+                  boxShadow: (theme) =>
+                    theme.palette.mode === "light"
+                      ? "0 16px 32px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255,255,255,0.6)"
+                      : "0 12px 24px rgba(0, 0, 0, 0.18)",
                   overflow: "hidden",
                 }}
               >
                 <Box
                   sx={{
-                    px: 2,
-                    py: 1.5,
+                    ...getInlineEditSectionSx(
+                      groupDialogEditingFields.includes("name"),
+                    ),
                     borderBottom: "1px solid",
-                    borderColor: "divider",
+                    borderBottomColor: "divider",
                   }}
                 >
                   {groupDialogEditingFields.includes("name") ? (
@@ -4930,35 +5038,17 @@ export function AdminDashboard() {
                           error={Boolean(groupFieldErrors.name)}
                           sx={counterFieldSx}
                         />
-                        <Box
-                          sx={{
-                            display: "flex",
-                            flexDirection: "row",
-                            gap: 1,
-                            alignItems: "center",
-                            mt: 0.5,
-                            flexShrink: 0,
-                          }}
-                        >
+                        <Box sx={compactInlineActionsWrapSx}>
                           <IconButton
                             size="small"
                             disabled={groupDialogLoading}
                             onClick={() => saveGroupInlineSection("name")}
-                            sx={{
-                              borderRadius: 999,
-                              color: "success.main",
-                              bgcolor: (theme) =>
-                                alpha(theme.palette.success.main, 0.08),
-                              "&:hover": {
-                                bgcolor: (theme) =>
-                                  alpha(theme.palette.success.main, 0.16),
-                              },
-                            }}
+                            sx={compactInlineConfirmButtonSx}
                           >
                             {groupDialogLoading ? (
-                              <CircularProgress size={16} color="success" />
+                              <CircularProgress size={14} color="inherit" />
                             ) : (
-                              <CheckIcon />
+                              <CheckIcon sx={{ fontSize: 18 }} />
                             )}
                           </IconButton>
                           <IconButton
@@ -4977,16 +5067,9 @@ export function AdminDashboard() {
                                 prev.filter((field) => field !== "name"),
                               );
                             }}
-                            sx={{
-                              borderRadius: 1.5,
-                              color: "text.secondary",
-                              "&:hover": {
-                                bgcolor: (theme) =>
-                                  alpha(theme.palette.text.primary, 0.06),
-                              },
-                            }}
+                            sx={compactInlineCancelButtonSx}
                           >
-                            <CloseIcon />
+                            <CloseIcon sx={{ fontSize: 18 }} />
                           </IconButton>
                         </Box>
                       </Box>
@@ -5034,9 +5117,7 @@ export function AdminDashboard() {
                           ])
                         }
                         sx={{
-                          textTransform: "none",
-                          fontWeight: 500,
-                          fontSize: "0.8rem",
+                          ...inlineChangeButtonSx,
                           flexShrink: 0,
                         }}
                       >
@@ -5048,10 +5129,11 @@ export function AdminDashboard() {
 
                 <Box
                   sx={{
-                    px: 2,
-                    py: 1.5,
+                    ...getInlineEditSectionSx(
+                      groupDialogEditingFields.includes("description"),
+                    ),
                     borderBottom: "1px solid",
-                    borderColor: "divider",
+                    borderBottomColor: "divider",
                   }}
                 >
                   {groupDialogEditingFields.includes("description") ? (
@@ -5110,35 +5192,19 @@ export function AdminDashboard() {
                             },
                           }}
                         />
-                        <Box
-                          sx={{
-                            display: "flex",
-                            gap: 0.5,
-                            flexShrink: 0,
-                            pt: "3px",
-                          }}
-                        >
+                        <Box sx={compactInlineActionsWrapSx}>
                           <IconButton
                             size="small"
                             disabled={groupDialogLoading}
                             onClick={() =>
                               saveGroupInlineSection("description")
                             }
-                            sx={{
-                              borderRadius: 1.5,
-                              color: "success.main",
-                              bgcolor: (theme) =>
-                                alpha(theme.palette.success.main, 0.08),
-                              "&:hover": {
-                                bgcolor: (theme) =>
-                                  alpha(theme.palette.success.main, 0.16),
-                              },
-                            }}
+                            sx={compactInlineConfirmButtonSx}
                           >
                             {groupDialogLoading ? (
-                              <CircularProgress size={16} color="success" />
+                              <CircularProgress size={14} color="inherit" />
                             ) : (
-                              <CheckIcon />
+                              <CheckIcon sx={{ fontSize: 18 }} />
                             )}
                           </IconButton>
                           <IconButton
@@ -5157,16 +5223,9 @@ export function AdminDashboard() {
                                 prev.filter((field) => field !== "description"),
                               );
                             }}
-                            sx={{
-                              borderRadius: 1.5,
-                              color: "text.secondary",
-                              "&:hover": {
-                                bgcolor: (theme) =>
-                                  alpha(theme.palette.text.primary, 0.06),
-                              },
-                            }}
+                            sx={compactInlineCancelButtonSx}
                           >
-                            <CloseIcon />
+                            <CloseIcon sx={{ fontSize: 18 }} />
                           </IconButton>
                         </Box>
                       </Box>
@@ -5221,9 +5280,7 @@ export function AdminDashboard() {
                           ])
                         }
                         sx={{
-                          textTransform: "none",
-                          fontWeight: 500,
-                          fontSize: "0.8rem",
+                          ...inlineChangeButtonSx,
                           flexShrink: 0,
                           mt: 0.125,
                         }}
@@ -5234,7 +5291,11 @@ export function AdminDashboard() {
                   )}
                 </Box>
 
-                <Box sx={{ px: 2, py: 1.5 }}>
+                <Box
+                  sx={getInlineEditSectionSx(
+                    groupDialogEditingFields.includes("teacherPublicId"),
+                  )}
+                >
                   {groupDialogEditingFields.includes("teacherPublicId") ? (
                     <>
                       <Typography
@@ -5313,36 +5374,14 @@ export function AdminDashboard() {
                             </MenuItem>
                           ))}
                         </TextField>
-                        <Box
-                          sx={{
-                            display: "flex",
-                            gap: 0.5,
-                            flexShrink: 0,
-                          }}
-                        >
+                        <Box sx={compactInlineActionsWrapSx}>
                           <IconButton
                             size="small"
                             disabled={groupDialogLoading}
                             onClick={() =>
                               saveGroupInlineSection("teacherPublicId")
                             }
-                            sx={{
-                              ...inlineEditConfirmButtonSx,
-                              width: 32,
-                              height: 32,
-                              bgcolor: alpha("#10B981", 0.08),
-                              color: "#10B981",
-                              border: "1px solid",
-                              borderColor: alpha("#10B981", 0.2),
-                              "&:hover": {
-                                bgcolor: alpha("#10B981", 0.15),
-                                borderColor: alpha("#10B981", 0.3),
-                              },
-                              "&.Mui-disabled": {
-                                bgcolor: alpha("#64748B", 0.05),
-                                borderColor: alpha("#64748B", 0.1),
-                              },
-                            }}
+                            sx={compactInlineConfirmButtonSx}
                           >
                             {groupDialogLoading ? (
                               <CircularProgress size={14} color="inherit" />
@@ -5369,19 +5408,7 @@ export function AdminDashboard() {
                                 ),
                               );
                             }}
-                            sx={{
-                              ...inlineEditCancelButtonSx,
-                              width: 32,
-                              height: 32,
-                              bgcolor: alpha("#64748B", 0.06),
-                              color: "#64748B",
-                              border: "1px solid",
-                              borderColor: alpha("#64748B", 0.15),
-                              "&:hover": {
-                                bgcolor: alpha("#64748B", 0.12),
-                                borderColor: alpha("#64748B", 0.25),
-                              },
-                            }}
+                            sx={compactInlineCancelButtonSx}
                           >
                             <CloseIcon sx={{ fontSize: 18 }} />
                           </IconButton>
@@ -5475,9 +5502,7 @@ export function AdminDashboard() {
                           ])
                         }
                         sx={{
-                          textTransform: "none",
-                          fontWeight: 500,
-                          fontSize: "0.8rem",
+                          ...inlineChangeButtonSx,
                           flexShrink: 0,
                         }}
                       >
@@ -5542,7 +5567,8 @@ export function AdminDashboard() {
                 label="Ostrzeżenie"
                 size="small"
                 color="error"
-                sx={{ fontWeight: 700 }}
+                variant="outlined"
+                sx={membershipHeaderBadgeSx}
               />
             }
           />
@@ -5638,7 +5664,8 @@ export function AdminDashboard() {
                 label="Członkowie"
                 size="small"
                 color="primary"
-                sx={{ fontWeight: 700 }}
+                variant="outlined"
+                sx={membershipHeaderBadgeSx}
               />
             }
           />
@@ -5754,7 +5781,7 @@ export function AdminDashboard() {
                                 removeMembershipStudent(student.publicId)
                               }
                               disabled={membershipLoading}
-                              sx={panelDeleteButtonSx}
+                              sx={userCardDeleteButtonSx}
                             >
                               Usuń
                             </Button>
@@ -5811,14 +5838,7 @@ export function AdminDashboard() {
                       disabled={
                         membershipLoading || membershipStudentPublicId === ""
                       }
-                      sx={{
-                        ...panelFooterButtonSx,
-                        height: 40,
-                        px: 1.6,
-                        flexShrink: 0,
-                        whiteSpace: "nowrap",
-                        alignSelf: { xs: "stretch", sm: "auto" },
-                      }}
+                      sx={membershipAddButtonSx}
                     >
                       {membershipLoading ? "Dodawanie..." : "Dodaj"}
                     </Button>
