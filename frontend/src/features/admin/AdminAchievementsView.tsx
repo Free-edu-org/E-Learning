@@ -21,7 +21,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { alpha, useTheme } from "@mui/material/styles";
+import { alpha, type Theme, useTheme } from "@mui/material/styles";
 import {
   AddCircleOutline as AddCircleIcon,
   BarChartOutlined as ThresholdIcon,
@@ -32,6 +32,7 @@ import {
   RefreshOutlined as RefreshIcon,
   ScheduleOutlined as UpdatedAtIcon,
   SearchOutlined as SearchIcon,
+  SaveOutlined as SaveIcon,
   TrackChangesOutlined as ConditionIcon,
 } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -1940,7 +1941,7 @@ export function AdminAchievementsView() {
             <Button
               onClick={closeDialog}
               disabled={dialogLoading || dialogDetailsLoading}
-              sx={panelFooterButtonSx}
+              sx={{ ...panelFooterButtonSx, color: "text.secondary" }}
             >
               Anuluj
             </Button>
@@ -1951,8 +1952,10 @@ export function AdminAchievementsView() {
               startIcon={
                 dialogLoading ? (
                   <CircularProgress size={16} color="inherit" />
-                ) : (
+                ) : dialogMode === "create" ? (
                   <AddCircleIcon />
+                ) : (
+                  <SaveIcon />
                 )
               }
               sx={{ ...panelFooterButtonSx, boxShadow: "none" }}

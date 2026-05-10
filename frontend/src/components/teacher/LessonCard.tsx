@@ -346,7 +346,7 @@ export function LessonCard({
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "flex-start",
-                gap: 0.55,
+                gap: 0.95,
                 minWidth: 0,
               }}
             >
