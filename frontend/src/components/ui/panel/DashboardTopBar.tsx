@@ -1,7 +1,5 @@
 import { Box, Button } from "@mui/material";
-import {
-  LogoutOutlined as LogoutIcon,
-} from "@mui/icons-material";
+import { LogoutOutlined as LogoutIcon } from "@mui/icons-material";
 import { ThemeSwitcher } from "../../ui/ThemeSwitcher";
 
 interface DashboardTopBarProps {
@@ -17,7 +15,6 @@ export function DashboardTopBar({
   onLogout,
   hideLogout = false,
 }: DashboardTopBarProps) {
-
   return (
     <Box
       sx={{
@@ -46,7 +43,10 @@ export function DashboardTopBar({
             textTransform: "none",
             fontWeight: 600,
             fontSize: "0.85rem",
-            bgcolor: (t) => t.palette.mode === 'dark' ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.5)",
+            bgcolor: (t) =>
+              t.palette.mode === "dark"
+                ? "rgba(0,0,0,0.3)"
+                : "rgba(255,255,255,0.5)",
             backdropFilter: "blur(12px)",
             color: "text.primary",
             borderColor: "divider",

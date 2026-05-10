@@ -62,7 +62,15 @@ function Blob({ color, top, left, size, delay }: any) {
   );
 }
 
-function FeatureRow({ icon: Icon, title, subtitle }: { icon: any; title: string; subtitle: string }) {
+function FeatureRow({
+  icon: Icon,
+  title,
+  subtitle,
+}: {
+  icon: any;
+  title: string;
+  subtitle: string;
+}) {
   const theme = useTheme();
   return (
     <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3 }}>
@@ -80,7 +88,11 @@ function FeatureRow({ icon: Icon, title, subtitle }: { icon: any; title: string;
         <Icon sx={{ fontSize: 18 }} />
       </Box>
       <Box>
-        <Typography variant="body2" fontWeight="600" sx={{ lineHeight: 1.2, mb: 0.2 }}>
+        <Typography
+          variant="body2"
+          fontWeight="600"
+          sx={{ lineHeight: 1.2, mb: 0.2 }}
+        >
           {title}
         </Typography>
         <Typography variant="caption" color="text.secondary">
@@ -96,13 +108,23 @@ function DashboardPreview() {
   const isDark = theme.palette.mode === "dark";
 
   return (
-    <Box sx={{ mt: "auto", pt: 4, position: "relative", opacity: 0.8, width: "100%" }}>
+    <Box
+      sx={{
+        mt: "auto",
+        pt: 4,
+        position: "relative",
+        opacity: 0.8,
+        width: "100%",
+      }}
+    >
       <Paper
         elevation={0}
         sx={{
           p: 2,
           borderRadius: 3,
-          background: isDark ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.7)",
+          background: isDark
+            ? "rgba(255,255,255,0.03)"
+            : "rgba(255,255,255,0.7)",
           backdropFilter: "blur(15px)",
           border: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
           overflow: "hidden",
@@ -114,18 +136,56 @@ function DashboardPreview() {
         <Stack spacing={2}>
           {/* Header Bar */}
           <Box sx={{ display: "flex", gap: 1, alignItems: "center", mb: 0.5 }}>
-            <Box sx={{ width: 40, height: 8, borderRadius: 4, bgcolor: alpha(theme.palette.primary.main, 0.2) }} />
+            <Box
+              sx={{
+                width: 40,
+                height: 8,
+                borderRadius: 4,
+                bgcolor: alpha(theme.palette.primary.main, 0.2),
+              }}
+            />
             <Box sx={{ ml: "auto", display: "flex", gap: 1 }}>
-              <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: alpha(theme.palette.divider, 0.1) }} />
-              <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: alpha(theme.palette.divider, 0.1) }} />
+              <Box
+                sx={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  bgcolor: alpha(theme.palette.divider, 0.1),
+                }}
+              />
+              <Box
+                sx={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  bgcolor: alpha(theme.palette.divider, 0.1),
+                }}
+              />
             </Box>
           </Box>
 
           <Box sx={{ display: "flex", gap: 2 }}>
             {/* Mock Sidebar */}
-            <Stack spacing={1} sx={{ borderRight: `1px solid ${alpha(theme.palette.divider, 0.05)}`, pr: 1.5 }}>
-               {[1, 2, 3, 4].map((i) => (
-                <Box key={i} sx={{ width: 12, height: 12, borderRadius: "4px", bgcolor: i === 1 ? alpha(theme.palette.primary.main, 0.2) : alpha(theme.palette.divider, 0.05) }} />
+            <Stack
+              spacing={1}
+              sx={{
+                borderRight: `1px solid ${alpha(theme.palette.divider, 0.05)}`,
+                pr: 1.5,
+              }}
+            >
+              {[1, 2, 3, 4].map((i) => (
+                <Box
+                  key={i}
+                  sx={{
+                    width: 12,
+                    height: 12,
+                    borderRadius: "4px",
+                    bgcolor:
+                      i === 1
+                        ? alpha(theme.palette.primary.main, 0.2)
+                        : alpha(theme.palette.divider, 0.05),
+                  }}
+                />
               ))}
             </Stack>
 
@@ -133,34 +193,98 @@ function DashboardPreview() {
             <Stack flex={1} spacing={2}>
               {/* Cards Row */}
               <Stack direction="row" spacing={1.5}>
-                <Box sx={{ flex: 1, height: 40, borderRadius: 2, background: alpha(theme.palette.primary.main, 0.03), border: `1px solid ${alpha(theme.palette.divider, 0.05)}` }} />
-                <Box sx={{ flex: 1, height: 40, borderRadius: 2, background: alpha(theme.palette.divider, 0.02), border: `1px solid ${alpha(theme.palette.divider, 0.05)}` }} />
-                <Box sx={{ flex: 1, height: 40, borderRadius: 2, background: alpha(theme.palette.divider, 0.02), border: `1px solid ${alpha(theme.palette.divider, 0.05)}` }} />
+                <Box
+                  sx={{
+                    flex: 1,
+                    height: 40,
+                    borderRadius: 2,
+                    background: alpha(theme.palette.primary.main, 0.03),
+                    border: `1px solid ${alpha(theme.palette.divider, 0.05)}`,
+                  }}
+                />
+                <Box
+                  sx={{
+                    flex: 1,
+                    height: 40,
+                    borderRadius: 2,
+                    background: alpha(theme.palette.divider, 0.02),
+                    border: `1px solid ${alpha(theme.palette.divider, 0.05)}`,
+                  }}
+                />
+                <Box
+                  sx={{
+                    flex: 1,
+                    height: 40,
+                    borderRadius: 2,
+                    background: alpha(theme.palette.divider, 0.02),
+                    border: `1px solid ${alpha(theme.palette.divider, 0.05)}`,
+                  }}
+                />
               </Stack>
-              
+
               {/* Main Visuals Row */}
               <Stack direction="row" spacing={2} sx={{ height: 80 }}>
-                 {/* Pie Chart Mock */}
-                 <Box sx={{ width: 80, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Box sx={{ width: 60, height: 60, borderRadius: '50%', border: `10px solid ${alpha(theme.palette.primary.main, 0.2)}`, position: 'relative' }}>
-                       <Box sx={{ position: 'absolute', top: -10, left: -10, width: 60, height: 60, borderRadius: '50%', border: `10px solid ${theme.palette.primary.main}`, borderBottomColor: 'transparent', borderRightColor: 'transparent', transform: 'rotate(45deg)' }} />
-                    </Box>
-                 </Box>
-
-                 {/* Bar Chart Mock */}
-                 <Box sx={{ flex: 1, display: "flex", alignItems: "flex-end", gap: 0.75, height: "100%" }}>
-                    {[30, 60, 45, 80, 55, 70].map((h, i) => (
-                      <Box
-                        key={i}
-                        sx={{
-                          flex: 1,
-                          height: `${h}%`,
-                          borderRadius: "2px 2px 0 0",
-                          bgcolor: i === 3 ? theme.palette.primary.main : alpha(theme.palette.primary.main, 0.1),
-                        }}
-                      />
-                    ))}
+                {/* Pie Chart Mock */}
+                <Box
+                  sx={{
+                    width: 80,
+                    position: "relative",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 60,
+                      height: 60,
+                      borderRadius: "50%",
+                      border: `10px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                      position: "relative",
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        top: -10,
+                        left: -10,
+                        width: 60,
+                        height: 60,
+                        borderRadius: "50%",
+                        border: `10px solid ${theme.palette.primary.main}`,
+                        borderBottomColor: "transparent",
+                        borderRightColor: "transparent",
+                        transform: "rotate(45deg)",
+                      }}
+                    />
                   </Box>
+                </Box>
+
+                {/* Bar Chart Mock */}
+                <Box
+                  sx={{
+                    flex: 1,
+                    display: "flex",
+                    alignItems: "flex-end",
+                    gap: 0.75,
+                    height: "100%",
+                  }}
+                >
+                  {[30, 60, 45, 80, 55, 70].map((h, i) => (
+                    <Box
+                      key={i}
+                      sx={{
+                        flex: 1,
+                        height: `${h}%`,
+                        borderRadius: "2px 2px 0 0",
+                        bgcolor:
+                          i === 3
+                            ? theme.palette.primary.main
+                            : alpha(theme.palette.primary.main, 0.1),
+                      }}
+                    />
+                  ))}
+                </Box>
               </Stack>
             </Stack>
           </Box>
@@ -225,8 +349,19 @@ export function Login() {
       }}
     >
       {/* Background Decor */}
-      <Blob color={theme.palette.primary.main} top="-5%" left="-5%" size={500} />
-      <Blob color={theme.palette.secondary.main} top="60%" left="80%" size={600} delay="2s" />
+      <Blob
+        color={theme.palette.primary.main}
+        top="-5%"
+        left="-5%"
+        size={500}
+      />
+      <Blob
+        color={theme.palette.secondary.main}
+        top="60%"
+        left="80%"
+        size={600}
+        delay="2s"
+      />
       <Box
         sx={{
           position: "fixed",
@@ -281,11 +416,20 @@ export function Login() {
               p: { xs: 4, md: 5 },
               display: "flex",
               flexDirection: "column",
-              bgcolor: isDark ? alpha(theme.palette.primary.main, 0.015) : alpha(theme.palette.primary.main, 0.01),
-              borderRight: { md: `1px solid ${alpha(theme.palette.divider, 0.06)}` },
+              bgcolor: isDark
+                ? alpha(theme.palette.primary.main, 0.015)
+                : alpha(theme.palette.primary.main, 0.01),
+              borderRight: {
+                md: `1px solid ${alpha(theme.palette.divider, 0.06)}`,
+              },
             }}
           >
-            <Stack direction="row" spacing={1.25} alignItems="center" sx={{ mb: { xs: 3, md: 5 } }}>
+            <Stack
+              direction="row"
+              spacing={1.25}
+              alignItems="center"
+              sx={{ mb: { xs: 3, md: 5 } }}
+            >
               <Box
                 sx={{
                   bgcolor: "primary.main",
@@ -298,7 +442,11 @@ export function Login() {
               >
                 <BookIcon fontSize="small" />
               </Box>
-              <Typography variant="body1" fontWeight="800" sx={{ letterSpacing: "-0.5px" }}>
+              <Typography
+                variant="body1"
+                fontWeight="800"
+                sx={{ letterSpacing: "-0.5px" }}
+              >
                 FreeEdu
               </Typography>
             </Stack>
@@ -321,14 +469,31 @@ export function Login() {
               Zarządzaj edukacją w jednym miejscu
             </Typography>
 
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 4, fontWeight: 400, maxWidth: 400, lineHeight: 1.5 }}>
-              FreeEdu to nowoczesna platforma do zarządzania szkołą, uczniami, nauczycielami i grupami.
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ mb: 4, fontWeight: 400, maxWidth: 400, lineHeight: 1.5 }}
+            >
+              FreeEdu to nowoczesna platforma do zarządzania szkołą, uczniami,
+              nauczycielami i grupami.
             </Typography>
 
             <Stack spacing={1}>
-              <FeatureRow icon={PeopleIcon} title="Zarządzaj uczniami i nauczycielami" subtitle="Pełna kontrola nad bazą użytkowników i uprawnieniami." />
-              <FeatureRow icon={GroupIcon} title="Twórz grupy i klasy" subtitle="Elastyczne zarządzanie strukturą organizacyjną szkoły." />
-              <FeatureRow icon={ChartIcon} title="Monitoruj postępy" subtitle="Śledź wyniki i osiągnięcia w czasie rzeczywistym." />
+              <FeatureRow
+                icon={PeopleIcon}
+                title="Zarządzaj uczniami i nauczycielami"
+                subtitle="Pełna kontrola nad bazą użytkowników i uprawnieniami."
+              />
+              <FeatureRow
+                icon={GroupIcon}
+                title="Twórz grupy i klasy"
+                subtitle="Elastyczne zarządzanie strukturą organizacyjną szkoły."
+              />
+              <FeatureRow
+                icon={ChartIcon}
+                title="Monitoruj postępy"
+                subtitle="Śledź wyniki i osiągnięcia w czasie rzeczywistym."
+              />
             </Stack>
 
             {isMdUp && <DashboardPreview />}
@@ -359,7 +524,12 @@ export function Login() {
               >
                 <LockIcon sx={{ fontSize: 24 }} />
               </Box>
-              <Typography variant="h6" fontWeight="800" gutterBottom sx={{ letterSpacing: "-0.5px" }}>
+              <Typography
+                variant="h6"
+                fontWeight="800"
+                gutterBottom
+                sx={{ letterSpacing: "-0.5px" }}
+              >
                 Witaj ponownie!
               </Typography>
               <Typography variant="caption" color="text.secondary">
@@ -397,8 +567,12 @@ export function Login() {
                     "& .MuiOutlinedInput-root": {
                       borderRadius: 3,
                       transition: "all 0.2s",
-                      "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.01) },
-                      "&.Mui-focused": { bgcolor: alpha(theme.palette.primary.main, 0.01) },
+                      "&:hover": {
+                        bgcolor: alpha(theme.palette.primary.main, 0.01),
+                      },
+                      "&.Mui-focused": {
+                        bgcolor: alpha(theme.palette.primary.main, 0.01),
+                      },
                     },
                   }}
                 />
@@ -429,7 +603,11 @@ export function Login() {
                             edge="end"
                             size="small"
                           >
-                            {showPassword ? <VisibilityOff sx={{ fontSize: 20 }} /> : <Visibility sx={{ fontSize: 20 }} />}
+                            {showPassword ? (
+                              <VisibilityOff sx={{ fontSize: 20 }} />
+                            ) : (
+                              <Visibility sx={{ fontSize: 20 }} />
+                            )}
                           </IconButton>
                         </InputAdornment>
                       ),
@@ -438,8 +616,12 @@ export function Login() {
                       "& .MuiOutlinedInput-root": {
                         borderRadius: 3,
                         transition: "all 0.2s",
-                        "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.01) },
-                        "&.Mui-focused": { bgcolor: alpha(theme.palette.primary.main, 0.01) },
+                        "&:hover": {
+                          bgcolor: alpha(theme.palette.primary.main, 0.01),
+                        },
+                        "&.Mui-focused": {
+                          bgcolor: alpha(theme.palette.primary.main, 0.01),
+                        },
                       },
                     }}
                   />
@@ -450,7 +632,10 @@ export function Login() {
                       variant="body2"
                       fontWeight="600"
                       color="primary"
-                      sx={{ textDecoration: "none", "&:hover": { textDecoration: "underline" } }}
+                      sx={{
+                        textDecoration: "none",
+                        "&:hover": { textDecoration: "underline" },
+                      }}
                     >
                       Nie pamiętasz hasła?
                     </Typography>
@@ -479,7 +664,11 @@ export function Login() {
                     transition: "all 0.2s",
                   }}
                 >
-                  {isLoading ? <CircularProgress size={22} color="inherit" /> : "Zaloguj się"}
+                  {isLoading ? (
+                    <CircularProgress size={22} color="inherit" />
+                  ) : (
+                    "Zaloguj się"
+                  )}
                 </Button>
               </Stack>
             </form>
@@ -489,7 +678,13 @@ export function Login() {
 
       {/* Footer / Bottom Info */}
       <Box sx={{ mt: 3, textAlign: "center", position: "relative", zIndex: 1 }}>
-        <Stack direction="row" spacing={1} justifyContent="center" alignItems="center" sx={{ opacity: 0.6 }}>
+        <Stack
+          direction="row"
+          spacing={1}
+          justifyContent="center"
+          alignItems="center"
+          sx={{ opacity: 0.6 }}
+        >
           <ShieldIcon sx={{ fontSize: 16, color: "primary.main" }} />
           <Typography variant="caption" color="text.secondary">
             Konta użytkowników tworzone są przez administratora szkoły.

@@ -120,8 +120,19 @@ export function ForgotPassword() {
       }}
     >
       {/* Background Decor */}
-      <Blob color={theme.palette.primary.main} top="-5%" left="-5%" size={500} />
-      <Blob color={theme.palette.secondary.main} top="60%" left="80%" size={600} delay="2s" />
+      <Blob
+        color={theme.palette.primary.main}
+        top="-5%"
+        left="-5%"
+        size={500}
+      />
+      <Blob
+        color={theme.palette.secondary.main}
+        top="60%"
+        left="80%"
+        size={600}
+        delay="2s"
+      />
       <Box
         sx={{
           position: "fixed",
@@ -181,11 +192,21 @@ export function ForgotPassword() {
             <LockIcon sx={{ fontSize: 28 }} />
           </Box>
 
-          <Typography variant="h5" fontWeight="800" gutterBottom sx={{ letterSpacing: "-0.5px" }}>
+          <Typography
+            variant="h5"
+            fontWeight="800"
+            gutterBottom
+            sx={{ letterSpacing: "-0.5px" }}
+          >
             Reset hasła
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 4, maxWidth: 320, mx: 'auto', lineHeight: 1.5 }}>
-            Podaj adres e-mail przypisany do konta. Jeśli konto istnieje, wyślemy link do ustawienia nowego hasła.
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ mb: 4, maxWidth: 320, mx: "auto", lineHeight: 1.5 }}
+          >
+            Podaj adres e-mail przypisany do konta. Jeśli konto istnieje,
+            wyślemy link do ustawienia nowego hasła.
           </Typography>
 
           {errorMsg && (
@@ -222,8 +243,12 @@ export function ForgotPassword() {
                 "& .MuiOutlinedInput-root": {
                   borderRadius: 3,
                   transition: "all 0.2s",
-                  "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.01) },
-                  "&.Mui-focused": { bgcolor: alpha(theme.palette.primary.main, 0.01) },
+                  "&:hover": {
+                    bgcolor: alpha(theme.palette.primary.main, 0.01),
+                  },
+                  "&.Mui-focused": {
+                    bgcolor: alpha(theme.palette.primary.main, 0.01),
+                  },
                 },
               }}
             />
@@ -268,7 +293,10 @@ export function ForgotPassword() {
               mt: 3,
               fontWeight: 600,
               color: "text.secondary",
-              "&:hover": { color: "primary.main", bgcolor: alpha(theme.palette.primary.main, 0.05) },
+              "&:hover": {
+                color: "primary.main",
+                bgcolor: alpha(theme.palette.primary.main, 0.05),
+              },
               textTransform: "none",
             }}
           >
@@ -279,7 +307,13 @@ export function ForgotPassword() {
 
       {/* Footer / Bottom Info */}
       <Box sx={{ mt: 3, textAlign: "center", position: "relative", zIndex: 1 }}>
-        <Stack direction="row" spacing={1} justifyContent="center" alignItems="center" sx={{ opacity: 0.6 }}>
+        <Stack
+          direction="row"
+          spacing={1}
+          justifyContent="center"
+          alignItems="center"
+          sx={{ opacity: 0.6 }}
+        >
           <ShieldIcon sx={{ fontSize: 16, color: "primary.main" }} />
           <Typography variant="caption" color="text.secondary">
             Konta użytkowników tworzone są przez administratora szkoły.

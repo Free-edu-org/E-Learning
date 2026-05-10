@@ -1182,7 +1182,8 @@ export function AdminDashboard() {
 
     if (field === "username") {
       if (!userDraft.username.trim() || userDraft.username.trim().length < 3) {
-        nextFieldErrors.username = "Minimalna długość nazwy użytkownika to 3 znaki.";
+        nextFieldErrors.username =
+          "Minimalna długość nazwy użytkownika to 3 znaki.";
       }
     }
 
@@ -1234,7 +1235,9 @@ export function AdminDashboard() {
           "groupPublicId" in updated ? (updated.groupPublicId ?? "") : "",
       });
       setUserDialogConfirmEmail("");
-      setUserDialogEditingFields((prev) => prev.filter((item) => item !== field));
+      setUserDialogEditingFields((prev) =>
+        prev.filter((item) => item !== field),
+      );
       setUserDialogFeedback({
         severity: "success",
         message: "Zmiana została zapisana.",
@@ -1320,7 +1323,8 @@ export function AdminDashboard() {
       const nextFieldErrors: UserFieldErrors = {};
 
       if (!userDraft.username.trim() || userDraft.username.trim().length < 3) {
-        nextFieldErrors.username = "Minimalna długość nazwy użytkownika to 3 znaki.";
+        nextFieldErrors.username =
+          "Minimalna długość nazwy użytkownika to 3 znaki.";
       }
 
       if (!EMAIL_REGEX.test(userDraft.email.trim())) {
@@ -3677,105 +3681,105 @@ export function AdminDashboard() {
                   {userDialogEditingFields.includes("username") ? (
                     <Collapse in timeout={180}>
                       <Stack spacing={1}>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        display="block"
-                        sx={{ mb: 0.75 }}
-                      >
-                        Edycja nazwy użytkownika
-                      </Typography>
-                      <Box
-                        sx={{
-                          display: "flex",
-                          gap: 1,
-                          alignItems: "flex-start",
-                        }}
-                      >
                         <Typography
                           variant="caption"
                           color="text.secondary"
                           display="block"
-                          sx={{ display: "none" }}
+                          sx={{ mb: 0.75 }}
                         >
-                          Potwierdź adres e-mail
+                          Edycja nazwy użytkownika
                         </Typography>
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          display="block"
-                          sx={{ display: "none" }}
-                        >
-                          Potwierdź adres e-mail
-                        </Typography>
-                        <TextField
-                          value={userDraft.username}
-                          onChange={(event) =>
-                            setUserDraft((current) => ({
-                              ...current,
-                              username: event.target.value.slice(
-                                0,
-                                INPUT_LIMITS.username,
-                              ),
-                            }))
-                          }
-                          autoFocus
-                          size="small"
-                          fullWidth
-                          autoComplete="off"
-                          inputProps={{ maxLength: INPUT_LIMITS.username }}
-                          error={
-                            userDraft.username.length > 0 &&
-                            userDraft.username.trim().length < 3
-                          }
-                          helperText={
-                            userDraft.username.length > 0 &&
-                            userDraft.username.trim().length < 3
-                              ? "Minimalna długość to 3 znaki"
-                              : `${userDraft.username.length}/${INPUT_LIMITS.username}`
-                          }
-                          sx={counterFieldSx}
-                        />
                         <Box
-                          sx={inlineEditActionButtonsSx}
+                          sx={{
+                            display: "flex",
+                            gap: 1,
+                            alignItems: "flex-start",
+                          }}
                         >
-                          <IconButton
-                            size="small"
-                            disabled={
-                              userInlineSavingField === "username" ||
-                              userDraft.username.trim().length < 3
-                            }
-                            onClick={() => void saveUserInlineSection("username")}
-                            sx={inlineEditConfirmButtonSx}
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            display="block"
+                            sx={{ display: "none" }}
                           >
-                            {userInlineSavingField === "username" ? (
-                              <CircularProgress size={16} color="inherit" />
-                            ) : (
-                              <CheckIcon fontSize="small" />
-                            )}
-                          </IconButton>
-                          <IconButton
-                            size="small"
-                            disabled={userInlineSavingField === "username"}
-                            onClick={() => {
+                            Potwierdź adres e-mail
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            display="block"
+                            sx={{ display: "none" }}
+                          >
+                            Potwierdź adres e-mail
+                          </Typography>
+                          <TextField
+                            value={userDraft.username}
+                            onChange={(event) =>
                               setUserDraft((current) => ({
                                 ...current,
-                                username: selectedUser?.username ?? "",
-                              }));
-                              setUserFieldErrors((current) => ({
-                                ...current,
-                                username: undefined,
-                              }));
-                              setUserDialogEditingFields((prev) =>
-                                prev.filter((f) => f !== "username"),
-                              );
-                            }}
-                            sx={inlineEditCancelButtonSx}
-                          >
-                            <CloseIcon fontSize="small" />
-                          </IconButton>
+                                username: event.target.value.slice(
+                                  0,
+                                  INPUT_LIMITS.username,
+                                ),
+                              }))
+                            }
+                            autoFocus
+                            size="small"
+                            fullWidth
+                            autoComplete="off"
+                            inputProps={{ maxLength: INPUT_LIMITS.username }}
+                            error={
+                              userDraft.username.length > 0 &&
+                              userDraft.username.trim().length < 3
+                            }
+                            helperText={
+                              userDraft.username.length > 0 &&
+                              userDraft.username.trim().length < 3
+                                ? "Minimalna długość to 3 znaki"
+                                : `${userDraft.username.length}/${INPUT_LIMITS.username}`
+                            }
+                            sx={counterFieldSx}
+                          />
+                          <Box sx={inlineEditActionButtonsSx}>
+                            <IconButton
+                              size="small"
+                              disabled={
+                                userInlineSavingField === "username" ||
+                                userDraft.username.trim().length < 3
+                              }
+                              onClick={() =>
+                                void saveUserInlineSection("username")
+                              }
+                              sx={inlineEditConfirmButtonSx}
+                            >
+                              {userInlineSavingField === "username" ? (
+                                <CircularProgress size={16} color="inherit" />
+                              ) : (
+                                <CheckIcon fontSize="small" />
+                              )}
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              disabled={userInlineSavingField === "username"}
+                              onClick={() => {
+                                setUserDraft((current) => ({
+                                  ...current,
+                                  username: selectedUser?.username ?? "",
+                                }));
+                                setUserFieldErrors((current) => ({
+                                  ...current,
+                                  username: undefined,
+                                }));
+                                setUserDialogEditingFields((prev) =>
+                                  prev.filter((f) => f !== "username"),
+                                );
+                              }}
+                              sx={inlineEditCancelButtonSx}
+                            >
+                              <CloseIcon fontSize="small" />
+                            </IconButton>
+                          </Box>
                         </Box>
-                      </Box>
                       </Stack>
                     </Collapse>
                   ) : (
@@ -3877,7 +3881,9 @@ export function AdminDashboard() {
                             <IconButton
                               size="small"
                               disabled={userInlineSavingField === "email"}
-                              onClick={() => void saveUserInlineSection("email")}
+                              onClick={() =>
+                                void saveUserInlineSection("email")
+                              }
                               sx={inlineEditConfirmButtonSx}
                             >
                               {userInlineSavingField === "email" ? (
@@ -4108,7 +4114,8 @@ export function AdminDashboard() {
                   sx={{
                     px: 2,
                     py: 1.5,
-                    borderTop: userDialogRole === "STUDENT" ? "1px solid" : "none",
+                    borderTop:
+                      userDialogRole === "STUDENT" ? "1px solid" : "none",
                     borderColor: "divider",
                   }}
                 >
@@ -4129,7 +4136,8 @@ export function AdminDashboard() {
                         Reset hasła
                       </Typography>
                       <Typography variant="body2" fontWeight={500}>
-                        Wyślij użytkownikowi wiadomość e-mail z linkiem do ustawienia nowego hasła.
+                        Wyślij użytkownikowi wiadomość e-mail z linkiem do
+                        ustawienia nowego hasła.
                       </Typography>
                     </Box>
                     <Button
@@ -4142,7 +4150,10 @@ export function AdminDashboard() {
                         )
                       }
                       onClick={() => void sendPasswordResetLink()}
-                      disabled={passwordResetLoading || !EMAIL_REGEX.test(userDraft.email.trim())}
+                      disabled={
+                        passwordResetLoading ||
+                        !EMAIL_REGEX.test(userDraft.email.trim())
+                      }
                       sx={{
                         ...userCardActionButtonSx,
                         minHeight: 34,
@@ -4150,7 +4161,9 @@ export function AdminDashboard() {
                         flexShrink: 0,
                       }}
                     >
-                      {passwordResetLoading ? "Wysyłanie..." : "Wyślij link resetujący"}
+                      {passwordResetLoading
+                        ? "Wysyłanie..."
+                        : "Wyślij link resetujący"}
                     </Button>
                   </Box>
                 </Box>
@@ -4222,233 +4235,238 @@ export function AdminDashboard() {
             )}
             {groupDialogMode === "create" ? (
               <Stack spacing={1.75}>
-              <FormSection
-                title="Informacje o grupie"
-                description="Nadaj grupie nazwę i krótki opis."
-              >
-                <Box>
-                  <Typography sx={{ ...dialogFieldLabelSx, mb: 1 }}>
-                    Nazwa grupy
-                  </Typography>
-                  <TextField
-                    value={groupDraft.name}
-                    onChange={(event) => {
-                      setGroupFieldErrors((current) => ({
-                        ...current,
-                        name: undefined,
-                      }));
-                      setGroupDraft((current) => ({
-                        ...current,
-                        name: event.target.value.slice(
-                          0,
-                          INPUT_LIMITS.groupName,
-                        ),
-                      }));
-                    }}
-                    inputProps={{ maxLength: INPUT_LIMITS.groupName }}
-                    error={Boolean(groupFieldErrors.name)}
-                    helperText={
-                      groupFieldErrors.name ?? (
-                        <Box
-                          sx={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            gap: 1,
-                            alignItems: "center",
-                            width: "100%",
-                          }}
-                        >
-                          <Box component="span">
-                            Krótka, konkretna nazwa ułatwi szybkie odnalezienie
-                            grupy.
-                          </Box>
-                          {groupDraft.name.length > 0 && (
-                            <Box
-                              component="span"
-                              sx={{
-                                color: "text.secondary",
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              {groupDraft.name.length}/{INPUT_LIMITS.groupName}
-                            </Box>
-                          )}
-                        </Box>
-                      )
-                    }
-                    fullWidth
-                    placeholder="Np. Matematyka 6A"
-                    slotProps={{
-                      input: {
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <GroupIcon sx={{ color: "text.secondary" }} />
-                          </InputAdornment>
-                        ),
-                      },
-                    }}
-                  />
-                </Box>
-                <Box>
-                  <Typography sx={{ ...dialogFieldLabelSx, mb: 1 }}>
-                    Opis grupy
-                  </Typography>
-                  <TextField
-                    value={groupDraft.description}
-                    onChange={(event) => {
-                      setGroupFieldErrors((current) => ({
-                        ...current,
-                        description: undefined,
-                      }));
-                      setGroupDraft((current) => ({
-                        ...current,
-                        description: event.target.value.slice(
-                          0,
-                          INPUT_LIMITS.groupDescription,
-                        ),
-                      }));
-                    }}
-                    inputProps={{ maxLength: INPUT_LIMITS.groupDescription }}
-                    error={Boolean(groupFieldErrors.description)}
-                    helperText={
-                      groupFieldErrors.description ?? (
-                        <Box
-                          sx={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            gap: 1,
-                            alignItems: "center",
-                            width: "100%",
-                          }}
-                        >
-                          <Box component="span">
-                            Dodaj kilka zdań o przeznaczeniu, poziomie lub
-                            trybie pracy grupy.
-                          </Box>
-                          {groupDraft.description.length > 0 && (
-                            <Box
-                              component="span"
-                              sx={{
-                                color: "text.secondary",
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              {groupDraft.description.length}/
-                              {INPUT_LIMITS.groupDescription}
-                            </Box>
-                          )}
-                        </Box>
-                      )
-                    }
-                    multiline
-                    minRows={3}
-                    fullWidth
-                    placeholder="Np. Grupa dla uczniów przygotowujących się do działu z geometrii i zadań tekstowych."
-                    slotProps={{
-                      input: {
-                        startAdornment: (
-                          <InputAdornment
-                            position="start"
-                            sx={{ alignSelf: "flex-start", mt: 1.7 }}
+                <FormSection
+                  title="Informacje o grupie"
+                  description="Nadaj grupie nazwę i krótki opis."
+                >
+                  <Box>
+                    <Typography sx={{ ...dialogFieldLabelSx, mb: 1 }}>
+                      Nazwa grupy
+                    </Typography>
+                    <TextField
+                      value={groupDraft.name}
+                      onChange={(event) => {
+                        setGroupFieldErrors((current) => ({
+                          ...current,
+                          name: undefined,
+                        }));
+                        setGroupDraft((current) => ({
+                          ...current,
+                          name: event.target.value.slice(
+                            0,
+                            INPUT_LIMITS.groupName,
+                          ),
+                        }));
+                      }}
+                      inputProps={{ maxLength: INPUT_LIMITS.groupName }}
+                      error={Boolean(groupFieldErrors.name)}
+                      helperText={
+                        groupFieldErrors.name ?? (
+                          <Box
+                            sx={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              gap: 1,
+                              alignItems: "center",
+                              width: "100%",
+                            }}
                           >
-                            <EditIcon sx={{ color: "text.secondary" }} />
-                          </InputAdornment>
-                        ),
-                      },
-                    }}
-                    sx={{
-                      "& .MuiOutlinedInput-root": {
-                        alignItems: "flex-start",
-                        py: 0.25,
-                      },
-                      "& .MuiInputBase-inputMultiline": {
-                        lineHeight: 1.65,
-                        resize: "vertical",
-                        minHeight: 64,
-                        pt: 1.15,
-                        pb: 0.8,
-                      },
-                    }}
-                  />
-                </Box>
-              </FormSection>
-
-              <FormSection
-                title="Nauczyciel prowadzący"
-                description="Wybierz opiekuna grupy."
-              >
-                <Box>
-                  <Typography sx={{ ...dialogFieldLabelSx, mb: 1 }}>
-                    Wybierz nauczyciela
-                  </Typography>
-                  <TextField
-                    select
-                    value={groupDraft.teacherPublicId}
-                    onChange={(event) => {
-                      setGroupFieldErrors((current) => ({
-                        ...current,
-                        teacherPublicId: undefined,
-                      }));
-                      setGroupDraft((current) => ({
-                        ...current,
-                        teacherPublicId: event.target.value,
-                      }));
-                    }}
-                    SelectProps={{
-                      displayEmpty: true,
-                      IconComponent: ExpandMoreIcon,
-                    }}
-                    error={Boolean(groupFieldErrors.teacherPublicId)}
-                    helperText={
-                      groupFieldErrors.teacherPublicId ??
-                      "Przypisanie nauczyciela jest opcjonalne na etapie tworzenia, ale ułatwia dalsze zarządzanie grupą."
-                    }
-                    fullWidth
-                    slotProps={{
-                      input: {
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <SchoolIcon sx={{ color: "text.secondary" }} />
-                          </InputAdornment>
-                        ),
-                      },
-                    }}
-                  >
-                    <MenuItem value="">Bez przypisanego nauczyciela</MenuItem>
-                    {teachers.map((teacher) => (
-                      <MenuItem
-                        key={teacher.publicId}
-                        value={teacher.publicId}
-                        sx={{ py: 1.25 }}
-                      >
-                        <Stack
-                          direction="row"
-                          spacing={1.5}
-                          alignItems="center"
-                        >
-                          <UserAvatar
-                            avatarUrl={teacher.avatarUrl}
-                            username={teacher.username}
-                            size={26}
-                          />
-                          <Box sx={{ minWidth: 0 }}>
-                            <Typography variant="body2" fontWeight={600} noWrap>
-                              {teacher.username}
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                              noWrap
-                            >
-                              {teacher.email}
-                            </Typography>
+                            <Box component="span">
+                              Krótka, konkretna nazwa ułatwi szybkie
+                              odnalezienie grupy.
+                            </Box>
+                            {groupDraft.name.length > 0 && (
+                              <Box
+                                component="span"
+                                sx={{
+                                  color: "text.secondary",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {groupDraft.name.length}/
+                                {INPUT_LIMITS.groupName}
+                              </Box>
+                            )}
                           </Box>
-                        </Stack>
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                </Box>
-              </FormSection>
+                        )
+                      }
+                      fullWidth
+                      placeholder="Np. Matematyka 6A"
+                      slotProps={{
+                        input: {
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <GroupIcon sx={{ color: "text.secondary" }} />
+                            </InputAdornment>
+                          ),
+                        },
+                      }}
+                    />
+                  </Box>
+                  <Box>
+                    <Typography sx={{ ...dialogFieldLabelSx, mb: 1 }}>
+                      Opis grupy
+                    </Typography>
+                    <TextField
+                      value={groupDraft.description}
+                      onChange={(event) => {
+                        setGroupFieldErrors((current) => ({
+                          ...current,
+                          description: undefined,
+                        }));
+                        setGroupDraft((current) => ({
+                          ...current,
+                          description: event.target.value.slice(
+                            0,
+                            INPUT_LIMITS.groupDescription,
+                          ),
+                        }));
+                      }}
+                      inputProps={{ maxLength: INPUT_LIMITS.groupDescription }}
+                      error={Boolean(groupFieldErrors.description)}
+                      helperText={
+                        groupFieldErrors.description ?? (
+                          <Box
+                            sx={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              gap: 1,
+                              alignItems: "center",
+                              width: "100%",
+                            }}
+                          >
+                            <Box component="span">
+                              Dodaj kilka zdań o przeznaczeniu, poziomie lub
+                              trybie pracy grupy.
+                            </Box>
+                            {groupDraft.description.length > 0 && (
+                              <Box
+                                component="span"
+                                sx={{
+                                  color: "text.secondary",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {groupDraft.description.length}/
+                                {INPUT_LIMITS.groupDescription}
+                              </Box>
+                            )}
+                          </Box>
+                        )
+                      }
+                      multiline
+                      minRows={3}
+                      fullWidth
+                      placeholder="Np. Grupa dla uczniów przygotowujących się do działu z geometrii i zadań tekstowych."
+                      slotProps={{
+                        input: {
+                          startAdornment: (
+                            <InputAdornment
+                              position="start"
+                              sx={{ alignSelf: "flex-start", mt: 1.7 }}
+                            >
+                              <EditIcon sx={{ color: "text.secondary" }} />
+                            </InputAdornment>
+                          ),
+                        },
+                      }}
+                      sx={{
+                        "& .MuiOutlinedInput-root": {
+                          alignItems: "flex-start",
+                          py: 0.25,
+                        },
+                        "& .MuiInputBase-inputMultiline": {
+                          lineHeight: 1.65,
+                          resize: "vertical",
+                          minHeight: 64,
+                          pt: 1.15,
+                          pb: 0.8,
+                        },
+                      }}
+                    />
+                  </Box>
+                </FormSection>
+
+                <FormSection
+                  title="Nauczyciel prowadzący"
+                  description="Wybierz opiekuna grupy."
+                >
+                  <Box>
+                    <Typography sx={{ ...dialogFieldLabelSx, mb: 1 }}>
+                      Wybierz nauczyciela
+                    </Typography>
+                    <TextField
+                      select
+                      value={groupDraft.teacherPublicId}
+                      onChange={(event) => {
+                        setGroupFieldErrors((current) => ({
+                          ...current,
+                          teacherPublicId: undefined,
+                        }));
+                        setGroupDraft((current) => ({
+                          ...current,
+                          teacherPublicId: event.target.value,
+                        }));
+                      }}
+                      SelectProps={{
+                        displayEmpty: true,
+                        IconComponent: ExpandMoreIcon,
+                      }}
+                      error={Boolean(groupFieldErrors.teacherPublicId)}
+                      helperText={
+                        groupFieldErrors.teacherPublicId ??
+                        "Przypisanie nauczyciela jest opcjonalne na etapie tworzenia, ale ułatwia dalsze zarządzanie grupą."
+                      }
+                      fullWidth
+                      slotProps={{
+                        input: {
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <SchoolIcon sx={{ color: "text.secondary" }} />
+                            </InputAdornment>
+                          ),
+                        },
+                      }}
+                    >
+                      <MenuItem value="">Bez przypisanego nauczyciela</MenuItem>
+                      {teachers.map((teacher) => (
+                        <MenuItem
+                          key={teacher.publicId}
+                          value={teacher.publicId}
+                          sx={{ py: 1.25 }}
+                        >
+                          <Stack
+                            direction="row"
+                            spacing={1.5}
+                            alignItems="center"
+                          >
+                            <UserAvatar
+                              avatarUrl={teacher.avatarUrl}
+                              username={teacher.username}
+                              size={26}
+                            />
+                            <Box sx={{ minWidth: 0 }}>
+                              <Typography
+                                variant="body2"
+                                fontWeight={600}
+                                noWrap
+                              >
+                                {teacher.username}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                noWrap
+                              >
+                                {teacher.email}
+                              </Typography>
+                            </Box>
+                          </Stack>
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  </Box>
+                </FormSection>
               </Stack>
             ) : (
               <Box
@@ -4654,7 +4672,9 @@ export function AdminDashboard() {
                           autoFocus
                           size="small"
                           fullWidth
-                          inputProps={{ maxLength: INPUT_LIMITS.groupDescription }}
+                          inputProps={{
+                            maxLength: INPUT_LIMITS.groupDescription,
+                          }}
                           error={Boolean(groupFieldErrors.description)}
                           helperText={
                             groupFieldErrors.description ??
@@ -4754,7 +4774,8 @@ export function AdminDashboard() {
                           fontWeight={500}
                           sx={{ color: "text.primary", whiteSpace: "pre-wrap" }}
                         >
-                          {groupDraft.description?.trim() || "Brak opisu grupy."}
+                          {groupDraft.description?.trim() ||
+                            "Brak opisu grupy."}
                         </Typography>
                       </Box>
                       <Button
@@ -4823,7 +4844,9 @@ export function AdminDashboard() {
                             "Możesz przypisać nowego opiekuna lub pozostawić grupę bez nauczyciela."
                           }
                         >
-                          <MenuItem value="">Bez przypisanego nauczyciela</MenuItem>
+                          <MenuItem value="">
+                            Bez przypisanego nauczyciela
+                          </MenuItem>
                           {teachers.map((teacher) => (
                             <MenuItem
                               key={teacher.publicId}
@@ -4841,7 +4864,11 @@ export function AdminDashboard() {
                                   size={26}
                                 />
                                 <Box sx={{ minWidth: 0 }}>
-                                  <Typography variant="body2" fontWeight={600} noWrap>
+                                  <Typography
+                                    variant="body2"
+                                    fontWeight={600}
+                                    noWrap
+                                  >
                                     {teacher.username}
                                   </Typography>
                                   <Typography
@@ -4951,9 +4978,14 @@ export function AdminDashboard() {
                               size={26}
                             />
                             <Box sx={{ minWidth: 0 }}>
-                              <Typography variant="body2" fontWeight={500} noWrap>
-                                {teacherNameById.get(groupDraft.teacherPublicId) ??
-                                  "Brak danych"}
+                              <Typography
+                                variant="body2"
+                                fontWeight={500}
+                                noWrap
+                              >
+                                {teacherNameById.get(
+                                  groupDraft.teacherPublicId,
+                                ) ?? "Brak danych"}
                               </Typography>
                               <Typography
                                 variant="caption"
@@ -4962,7 +4994,8 @@ export function AdminDashboard() {
                               >
                                 {teachers.find(
                                   (teacher) =>
-                                    teacher.publicId === groupDraft.teacherPublicId,
+                                    teacher.publicId ===
+                                    groupDraft.teacherPublicId,
                                 )?.email ?? "Brak danych"}
                               </Typography>
                             </Box>
@@ -5291,40 +5324,43 @@ export function AdminDashboard() {
                   alignItems={{ xs: "stretch", sm: "flex-start" }}
                 >
                   <Autocomplete
-                  size="small"
-                  options={availableMembershipStudents.filter(
-                    (student) =>
-                      student.groupPublicId !== membershipDialog?.groupPublicId,
-                  )}
-                  value={
-                    availableMembershipStudents.find(
+                    size="small"
+                    options={availableMembershipStudents.filter(
                       (student) =>
-                        student.publicId === membershipStudentPublicId,
-                    ) ?? null
-                  }
-                  onChange={(_, value) =>
-                    setMembershipStudentPublicId(value?.publicId ?? "")
-                  }
-                  getOptionLabel={(option) =>
-                    `${option.username} (${option.email})`
-                  }
-                  isOptionEqualToValue={(option, value) =>
-                    option.publicId === value.publicId
-                  }
-                  noOptionsText="Brak wolnych uczniów dla tego nauczyciela"
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label="Wybierz ucznia"
-                      helperText="Wybór ucznia od razu przygotuje go do dodania do tej grupy."
-                    />
-                  )}
+                        student.groupPublicId !==
+                        membershipDialog?.groupPublicId,
+                    )}
+                    value={
+                      availableMembershipStudents.find(
+                        (student) =>
+                          student.publicId === membershipStudentPublicId,
+                      ) ?? null
+                    }
+                    onChange={(_, value) =>
+                      setMembershipStudentPublicId(value?.publicId ?? "")
+                    }
+                    getOptionLabel={(option) =>
+                      `${option.username} (${option.email})`
+                    }
+                    isOptionEqualToValue={(option, value) =>
+                      option.publicId === value.publicId
+                    }
+                    noOptionsText="Brak wolnych uczniów dla tego nauczyciela"
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Wybierz ucznia"
+                        helperText="Wybór ucznia od razu przygotuje go do dodania do tej grupy."
+                      />
+                    )}
                   />
                   <Button
                     variant="contained"
                     startIcon={<AddCircleIcon />}
                     onClick={addMembershipStudent}
-                    disabled={membershipLoading || membershipStudentPublicId === ""}
+                    disabled={
+                      membershipLoading || membershipStudentPublicId === ""
+                    }
                     sx={{
                       ...panelFooterButtonSx,
                       minHeight: 40,

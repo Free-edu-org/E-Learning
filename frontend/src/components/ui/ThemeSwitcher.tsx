@@ -19,7 +19,9 @@ export function ThemeSwitcher() {
       sx={{
         display: "flex",
         alignItems: "center",
-        bgcolor: isDark ? alpha(theme.palette.common.black, 0.3) : alpha(theme.palette.common.white, 0.5),
+        bgcolor: isDark
+          ? alpha(theme.palette.common.black, 0.3)
+          : alpha(theme.palette.common.white, 0.5),
         backdropFilter: "blur(12px)",
         p: "2px 6px",
         borderRadius: "99px",
@@ -28,25 +30,32 @@ export function ThemeSwitcher() {
       }}
     >
       <Stack direction="row" spacing={0} alignItems="center">
-        <IconButton 
-          size="small" 
-          onClick={() => mode !== 'light' && toggleColorMode()} 
-          sx={{ 
-            color: mode === 'light' ? 'primary.main' : 'text.disabled', 
+        <IconButton
+          size="small"
+          onClick={() => mode !== "light" && toggleColorMode()}
+          sx={{
+            color: mode === "light" ? "primary.main" : "text.disabled",
             p: 1,
-            "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.05) }
+            "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.05) },
           }}
         >
           <LightModeIcon fontSize="small" />
         </IconButton>
-        <Box sx={{ width: 1, height: 16, bgcolor: alpha(theme.palette.divider, 0.1), mx: 0.5 }} />
-        <IconButton 
-          size="small" 
-          onClick={() => mode !== 'dark' && toggleColorMode()} 
-          sx={{ 
-            color: mode === 'dark' ? 'primary.main' : 'text.disabled', 
+        <Box
+          sx={{
+            width: 1,
+            height: 16,
+            bgcolor: alpha(theme.palette.divider, 0.1),
+            mx: 0.5,
+          }}
+        />
+        <IconButton
+          size="small"
+          onClick={() => mode !== "dark" && toggleColorMode()}
+          sx={{
+            color: mode === "dark" ? "primary.main" : "text.disabled",
             p: 1,
-            "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.05) }
+            "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.05) },
           }}
         >
           <DarkModeIcon fontSize="small" />
