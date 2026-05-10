@@ -10,6 +10,7 @@ import {
   Container,
   FormControlLabel,
   Grid,
+  IconButton,
   InputAdornment,
   MenuItem,
   Paper,
@@ -63,9 +64,9 @@ import {
   panelFooterButtonSx,
   panelGridCardContentSx,
   panelGridCardSx,
+  panelIconButtonSx,
   panelSingleLineSx,
   panelSurfaceSx,
-  panelToolbarButtonSx,
   panelToolbarSx,
   panelTwoLinesSx,
 } from "@/components/ui/panel/panelStyles";
@@ -990,26 +991,6 @@ export function AdminAchievementsView() {
           >
             Wróć do panelu administratora
           </Button>
-
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-            <Button
-              variant="outlined"
-              startIcon={<RefreshIcon />}
-              onClick={() => void loadAchievements()}
-              disabled={loadingAchievements}
-              sx={panelToolbarButtonSx}
-            >
-              Odśwież
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<AddCircleIcon />}
-              onClick={openCreateDialog}
-              sx={{ ...panelFooterButtonSx, px: 2.25, boxShadow: "none" }}
-            >
-              Nowe osiągnięcie
-            </Button>
-          </Stack>
         </Stack>
 
         {currentUserError && (
@@ -1025,6 +1006,7 @@ export function AdminAchievementsView() {
                 direction={{ xs: "column", lg: "row" }}
                 spacing={2}
                 justifyContent="space-between"
+                alignItems={{ xs: "flex-start", lg: "center" }}
               >
                 <Stack spacing={1}>
                   <Typography variant="h6" fontWeight={800}>
@@ -1034,6 +1016,24 @@ export function AdminAchievementsView() {
                     Twórz i edytuj osiągnięcia widoczne dla uczniów oraz
                     decyduj, które z nich są aktywne.
                   </Typography>
+                </Stack>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <IconButton
+                    aria-label="Odśwież listę osiągnięć"
+                    onClick={() => void loadAchievements()}
+                    disabled={loadingAchievements}
+                    sx={panelIconButtonSx}
+                  >
+                    <RefreshIcon fontSize="small" />
+                  </IconButton>
+                  <Button
+                    variant="contained"
+                    startIcon={<AddCircleIcon />}
+                    onClick={openCreateDialog}
+                    sx={{ ...panelFooterButtonSx, px: 2.25, boxShadow: "none" }}
+                  >
+                    Nowe osiągnięcie
+                  </Button>
                 </Stack>
               </Stack>
 
