@@ -29,15 +29,15 @@ jobs:
 
       - name: Build and push Backend
         run: |
-          docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-backend:prod -f backend/Dockerfile.prod backend
-          docker push ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-backend:prod
+          docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-backend:${{ github.sha }} -f backend/Dockerfile.prod backend
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-backend:${{ github.sha }}
 
       - name: Deploy to Azure Container App
         uses: azure/container-apps-deploy-action@v1
         with:
           containerAppName: freeedu-backend
           resourceGroup: freeedu-rg
-          imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-backend:prod
+          imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-backend:${{ github.sha }}
 
   deploy-frontend:
     runs-on: ubuntu-latest
@@ -56,15 +56,15 @@ jobs:
 
       - name: Build and push Frontend
         run: |
-          docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-frontend:prod -f frontend/Dockerfile.prod frontend
-          docker push ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-frontend:prod
+          docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-frontend:${{ github.sha }} -f frontend/Dockerfile.prod frontend
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-frontend:${{ github.sha }}
 
       - name: Deploy to Azure Container App
         uses: azure/container-apps-deploy-action@v1
         with:
           containerAppName: freeedu-frontend
           resourceGroup: freeedu-rg
-          imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-frontend:prod
+          imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-frontend:${{ github.sha }}
 
   deploy-stt:
     runs-on: ubuntu-latest
@@ -83,15 +83,15 @@ jobs:
 
       - name: Build and push STT Service
         run: |
-          docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-stt:prod -f stt-service/Dockerfile.prod stt-service
-          docker push ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-stt:prod
+          docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-stt:${{ github.sha }} -f stt-service/Dockerfile.prod stt-service
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-stt:${{ github.sha }}
 
       - name: Deploy to Azure Container App
         uses: azure/container-apps-deploy-action@v1
         with:
           containerAppName: freeedu-stt
           resourceGroup: freeedu-rg
-          imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-stt:prod
+          imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-stt:${{ github.sha }}
 
   notify:
     runs-on: ubuntu-latest
