@@ -67,14 +67,32 @@ function scoreColor(percent: number): string {
   return "#dc2626";
 }
 
+const lessonStatsActionButtonSx = {
+  textTransform: "none",
+  fontWeight: 600,
+  borderRadius: 2,
+  boxShadow: "none",
+};
+
+const lessonStatsSmallActionButtonSx = {
+  ...lessonStatsActionButtonSx,
+  minHeight: 32,
+  fontSize: "0.8rem",
+  px: 1.25,
+};
+
 function StatCard({
   label,
   value,
   icon,
+  labelSx,
+  valueSx,
 }: {
   label: string;
   value: string;
   icon: React.ReactNode;
+  labelSx?: object;
+  valueSx?: object;
 }) {
   return (
     <Box
@@ -103,18 +121,24 @@ function StatCard({
       >
         {icon}
       </Box>
-      <Box sx={{ minWidth: 0 }}>
+      <Box
+        sx={{
+          minWidth: 0,
+          flex: 1,
+          textAlign: "center",
+        }}
+      >
         <Typography
           variant="caption"
           color="text.secondary"
-          sx={{ display: "block", lineHeight: 1.1, mb: 0.35 }}
+          sx={{ display: "block", lineHeight: 1.1, mb: 0.35, ...labelSx }}
         >
           {label}
         </Typography>
         <Typography
           variant="subtitle1"
           fontWeight={800}
-          sx={{ lineHeight: 1.05 }}
+          sx={{ lineHeight: 1.05, ...valueSx }}
         >
           {value}
         </Typography>
@@ -257,17 +281,27 @@ export function LessonStatsView() {
         <Box
           sx={{
             display: "flex",
+            flexDirection: "column",
             alignItems: "flex-start",
-            gap: { xs: 1.5, sm: 2 },
+            gap: 1,
             mb: { xs: 2, sm: 3 },
             mt: { xs: 0.5, sm: 1 },
-            flexWrap: "wrap",
           }}
         >
           <Button
+            variant="outlined"
             startIcon={<ArrowBackIcon />}
             onClick={() => navigate("/teacher")}
-            sx={{ textTransform: "none", fontWeight: 600, mt: 0.25 }}
+            sx={{
+              ...panelFooterButtonSx,
+              ...lessonStatsActionButtonSx,
+              color: "text.secondary",
+              borderColor: (theme) => alpha(theme.palette.divider, 0.7),
+              "&:hover": {
+                borderColor: "primary.main",
+                color: "primary.main",
+              },
+            }}
           >
             Powrót
           </Button>
@@ -351,6 +385,8 @@ export function LessonStatsView() {
               <StatCard
                 label="Najlepszy wynik"
                 value={formatPercent(stats.bestScore)}
+                labelSx={{ fontSize: "0.78rem" }}
+                valueSx={{ fontSize: "1.1rem" }}
                 icon={<TrophyIcon sx={{ color: "#ca8a04", fontSize: 16 }} />}
               />
             </Box>
@@ -615,12 +651,7 @@ export function LessonStatsView() {
                           variant="outlined"
                           color="warning"
                           startIcon={<ReplayIcon fontSize="small" />}
-                          sx={{
-                            textTransform: "none",
-                            fontWeight: 600,
-                            fontSize: "0.8rem",
-                            borderRadius: 2,
-                          }}
+                          sx={lessonStatsSmallActionButtonSx}
                           disabled={resettingUserPublicIds.includes(
                             student.userPublicId,
                           )}
@@ -632,12 +663,10 @@ export function LessonStatsView() {
                         </Button>
                         <Button
                           size="small"
+                          variant="outlined"
                           startIcon={<VisibilityIcon fontSize="small" />}
                           sx={{
-                            textTransform: "none",
-                            fontWeight: 600,
-                            fontSize: "0.8rem",
-                            borderRadius: 2,
+                            ...lessonStatsSmallActionButtonSx,
                             border: "1px solid",
                             borderColor: (theme) =>
                               alpha(theme.palette.divider, 0.5),

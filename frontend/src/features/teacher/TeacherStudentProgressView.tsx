@@ -252,6 +252,7 @@ export function TeacherStudentProgressView() {
                   value={stats.completedLessons}
                   subtitle={`z ${stats.totalLessons} lekcji`}
                   color="success"
+                  centerText
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6, md: 4 }}>
@@ -261,6 +262,7 @@ export function TeacherStudentProgressView() {
                   value={`${Math.round(stats.avgScore)}%`}
                   subtitle="ukończonych lekcji"
                   color="primary"
+                  centerText
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6, md: 4 }}>
@@ -270,6 +272,7 @@ export function TeacherStudentProgressView() {
                   value={correctAnswers}
                   subtitle={`${totalAnswers} odpowiedzi łącznie`}
                   color="info"
+                  centerText
                 />
               </Grid>
             </Grid>
