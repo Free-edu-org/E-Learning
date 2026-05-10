@@ -31,7 +31,15 @@ import { useAppTheme } from "@/context/ThemeContext";
 
 // --- Sub-components ---
 
-function Blob({ color, top, left, size, delay }: any) {
+interface BlobProps {
+  color: string;
+  top?: string;
+  left?: string;
+  size?: number;
+  delay?: string;
+}
+
+function Blob({ color, top, left, size, delay }: BlobProps) {
   return (
     <Box
       sx={{

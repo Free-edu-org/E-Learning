@@ -34,9 +34,15 @@ import { authService } from "@/api/authService.ts";
 import { ApiError } from "@/api/apiClient.ts";
 import { getApiErrorMessage } from "@/utils/dashboardUtils";
 
-// --- Sub-components ---
+interface BlobProps {
+  color: string;
+  top?: string;
+  left?: string;
+  size?: number;
+  delay?: string;
+}
 
-function Blob({ color, top, left, size, delay }: any) {
+function Blob({ color, top, left, size, delay }: BlobProps) {
   return (
     <Box
       sx={{
@@ -62,15 +68,13 @@ function Blob({ color, top, left, size, delay }: any) {
   );
 }
 
-function FeatureRow({
-  icon: Icon,
-  title,
-  subtitle,
-}: {
-  icon: any;
+interface FeatureRowProps {
+  icon: React.ElementType;
   title: string;
   subtitle: string;
-}) {
+}
+
+function FeatureRow({ icon: Icon, title, subtitle }: FeatureRowProps) {
   const theme = useTheme();
   return (
     <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3 }}>
