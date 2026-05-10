@@ -114,6 +114,7 @@ export function StatsCard({ label, value, highlightColor }: StatsCardProps) {
       elevation={0}
       sx={{
         ...panelSurfaceSx,
+        borderRadius: 2,
         px: 1.85,
         py: 0.9,
         flex: 1,
@@ -177,7 +178,7 @@ export function StatsCard({ label, value, highlightColor }: StatsCardProps) {
             sx={{
               width: 31,
               height: 31,
-              borderRadius: 2.75,
+              borderRadius: 1.5,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",

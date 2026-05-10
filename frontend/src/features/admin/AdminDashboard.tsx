@@ -43,7 +43,6 @@ import {
   PeopleOutline as PeopleIcon,
   PersonOutline as PersonIcon,
   RefreshOutlined as RefreshIcon,
-  SaveOutlined as SaveIcon,
   SchoolOutlined as SchoolIcon,
   SearchOutlined as SearchIcon,
   SendOutlined as SendIcon,
@@ -79,7 +78,6 @@ import {
   AppDialogStatus,
 } from "@/components/ui/dialog/AppDialog";
 import {
-  getRoleAccountLabel,
   getRoleChipColor,
   getRoleLabel,
 } from "@/components/ui/chips/roleLabels";
@@ -438,7 +436,7 @@ const standardFormDialogPaperSx: SxProps<Theme> = {
 const inlineEditIconButtonSx = {
   width: 34,
   height: 34,
-  borderRadius: 1.75,
+  borderRadius: "50%",
   border: "1px solid",
   borderColor: (theme: Theme) => alpha(theme.palette.text.primary, 0.08),
   bgcolor: (theme: Theme) =>
@@ -1502,6 +1500,65 @@ export function AdminDashboard() {
     }
   };
 
+  const saveGroupInlineSection = async (field: GroupEditableField) => {
+    if (!selectedGroup || groupDialogLoading) {
+      return;
+    }
+
+    const nextFieldErrors: GroupFieldErrors = {};
+
+    if (field === "name") {
+      if (!groupDraft.name.trim() || groupDraft.name.trim().length < 3) {
+        nextFieldErrors.name = "Minimalna długość nazwy grupy to 3 znaki.";
+      }
+    }
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setGroupFieldErrors(nextFieldErrors);
+      return;
+    }
+
+    setGroupFieldErrors({});
+    setGroupDialogFeedback(null);
+    setGroupDialogLoading(true);
+
+    try {
+      const updatedPayload = {
+        name: groupDraft.name,
+        description: groupDraft.description,
+        teacherPublicId:
+          groupDraft.teacherPublicId === "" ? null : groupDraft.teacherPublicId,
+      };
+
+      const updatedGroup = await userGroupService.updateGroup(
+        selectedGroup.publicId,
+        updatedPayload,
+      );
+
+      setSelectedGroup(updatedGroup);
+      setGroupDialogEditingFields((prev) => prev.filter((f) => f !== field));
+      setGroupDialogFeedback({
+        severity: "success",
+        message: "Zmiana została zapisana.",
+      });
+      await Promise.all([loadGroups(), loadAdminStats()]);
+    } catch (error) {
+      if (error instanceof ApiError) {
+        const nextErrors = parseGroupApiFieldErrors(error);
+        if (Object.keys(nextErrors).length > 0) {
+          setGroupFieldErrors(nextErrors);
+          return;
+        }
+      }
+      setGroupDialogFeedback({
+        severity: "error",
+        message: getErrorMessage(error, "Nie udało się zapisać zmiany."),
+      });
+    } finally {
+      setGroupDialogLoading(false);
+    }
+  };
+
   const openDeleteDialog = (payload: DeleteDialogState) => {
     setDeleteDialogFeedback(null);
     setDeleteDialog(payload);
@@ -2336,14 +2393,6 @@ export function AdminDashboard() {
                                 label={getRoleLabel(user.role as UserRole)}
                                 size="small"
                               />
-                              <Chip
-                                label={getRoleAccountLabel(
-                                  user.role as UserRole,
-                                )}
-                                size="small"
-                                variant="outlined"
-                                sx={outlinedMetaChipSx}
-                              />
                               {"status" in user &&
                                 user.status === "INVITED" && (
                                   <Chip
@@ -2373,13 +2422,8 @@ export function AdminDashboard() {
                             >
                               {user.email}
                             </Typography>
-                            {user.role === "STUDENT" && (
-                              <Stack
-                                direction={{ xs: "column", sm: "row" }}
-                                spacing={1.25}
-                                flexWrap="wrap"
-                                useFlexGap
-                              >
+                            <Stack direction="column" spacing={0.5}>
+                              {user.role === "STUDENT" && (
                                 <Typography
                                   variant="body2"
                                   color="text.secondary"
@@ -2398,14 +2442,14 @@ export function AdminDashboard() {
                                       : "Bez grupy"}
                                   </Box>
                                 </Typography>
-                                <Typography
-                                  variant="body2"
-                                  color="text.secondary"
-                                >
-                                  Utworzono {formatDate(user.createdAt)}
-                                </Typography>
-                              </Stack>
-                            )}
+                              )}
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
+                                Utworzono {formatDate(user.createdAt)}
+                              </Typography>
+                            </Stack>
                           </Stack>
 
                           <Box sx={panelInlineActionsSx}>
@@ -2421,6 +2465,7 @@ export function AdminDashboard() {
                               </Button>
                             )}
                             <Button
+                              variant="outlined"
                               size="small"
                               startIcon={<EditIcon fontSize="small" />}
                               onClick={() => openEditUserDialog(user)}
@@ -2633,65 +2678,41 @@ export function AdminDashboard() {
                                   flexWrap="wrap"
                                   useFlexGap
                                 >
-                                  <Typography
-                                    variant="caption"
-                                    sx={{
-                                      fontSize: "0.74rem",
-                                      fontWeight: 700,
-                                      lineHeight: 1.2,
-                                      mt: 0.2, // Nudge down to align with value
-                                      letterSpacing: "0.03em",
-                                      textTransform: "uppercase",
-                                      color: (theme) =>
-                                        theme.palette.mode === "light"
-                                          ? alpha(
-                                              theme.palette.text.secondary,
-                                              0.72,
-                                            )
-                                          : alpha(
-                                              theme.palette.common.white,
-                                              0.4,
-                                            ),
-                                    }}
-                                  >
-                                    {user.role === "STUDENT"
-                                      ? "Grupa"
-                                      : "Typ konta"}
-                                  </Typography>
-                                  {user.role === "STUDENT" ? (
-                                    <Chip
-                                      label={
-                                        "groupName" in user && user.groupName
-                                          ? user.groupName
-                                          : "Bez grupy"
-                                      }
-                                      size="small"
-                                      sx={userCardGroupTagSx}
-                                    />
-                                  ) : (
-                                    <Typography
-                                      variant="body2"
-                                      sx={{
-                                        ...panelSingleLineSx,
-                                        fontSize: "0.84rem",
-                                        fontWeight: 600,
-                                        lineHeight: 1.2,
-                                        color: (theme) =>
-                                          theme.palette.mode === "light"
-                                            ? alpha(
-                                                theme.palette.text.primary,
-                                                0.82,
-                                              )
-                                            : alpha(
-                                                theme.palette.common.white,
-                                                0.74,
-                                              ),
-                                      }}
-                                    >
-                                      {getRoleAccountLabel(
-                                        user.role as UserRole,
-                                      )}
-                                    </Typography>
+                                  {user.role === "STUDENT" && (
+                                    <>
+                                      <Typography
+                                        variant="caption"
+                                        sx={{
+                                          fontSize: "0.74rem",
+                                          fontWeight: 700,
+                                          lineHeight: 1.2,
+                                          mt: 0.2, // Nudge down to align with value
+                                          letterSpacing: "0.03em",
+                                          textTransform: "uppercase",
+                                          color: (theme) =>
+                                            theme.palette.mode === "light"
+                                              ? alpha(
+                                                  theme.palette.text.secondary,
+                                                  0.72,
+                                                )
+                                              : alpha(
+                                                  theme.palette.common.white,
+                                                  0.4,
+                                                ),
+                                        }}
+                                      >
+                                        Grupa
+                                      </Typography>
+                                      <Chip
+                                        label={
+                                          "groupName" in user && user.groupName
+                                            ? user.groupName
+                                            : "Bez grupy"
+                                        }
+                                        size="small"
+                                        sx={userCardGroupTagSx}
+                                      />
+                                    </>
                                   )}
                                 </Stack>
                               </Stack>
@@ -2909,15 +2930,9 @@ export function AdminDashboard() {
                   spacing={2}
                   justifyContent="space-between"
                 >
-                  <Stack spacing={1}>
-                    <Typography variant="h6" fontWeight={800}>
-                      Grupy i skład uczniów
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Twórz grupy, edytuj je i zarządzaj członkami przez
-                      dedykowane okna akcji.
-                    </Typography>
-                  </Stack>
+                  <Typography variant="h6" fontWeight={800} sx={{ mt: 1 }}>
+                    Grupy i skład uczniów
+                  </Typography>
 
                   <Stack
                     direction={{ xs: "column", sm: "row" }}
@@ -3097,12 +3112,6 @@ export function AdminDashboard() {
                                 color="warning"
                                 size="small"
                               />
-                              <Chip
-                                label="Karta grupy"
-                                size="small"
-                                variant="outlined"
-                                sx={outlinedMetaChipSx}
-                              />
                             </Stack>
                             <Typography
                               variant="body2"
@@ -3111,49 +3120,40 @@ export function AdminDashboard() {
                             >
                               {group.description || "Brak opisu grupy."}
                             </Typography>
-                            <Stack
-                              direction={{ xs: "column", sm: "row" }}
-                              spacing={1.25}
-                              flexWrap="wrap"
-                              useFlexGap
-                            >
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
+                            <Stack direction="column" spacing={0.5}>
+                              <Stack
+                                direction="row"
+                                spacing={0.75}
+                                alignItems="center"
+                                sx={{ overflowWrap: "anywhere" }}
                               >
-                                Właściciel:{" "}
-                                <Stack
-                                  direction="row"
-                                  spacing={0.75}
-                                  alignItems="center"
-                                  component="span"
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                >
+                                  Właściciel:
+                                </Typography>
+                                <UserAvatar
+                                  avatarUrl={teacherAvatarById.get(
+                                    group.teacherPublicId ?? "",
+                                  )}
+                                  username={teacherNameById.get(
+                                    group.teacherPublicId ?? "",
+                                  )}
+                                  size={20}
+                                />
+                                <Typography
+                                  variant="body2"
                                   sx={{
-                                    display: "inline-flex",
-                                    verticalAlign: "middle",
+                                    fontWeight: 700,
+                                    color: "text.primary",
                                   }}
                                 >
-                                  <UserAvatar
-                                    avatarUrl={teacherAvatarById.get(
-                                      group.teacherPublicId ?? "",
-                                    )}
-                                    username={teacherNameById.get(
-                                      group.teacherPublicId ?? "",
-                                    )}
-                                    size={20}
-                                  />
-                                  <Box
-                                    component="span"
-                                    sx={{
-                                      fontWeight: 700,
-                                      color: "text.primary",
-                                    }}
-                                  >
-                                    {teacherNameById.get(
-                                      group.teacherPublicId ?? "",
-                                    ) ?? "Brak danych"}
-                                  </Box>
-                                </Stack>
-                              </Typography>
+                                  {teacherNameById.get(
+                                    group.teacherPublicId ?? "",
+                                  ) ?? "Brak danych"}
+                                </Typography>
+                              </Stack>
                               <Typography
                                 variant="body2"
                                 color="text.secondary"
@@ -3179,6 +3179,7 @@ export function AdminDashboard() {
                             </Button>
                             <Box sx={panelInlineActionsSx}>
                               <Button
+                                variant="outlined"
                                 size="small"
                                 startIcon={<EditIcon fontSize="small" />}
                                 onClick={() => openEditGroupDialog(group)}
@@ -3224,19 +3225,10 @@ export function AdminDashboard() {
                         key={group.publicId}
                         size={{ xs: 12, md: 6, xl: 4 }}
                       >
-                        <Card
-                          elevation={0}
-                          sx={{
-                            ...panelGridCardSx,
-                            display: "flex",
-                            flexDirection: "column",
-                          }}
-                        >
+                        <Card elevation={0} sx={userCardSurfaceSx}>
                           <CardContent
                             sx={{
-                              ...panelGridCardContentSx,
-                              flex: "1 1 auto",
-                              height: "auto",
+                              ...userCardContentSx,
                               pb: 1,
                             }}
                           >
@@ -3266,44 +3258,39 @@ export function AdminDashboard() {
                                   >
                                     {group.description || "Brak opisu grupy."}
                                   </Typography>
-                                  <Typography
-                                    variant="body2"
-                                    color="text.secondary"
+                                  <Stack
+                                    direction="row"
+                                    spacing={0.75}
+                                    alignItems="center"
                                     sx={{ mt: 1, ...panelSingleLineSx }}
                                   >
-                                    Właściciel:{" "}
-                                    <Stack
-                                      direction="row"
-                                      spacing={0.75}
-                                      alignItems="center"
-                                      component="span"
+                                    <Typography
+                                      variant="body2"
+                                      color="text.secondary"
+                                    >
+                                      Właściciel:
+                                    </Typography>
+                                    <UserAvatar
+                                      avatarUrl={teacherAvatarById.get(
+                                        group.teacherPublicId ?? "",
+                                      )}
+                                      username={teacherNameById.get(
+                                        group.teacherPublicId ?? "",
+                                      )}
+                                      size={18}
+                                    />
+                                    <Typography
+                                      variant="body2"
                                       sx={{
-                                        display: "inline-flex",
-                                        verticalAlign: "middle",
+                                        fontWeight: 700,
+                                        color: "text.primary",
                                       }}
                                     >
-                                      <UserAvatar
-                                        avatarUrl={teacherAvatarById.get(
-                                          group.teacherPublicId ?? "",
-                                        )}
-                                        username={teacherNameById.get(
-                                          group.teacherPublicId ?? "",
-                                        )}
-                                        size={18}
-                                      />
-                                      <Box
-                                        component="span"
-                                        sx={{
-                                          fontWeight: 700,
-                                          color: "text.primary",
-                                        }}
-                                      >
-                                        {teacherNameById.get(
-                                          group.teacherPublicId ?? "",
-                                        ) ?? "Brak danych"}
-                                      </Box>
-                                    </Stack>
-                                  </Typography>
+                                      {teacherNameById.get(
+                                        group.teacherPublicId ?? "",
+                                      ) ?? "Brak danych"}
+                                    </Typography>
+                                  </Stack>
                                 </Box>
                                 <Chip
                                   icon={<GroupIcon />}
@@ -3329,27 +3316,15 @@ export function AdminDashboard() {
                               </Stack>
                             </Stack>
                           </CardContent>
-                          <CardActions
-                            sx={{
-                              ...panelCardFooterSx,
-                              px: 1.75,
-                              pb: 1.5,
-                              mt: 0,
-                            }}
-                          >
-                            <Box
-                              sx={{
-                                ...panelFooterButtonsSx,
-                                flexWrap: "nowrap",
-                              }}
-                            >
+                          <CardActions sx={userCardFooterSx}>
+                            <Box sx={userCardActionsWrapSx}>
                               <Button
                                 size="small"
                                 variant="outlined"
                                 startIcon={<SchoolIcon fontSize="small" />}
                                 fullWidth
                                 onClick={() => openMembershipDialog(group)}
-                                sx={panelFooterButtonSx}
+                                sx={userCardActionButtonSx}
                               >
                                 Skład grupy
                               </Button>
@@ -3359,7 +3334,7 @@ export function AdminDashboard() {
                                 startIcon={<EditIcon fontSize="small" />}
                                 fullWidth
                                 onClick={() => openEditGroupDialog(group)}
-                                sx={panelFooterButtonSx}
+                                sx={userCardActionButtonSx}
                               >
                                 Edytuj
                               </Button>
@@ -3378,15 +3353,12 @@ export function AdminDashboard() {
                                       { label: "Nazwa", value: group.name },
                                       {
                                         label: "Opis",
-                                        value:
-                                          group.description?.trim() ||
-                                          "Brak opisu",
-                                        secondary: true,
+                                        value: group.description || "Brak",
                                       },
                                     ],
                                   })
                                 }
-                                sx={panelDeleteButtonSx}
+                                sx={userCardDeleteButtonSx}
                               >
                                 Usuń
                               </Button>
@@ -4621,10 +4593,24 @@ export function AdminDashboard() {
           open={groupDialogOpen}
           onClose={closeGroupDialog}
           maxWidth="md"
-          paperSx={standardFormDialogPaperSx}
+          paperSx={{
+            ...standardFormDialogPaperSx,
+            ...(groupDialogMode === "edit" ? { width: { sm: 640 } } : {}),
+          }}
         >
           <AppDialogHeader
-            icon={<GroupIcon />}
+            icon={groupDialogMode === "create" ? <GroupIcon /> : <EditIcon />}
+            iconContainerSx={
+              groupDialogMode === "edit"
+                ? {
+                    borderRadius: "50%",
+                    width: 54,
+                    height: 54,
+                    boxShadow: (theme: Theme) =>
+                      `0 10px 24px ${alpha(theme.palette.primary.main, 0.2)}`,
+                  }
+                : {}
+            }
             title={groupDialogMode === "create" ? "Nowa grupa" : "Edycja grupy"}
             subtitle={
               groupDialogMode === "create"
@@ -4919,7 +4905,7 @@ export function AdminDashboard() {
                         sx={{
                           display: "flex",
                           gap: 1,
-                          alignItems: "flex-start",
+                          alignItems: "center",
                         }}
                       >
                         <TextField
@@ -4942,29 +4928,24 @@ export function AdminDashboard() {
                           fullWidth
                           inputProps={{ maxLength: INPUT_LIMITS.groupName }}
                           error={Boolean(groupFieldErrors.name)}
-                          helperText={
-                            groupFieldErrors.name ??
-                            `${groupDraft.name.length}/${INPUT_LIMITS.groupName}`
-                          }
                           sx={counterFieldSx}
                         />
                         <Box
                           sx={{
                             display: "flex",
-                            gap: 0.5,
-                            flexShrink: 0,
+                            flexDirection: "row",
+                            gap: 1,
+                            alignItems: "center",
                             mt: 0.5,
+                            flexShrink: 0,
                           }}
                         >
                           <IconButton
                             size="small"
-                            onClick={() =>
-                              setGroupDialogEditingFields((prev) =>
-                                prev.filter((field) => field !== "name"),
-                              )
-                            }
+                            disabled={groupDialogLoading}
+                            onClick={() => saveGroupInlineSection("name")}
                             sx={{
-                              borderRadius: 1.5,
+                              borderRadius: 999,
                               color: "success.main",
                               bgcolor: (theme) =>
                                 alpha(theme.palette.success.main, 0.08),
@@ -4974,10 +4955,15 @@ export function AdminDashboard() {
                               },
                             }}
                           >
-                            <CheckIcon fontSize="small" />
+                            {groupDialogLoading ? (
+                              <CircularProgress size={16} color="success" />
+                            ) : (
+                              <CheckIcon />
+                            )}
                           </IconButton>
                           <IconButton
                             size="small"
+                            disabled={groupDialogLoading}
                             onClick={() => {
                               setGroupDraft((current) => ({
                                 ...current,
@@ -5000,10 +4986,23 @@ export function AdminDashboard() {
                               },
                             }}
                           >
-                            <CloseIcon fontSize="small" />
+                            <CloseIcon />
                           </IconButton>
                         </Box>
                       </Box>
+                      {(groupFieldErrors.name ||
+                        groupDraft.name.length > 0) && (
+                        <Typography
+                          variant="caption"
+                          color={
+                            groupFieldErrors.name ? "error" : "text.secondary"
+                          }
+                          sx={{ display: "block", mt: 0.5 }}
+                        >
+                          {groupFieldErrors.name ??
+                            `${groupDraft.name.length}/${INPUT_LIMITS.groupName}`}
+                        </Typography>
+                      )}
                     </>
                   ) : (
                     <Box
@@ -5088,7 +5087,7 @@ export function AdminDashboard() {
                             }));
                           }}
                           multiline
-                          minRows={3}
+                          minRows={2}
                           autoFocus
                           size="small"
                           fullWidth
@@ -5096,10 +5095,6 @@ export function AdminDashboard() {
                             maxLength: INPUT_LIMITS.groupDescription,
                           }}
                           error={Boolean(groupFieldErrors.description)}
-                          helperText={
-                            groupFieldErrors.description ??
-                            `${groupDraft.description.length}/${INPUT_LIMITS.groupDescription}`
-                          }
                           sx={{
                             ...counterFieldSx,
                             "& .MuiOutlinedInput-root": {
@@ -5109,7 +5104,7 @@ export function AdminDashboard() {
                             "& .MuiInputBase-inputMultiline": {
                               lineHeight: 1.65,
                               resize: "vertical",
-                              minHeight: 72,
+                              minHeight: 48,
                               pt: 1.2,
                               pb: 0.85,
                             },
@@ -5120,15 +5115,14 @@ export function AdminDashboard() {
                             display: "flex",
                             gap: 0.5,
                             flexShrink: 0,
-                            mt: 0.5,
+                            pt: "3px",
                           }}
                         >
                           <IconButton
                             size="small"
+                            disabled={groupDialogLoading}
                             onClick={() =>
-                              setGroupDialogEditingFields((prev) =>
-                                prev.filter((field) => field !== "description"),
-                              )
+                              saveGroupInlineSection("description")
                             }
                             sx={{
                               borderRadius: 1.5,
@@ -5141,10 +5135,15 @@ export function AdminDashboard() {
                               },
                             }}
                           >
-                            <CheckIcon fontSize="small" />
+                            {groupDialogLoading ? (
+                              <CircularProgress size={16} color="success" />
+                            ) : (
+                              <CheckIcon />
+                            )}
                           </IconButton>
                           <IconButton
                             size="small"
+                            disabled={groupDialogLoading}
                             onClick={() => {
                               setGroupDraft((current) => ({
                                 ...current,
@@ -5167,10 +5166,25 @@ export function AdminDashboard() {
                               },
                             }}
                           >
-                            <CloseIcon fontSize="small" />
+                            <CloseIcon />
                           </IconButton>
                         </Box>
                       </Box>
+                      {(groupFieldErrors.description ||
+                        groupDraft.description.length > 0) && (
+                        <Typography
+                          variant="caption"
+                          color={
+                            groupFieldErrors.description
+                              ? "error"
+                              : "text.secondary"
+                          }
+                          sx={{ display: "block", mt: 0.5 }}
+                        >
+                          {groupFieldErrors.description ??
+                            `${groupDraft.description.length}/${INPUT_LIMITS.groupDescription}`}
+                        </Typography>
+                      )}
                     </>
                   ) : (
                     <Box
@@ -5235,7 +5249,7 @@ export function AdminDashboard() {
                         sx={{
                           display: "flex",
                           gap: 1,
-                          alignItems: "flex-start",
+                          alignItems: "center",
                         }}
                       >
                         <TextField
@@ -5259,10 +5273,6 @@ export function AdminDashboard() {
                           size="small"
                           autoFocus
                           error={Boolean(groupFieldErrors.teacherPublicId)}
-                          helperText={
-                            groupFieldErrors.teacherPublicId ??
-                            "Możesz przypisać nowego opiekuna lub pozostawić grupę bez nauczyciela."
-                          }
                         >
                           <MenuItem value="">
                             Bez przypisanego nauczyciela
@@ -5308,33 +5318,41 @@ export function AdminDashboard() {
                             display: "flex",
                             gap: 0.5,
                             flexShrink: 0,
-                            mt: 0.5,
                           }}
                         >
                           <IconButton
                             size="small"
+                            disabled={groupDialogLoading}
                             onClick={() =>
-                              setGroupDialogEditingFields((prev) =>
-                                prev.filter(
-                                  (field) => field !== "teacherPublicId",
-                                ),
-                              )
+                              saveGroupInlineSection("teacherPublicId")
                             }
                             sx={{
-                              borderRadius: 1.5,
-                              color: "success.main",
-                              bgcolor: (theme) =>
-                                alpha(theme.palette.success.main, 0.08),
+                              ...inlineEditConfirmButtonSx,
+                              width: 32,
+                              height: 32,
+                              bgcolor: alpha("#10B981", 0.08),
+                              color: "#10B981",
+                              border: "1px solid",
+                              borderColor: alpha("#10B981", 0.2),
                               "&:hover": {
-                                bgcolor: (theme) =>
-                                  alpha(theme.palette.success.main, 0.16),
+                                bgcolor: alpha("#10B981", 0.15),
+                                borderColor: alpha("#10B981", 0.3),
+                              },
+                              "&.Mui-disabled": {
+                                bgcolor: alpha("#64748B", 0.05),
+                                borderColor: alpha("#64748B", 0.1),
                               },
                             }}
                           >
-                            <CheckIcon fontSize="small" />
+                            {groupDialogLoading ? (
+                              <CircularProgress size={14} color="inherit" />
+                            ) : (
+                              <CheckIcon sx={{ fontSize: 18 }} />
+                            )}
                           </IconButton>
                           <IconButton
                             size="small"
+                            disabled={groupDialogLoading}
                             onClick={() => {
                               setGroupDraft((current) => ({
                                 ...current,
@@ -5352,18 +5370,40 @@ export function AdminDashboard() {
                               );
                             }}
                             sx={{
-                              borderRadius: 1.5,
-                              color: "text.secondary",
+                              ...inlineEditCancelButtonSx,
+                              width: 32,
+                              height: 32,
+                              bgcolor: alpha("#64748B", 0.06),
+                              color: "#64748B",
+                              border: "1px solid",
+                              borderColor: alpha("#64748B", 0.15),
                               "&:hover": {
-                                bgcolor: (theme) =>
-                                  alpha(theme.palette.text.primary, 0.06),
+                                bgcolor: alpha("#64748B", 0.12),
+                                borderColor: alpha("#64748B", 0.25),
                               },
                             }}
                           >
-                            <CloseIcon fontSize="small" />
+                            <CloseIcon sx={{ fontSize: 18 }} />
                           </IconButton>
                         </Box>
                       </Box>
+                      {groupFieldErrors.teacherPublicId && (
+                        <Typography
+                          variant="caption"
+                          color="error"
+                          sx={{ display: "block", mt: 0.5 }}
+                        >
+                          {groupFieldErrors.teacherPublicId}
+                        </Typography>
+                      )}
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ display: "block", mt: 0.5 }}
+                      >
+                        Możesz przypisać nowego opiekuna lub pozostawić grupę
+                        bez nauczyciela.
+                      </Typography>
                     </>
                   ) : (
                     <Box
@@ -5449,29 +5489,21 @@ export function AdminDashboard() {
               </Box>
             )}
           </AppDialogBody>
-          <AppDialogFooter>
-            <FormActions>
-              <Button
-                variant="contained"
-                startIcon={
-                  groupDialogMode === "create" ? (
-                    <AddCircleIcon />
-                  ) : (
-                    <SaveIcon />
-                  )
-                }
-                onClick={submitGroupDialog}
-                disabled={groupDialogLoading}
-                sx={panelFooterButtonSx}
-              >
-                {groupDialogLoading
-                  ? "Zapisywanie..."
-                  : groupDialogMode === "create"
-                    ? "Utwórz grupę"
-                    : "Zapisz zmiany"}
-              </Button>
-            </FormActions>
-          </AppDialogFooter>
+          {groupDialogMode === "create" && (
+            <AppDialogFooter>
+              <FormActions>
+                <Button
+                  variant="contained"
+                  startIcon={<AddCircleIcon />}
+                  onClick={submitGroupDialog}
+                  disabled={groupDialogLoading}
+                  sx={panelFooterButtonSx}
+                >
+                  {groupDialogLoading ? "Zapisywanie..." : "Utwórz grupę"}
+                </Button>
+              </FormActions>
+            </AppDialogFooter>
+          )}
         </AppDialog>
 
         <AppDialog
@@ -5586,14 +5618,19 @@ export function AdminDashboard() {
           onClose={closeMembershipDialog}
           maxWidth="sm"
           paperSx={{
-            width: {
-              xs: "calc(100% - 24px)",
-              sm: uiTokens.modal.comfortableWidth,
-            },
+            ...standardFormDialogPaperSx,
+            width: { sm: 640 },
           }}
         >
           <AppDialogHeader
             icon={<SchoolIcon />}
+            iconContainerSx={{
+              borderRadius: "50%",
+              width: 54,
+              height: 54,
+              boxShadow: (theme: Theme) =>
+                `0 10px 24px ${alpha(theme.palette.primary.main, 0.2)}`,
+            }}
             title="Skład grupy"
             subtitle="Sprawdź aktualnych uczniów i dodaj nowe osoby przypisane do właściciela tej grupy."
             badge={
@@ -5657,67 +5694,75 @@ export function AdminDashboard() {
                     Ta grupa nie ma jeszcze żadnych uczniów.
                   </Alert>
                 ) : (
-                  <Stack spacing={1}>
-                    {currentMembershipStudents.map((student) => (
-                      <Paper
-                        key={student.publicId}
-                        elevation={0}
-                        sx={{
-                          ...panelSurfaceSx,
-                          p: 1.5,
-                          borderRadius: 3,
-                        }}
-                      >
-                        <Stack
-                          direction="row"
-                          spacing={1.5}
-                          justifyContent="space-between"
-                          alignItems="center"
+                  <Box
+                    sx={{
+                      maxHeight: 272,
+                      overflowY: "auto",
+                      pr: 0.5,
+                    }}
+                  >
+                    <Stack spacing={1}>
+                      {currentMembershipStudents.map((student) => (
+                        <Paper
+                          key={student.publicId}
+                          elevation={0}
+                          sx={{
+                            ...panelSurfaceSx,
+                            p: 1.5,
+                            borderRadius: 3,
+                          }}
                         >
                           <Stack
                             direction="row"
                             spacing={1.5}
+                            justifyContent="space-between"
                             alignItems="center"
-                            sx={{ minWidth: 0, flex: 1 }}
                           >
-                            <UserAvatar
-                              avatarUrl={student.avatarUrl}
-                              username={student.username}
-                              size={32}
-                            />
-                            <Box sx={{ minWidth: 0 }}>
-                              <Typography
-                                variant="body2"
-                                fontWeight={700}
-                                sx={{ overflowWrap: "anywhere" }}
-                              >
-                                {student.username}
-                              </Typography>
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                sx={{ overflowWrap: "anywhere" }}
-                              >
-                                {student.email}
-                              </Typography>
-                            </Box>
+                            <Stack
+                              direction="row"
+                              spacing={1.5}
+                              alignItems="center"
+                              sx={{ minWidth: 0, flex: 1 }}
+                            >
+                              <UserAvatar
+                                avatarUrl={student.avatarUrl}
+                                username={student.username}
+                                size={32}
+                              />
+                              <Box sx={{ minWidth: 0 }}>
+                                <Typography
+                                  variant="body2"
+                                  fontWeight={700}
+                                  sx={{ overflowWrap: "anywhere" }}
+                                >
+                                  {student.username}
+                                </Typography>
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  sx={{ overflowWrap: "anywhere" }}
+                                >
+                                  {student.email}
+                                </Typography>
+                              </Box>
+                            </Stack>
+                            <Button
+                              size="small"
+                              color="error"
+                              startIcon={<DeleteIcon fontSize="small" />}
+                              onClick={() =>
+                                removeMembershipStudent(student.publicId)
+                              }
+                              disabled={membershipLoading}
+                              sx={panelDeleteButtonSx}
+                            >
+                              Usuń
+                            </Button>
                           </Stack>
-                          <Button
-                            size="small"
-                            color="error"
-                            startIcon={<DeleteIcon fontSize="small" />}
-                            onClick={() =>
-                              removeMembershipStudent(student.publicId)
-                            }
-                            disabled={membershipLoading}
-                            sx={panelDeleteButtonSx}
-                          >
-                            Usuń
-                          </Button>
-                        </Stack>
-                      </Paper>
-                    ))}
-                  </Stack>
+                        </Paper>
+                      ))}
+                    </Stack>
+                  </Box>
                 )}
               </FormSection>
 
@@ -5725,60 +5770,62 @@ export function AdminDashboard() {
                 title="Dodaj ucznia"
                 description="Lista pokazuje tylko uczniów przypisanych do właściciela tej grupy."
               >
-                <Stack
-                  direction={{ xs: "column", sm: "row" }}
-                  spacing={1}
-                  alignItems={{ xs: "stretch", sm: "flex-start" }}
-                >
-                  <Autocomplete
-                    size="small"
-                    options={availableMembershipStudents.filter(
-                      (student) =>
-                        student.groupPublicId !==
-                        membershipDialog?.groupPublicId,
-                    )}
-                    value={
-                      availableMembershipStudents.find(
-                        (student) =>
-                          student.publicId === membershipStudentPublicId,
-                      ) ?? null
-                    }
-                    onChange={(_, value) =>
-                      setMembershipStudentPublicId(value?.publicId ?? "")
-                    }
-                    getOptionLabel={(option) =>
-                      `${option.username} (${option.email})`
-                    }
-                    isOptionEqualToValue={(option, value) =>
-                      option.publicId === value.publicId
-                    }
-                    noOptionsText="Brak wolnych uczniów dla tego nauczyciela"
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        label="Wybierz ucznia"
-                        helperText="Wybór ucznia od razu przygotuje go do dodania do tej grupy."
-                      />
-                    )}
-                  />
-                  <Button
-                    variant="contained"
-                    startIcon={<AddCircleIcon />}
-                    onClick={addMembershipStudent}
-                    disabled={
-                      membershipLoading || membershipStudentPublicId === ""
-                    }
-                    sx={{
-                      ...panelFooterButtonSx,
-                      minHeight: 40,
-                      px: 1.6,
-                      mt: { xs: 0, sm: 0.15 },
-                      alignSelf: { xs: "stretch", sm: "flex-start" },
-                      whiteSpace: "nowrap",
-                    }}
+                <Stack direction="column" spacing={1}>
+                  <Stack
+                    direction={{ xs: "column", sm: "row" }}
+                    spacing={1}
+                    alignItems={{ xs: "stretch", sm: "center" }}
                   >
-                    {membershipLoading ? "Dodawanie..." : "Dodaj"}
-                  </Button>
+                    <Autocomplete
+                      sx={{ flex: 1 }}
+                      size="small"
+                      options={availableMembershipStudents.filter(
+                        (student) =>
+                          student.groupPublicId !==
+                          membershipDialog?.groupPublicId,
+                      )}
+                      value={
+                        availableMembershipStudents.find(
+                          (student) =>
+                            student.publicId === membershipStudentPublicId,
+                        ) ?? null
+                      }
+                      onChange={(_, value) =>
+                        setMembershipStudentPublicId(value?.publicId ?? "")
+                      }
+                      getOptionLabel={(option) =>
+                        `${option.username} (${option.email})`
+                      }
+                      isOptionEqualToValue={(option, value) =>
+                        option.publicId === value.publicId
+                      }
+                      noOptionsText="Brak wolnych uczniów dla tego nauczyciela"
+                      renderInput={(params) => (
+                        <TextField {...params} placeholder="Wybierz ucznia" />
+                      )}
+                    />
+                    <Button
+                      variant="contained"
+                      startIcon={<AddCircleIcon />}
+                      onClick={addMembershipStudent}
+                      disabled={
+                        membershipLoading || membershipStudentPublicId === ""
+                      }
+                      sx={{
+                        ...panelFooterButtonSx,
+                        height: 40,
+                        px: 1.6,
+                        flexShrink: 0,
+                        whiteSpace: "nowrap",
+                        alignSelf: { xs: "stretch", sm: "auto" },
+                      }}
+                    >
+                      {membershipLoading ? "Dodawanie..." : "Dodaj"}
+                    </Button>
+                  </Stack>
+                  <Typography variant="caption" color="text.secondary">
+                    Wybór ucznia od razu przygotuje go do dodania do tej grupy.
+                  </Typography>
                 </Stack>
               </FormSection>
             </Stack>

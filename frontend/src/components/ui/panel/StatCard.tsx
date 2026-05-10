@@ -23,14 +23,14 @@ export function StatCard({
   color = "primary",
 }: StatCardProps) {
   return (
-    <Paper elevation={0} sx={panelGridCardSx}>
+    <Paper elevation={0} sx={{ ...panelGridCardSx, borderRadius: 2 }}>
       <Box sx={panelGridCardContentSx}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, mb: 2 }}>
           <Box
             sx={{
               width: 36,
               height: 36,
-              borderRadius: 2,
+              borderRadius: 1.5,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -55,7 +55,7 @@ export function StatCard({
         <Box
           sx={{
             p: 1.75,
-            borderRadius: 2.5,
+            borderRadius: 1.5,
             bgcolor: (t) => alpha(t.palette[color].main, 0.06),
             border: "1px solid",
             borderColor: (t) => alpha(t.palette[color].main, 0.12),
