@@ -1,11 +1,8 @@
-import { Box, Button, Switch } from "@mui/material";
+import { Box, Button } from "@mui/material";
 import {
-  DarkMode as DarkModeIcon,
-  LightMode as LightModeIcon,
   LogoutOutlined as LogoutIcon,
 } from "@mui/icons-material";
-import { useTheme } from "@mui/material/styles";
-import { useAppTheme } from "@/context/ThemeContext";
+import { ThemeSwitcher } from "../../ui/ThemeSwitcher";
 
 interface DashboardTopBarProps {
   onLogout: () => void;
@@ -20,8 +17,6 @@ export function DashboardTopBar({
   onLogout,
   hideLogout = false,
 }: DashboardTopBarProps) {
-  const theme = useTheme();
-  const { toggleColorMode } = useAppTheme();
 
   return (
     <Box
@@ -33,57 +28,38 @@ export function DashboardTopBar({
         display: "flex",
         justifyContent: "flex-end",
         alignItems: "center",
-        gap: 3,
+        gap: 1.5,
         zIndex: 10,
       }}
     >
-      <Box sx={{ display: "flex", alignItems: "center" }}>
-        <LightModeIcon
-          fontSize="small"
-          sx={{
-            color:
-              theme.palette.mode === "light" ? "primary.main" : "text.disabled",
-            mr: 0.5,
-            fontSize: 16,
-          }}
-        />
-        <Switch
-          size="small"
-          checked={theme.palette.mode === "dark"}
-          onChange={toggleColorMode}
-        />
-        <DarkModeIcon
-          fontSize="small"
-          sx={{
-            color:
-              theme.palette.mode === "dark" ? "primary.main" : "text.disabled",
-            ml: 0.5,
-            fontSize: 16,
-          }}
-        />
-      </Box>
+      <ThemeSwitcher />
       {!hideLogout && (
         <Button
           variant="outlined"
           size="small"
-          startIcon={<LogoutIcon />}
+          startIcon={<LogoutIcon sx={{ fontSize: 18 }} />}
           onClick={onLogout}
           sx={{
-            borderRadius: 2,
+            height: 38,
+            borderRadius: "99px",
+            px: 2,
             textTransform: "none",
-            fontWeight: 500,
-            fontSize: "0.8125rem",
-            bgcolor: "background.paper",
-            color: "text.secondary",
+            fontWeight: 600,
+            fontSize: "0.85rem",
+            bgcolor: (t) => t.palette.mode === 'dark' ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.5)",
+            backdropFilter: "blur(12px)",
+            color: "text.primary",
             borderColor: "divider",
+            borderWidth: "1px",
             "&:hover": {
               borderColor: "divider",
               bgcolor: (t) =>
                 t.palette.mode === "light"
                   ? "rgba(15,23,42,0.04)"
-                  : "rgba(255,255,255,0.05)",
-              color: "text.primary",
+                  : "rgba(255,255,255,0.1)",
+              transform: "translateY(-1px)",
             },
+            transition: "all 0.2s",
           }}
         >
           Wyloguj
