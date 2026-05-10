@@ -1,4 +1,9 @@
 const { apiClient, setAuthToken } = require('../utils/apiClient');
+const {
+    createPool,
+    countInvitationTokensByUserEmail,
+    countActiveInvitationTokensByUserEmail
+} = require('../utils/db');
 
 describe('Admin Dashboard API (/api/v1/admin)', () => {
     const uniqueId = Date.now();
@@ -11,11 +16,14 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
     let teacherToken;
     let studentToken;
     let createdTeacherPublicId;
+    let createdTeacherEmail;
     let createdStudentPublicId;
+    let createdStudentEmail;
     let seedGroupPublicId;
     let createdAchievementCode;
     let deactivatedAchievementCode;
     const createdAchievementCodes = new Set();
+    const dbPool = createPool();
 
     beforeAll(async () => {
         let res = await apiClient.post('/auth/login', adminCreds);
@@ -54,6 +62,7 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
         }
 
         setAuthToken(null);
+        await dbPool.end();
     });
 
     describe('GET /api/v1/admin/stats', () => {
@@ -132,6 +141,8 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
             expect(response.data.role).toBe('STUDENT');
             expect(response.data.status).toBe('INVITED');
             createdStudentPublicId = response.data.publicId;
+            createdStudentEmail = response.data.email;
+            expect(await countActiveInvitationTokensByUserEmail(dbPool, createdStudentEmail)).toBe(1);
         });
 
         it('should create student WITH groupPublicId for ADMIN (201)', async () => {
@@ -149,6 +160,8 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
             expect(response.status).toBe(201);
             expect(response.data.role).toBe('STUDENT');
             createdStudentPublicId = response.data.publicId;
+            createdStudentEmail = response.data.email;
+            expect(await countActiveInvitationTokensByUserEmail(dbPool, createdStudentEmail)).toBe(1);
         });
 
         it('should return 404 for non-existent groupPublicId', async () => {
@@ -179,6 +192,102 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
             });
             expect(response.status).toBe(400);
             expect(response.data.code).toBe('VALIDATION_FAILED');
+        });
+    });
+
+    describe('POST /api/v1/admin/students/{studentPublicId}/resend-invite', () => {
+        it('should resend invitation for INVITED student as ADMIN (204)', async () => {
+            setAuthToken(adminToken);
+            const beforeCount = await countInvitationTokensByUserEmail(dbPool, createdStudentEmail);
+
+            const response = await apiClient.post(`/admin/students/${createdStudentPublicId}/resend-invite`);
+
+            expect(response.status).toBe(204);
+            expect(await countInvitationTokensByUserEmail(dbPool, createdStudentEmail)).toBe(beforeCount + 1);
+            expect(await countActiveInvitationTokensByUserEmail(dbPool, createdStudentEmail)).toBe(1);
+        });
+
+        it('should return 403 for student resend when role is TEACHER', async () => {
+            setAuthToken(teacherToken);
+            const response = await apiClient.post(`/admin/students/${createdStudentPublicId}/resend-invite`);
+            expect(response.status).toBe(403);
+        });
+    });
+
+    describe('POST /api/v1/admin/teachers', () => {
+        it('should return 401 when unauthenticated', async () => {
+            setAuthToken(null);
+            const response = await apiClient.post('/admin/teachers', {
+                email: `unauth.teacher.${uniqueId}@example.com`
+            });
+            expect(response.status).toBe(401);
+        });
+
+        it('should return 403 for TEACHER', async () => {
+            setAuthToken(teacherToken);
+            const response = await apiClient.post('/admin/teachers', {
+                email: `teacher.forbidden.${uniqueId}@example.com`
+            });
+            expect(response.status).toBe(403);
+        });
+
+        it('should return 403 for STUDENT', async () => {
+            setAuthToken(studentToken);
+            const response = await apiClient.post('/admin/teachers', {
+                email: `student.forbidden.teacher.${uniqueId}@example.com`
+            });
+            expect(response.status).toBe(403);
+        });
+
+        it('should create invited teacher for ADMIN (201)', async () => {
+            setAuthToken(adminToken);
+            const response = await apiClient.post('/admin/teachers', {
+                email: `admin.teacher.${uniqueId}@example.com`
+            });
+
+            expect(response.status).toBe(201);
+            expect(response.data.role).toBe('TEACHER');
+            expect(response.data.status).toBe('INVITED');
+            createdTeacherPublicId = response.data.publicId;
+            createdTeacherEmail = response.data.email;
+            expect(await countActiveInvitationTokensByUserEmail(dbPool, createdTeacherEmail)).toBe(1);
+        });
+
+        it('should return 409 for EMAIL_ALREADY_TAKEN on teacher invite', async () => {
+            setAuthToken(adminToken);
+            const response = await apiClient.post('/admin/teachers', {
+                email: createdTeacherEmail
+            });
+            expect(response.status).toBe(409);
+            expect(response.data.code).toBe('EMAIL_ALREADY_TAKEN');
+        });
+
+        it('should return 400 for VALIDATION_FAILED on teacher invite', async () => {
+            setAuthToken(adminToken);
+            const response = await apiClient.post('/admin/teachers', {
+                email: 'invalid'
+            });
+            expect(response.status).toBe(400);
+            expect(response.data.code).toBe('VALIDATION_FAILED');
+        });
+    });
+
+    describe('POST /api/v1/admin/teachers/{teacherPublicId}/resend-invite', () => {
+        it('should resend invitation for INVITED teacher as ADMIN (204)', async () => {
+            setAuthToken(adminToken);
+            const beforeCount = await countInvitationTokensByUserEmail(dbPool, createdTeacherEmail);
+
+            const response = await apiClient.post(`/admin/teachers/${createdTeacherPublicId}/resend-invite`);
+
+            expect(response.status).toBe(204);
+            expect(await countInvitationTokensByUserEmail(dbPool, createdTeacherEmail)).toBe(beforeCount + 1);
+            expect(await countActiveInvitationTokensByUserEmail(dbPool, createdTeacherEmail)).toBe(1);
+        });
+
+        it('should return 403 for teacher resend when role is STUDENT', async () => {
+            setAuthToken(studentToken);
+            const response = await apiClient.post(`/admin/teachers/${createdTeacherPublicId}/resend-invite`);
+            expect(response.status).toBe(403);
         });
     });
 
@@ -267,26 +376,6 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
     });
 
     describe('GET /api/v1/admin/teachers and /students', () => {
-        beforeAll(async () => {
-            setAuthToken(adminToken);
-
-            const teacherPayload = {
-                email: `admin.teacher.${uniqueId}@example.com`,
-                username: `admin_teacher_${uniqueId}`,
-                password: 'password123'
-            };
-            let response = await apiClient.post('/users/teacher', teacherPayload);
-            expect(response.status).toBe(201);
-
-            response = await apiClient.post('/auth/login', {
-                identifier: teacherPayload.username,
-                password: teacherPayload.password
-            });
-            setAuthToken(response.data.token);
-            response = await apiClient.get('/users/me');
-            createdTeacherPublicId = response.data.publicId;
-        });
-
         it('should return 401 for teachers list when unauthenticated', async () => {
             setAuthToken(null);
             const response = await apiClient.get('/admin/teachers');
@@ -305,6 +394,7 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
             expect(response.status).toBe(200);
             expect(Array.isArray(response.data)).toBe(true);
             expect(response.data.some((user) => user.publicId === createdTeacherPublicId)).toBe(true);
+            expect(response.data.find((user) => user.publicId === createdTeacherPublicId).status).toBe('INVITED');
             response.data.forEach((user) => {
                 expect(user.role).toBe('TEACHER');
             });

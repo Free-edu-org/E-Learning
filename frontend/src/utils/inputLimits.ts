@@ -3,6 +3,7 @@ export const INPUT_LIMITS = {
   lessonTheme: 120,
   achievementTitle: 30,
   achievementDescription: 90,
+  email: 30,
   username: 50,
   groupName: 60,
   groupDescription: 300,

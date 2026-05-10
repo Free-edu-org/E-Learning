@@ -21,15 +21,21 @@ import {
   VisibilityOutlined as VisibilityIcon,
   VisibilityOffOutlined as VisibilityOffIcon,
 } from "@mui/icons-material";
-import { useTheme } from "@mui/material/styles";
+import { alpha, useTheme } from "@mui/material/styles";
 import { userService, type UserProfile } from "@/api/userService";
 import { requestAchievementNotificationsRefresh } from "@/components/achievements/achievementNotificationEvents";
-import { AppDialog, AppDialogStatus } from "@/components/ui/dialog/AppDialog";
+import {
+  AppDialog,
+  AppDialogHeader,
+  AppDialogBody,
+  AppDialogFooter,
+  AppDialogStatus,
+} from "@/components/ui/dialog/AppDialog";
 import { useAuth } from "@/context/AuthContext";
 import { getErrorMessage } from "@/utils/dashboardUtils";
 import { UserAvatar } from "@/components/ui/avatar/UserAvatar";
-
-import "./AccountSettingsDialog.css";
+import { FormSection } from "@/components/ui/form/FormLayout";
+import { INPUT_LIMITS } from "@/utils/inputLimits";
 
 type FeedbackState = {
   severity: "success" | "error";
@@ -43,6 +49,8 @@ interface AccountSettingsDialogProps {
   onUserUpdated: (user: UserProfile) => void;
 }
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export function AccountSettingsDialog({
   open,
   user,
@@ -50,7 +58,6 @@ export function AccountSettingsDialog({
   onUserUpdated,
 }: AccountSettingsDialogProps) {
   const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
   const { logout } = useAuth();
 
   // Profile state
@@ -73,6 +80,7 @@ export function AccountSettingsDialog({
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [presetsExpanded, setPresetsExpanded] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [avatarSnackbar, setAvatarSnackbar] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -86,6 +94,7 @@ export function AccountSettingsDialog({
       setIsEditingUsername(false);
       setIsEditingEmail(false);
       setPasswordExpanded(false);
+      setFieldErrors({});
       return;
     }
 
@@ -96,6 +105,7 @@ export function AccountSettingsDialog({
     setNewPassword("");
     setConfirmPassword("");
     setFeedback(null);
+    setFieldErrors({});
   }, [open, user]);
 
   const closeDialog = () => {
@@ -103,41 +113,52 @@ export function AccountSettingsDialog({
     onClose();
   };
 
-  const resetFeedback = () => setFeedback(null);
+  const resetFeedback = () => {
+    setFeedback(null);
+    setFieldErrors({});
+  };
 
-  const handleSaveProfile = async () => {
-    if (!user || profileLoading) return;
-
+  const validateProfile = () => {
+    const errors: Record<string, string> = {};
     const trimmedUsername = username.trim();
     const trimmedEmail = email.trim();
 
-    if (isEditingUsername && !trimmedUsername) {
-      setFeedback({
-        severity: "error",
-        message: "Nazwa użytkownika nie może być pusta.",
-      });
-      return;
+    if (isEditingUsername) {
+      if (!trimmedUsername) {
+        errors.username = "Nazwa użytkownika nie może być pusta.";
+      } else if (trimmedUsername.length > INPUT_LIMITS.username) {
+        errors.username = `Maksymalna długość to ${INPUT_LIMITS.username} znaków.`;
+      }
     }
 
     if (isEditingEmail) {
       if (!trimmedEmail) {
-        setFeedback({
-          severity: "error",
-          message: "Email nie może być pusty.",
-        });
-        return;
+        errors.email = "Adres e-mail nie może być pusty.";
+      } else if (!EMAIL_REGEX.test(trimmedEmail)) {
+        errors.email = "Niepoprawny format adresu e-mail.";
+      } else if (trimmedEmail.length > INPUT_LIMITS.email) {
+        errors.email = `Maksymalna długość to ${INPUT_LIMITS.email} znaków.`;
       }
+
       if (trimmedEmail !== confirmEmail.trim()) {
-        return;
+        errors.confirmEmail = "Adresy email nie są identyczne.";
       }
     }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSaveProfile = async () => {
+    if (!user || profileLoading) return;
+    if (!validateProfile()) return;
 
     setFeedback(null);
     setProfileLoading(true);
     try {
       const updatedUser = await userService.updateUser(user.publicId, {
-        username: isEditingUsername ? trimmedUsername : user.username,
-        email: isEditingEmail ? trimmedEmail : user.email,
+        username: isEditingUsername ? username.trim() : user.username,
+        email: isEditingEmail ? email.trim() : user.email,
       });
       onUserUpdated(updatedUser);
       setIsEditingUsername(false);
@@ -148,29 +169,38 @@ export function AccountSettingsDialog({
         message: "Profil został zaktualizowany.",
       });
     } catch (error) {
-      setFeedback({
-        severity: "error",
-        message: getErrorMessage(error, "Błąd podczas aktualizacji profilu."),
-      });
+      const msg = getErrorMessage(error, "Błąd podczas aktualizacji profilu.");
+      if (msg.toLowerCase().includes("email")) {
+        setFieldErrors({ email: "Ten adres email jest już zajęty." });
+      } else if (
+        msg.toLowerCase().includes("użytkownik") ||
+        msg.toLowerCase().includes("username")
+      ) {
+        setFieldErrors({ username: "Ta nazwa użytkownika jest już zajęta." });
+      } else {
+        setFeedback({ severity: "error", message: msg });
+      }
     } finally {
       setProfileLoading(false);
     }
   };
 
+  const validatePassword = () => {
+    const errors: Record<string, string> = {};
+    if (!oldPassword) errors.oldPassword = "Podaj obecne hasło.";
+    if (!newPassword) errors.newPassword = "Podaj nowe hasło.";
+    if (newPassword.length < 8)
+      errors.newPassword = "Hasło musi mieć min. 8 znaków.";
+    if (newPassword !== confirmPassword)
+      errors.confirmPassword = "Hasła nie są identyczne.";
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSavePassword = async () => {
     if (!user || passwordLoading) return;
-
-    if (!oldPassword || !newPassword || !confirmPassword) {
-      setFeedback({
-        severity: "error",
-        message: "Uzupełnij wszystkie pola hasła.",
-      });
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      return;
-    }
+    if (!validatePassword()) return;
 
     setFeedback(null);
     setPasswordLoading(true);
@@ -185,14 +215,19 @@ export function AccountSettingsDialog({
       setPasswordExpanded(false);
       setFeedback({
         severity: "success",
-        message: "Hasło zostało zmienione pomyślnie.",
+        message: "Hasło zostało zmienione pomyślnie. Nastąpi wylogowanie.",
       });
-      setTimeout(() => logout(), 800);
+      setTimeout(() => logout(), 1200);
     } catch (error) {
-      setFeedback({
-        severity: "error",
-        message: getErrorMessage(error, "Błąd podczas zmiany hasła."),
-      });
+      const msg = getErrorMessage(error, "Błąd podczas zmiany hasła.");
+      if (
+        msg.toLowerCase().includes("obecne") ||
+        msg.toLowerCase().includes("current")
+      ) {
+        setFieldErrors({ oldPassword: "Błędne obecne hasło." });
+      } else {
+        setFeedback({ severity: "error", message: msg });
+      }
     } finally {
       setPasswordLoading(false);
     }
@@ -255,7 +290,7 @@ export function AccountSettingsDialog({
   const passwordStrength = useMemo(() => {
     if (!newPassword) return 0;
     let score = 0;
-    if (newPassword.length > 6) score += 25;
+    if (newPassword.length >= 8) score += 25;
     if (newPassword.length > 10) score += 25;
     if (/[A-Z]/.test(newPassword)) score += 25;
     if (/[0-9]/.test(newPassword) || /[^A-Za-z0-9]/.test(newPassword))
@@ -277,42 +312,27 @@ export function AccountSettingsDialog({
     return "Bardzo mocne";
   };
 
-  const passwordMatchError = useMemo(() => {
-    if (!confirmPassword) return "";
-    return newPassword !== confirmPassword ? "Hasła nie są identyczne" : "";
-  }, [newPassword, confirmPassword]);
-
-  const emailMatchError = useMemo(() => {
-    if (!confirmEmail) return "";
-    return email !== confirmEmail ? "Adresy email nie są identyczne" : "";
-  }, [email, confirmEmail]);
-
   return (
     <>
       <AppDialog
         open={open}
         onClose={closeDialog}
         maxWidth="sm"
-        paperSx={{ borderRadius: "24px" }}
-        PaperProps={{
-          className: `modern-dialog-paper animate-in ${isDark ? "dark" : ""}`,
+        paperSx={{
+          width: { xs: "calc(100% - 28px)", sm: 580 },
         }}
       >
-        <Box className="settings-header">
-          <Box className="settings-header-content">
-            <Box className="settings-header-icon-box">
-              <SettingsIcon />
-            </Box>
-            <Typography className="settings-header-title">
-              Ustawienia konta
-            </Typography>
-            <Typography className="settings-header-subtitle">
-              Zarządzaj swoim profilem i bezpieczeństwem
-            </Typography>
-          </Box>
-        </Box>
+        <AppDialogHeader
+          icon={<SettingsIcon sx={{ color: "common.white" }} />}
+          iconContainerSx={{
+            backgroundImage:
+              "linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)",
+          }}
+          title="Ustawienia konta"
+          subtitle="Zarządzaj swoim profilem, awatarem i bezpieczeństwem."
+        />
 
-        <Box className="settings-body">
+        <AppDialogBody sx={{ pt: 1 }}>
           {feedback && feedback.severity === "success" && (
             <AppDialogStatus severity="success">
               {feedback.message}
@@ -321,16 +341,22 @@ export function AccountSettingsDialog({
 
           {feedback &&
             feedback.severity === "error" &&
-            !passwordExpanded &&
-            !isEditingEmail &&
-            !isEditingUsername && (
+            Object.keys(fieldErrors).length === 0 && (
               <AppDialogStatus severity="error">
                 {feedback.message}
               </AppDialogStatus>
             )}
 
           {/* Avatar Section */}
-          <Box className="avatar-section">
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              mb: 4,
+              mt: 1,
+            }}
+          >
             <input
               type="file"
               accept="image/*"
@@ -339,7 +365,28 @@ export function AccountSettingsDialog({
               onChange={handleAvatarUpload}
             />
             <Box
-              className="avatar-container"
+              sx={{
+                position: "relative",
+                width: 110,
+                height: 110,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                overflow: "hidden",
+                borderRadius: "50%",
+                cursor: "pointer",
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                border: (theme) =>
+                  `4px solid ${theme.palette.background.paper}`,
+                boxShadow: (theme) =>
+                  theme.palette.mode === "light"
+                    ? "0 4px 12px rgba(0, 0, 0, 0.08)"
+                    : "0 4px 12px rgba(0, 0, 0, 0.4)",
+                "&:hover": {
+                  transform: "scale(1.02)",
+                  "& .avatar-overlay": { opacity: 1 },
+                },
+              }}
               onClick={() => fileInputRef.current?.click()}
             >
               <UserAvatar
@@ -347,40 +394,90 @@ export function AccountSettingsDialog({
                 username={user?.username}
                 size={102}
               />
-              {avatarLoading ? (
-                <Box className="avatar-overlay" style={{ opacity: 1 }}>
+              <Box
+                className="avatar-overlay"
+                sx={{
+                  position: "absolute",
+                  inset: 0,
+                  bgcolor: "rgba(0, 0, 0, 0.6)",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "white",
+                  opacity: avatarLoading ? 1 : 0,
+                  transition: "all 0.3s",
+                  backdropFilter: "blur(2px)",
+                  fontSize: "0.7rem",
+                  fontWeight: 600,
+                  textAlign: "center",
+                  p: 1,
+                  pointerEvents: avatarLoading ? "auto" : "none",
+                }}
+              >
+                {avatarLoading ? (
                   <CircularProgress size={24} color="inherit" />
-                </Box>
-              ) : (
-                <Box className="avatar-overlay">
-                  <UploadIcon />
-                  <span>Zmień zdjęcie</span>
-                </Box>
-              )}
+                ) : (
+                  <>
+                    <UploadIcon sx={{ mb: 0.5, fontSize: 20 }} />
+                    <span>Zmień zdjęcie</span>
+                  </>
+                )}
+              </Box>
             </Box>
 
             <Button
-              className="presets-toggle"
               endIcon={
                 <ExpandMoreIcon
-                  style={{
+                  sx={{
                     transform: presetsExpanded ? "rotate(180deg)" : "none",
                     transition: "0.2s",
                   }}
                 />
               }
               onClick={() => setPresetsExpanded(!presetsExpanded)}
+              sx={{
+                mt: 1.5,
+                fontSize: "0.8125rem",
+                fontWeight: 600,
+                textTransform: "none",
+              }}
             >
               Wybierz z presetów
             </Button>
 
-            <Collapse in={presetsExpanded}>
-              <Box className="presets-grid">
+            <Collapse in={presetsExpanded} sx={{ width: "100%" }}>
+              <Box
+                sx={{
+                  mt: 2,
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(44px, 1fr))",
+                  gap: 1.5,
+                  maxWidth: 360,
+                  mx: "auto",
+                }}
+              >
                 {presets.map((p) => (
                   <Box
                     key={p}
-                    className={`preset-item ${user?.avatarUrl === `preset:${p}` ? "active" : ""}`}
                     onClick={() => handlePresetSelect(p)}
+                    sx={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: "50%",
+                      p: "2px",
+                      border: "2px solid",
+                      borderColor:
+                        user?.avatarUrl === `preset:${p}`
+                          ? "primary.main"
+                          : "transparent",
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      "&:hover": { transform: "scale(1.1)" },
+                    }}
                   >
                     <UserAvatar avatarUrl={`preset:${p}`} size={40} />
                   </Box>
@@ -390,249 +487,395 @@ export function AccountSettingsDialog({
           </Box>
 
           {/* Profile Section */}
-          <Typography className="section-label">Profil</Typography>
-          <Box className="settings-group">
-            {/* Username Row */}
-            <Box className="settings-row">
-              {isEditingUsername ? (
-                <Box className="inline-edit-box">
-                  <Typography className="edit-context-label">
-                    Edycja nazwy użytkownika
-                  </Typography>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      gap: 1.5,
-                      alignItems: "flex-start",
-                      width: "100%",
-                    }}
-                  >
-                    <TextField
-                      fullWidth
-                      size="small"
-                      className="modern-field"
-                      value={username}
-                      onChange={(e) => {
-                        setUsername(e.target.value);
-                        resetFeedback();
+          <FormSection title="Dane profilowe">
+            <Stack spacing={2.5}>
+              {/* Username Row */}
+              <Box>
+                {isEditingUsername ? (
+                  <Box>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      fontWeight={700}
+                      display="block"
+                      sx={{
+                        mb: 1.5,
+                        letterSpacing: "0.02em",
+                        textTransform: "uppercase",
                       }}
-                      placeholder="Nazwa użytkownika"
-                      autoFocus
-                      error={
-                        feedback?.severity === "error" &&
-                        (feedback.message.includes("użytkownik") ||
-                          feedback.message.includes("username"))
-                      }
-                      helperText={
-                        feedback?.severity === "error" &&
-                        (feedback.message.includes("użytkownik") ||
-                          feedback.message.includes("username"))
-                          ? feedback.message
-                          : ""
-                      }
-                    />
-                    <Box className="edit-actions" sx={{ mt: 0.5 }}>
-                      <IconButton
-                        onClick={handleSaveProfile}
-                        disabled={profileLoading}
-                        className="action-icon-btn success"
+                    >
+                      Edycja nazwy użytkownika
+                    </Typography>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        gap: 1.25,
+                        alignItems: "flex-start",
+                      }}
+                    >
+                      <TextField
+                        fullWidth
                         size="small"
-                      >
-                        <CheckIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton
-                        onClick={() => {
-                          setIsEditingUsername(false);
-                          setUsername(user?.username || "");
-                          resetFeedback();
+                        value={username}
+                        onChange={(e) => {
+                          setFieldErrors((curr) => ({ ...curr, username: "" }));
+                          setUsername(
+                            e.target.value.slice(0, INPUT_LIMITS.username),
+                          );
                         }}
-                        className="action-icon-btn cancel"
-                        size="small"
-                      >
-                        <CloseIcon fontSize="small" />
-                      </IconButton>
+                        placeholder="Wprowadź nową nazwę"
+                        autoFocus
+                        error={Boolean(fieldErrors.username)}
+                        helperText={
+                          fieldErrors.username ||
+                          `Nazwa widoczna dla innych. Max ${INPUT_LIMITS.username} znaków.`
+                        }
+                        sx={{
+                          "& .MuiOutlinedInput-root": {
+                            bgcolor: "background.paper",
+                            ...(fieldErrors.username && {
+                              bgcolor: alpha("#EF4444", 0.02),
+                              "& fieldset": {
+                                borderColor: alpha("#EF4444", 0.2),
+                              },
+                            }),
+                          },
+                        }}
+                      />
+                      <Stack direction="row" spacing={0.75} sx={{ mt: 0.5 }}>
+                        <IconButton
+                          onClick={handleSaveProfile}
+                          disabled={profileLoading}
+                          size="small"
+                          sx={{
+                            bgcolor: alpha("#10b981", 0.08),
+                            color: "#10b981",
+                            "&:hover": { bgcolor: alpha("#10b981", 0.16) },
+                          }}
+                        >
+                          <CheckIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          onClick={() => {
+                            setIsEditingUsername(false);
+                            setUsername(user?.username || "");
+                            setFieldErrors((curr) => ({
+                              ...curr,
+                              username: "",
+                            }));
+                          }}
+                          size="small"
+                          sx={{
+                            bgcolor: alpha("#64748b", 0.08),
+                            color: "#64748b",
+                            "&:hover": { bgcolor: alpha("#64748b", 0.16) },
+                          }}
+                        >
+                          <CloseIcon fontSize="small" />
+                        </IconButton>
+                      </Stack>
                     </Box>
                   </Box>
-                </Box>
-              ) : (
-                <>
-                  <Box className="row-content">
-                    <Typography className="row-label">
-                      Nazwa użytkownika
-                    </Typography>
-                    <Typography className="row-value">
-                      {user?.username}
-                    </Typography>
-                  </Box>
-                  <Button
-                    className="change-btn"
-                    onClick={() => {
-                      setIsEditingUsername(true);
-                      resetFeedback();
-                    }}
-                  >
-                    Zmień
-                  </Button>
-                </>
-              )}
-            </Box>
-
-            {/* Email Row */}
-            <Box className="settings-row">
-              {isEditingEmail ? (
-                <Box className="inline-edit-box" style={{ width: "100%" }}>
-                  <Typography className="edit-context-label">
-                    Edycja adresu e-mail
-                  </Typography>
+                ) : (
                   <Box
                     sx={{
                       display: "flex",
-                      gap: 2,
                       alignItems: "center",
-                      width: "100%",
+                      justifyContent: "space-between",
+                      minHeight: 48,
                     }}
                   >
-                    <Stack spacing={1.25} flex={1}>
-                      <TextField
-                        fullWidth
-                        size="small"
-                        className="modern-field"
-                        value={email}
-                        onChange={(e) => {
-                          setEmail(e.target.value);
-                          resetFeedback();
+                    <Box>
+                      <Typography
+                        variant="caption"
+                        fontWeight={700}
+                        sx={{
+                          color: "text.secondary",
+                          textTransform: "uppercase",
                         }}
-                        placeholder="Nowy email"
-                        autoFocus
-                      />
-                      <TextField
-                        fullWidth
-                        size="small"
-                        className="modern-field"
-                        value={confirmEmail}
-                        onChange={(e) => {
-                          setConfirmEmail(e.target.value);
-                          resetFeedback();
-                        }}
-                        placeholder="Powtórz nowy email"
-                        error={
-                          !!emailMatchError ||
-                          (feedback?.severity === "error" &&
-                            feedback.message.includes("email"))
-                        }
-                        helperText={
-                          emailMatchError ||
-                          (feedback?.severity === "error" &&
-                          feedback.message.includes("email")
-                            ? feedback.message
-                            : "")
-                        }
-                      />
-                    </Stack>
-                    <Stack spacing={1} sx={{ justifyContent: "center" }}>
-                      <IconButton
-                        onClick={() => {
-                          setIsEditingEmail(false);
-                          setEmail(user?.email || "");
-                          setConfirmEmail("");
-                          resetFeedback();
-                        }}
-                        className="action-icon-btn cancel"
-                        size="small"
                       >
-                        <CloseIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton
-                        onClick={handleSaveProfile}
-                        disabled={profileLoading || !!emailMatchError}
-                        className="action-icon-btn success"
-                        size="small"
-                      >
-                        <CheckIcon fontSize="small" />
-                      </IconButton>
-                    </Stack>
+                        Nazwa użytkownika
+                      </Typography>
+                      <Typography fontWeight={600}>{user?.username}</Typography>
+                    </Box>
+                    <Button
+                      size="small"
+                      onClick={() => {
+                        setIsEditingUsername(true);
+                        resetFeedback();
+                      }}
+                      sx={{ textTransform: "none", fontWeight: 600 }}
+                    >
+                      Zmień
+                    </Button>
                   </Box>
-                </Box>
-              ) : (
-                <>
-                  <Box className="row-content">
-                    <Typography className="row-label">Email</Typography>
-                    <Typography className="row-value">{user?.email}</Typography>
+                )}
+              </Box>
+
+              {/* Email Row */}
+              <Box>
+                {isEditingEmail ? (
+                  <Box>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      fontWeight={700}
+                      display="block"
+                      sx={{
+                        mb: 1.5,
+                        letterSpacing: "0.02em",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Edycja adresu e-mail
+                    </Typography>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        gap: 1.25,
+                        alignItems: "flex-start",
+                      }}
+                    >
+                      <Stack spacing={1.5} flex={1}>
+                        <TextField
+                          fullWidth
+                          size="small"
+                          value={email}
+                          onChange={(e) => {
+                            setFieldErrors((curr) => ({ ...curr, email: "" }));
+                            setEmail(
+                              e.target.value.slice(0, INPUT_LIMITS.email),
+                            );
+                          }}
+                          placeholder="Wprowadź nowy email"
+                          autoFocus
+                          error={Boolean(fieldErrors.email)}
+                          helperText={
+                            fieldErrors.email ||
+                            "Adres do logowania i odzyskiwania hasła."
+                          }
+                          sx={{
+                            "& .MuiOutlinedInput-root": {
+                              bgcolor: "background.paper",
+                              ...(fieldErrors.email && {
+                                bgcolor: alpha("#EF4444", 0.02),
+                                "& fieldset": {
+                                  borderColor: alpha("#EF4444", 0.2),
+                                },
+                              }),
+                            },
+                          }}
+                        />
+                        <TextField
+                          fullWidth
+                          size="small"
+                          value={confirmEmail}
+                          onChange={(e) => {
+                            setFieldErrors((curr) => ({
+                              ...curr,
+                              confirmEmail: "",
+                            }));
+                            setConfirmEmail(
+                              e.target.value.slice(0, INPUT_LIMITS.email),
+                            );
+                          }}
+                          placeholder="Powtórz nowy email"
+                          error={Boolean(fieldErrors.confirmEmail)}
+                          helperText={fieldErrors.confirmEmail}
+                          sx={{
+                            "& .MuiOutlinedInput-root": {
+                              bgcolor: "background.paper",
+                              ...(fieldErrors.confirmEmail && {
+                                bgcolor: alpha("#EF4444", 0.02),
+                                "& fieldset": {
+                                  borderColor: alpha("#EF4444", 0.2),
+                                },
+                              }),
+                            },
+                          }}
+                        />
+                      </Stack>
+                      <Stack direction="row" spacing={0.75} sx={{ mt: 0.5 }}>
+                        <IconButton
+                          onClick={handleSaveProfile}
+                          disabled={profileLoading}
+                          size="small"
+                          sx={{
+                            bgcolor: alpha("#10b981", 0.08),
+                            color: "#10b981",
+                            "&:hover": { bgcolor: alpha("#10b981", 0.16) },
+                          }}
+                        >
+                          <CheckIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          onClick={() => {
+                            setIsEditingEmail(false);
+                            setEmail(user?.email || "");
+                            setConfirmEmail("");
+                            setFieldErrors((curr) => ({
+                              ...curr,
+                              email: "",
+                              confirmEmail: "",
+                            }));
+                          }}
+                          size="small"
+                          sx={{
+                            bgcolor: alpha("#64748b", 0.08),
+                            color: "#64748b",
+                            "&:hover": { bgcolor: alpha("#64748b", 0.16) },
+                          }}
+                        >
+                          <CloseIcon fontSize="small" />
+                        </IconButton>
+                      </Stack>
+                    </Box>
                   </Box>
-                  <Button
-                    className="change-btn"
-                    onClick={() => {
-                      setIsEditingEmail(true);
-                      setEmail("");
-                      setConfirmEmail("");
-                      resetFeedback();
+                ) : (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      minHeight: 48,
                     }}
                   >
-                    Zmień
-                  </Button>
-                </>
-              )}
-            </Box>
-          </Box>
+                    <Box>
+                      <Typography
+                        variant="caption"
+                        fontWeight={700}
+                        sx={{
+                          color: "text.secondary",
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        Email
+                      </Typography>
+                      <Typography fontWeight={600}>{user?.email}</Typography>
+                    </Box>
+                    <Button
+                      size="small"
+                      onClick={() => {
+                        setIsEditingEmail(true);
+                        setEmail("");
+                        setConfirmEmail("");
+                        resetFeedback();
+                      }}
+                      sx={{ textTransform: "none", fontWeight: 600 }}
+                    >
+                      Zmień
+                    </Button>
+                  </Box>
+                )}
+              </Box>
+            </Stack>
+          </FormSection>
 
           {/* Security Section */}
-          <Typography className="section-label">Bezpieczeństwo</Typography>
-          <Box className="settings-group">
-            <Box className="settings-row">
-              <Box className="row-content">
-                <Typography className="row-label">Hasło</Typography>
-                <Typography className="row-value">••••••••••••</Typography>
+          <FormSection title="Bezpieczeństwo" sx={{ mt: 3 }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                mb: passwordExpanded ? 2 : 0,
+              }}
+            >
+              <Box>
+                <Typography
+                  variant="caption"
+                  fontWeight={700}
+                  sx={{ color: "text.secondary", textTransform: "uppercase" }}
+                >
+                  Hasło
+                </Typography>
+                <Typography fontWeight={600}>••••••••••••</Typography>
               </Box>
               <Button
-                className="change-btn"
+                size="small"
                 onClick={() => {
                   setPasswordExpanded(!passwordExpanded);
                   resetFeedback();
                 }}
+                sx={{ textTransform: "none", fontWeight: 600 }}
               >
                 {passwordExpanded ? "Anuluj" : "Zmień hasło"}
               </Button>
             </Box>
 
             <Collapse in={passwordExpanded}>
-              <Box className="password-panel">
-                <Stack className="password-form">
-                  <Typography className="edit-context-label" sx={{ mb: 1 }}>
-                    Zmiana hasła
-                  </Typography>
-                  {feedback &&
-                    feedback.severity === "error" &&
-                    passwordExpanded &&
-                    !feedback.message.includes("hasło") &&
-                    !feedback.message.includes("password") && (
-                      <AppDialogStatus severity="error">
-                        {feedback.message}
-                      </AppDialogStatus>
-                    )}
+              <Stack spacing={2.5} sx={{ mt: 1 }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  fontWeight={700}
+                  display="block"
+                  sx={{ letterSpacing: "0.02em", textTransform: "uppercase" }}
+                >
+                  Zmiana hasła
+                </Typography>
 
+                <TextField
+                  label="Obecne hasło"
+                  type={showPasswords ? "text" : "password"}
+                  fullWidth
+                  size="small"
+                  value={oldPassword}
+                  onChange={(e) => {
+                    setFieldErrors((curr) => ({ ...curr, oldPassword: "" }));
+                    setOldPassword(e.target.value);
+                  }}
+                  error={Boolean(fieldErrors.oldPassword)}
+                  helperText={fieldErrors.oldPassword}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      bgcolor: "background.paper",
+                      ...(fieldErrors.oldPassword && {
+                        bgcolor: alpha("#EF4444", 0.02),
+                        "& fieldset": { borderColor: alpha("#EF4444", 0.2) },
+                      }),
+                    },
+                  }}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowPasswords(!showPasswords)}
+                          edge="end"
+                          size="small"
+                        >
+                          {showPasswords ? (
+                            <VisibilityOffIcon />
+                          ) : (
+                            <VisibilityIcon />
+                          )}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+                <Box>
                   <TextField
-                    label="Obecne hasło"
+                    label="Nowe hasło"
                     type={showPasswords ? "text" : "password"}
                     fullWidth
                     size="small"
-                    className="modern-field"
-                    value={oldPassword}
+                    value={newPassword}
                     onChange={(e) => {
-                      setOldPassword(e.target.value);
-                      resetFeedback();
+                      setFieldErrors((curr) => ({ ...curr, newPassword: "" }));
+                      setNewPassword(e.target.value);
                     }}
-                    error={
-                      feedback?.severity === "error" &&
-                      (feedback.message.includes("hasło") ||
-                        feedback.message.includes("password"))
-                    }
-                    helperText={
-                      feedback?.severity === "error" &&
-                      (feedback.message.includes("hasło") ||
-                        feedback.message.includes("password"))
-                        ? feedback.message
-                        : ""
-                    }
+                    error={Boolean(fieldErrors.newPassword)}
+                    helperText={fieldErrors.newPassword}
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        bgcolor: "background.paper",
+                        ...(fieldErrors.newPassword && {
+                          bgcolor: alpha("#EF4444", 0.02),
+                          "& fieldset": { borderColor: alpha("#EF4444", 0.2) },
+                        }),
+                      },
+                    }}
                     InputProps={{
                       endAdornment: (
                         <InputAdornment position="end">
@@ -651,97 +894,98 @@ export function AccountSettingsDialog({
                       ),
                     }}
                   />
-                  <Box className="password-field-wrapper">
-                    <TextField
-                      label="Nowe hasło"
-                      type={showPasswords ? "text" : "password"}
-                      fullWidth
-                      size="small"
-                      className="modern-field"
-                      value={newPassword}
-                      onChange={(e) => {
-                        setNewPassword(e.target.value);
-                        resetFeedback();
-                      }}
-                      InputProps={{
-                        endAdornment: (
-                          <InputAdornment position="end">
-                            <IconButton
-                              onClick={() => setShowPasswords(!showPasswords)}
-                              edge="end"
-                              size="small"
-                            >
-                              {showPasswords ? (
-                                <VisibilityOffIcon />
-                              ) : (
-                                <VisibilityIcon />
-                              )}
-                            </IconButton>
-                          </InputAdornment>
-                        ),
-                      }}
-                    />
-                    {newPassword && (
-                      <Box className="strength-container">
-                        <Box className="strength-bar">
-                          <Box
-                            className="strength-progress"
-                            style={{
-                              width: `${passwordStrength}%`,
-                              backgroundColor: strengthColor(),
-                            }}
-                          />
-                        </Box>
-                        <Typography className="strength-text">
-                          Siła hasła: {strengthLabel()}
-                        </Typography>
+                  {newPassword && (
+                    <Box sx={{ mt: 1, px: 0.5 }}>
+                      <Box
+                        sx={{
+                          height: 3,
+                          bgcolor: alpha(theme.palette.text.primary, 0.08),
+                          borderRadius: 999,
+                          overflow: "hidden",
+                          mb: 0.5,
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            height: "100%",
+                            width: `${passwordStrength}%`,
+                            bgcolor: strengthColor(),
+                            transition: "all 0.3s ease",
+                          }}
+                        />
                       </Box>
-                    )}
-                  </Box>
-                  <TextField
-                    label="Powtórz nowe hasło"
-                    type="password"
-                    fullWidth
-                    size="small"
-                    className="modern-field"
-                    value={confirmPassword}
-                    onChange={(e) => {
-                      setConfirmPassword(e.target.value);
-                      resetFeedback();
-                    }}
-                    error={!!passwordMatchError}
-                    helperText={passwordMatchError}
-                  />
-                  <Button
-                    className="btn-primary"
-                    style={{ alignSelf: "flex-end", marginTop: "8px" }}
-                    onClick={handleSavePassword}
-                    disabled={passwordLoading || !!passwordMatchError}
-                  >
-                    {passwordLoading ? (
-                      <CircularProgress size={20} color="inherit" />
-                    ) : (
-                      "Zapisz nowe hasło"
-                    )}
-                  </Button>
-                </Stack>
-              </Box>
+                      <Typography
+                        variant="caption"
+                        sx={{ color: "text.secondary", fontWeight: 500 }}
+                      >
+                        Siła hasła: {strengthLabel()}
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+                <TextField
+                  label="Powtórz nowe hasło"
+                  type="password"
+                  fullWidth
+                  size="small"
+                  value={confirmPassword}
+                  onChange={(e) => {
+                    setFieldErrors((curr) => ({
+                      ...curr,
+                      confirmPassword: "",
+                    }));
+                    setConfirmPassword(e.target.value);
+                  }}
+                  error={Boolean(fieldErrors.confirmPassword)}
+                  helperText={fieldErrors.confirmPassword}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      bgcolor: "background.paper",
+                      ...(fieldErrors.confirmPassword && {
+                        bgcolor: alpha("#EF4444", 0.02),
+                        "& fieldset": { borderColor: alpha("#EF4444", 0.2) },
+                      }),
+                    },
+                  }}
+                />
+                <Button
+                  variant="contained"
+                  fullWidth
+                  onClick={handleSavePassword}
+                  disabled={passwordLoading}
+                  sx={{
+                    py: 1.25,
+                    borderRadius: "12px",
+                    fontWeight: 700,
+                    textTransform: "none",
+                    boxShadow: (theme) =>
+                      `0 8px 20px ${alpha(theme.palette.primary.main, 0.25)}`,
+                  }}
+                >
+                  {passwordLoading ? (
+                    <CircularProgress size={20} color="inherit" />
+                  ) : (
+                    "Zapisz nowe hasło"
+                  )}
+                </Button>
+              </Stack>
             </Collapse>
-          </Box>
-        </Box>
+          </FormSection>
+        </AppDialogBody>
 
-        <Box className="footer">
-          <Stack
-            direction="row"
-            justifyContent="flex-end"
-            spacing={2}
-            width="100%"
+        <AppDialogFooter>
+          <Button
+            onClick={closeDialog}
+            sx={{
+              fontWeight: 700,
+              textTransform: "none",
+              color: "text.secondary",
+              px: 3,
+            }}
           >
-            <Button className="cancel-btn" onClick={closeDialog}>
-              Zamknij
-            </Button>
-          </Stack>
-        </Box>
+            Zamknij
+          </Button>
+        </AppDialogFooter>
       </AppDialog>
 
       <Snackbar

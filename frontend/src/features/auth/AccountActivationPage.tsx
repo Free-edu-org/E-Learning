@@ -24,7 +24,7 @@ import { PasswordStrengthIndicator } from "@/components/ui/form/PasswordStrength
 const ACTIVATION_ERROR_MESSAGES: Record<string, string> = {
   INVITATION_TOKEN_INVALID: "Link aktywacyjny jest nieprawidłowy.",
   INVITATION_TOKEN_EXPIRED:
-    "Link aktywacyjny wygasł. Poproś nauczyciela o ponowne zaproszenie.",
+    "Link aktywacyjny wygasł. Poproś o ponowne zaproszenie.",
   INVITATION_TOKEN_USED: "Ten link aktywacyjny był już użyty.",
   ACCOUNT_ALREADY_ACTIVE: "Konto jest już aktywne. Możesz się zalogować.",
   USERNAME_ALREADY_TAKEN: "Podana nazwa użytkownika jest już zajęta.",
@@ -133,7 +133,7 @@ export function AccountActivationPage() {
               <BookIcon fontSize="large" />
             </Box>
             <Typography variant="h5" fontWeight="bold" gutterBottom>
-              Aktywacja konta ucznia
+              Aktywacja konta
             </Typography>
             {!tokenLoading && email && (
               <Typography variant="body2" color="text.secondary" align="center">

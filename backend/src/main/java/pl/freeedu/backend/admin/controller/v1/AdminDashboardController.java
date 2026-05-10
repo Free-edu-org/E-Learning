@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import pl.freeedu.backend.admin.dto.AdminCreateStudentRequest;
+import pl.freeedu.backend.admin.dto.AdminInviteTeacherRequest;
 import pl.freeedu.backend.admin.dto.AdminStudentResponse;
 import pl.freeedu.backend.admin.dto.AdminStatsResponse;
 import pl.freeedu.backend.admin.dto.AdminUpdateStudentRequest;
@@ -61,6 +62,19 @@ public class AdminDashboardController {
 	@ResponseStatus(HttpStatus.OK)
 	public Flux<UserResponse> getTeachers() {
 		return adminService.getTeachers();
+	}
+
+	@Operation(summary = "Invite a teacher by email")
+	@ApiResponses(value = {@ApiResponse(responseCode = "201", description = "Teacher invitation sent"),
+			@ApiResponse(responseCode = "400", description = "Bad Request - VALIDATION_FAILED", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "401", description = "Unauthorized - invalid token", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden - requires ADMIN role", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "409", description = "Conflict - EMAIL_ALREADY_TAKEN", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
+	@PostMapping("/teachers")
+	@PreAuthorize("hasRole('ADMIN')")
+	@ResponseStatus(HttpStatus.CREATED)
+	public Mono<UserResponse> inviteTeacher(@Valid @RequestBody Mono<AdminInviteTeacherRequest> request) {
+		return request.flatMap(adminService::inviteTeacher);
 	}
 
 	@Operation(summary = "Get all students visible to admin")
@@ -113,5 +127,16 @@ public class AdminDashboardController {
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public Mono<Void> resendInvite(@PathVariable String studentPublicId) {
 		return userPublicIdLookupService.getInternalId(studentPublicId).flatMap(adminService::resendInvite);
+	}
+
+	@Operation(summary = "Resend invitation email to a pending teacher")
+	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Invitation resent successfully"),
+			@ApiResponse(responseCode = "404", description = "Not Found - USER_NOT_FOUND", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "409", description = "Account is already active", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
+	@PostMapping("/teachers/{teacherPublicId}/resend-invite")
+	@PreAuthorize("hasRole('ADMIN')")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public Mono<Void> resendTeacherInvite(@PathVariable String teacherPublicId) {
+		return userPublicIdLookupService.getInternalId(teacherPublicId).flatMap(adminService::resendInvite);
 	}
 }

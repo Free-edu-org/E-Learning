@@ -456,7 +456,7 @@ const TaskCardFields = memo(function TaskCardFields({
               inputProps={{ maxLength: INPUT_LIMITS.taskAnswerText }}
               helperText={`${task.correctAnswer.length}/${INPUT_LIMITS.taskAnswerText}`}
               fullWidth
-              placeholder="np. The cat is big"
+              placeholder="Wpisz poprawną kolejność wyrazów"
             />
           </>
         )}
@@ -490,7 +490,7 @@ const TaskCardFields = memo(function TaskCardFields({
             }
             inputProps={{ maxLength: INPUT_LIMITS.taskAnswerText }}
             fullWidth
-            placeholder="np. The cat is black and the dog is brown"
+            placeholder="Wpisz tekst do rozpoznania przez system"
             helperText={`${task.correctAnswer.length}/${INPUT_LIMITS.taskAnswerText} • Uczeń nagra ten tekst, a STT porówna transkrypcję z tą wartością.`}
           />
         )}

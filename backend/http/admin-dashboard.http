@@ -6,6 +6,32 @@ Authorization: Bearer {{admin_token}}
 GET http://localhost:8080/api/v1/admin/teachers
 Authorization: Bearer {{admin_token}}
 
+### Invite admin teacher — sends invitation email
+POST http://localhost:8080/api/v1/admin/teachers
+Authorization: Bearer {{admin_token}}
+Content-Type: application/json
+
+{
+  "email": "admin.teacher@example.com"
+}
+
+### Invite admin teacher - validation fail (bad email)
+POST http://localhost:8080/api/v1/admin/teachers
+Authorization: Bearer {{admin_token}}
+Content-Type: application/json
+
+{
+  "email": "invalid"
+}
+
+### Resend invitation to INVITED teacher (Admin)
+POST http://localhost:8080/api/v1/admin/teachers/{{teacher_public_id}}/resend-invite
+Authorization: Bearer {{admin_token}}
+
+### Resend teacher invitation - forbidden (STUDENT token)
+POST http://localhost:8080/api/v1/admin/teachers/{{teacher_public_id}}/resend-invite
+Authorization: Bearer {{student_token}}
+
 ### Admin students
 GET http://localhost:8080/api/v1/admin/students
 Authorization: Bearer {{admin_token}}
