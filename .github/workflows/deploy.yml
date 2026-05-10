@@ -105,5 +105,5 @@ jobs:
         if: always()
         with:
           severity: ${{ contains(needs.*.result, 'failure') && 'error' || 'info' }}
-          details: ${{ contains(needs.*.result, 'failure') && 'Deployment finished with status: FAILED' || 'Deployment finished with status: SUCCESS' }}
+          details: "${{ contains(needs.*.result, 'failure') && 'Deployment finished with status: FAILED' || 'Deployment finished with status: SUCCESS' }}"
           webhookUrl: ${{ secrets.TEAMS_WEBHOOK_URL }}
