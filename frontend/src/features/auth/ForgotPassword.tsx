@@ -5,6 +5,7 @@ import {
   Box,
   Button,
   CircularProgress,
+  Collapse,
   Grow,
   InputAdornment,
   Paper,
@@ -18,6 +19,7 @@ import {
   Lock as LockIcon,
   Shield as ShieldIcon,
   ChevronLeft as ChevronLeftIcon,
+  ErrorOutline as ErrorIcon,
 } from "@mui/icons-material";
 import { Link as RouterLink } from "react-router-dom";
 import { ThemeSwitcher } from "../../components/ui/ThemeSwitcher";
@@ -72,6 +74,22 @@ export function ForgotPassword() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string }>({});
+
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  const validate = () => {
+    const errors: { email?: string } = {};
+
+    if (!email.trim()) {
+      errors.email = "Wprowadź adres e-mail";
+    } else if (!EMAIL_REGEX.test(email.trim())) {
+      errors.email = "Wprowadź poprawny adres e-mail";
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const isDark = mode === "dark";
 
@@ -87,6 +105,11 @@ export function ForgotPassword() {
     }
 
     setErrorMsg(null);
+
+    if (!validate()) {
+      return;
+    }
+
     setSuccessMsg(null);
     setIsLoading(true);
 
@@ -230,36 +253,58 @@ export function ForgotPassword() {
           )}
 
           <form onSubmit={handleSubmit}>
-            <TextField
-              fullWidth
-              label="Adres e-mail"
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="jan.kowalski@szkola.pl"
-              required
-              disabled={isLoading || !!successMsg}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <EmailIcon color="action" sx={{ fontSize: 20 }} />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: 3,
-                  transition: "all 0.2s",
-                  "&:hover": {
-                    bgcolor: alpha(theme.palette.primary.main, 0.01),
+            <Box sx={{ textAlign: "left" }}>
+              <TextField
+                fullWidth
+                label="Adres e-mail"
+                autoComplete="email"
+                value={email}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                  if (fieldErrors.email) {
+                    setFieldErrors((prev) => ({ ...prev, email: undefined }));
+                  }
+                }}
+                placeholder="jan.kowalski@szkola.pl"
+                disabled={isLoading || !!successMsg}
+                error={Boolean(fieldErrors.email)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <EmailIcon
+                        color={fieldErrors.email ? "error" : "action"}
+                        sx={{ fontSize: 20 }}
+                      />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 3,
+                    transition: "all 0.2s",
+                    "&:hover": {
+                      bgcolor: alpha(theme.palette.primary.main, 0.01),
+                    },
+                    "&.Mui-focused": {
+                      bgcolor: alpha(theme.palette.primary.main, 0.01),
+                    },
                   },
-                  "&.Mui-focused": {
-                    bgcolor: alpha(theme.palette.primary.main, 0.01),
-                  },
-                },
-              }}
-            />
+                }}
+              />
+              <Collapse in={Boolean(fieldErrors.email)}>
+                <Stack
+                  direction="row"
+                  spacing={0.5}
+                  alignItems="center"
+                  sx={{ mt: 1, ml: 1, color: "error.main" }}
+                >
+                  <ErrorIcon sx={{ fontSize: 16 }} />
+                  <Typography variant="caption" fontWeight="500">
+                    {fieldErrors.email}
+                  </Typography>
+                </Stack>
+              </Collapse>
+            </Box>
 
             <Button
               type="submit"

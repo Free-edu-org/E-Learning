@@ -92,14 +92,20 @@ export function FormSection({
   );
 }
 
-export function FormActions({ children }: { children: ReactNode }) {
+export function FormActions({
+  children,
+  sx,
+}: {
+  children: ReactNode;
+  sx?: SxProps<Theme>;
+}) {
   return (
     <Stack
       direction="row"
       spacing={uiTokens.form.actionGap}
       justifyContent="flex-end"
       alignItems="center"
-      sx={{ width: "100%", flexWrap: "wrap", rowGap: 1 }}
+      sx={{ width: "100%", flexWrap: "wrap", rowGap: 1, ...sx }}
     >
       {children}
     </Stack>

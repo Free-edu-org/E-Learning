@@ -370,12 +370,36 @@ export function AppDialogHeader({
   );
 }
 
-export function AppDialogBody({ children }: { children: ReactNode }) {
-  return <DialogContent sx={dialogBodySx}>{children}</DialogContent>;
+export function AppDialogBody({
+  children,
+  sx,
+}: {
+  children: ReactNode;
+  sx?: SxProps<Theme>;
+}) {
+  return (
+    <DialogContent
+      sx={[dialogBodySx, ...(Array.isArray(sx) ? sx : sx ? [sx] : [])]}
+    >
+      {children}
+    </DialogContent>
+  );
 }
 
-export function AppDialogFooter({ children }: { children: ReactNode }) {
-  return <DialogActions sx={dialogFooterSx}>{children}</DialogActions>;
+export function AppDialogFooter({
+  children,
+  sx,
+}: {
+  children: ReactNode;
+  sx?: SxProps<Theme>;
+}) {
+  return (
+    <DialogActions
+      sx={[dialogFooterSx, ...(Array.isArray(sx) ? sx : sx ? [sx] : [])]}
+    >
+      {children}
+    </DialogActions>
+  );
 }
 
 type AppDialogStatusProps = {
