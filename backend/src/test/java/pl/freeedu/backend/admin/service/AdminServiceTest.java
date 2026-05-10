@@ -95,15 +95,64 @@ class AdminServiceTest {
 	@Test
 	void shouldGetTeachers() {
 		// given
-		User teacher = User.builder().id(1).publicId("pub-1").username("T1").role(Role.TEACHER).build();
+		User teacher = User.builder().id(1).publicId("pub-1").username("T1").role(Role.TEACHER)
+				.status(UserStatus.INVITED).build();
 		when(userRepository.findByRoleOrderByCreatedAtDesc(Role.TEACHER)).thenReturn(List.of(teacher));
-		when(userMapper.toUserResponse(teacher)).thenReturn(UserResponse.builder().publicId("pub-1").build());
+		when(userMapper.toUserResponse(teacher))
+				.thenReturn(UserResponse.builder().publicId("pub-1").status(UserStatus.INVITED).build());
 
 		// when
 		Flux<UserResponse> result = adminService.getTeachers();
 
 		// then
-		StepVerifier.create(result).assertNext(resp -> assertEquals("pub-1", resp.getPublicId())).verifyComplete();
+		StepVerifier.create(result).assertNext(resp -> {
+			assertEquals("pub-1", resp.getPublicId());
+			assertEquals(UserStatus.INVITED, resp.getStatus());
+		}).verifyComplete();
+	}
+
+	@Test
+	void shouldInviteTeacherSucceed() {
+		// given
+		AdminInviteTeacherRequest req = AdminInviteTeacherRequest.builder().email("t@e.com").build();
+		User savedTeacher = User.builder().id(2).publicId("teacher-pub").email("t@e.com").role(Role.TEACHER)
+				.status(UserStatus.INVITED).build();
+		UserResponse response = UserResponse.builder().publicId("teacher-pub").email("t@e.com").role(Role.TEACHER)
+				.status(UserStatus.INVITED).build();
+
+		when(userRepository.existsByEmail(req.getEmail())).thenReturn(false);
+		when(accountActivationService.createInvitedUser("t@e.com", Role.TEACHER)).thenReturn("plain-token");
+		when(userRepository.findByEmail("t@e.com")).thenReturn(Optional.of(savedTeacher));
+		when(userMapper.toUserResponse(savedTeacher)).thenReturn(response);
+
+		// when
+		Mono<UserResponse> result = adminService.inviteTeacher(req);
+
+		// then
+		StepVerifier.create(result).assertNext(resp -> {
+			assertEquals("teacher-pub", resp.getPublicId());
+			assertEquals(Role.TEACHER, resp.getRole());
+			assertEquals(UserStatus.INVITED, resp.getStatus());
+		}).verifyComplete();
+		verify(accountActivationService).sendInvitationEmail("t@e.com", "plain-token");
+	}
+
+	@Test
+	void shouldRejectTeacherInviteWhenEmailTaken() {
+		// given
+		AdminInviteTeacherRequest req = AdminInviteTeacherRequest.builder().email("taken@e.com").build();
+		when(userRepository.existsByEmail(req.getEmail())).thenReturn(true);
+
+		// when
+		Mono<UserResponse> result = adminService.inviteTeacher(req);
+
+		// then
+		StepVerifier.create(result).expectErrorSatisfies(error -> {
+			assertTrue(error instanceof UserException);
+			assertEquals(UserErrorCode.EMAIL_ALREADY_TAKEN, ((UserException) error).getErrorCode());
+		}).verify();
+		verify(accountActivationService, never()).createInvitedUser(anyString(), any());
+		verify(accountActivationService, never()).sendInvitationEmail(anyString(), anyString());
 	}
 
 	@Test
@@ -161,6 +210,7 @@ class AdminServiceTest {
 			assertEquals("group-public-id", resp.getGroupPublicId());
 			verify(userInGroupRepository).save(any());
 		}).verifyComplete();
+		verify(accountActivationService).sendInvitationEmail("s@e.com", "plain-token");
 	}
 
 	@Test

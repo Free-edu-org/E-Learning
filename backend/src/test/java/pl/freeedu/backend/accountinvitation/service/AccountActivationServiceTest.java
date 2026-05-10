@@ -1,6 +1,7 @@
 package pl.freeedu.backend.accountinvitation.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -30,6 +31,7 @@ import pl.freeedu.backend.accountinvitation.model.InvitationToken;
 import pl.freeedu.backend.accountinvitation.repository.InvitationTokenRepository;
 import pl.freeedu.backend.user.exception.UserErrorCode;
 import pl.freeedu.backend.user.exception.UserException;
+import pl.freeedu.backend.user.model.Role;
 import pl.freeedu.backend.user.model.User;
 import pl.freeedu.backend.user.model.UserStatus;
 import pl.freeedu.backend.user.repository.UserRepository;
@@ -52,6 +54,26 @@ class AccountActivationServiceTest {
 
 	@InjectMocks
 	private AccountActivationService accountActivationService;
+
+	@Test
+	void shouldCreateInvitedTeacherWithTeacherRole() {
+		// given
+		User savedTeacher = User.builder().id(7).email("teacher@e.com").role(Role.TEACHER).status(UserStatus.INVITED)
+				.build();
+		InvitationToken token = InvitationToken.builder().userId(7).expiresAt(LocalDateTime.now().plusHours(72))
+				.build();
+		when(userRepository.findByEmail("teacher@e.com")).thenReturn(Optional.empty());
+		when(userRepository.save(any())).thenReturn(savedTeacher);
+		when(invitationTokenRepository.save(any())).thenReturn(token);
+
+		// when
+		String plainToken = accountActivationService.createInvitedUser("teacher@e.com", Role.TEACHER);
+
+		// then
+		verify(userRepository).save(argThat(user -> user.getRole() == Role.TEACHER
+				&& user.getStatus() == UserStatus.INVITED && "teacher@e.com".equals(user.getEmail())));
+		assertFalse(plainToken.isBlank());
+	}
 
 	// --- validateToken ---
 

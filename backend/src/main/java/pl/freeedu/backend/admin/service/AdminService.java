@@ -4,10 +4,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 import pl.freeedu.backend.accountinvitation.service.AccountActivationService;
+import pl.freeedu.backend.admin.dto.AdminInviteTeacherRequest;
 import pl.freeedu.backend.admin.dto.AdminCreateStudentRequest;
 import pl.freeedu.backend.admin.dto.AdminStudentResponse;
 import pl.freeedu.backend.admin.dto.AdminStatsResponse;
 import pl.freeedu.backend.admin.dto.AdminUpdateStudentRequest;
+import pl.freeedu.backend.user.dto.UserResponse;
 import pl.freeedu.backend.user.model.Role;
 import pl.freeedu.backend.user.model.User;
 import pl.freeedu.backend.user.exception.UserErrorCode;
@@ -66,6 +68,24 @@ public class AdminService {
 
 	public Flux<pl.freeedu.backend.user.dto.UserResponse> getTeachers() {
 		return getUsersByRole(Role.TEACHER);
+	}
+
+	public Mono<UserResponse> inviteTeacher(AdminInviteTeacherRequest request) {
+		return Mono.fromCallable(() -> transactionTemplate.execute(status -> {
+			log.info("Admin inviting new teacher account via email: '{}'", request.getEmail());
+			if (userRepository.existsByEmail(request.getEmail())) {
+				log.warn("Teacher invitation failed: Email already taken");
+				throw new UserException(UserErrorCode.EMAIL_ALREADY_TAKEN);
+			}
+
+			String plainToken = accountActivationService.createInvitedUser(request.getEmail(), Role.TEACHER);
+			User savedTeacher = userRepository.findByEmail(request.getEmail())
+					.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
+
+			accountActivationService.sendInvitationEmail(savedTeacher.getEmail(), plainToken);
+			log.info("Teacher invitation sent by admin. Teacher ID: {}", savedTeacher.getId());
+			return userMapper.toUserResponse(savedTeacher);
+		})).subscribeOn(Schedulers.boundedElastic());
 	}
 
 	public Flux<AdminStudentResponse> getStudents() {

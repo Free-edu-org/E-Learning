@@ -56,6 +56,14 @@ export interface AdminCreateStudentRequest {
   groupPublicId: string | null;
 }
 
+export interface AdminInviteTeacherRequest {
+  email: string;
+}
+
+export interface AdminTeacherProfile extends UserProfile {
+  status?: "ACTIVE" | "INVITED" | "EMAIL_VERIFICATION_PENDING";
+}
+
 export interface AdminUpdateStudentRequest {
   username: string;
   email: string;
@@ -89,7 +97,12 @@ export const adminService = {
       method: "PATCH",
       body: JSON.stringify({ active } satisfies SetAchievementActiveRequest),
     }),
-  getTeachers: () => fetchApi<UserProfile[]>("/api/v1/admin/teachers"),
+  getTeachers: () => fetchApi<AdminTeacherProfile[]>("/api/v1/admin/teachers"),
+  inviteTeacher: (payload: AdminInviteTeacherRequest) =>
+    fetchApi<AdminTeacherProfile>("/api/v1/admin/teachers", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
   getStudents: () => fetchApi<AdminStudentProfile[]>("/api/v1/admin/students"),
   createStudent: (payload: AdminCreateStudentRequest) =>
     fetchApi<AdminStudentProfile>("/api/v1/admin/students", {
@@ -103,6 +116,10 @@ export const adminService = {
     }),
   resendStudentInvite: (studentPublicId: string) =>
     fetchApi<void>(`/api/v1/admin/students/${studentPublicId}/resend-invite`, {
+      method: "POST",
+    }),
+  resendTeacherInvite: (teacherPublicId: string) =>
+    fetchApi<void>(`/api/v1/admin/teachers/${teacherPublicId}/resend-invite`, {
       method: "POST",
     }),
 };

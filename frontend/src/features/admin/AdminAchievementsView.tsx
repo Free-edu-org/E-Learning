@@ -283,7 +283,7 @@ function translateAchievementValidationDetail(detail: string) {
   }
 
   if (detail.includes("immutable")) {
-    return "To pole nie może zostać zmienione po utworzeniu achievementu.";
+    return "To pole nie może zostać zmienione po utworzeniu osiągnięcia.";
   }
 
   return detail;
@@ -346,14 +346,14 @@ function getAchievementApiErrorState(
 
   if (error.problem.status === 404) {
     return {
-      message: "Nie znaleziono wskazanego achievementu.",
+      message: "Nie znaleziono wskazanego osiągnięcia.",
       fieldErrors,
     };
   }
 
   if (error.problem.status === 403) {
     return {
-      message: "Brak uprawnień do zarządzania achievementami.",
+      message: "Brak uprawnień do zarządzania osiągnięciami.",
       fieldErrors,
     };
   }
@@ -361,7 +361,7 @@ function getAchievementApiErrorState(
   if (/immutable/i.test(detail)) {
     return {
       message:
-        "Nie można zmienić pola, które po utworzeniu achievementu jest stałe.",
+        "Nie można zmienić pola, które po utworzeniu osiągnięcia jest stałe.",
       fieldErrors,
     };
   }
@@ -642,7 +642,7 @@ export function AdminAchievementsView() {
       setAchievementsError(
         getAchievementApiErrorState(
           error,
-          "Nie udało się pobrać listy achievementów.",
+          "Nie udało się pobrać listy osiągnięć.",
         ).message,
       );
     } finally {
@@ -772,7 +772,7 @@ export function AdminAchievementsView() {
         );
         setSnackbar({
           severity: "success",
-          message: "Achievement został utworzony.",
+          message: "Osiągnięcie zostało utworzone.",
         });
       } else if (selectedAchievementCode) {
         await adminService.updateAchievement(
@@ -781,7 +781,7 @@ export function AdminAchievementsView() {
         );
         setSnackbar({
           severity: "success",
-          message: "Achievement został zapisany.",
+          message: "Osiągnięcie zostało zapisane.",
         });
       }
 
@@ -791,8 +791,8 @@ export function AdminAchievementsView() {
       const errorState = getAchievementApiErrorState(
         error,
         dialogMode === "create"
-          ? "Nie udało się utworzyć achievementu."
-          : "Nie udało się zapisać zmian achievementu.",
+          ? "Nie udało się utworzyć osiągnięcia."
+          : "Nie udało się zapisać zmian osiągnięcia.",
       );
       setFieldErrors((current) => ({ ...current, ...errorState.fieldErrors }));
       setDialogFeedback({
@@ -826,8 +826,8 @@ export function AdminAchievementsView() {
       setSnackbar({
         severity: "success",
         message: toggleDialog.active
-          ? "Achievement został wyłączony."
-          : "Achievement został aktywowany.",
+          ? "Osiągnięcie zostało wyłączone."
+          : "Osiągnięcie zostało aktywowane.",
       });
       setToggleDialog(null);
       await loadAchievements();
@@ -836,7 +836,7 @@ export function AdminAchievementsView() {
         severity: "error",
         message: getAchievementApiErrorState(
           error,
-          "Nie udało się zmienić statusu achievementu.",
+          "Nie udało się zmienić statusu osiągnięcia.",
         ).message,
       });
     } finally {
@@ -859,7 +859,7 @@ export function AdminAchievementsView() {
         <DashboardHeader
           loading={loadingCurrentUser}
           username={currentUser?.username}
-          subtitle="Zarządzanie achievementami"
+          subtitle="Zarządzanie osiągnięciami"
           fallbackName="Administratorze"
           user={currentUser}
           onUserUpdated={setCurrentUser}
@@ -900,7 +900,7 @@ export function AdminAchievementsView() {
               onClick={openCreateDialog}
               sx={{ ...panelFooterButtonSx, px: 2.25, boxShadow: "none" }}
             >
-              Nowy achievement
+              Nowe osiągnięcie
             </Button>
           </Stack>
         </Stack>
@@ -1003,12 +1003,12 @@ export function AdminAchievementsView() {
                     </Button>
                   }
                 >
-                  Brak achievementów. Dodaj pierwszy wpis, aby udostępnić go w
+                  Brak osiągnięć. Dodaj pierwszy wpis, aby udostępnić go w
                   systemie.
                 </Alert>
               ) : filteredAchievements.length === 0 ? (
                 <Alert severity="info">
-                  Brak achievementów pasujących do bieżącego wyszukiwania.
+                  Brak osiągnięć pasujących do bieżącego wyszukiwania.
                 </Alert>
               ) : (
                 <Grid container spacing={2}>

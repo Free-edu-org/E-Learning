@@ -23,39 +23,59 @@ export function StatCard({
   color = "primary",
 }: StatCardProps) {
   return (
-    <Paper elevation={0} sx={panelGridCardSx}>
+    <Paper elevation={0} sx={{ ...panelGridCardSx, borderRadius: 2 }}>
       <Box sx={panelGridCardContentSx}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
-          <Icon
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, mb: 2 }}>
+          <Box
             sx={{
-              color: `${color}.main`,
-              fontSize: 28,
+              width: 36,
+              height: 36,
+              borderRadius: 1.5,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              bgcolor: (t) => alpha(t.palette[color].main, 0.1),
+              border: "1px solid",
+              borderColor: (t) => alpha(t.palette[color].main, 0.15),
+              flexShrink: 0,
             }}
-          />
-          <Typography variant="body2" color="text.secondary" fontWeight={600}>
+          >
+            <Icon sx={{ color: `${color}.main`, fontSize: 20 }} />
+          </Box>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            fontWeight={500}
+            sx={{ lineHeight: 1.3 }}
+          >
             {title}
           </Typography>
         </Box>
 
         <Box
           sx={{
-            p: 2,
-            borderRadius: 2,
-            bgcolor: (t) => alpha(t.palette[color].main, 0.08),
+            p: 1.75,
+            borderRadius: 1.5,
+            bgcolor: (t) => alpha(t.palette[color].main, 0.06),
             border: "1px solid",
-            borderColor: (t) => alpha(t.palette[color].main, 0.18),
+            borderColor: (t) => alpha(t.palette[color].main, 0.12),
             textAlign: "center",
             mb: 1.5,
           }}
         >
-          <Typography variant="h4" fontWeight={800} color={`${color}.main`}>
+          <Typography
+            variant="h4"
+            fontWeight={800}
+            color={`${color}.main`}
+            sx={{ letterSpacing: "-0.02em" }}
+          >
             {value}
           </Typography>
           {subtitle && (
             <Typography
               variant="caption"
               color="text.secondary"
-              sx={{ mt: 0.5 }}
+              sx={{ mt: 0.5, display: "block" }}
             >
               {subtitle}
             </Typography>

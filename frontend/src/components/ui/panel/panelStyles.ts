@@ -5,29 +5,37 @@ import { uiTokens } from "@/theme/uiTokens";
 export const outlinedMetaChipSx: SxProps<Theme> = {
   borderRadius: 999,
   maxWidth: "100%",
+  height: 24,
+  fontSize: "0.72rem",
+  fontWeight: 500,
   "& .MuiChip-label": {
     overflowWrap: "anywhere",
+    px: 1.25,
   },
 };
 
 export const panelIconButtonSx: SxProps<Theme> = {
   width: uiTokens.control.iconButtonSize,
   height: uiTokens.control.iconButtonSize,
-  borderRadius: 2.5,
+  borderRadius: 2,
   border: "1px solid",
   borderColor: (theme) =>
-    alpha(theme.palette.divider, theme.palette.mode === "dark" ? 0.3 : 0.42),
-  bgcolor: (theme) =>
-    alpha(
-      theme.palette.common.white,
-      theme.palette.mode === "dark" ? 0.03 : 0.75,
-    ),
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.text.primary, 0.07)
+      : alpha(theme.palette.common.white, 0.08),
+  bgcolor: (theme) => (theme.palette.mode === "light" ? "#ffffff" : "#151a2c"),
   transition:
     "transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease",
   "&:hover": {
     transform: "translateY(-1px)",
-    boxShadow: "0 10px 22px rgba(15, 23, 42, 0.14)",
-    borderColor: "primary.main",
+    boxShadow: (theme) =>
+      theme.palette.mode === "light"
+        ? "0 4px 12px rgba(15, 23, 42, 0.1)"
+        : "0 8px 18px rgba(0, 0, 0, 0.24)",
+    borderColor: (theme) =>
+      theme.palette.mode === "light"
+        ? theme.palette.primary.main
+        : alpha(theme.palette.primary.light, 0.28),
   },
 };
 
@@ -36,17 +44,29 @@ export const panelListRowSx: SxProps<Theme> = {
   borderRadius: uiTokens.radius.card,
   border: "1px solid",
   borderColor: (theme) =>
-    alpha(theme.palette.divider, theme.palette.mode === "dark" ? 0.24 : 0.34),
-  bgcolor: (theme) =>
-    alpha(
-      theme.palette.common.white,
-      theme.palette.mode === "dark" ? 0.02 : 0.82,
-    ),
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.text.primary, 0.06)
+      : alpha(theme.palette.common.white, 0.06),
+  bgcolor: (theme) => (theme.palette.mode === "light" ? "#ffffff" : "#151a2c"),
+  backgroundImage: (theme) =>
+    theme.palette.mode === "light"
+      ? "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(251,252,255,0.98) 100%)"
+      : "linear-gradient(180deg, rgba(255,255,255,0.025) 0%, rgba(255,255,255,0) 48%)",
+  boxShadow: (theme) =>
+    theme.palette.mode === "light"
+      ? "0 6px 16px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.03)"
+      : "0 4px 12px rgba(0, 0, 0, 0.18)",
   transition: "box-shadow 0.2s, transform 0.15s, border-color 0.15s",
   "&:hover": {
-    boxShadow: "0 16px 32px rgba(15, 23, 42, 0.12)",
+    boxShadow: (theme) =>
+      theme.palette.mode === "light"
+        ? "0 10px 24px rgba(15, 23, 42, 0.08)"
+        : "0 12px 20px rgba(0, 0, 0, 0.24)",
     transform: "translateY(-1px)",
-    borderColor: (theme) => alpha(theme.palette.primary.main, 0.28),
+    borderColor: (theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.primary.main, 0.3)
+        : alpha(theme.palette.primary.light, 0.16),
   },
 };
 
@@ -56,17 +76,29 @@ export const panelGridCardSx: SxProps<Theme> = {
   borderRadius: uiTokens.radius.card,
   border: "1px solid",
   borderColor: (theme) =>
-    alpha(theme.palette.divider, theme.palette.mode === "dark" ? 0.22 : 0.32),
-  bgcolor: (theme) =>
-    alpha(
-      theme.palette.common.white,
-      theme.palette.mode === "dark" ? 0.02 : 0.86,
-    ),
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.text.primary, 0.055)
+      : alpha(theme.palette.common.white, 0.06),
+  bgcolor: (theme) => (theme.palette.mode === "light" ? "#ffffff" : "#151a2c"),
+  backgroundImage: (theme) =>
+    theme.palette.mode === "light"
+      ? "linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(249,251,255,0.985) 100%)"
+      : "linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 54%)",
+  boxShadow: (theme) =>
+    theme.palette.mode === "light"
+      ? "0 8px 22px rgba(15, 23, 42, 0.05), 0 2px 6px rgba(15, 23, 42, 0.025)"
+      : "0 6px 16px rgba(0, 0, 0, 0.2)",
   transition: "box-shadow 0.2s, transform 0.15s, border-color 0.15s",
   "&:hover": {
-    boxShadow: "0 18px 34px rgba(15, 23, 42, 0.14)",
+    boxShadow: (theme) =>
+      theme.palette.mode === "light"
+        ? "0 12px 28px rgba(15, 23, 42, 0.08)"
+        : "0 12px 22px rgba(0, 0, 0, 0.24)",
     transform: "translateY(-2px)",
-    borderColor: (theme) => alpha(theme.palette.primary.main, 0.3),
+    borderColor: (theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.primary.main, 0.3)
+        : alpha(theme.palette.primary.light, 0.16),
   },
 };
 
@@ -89,7 +121,13 @@ export const panelCardFooterSx: SxProps<Theme> = {
   gap: 1,
   borderTop: "1px solid",
   borderColor: (theme) =>
-    alpha(theme.palette.divider, theme.palette.mode === "dark" ? 0.18 : 0.24),
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.text.primary, 0.05)
+      : alpha(theme.palette.common.white, 0.06),
+  backgroundColor: (theme) =>
+    theme.palette.mode === "light"
+      ? alpha("#f7f9fc", 0.72)
+      : alpha(theme.palette.common.white, 0.015),
 };
 
 export const panelActionClusterSx: SxProps<Theme> = {
@@ -125,12 +163,25 @@ export const panelFooterButtonSx: SxProps<Theme> = {
 
 export const panelDeleteButtonSx: SxProps<Theme> = {
   ...panelFooterButtonSx,
-  color: (theme) => theme.palette.error.dark,
+  color: (theme) => theme.palette.error.main,
   border: "1px solid",
-  borderColor: (theme) => alpha(theme.palette.error.main, 0.45),
+  borderColor: (theme) =>
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.error.main, 0.3)
+      : alpha(theme.palette.error.light, 0.18),
+  bgcolor: (theme) =>
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.error.main, 0.04)
+      : alpha(theme.palette.error.light, 0.06),
   "&:hover": {
-    borderColor: (theme) => alpha(theme.palette.error.main, 0.7),
-    bgcolor: (theme) => alpha(theme.palette.error.main, 0.06),
+    borderColor: (theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.error.main, 0.6)
+        : alpha(theme.palette.error.light, 0.28),
+    bgcolor: (theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.error.main, 0.08)
+        : alpha(theme.palette.error.light, 0.09),
   },
 };
 
@@ -153,7 +204,10 @@ export const panelSurfaceActionSx: SxProps<Theme> = {
   cursor: "pointer",
   transition: "box-shadow 0.2s, border-color 0.2s, transform 0.15s",
   "&:hover": {
-    boxShadow: "0 18px 34px rgba(15, 23, 42, 0.14)",
+    boxShadow: (theme) =>
+      theme.palette.mode === "light"
+        ? "0 8px 28px rgba(15, 23, 42, 0.1)"
+        : "0 8px 28px rgba(0, 0, 0, 0.55)",
     borderColor: "primary.main",
     transform: "translateY(-2px)",
   },
@@ -189,18 +243,34 @@ export const panelToolbarSx: SxProps<Theme> = {
   borderRadius: uiTokens.radius.card,
   border: "1px solid",
   borderColor: (theme) =>
-    alpha(theme.palette.divider, theme.palette.mode === "dark" ? 0.22 : 0.3),
-  bgcolor: (theme) =>
-    alpha(
-      theme.palette.common.white,
-      theme.palette.mode === "dark" ? 0.02 : 0.78,
-    ),
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.text.primary, 0.06)
+      : alpha(theme.palette.common.white, 0.06),
+  bgcolor: (theme) => (theme.palette.mode === "light" ? "#f8faff" : "#111625"),
+  backgroundImage: (theme) =>
+    theme.palette.mode === "light"
+      ? "linear-gradient(180deg, rgba(255,255,255,0.86) 0%, rgba(248,250,255,0.96) 100%)"
+      : "linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0) 100%)",
+  boxShadow: (theme) =>
+    theme.palette.mode === "light"
+      ? "0 6px 16px rgba(15, 23, 42, 0.04)"
+      : "0 4px 10px rgba(0, 0, 0, 0.18)",
 };
 
 export const panelSurfaceSx: SxProps<Theme> = {
   borderRadius: uiTokens.radius.card,
   border: "1px solid",
   borderColor: (theme) =>
-    alpha(theme.palette.divider, theme.palette.mode === "dark" ? 0.22 : 0.3),
-  bgcolor: "background.paper",
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.text.primary, 0.055)
+      : alpha(theme.palette.common.white, 0.05),
+  bgcolor: (theme) => (theme.palette.mode === "light" ? "#ffffff" : "#121827"),
+  backgroundImage: (theme) =>
+    theme.palette.mode === "light"
+      ? "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(249,251,255,0.97) 100%)"
+      : "linear-gradient(180deg, rgba(255,255,255,0.022) 0%, rgba(255,255,255,0.006) 100%)",
+  boxShadow: (theme) =>
+    theme.palette.mode === "light"
+      ? "0 10px 24px rgba(15, 23, 42, 0.045), 0 2px 6px rgba(15, 23, 42, 0.02)"
+      : "0 6px 16px rgba(0, 0, 0, 0.14)",
 };
