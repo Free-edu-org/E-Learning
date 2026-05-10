@@ -32,7 +32,10 @@ const dialogPaperSx: SxProps<Theme> = {
   borderRadius: uiTokens.radius.dialog,
   overflow: "hidden",
   border: "1px solid",
-  borderColor: (theme) => alpha(theme.palette.common.white, 0.72),
+  borderColor: (theme) =>
+    theme.palette.mode === "light"
+      ? "rgba(15, 23, 42, 0.06)"
+      : "rgba(255, 255, 255, 0.08)",
   bgcolor: "background.paper",
   backgroundImage: (theme) =>
     theme.palette.mode === "light"
@@ -343,20 +346,26 @@ export function AppDialogHeader({
                 width: 42,
                 height: 42,
                 border: "1px solid",
-                borderColor: (theme) => alpha(theme.palette.text.primary, 0.08),
-                bgcolor: (theme) => alpha(theme.palette.common.white, 0.65),
-                color: "text.secondary",
+                borderColor: (theme) => alpha(theme.palette.text.primary, 0.16),
+                bgcolor: (theme) =>
+                  theme.palette.mode === "light"
+                    ? alpha(theme.palette.common.white, 0.95)
+                    : alpha(theme.palette.background.paper, 0.8),
+                color: "text.primary",
                 boxShadow: (theme) =>
                   theme.palette.mode === "light"
-                    ? "0 10px 24px rgba(15, 23, 42, 0.08)"
-                    : "none",
+                    ? "0 10px 24px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255,255,255,0.8)"
+                    : "0 10px 24px rgba(0, 0, 0, 0.24)",
                 transition:
-                  "transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease",
+                  "transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease",
                 "&:hover": {
-                  transform: "translateY(-1px)",
-                  bgcolor: (theme) => alpha(theme.palette.common.white, 0.92),
+                  transform: "translateY(-1px) scale(1.05)",
+                  bgcolor: (theme) =>
+                    theme.palette.mode === "light"
+                      ? theme.palette.common.white
+                      : alpha(theme.palette.background.paper, 0.95),
                   borderColor: (theme) =>
-                    alpha(theme.palette.primary.main, 0.18),
+                    alpha(theme.palette.primary.main, 0.4),
                   color: "primary.main",
                 },
               }}

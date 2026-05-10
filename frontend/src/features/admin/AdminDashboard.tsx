@@ -440,17 +440,6 @@ const standardFormDialogPaperSx: SxProps<Theme> = {
     xs: "calc(100% - 24px)",
     sm: 700,
   },
-  "&.user-edit-dialog": {
-    sm: 640,
-  },
-};
-
-const inlineEditActionButtonsSx: SxProps<Theme> = {
-  display: "flex",
-  gap: 0.5,
-  flexShrink: 0,
-  alignItems: "flex-start",
-  pt: 0.25,
 };
 
 const inlineEditIconButtonSx = {
@@ -792,8 +781,6 @@ export function AdminDashboard() {
 
   const isCreateStudentDialog =
     userDialogMode === "create" && userDialogRole === "STUDENT";
-  const isCreateTeacherDialog =
-    userDialogMode === "create" && userDialogRole === "TEACHER";
   const isCreateInviteDialog =
     userDialogMode === "create" &&
     (userDialogRole === "STUDENT" || userDialogRole === "TEACHER");
@@ -3431,7 +3418,6 @@ export function AdminDashboard() {
         >
           <AppDialogHeader
             icon={userDialogMode === "create" ? <SparklesIcon /> : <EditIcon />}
-            hideCloseButton={userDialogMode === "edit"}
             iconContainerSx={
               userDialogMode === "edit"
                 ? {
@@ -3642,7 +3628,7 @@ export function AdminDashboard() {
                             : "Uczeń może też zostać przypisany do grupy później.")
                         }
                       >
-                        <MenuItem value="">Bez przypisanej grupy</MenuItem>
+                        <MenuItem value="">Brak grupy</MenuItem>
                         {assignableGroups.map((group) => (
                           <MenuItem key={group.publicId} value={group.publicId}>
                             {group.name}
@@ -3679,16 +3665,27 @@ export function AdminDashboard() {
                   {/* Row 1: Username */}
                   <Box
                     sx={{
-                      p: 2.25,
+                      p: userDialogEditingFields.includes("username")
+                        ? 2.75
+                        : 2.25,
+                      bgcolor: userDialogEditingFields.includes("username")
+                        ? alpha("#6366F1", 0.035)
+                        : "transparent",
+                      borderLeft: userDialogEditingFields.includes("username")
+                        ? "4px solid"
+                        : "none",
+                      borderLeftColor: "#6366F1",
                       display: "flex",
-                      alignItems: "center",
+                      alignItems: "flex-start",
                       gap: 2.5,
-                      transition: "background-color 0.2s ease",
+                      transition: "all 0.25s ease",
                       "&:hover": {
                         bgcolor: (theme) =>
-                          theme.palette.mode === "light"
-                            ? alpha(theme.palette.text.primary, 0.01)
-                            : alpha(theme.palette.common.white, 0.02),
+                          userDialogEditingFields.includes("username")
+                            ? alpha("#6366F1", 0.05)
+                            : theme.palette.mode === "light"
+                              ? alpha(theme.palette.text.primary, 0.01)
+                              : alpha(theme.palette.common.white, 0.02),
                       },
                     }}
                   >
@@ -3706,6 +3703,9 @@ export function AdminDashboard() {
                             : alpha("#6366F1", 0.15),
                         color: "#6366F1",
                         flexShrink: 0,
+                        mt: userDialogEditingFields.includes("username")
+                          ? 0.75
+                          : 0,
                       }}
                     >
                       <PersonIcon fontSize="small" />
@@ -3718,15 +3718,16 @@ export function AdminDashboard() {
                             <Typography
                               variant="caption"
                               color="text.secondary"
-                              fontWeight={600}
+                              fontWeight={700}
                               display="block"
+                              sx={{ mb: 0.5, letterSpacing: "0.02em" }}
                             >
-                              Edycja nazwy użytkownika
+                              EDYCJA NAZWY UŻYTKOWNIKA
                             </Typography>
                             <Box
                               sx={{
                                 display: "flex",
-                                gap: 1.5,
+                                gap: 1.25,
                                 alignItems: "flex-start",
                               }}
                             >
@@ -3744,23 +3745,48 @@ export function AdminDashboard() {
                                 autoFocus
                                 size="small"
                                 fullWidth
-                                autoComplete="off"
+                                placeholder="Wprowadź nazwę użytkownika"
                                 inputProps={{
                                   maxLength: INPUT_LIMITS.username,
                                 }}
                                 error={
-                                  userDraft.username.length > 0 &&
-                                  userDraft.username.trim().length < 3
+                                  (userDraft.username.length > 0 &&
+                                    userDraft.username.trim().length < 3) ||
+                                  Boolean(userFieldErrors.username)
                                 }
                                 helperText={
-                                  userDraft.username.length > 0 &&
+                                  userFieldErrors.username ??
+                                  (userDraft.username.length > 0 &&
                                   userDraft.username.trim().length < 3
                                     ? "Minimalna długość to 3 znaki"
-                                    : `${userDraft.username.length}/${INPUT_LIMITS.username}`
+                                    : `${userDraft.username.length}/${INPUT_LIMITS.username}`)
                                 }
-                                sx={counterFieldSx}
+                                sx={{
+                                  ...counterFieldSx,
+                                  "& .MuiOutlinedInput-root": {
+                                    bgcolor: "background.paper",
+                                    ...((userDraft.username.length > 0 &&
+                                      userDraft.username.trim().length < 3) ||
+                                    userFieldErrors.username
+                                      ? {
+                                          bgcolor: alpha("#EF4444", 0.02),
+                                          "& fieldset": {
+                                            borderColor: alpha("#EF4444", 0.2),
+                                          },
+                                        }
+                                      : {}),
+                                  },
+                                }}
                               />
-                              <Box sx={inlineEditActionButtonsSx}>
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  flexDirection: "row",
+                                  gap: 1.25,
+                                  alignItems: "center",
+                                  mt: 0.25,
+                                }}
+                              >
                                 <IconButton
                                   size="small"
                                   disabled={
@@ -3770,15 +3796,31 @@ export function AdminDashboard() {
                                   onClick={() =>
                                     void saveUserInlineSection("username")
                                   }
-                                  sx={inlineEditConfirmButtonSx}
+                                  sx={{
+                                    ...inlineEditConfirmButtonSx,
+                                    width: 32,
+                                    height: 32,
+                                    bgcolor: alpha("#10B981", 0.08),
+                                    color: "#10B981",
+                                    border: "1px solid",
+                                    borderColor: alpha("#10B981", 0.2),
+                                    "&:hover": {
+                                      bgcolor: alpha("#10B981", 0.15),
+                                      borderColor: alpha("#10B981", 0.3),
+                                    },
+                                    "&.Mui-disabled": {
+                                      bgcolor: alpha("#64748B", 0.05),
+                                      borderColor: alpha("#64748B", 0.1),
+                                    },
+                                  }}
                                 >
                                   {userInlineSavingField === "username" ? (
                                     <CircularProgress
-                                      size={16}
+                                      size={14}
                                       color="inherit"
                                     />
                                   ) : (
-                                    <CheckIcon fontSize="small" />
+                                    <CheckIcon sx={{ fontSize: 18 }} />
                                   )}
                                 </IconButton>
                                 <IconButton
@@ -3799,9 +3841,21 @@ export function AdminDashboard() {
                                       prev.filter((f) => f !== "username"),
                                     );
                                   }}
-                                  sx={inlineEditCancelButtonSx}
+                                  sx={{
+                                    ...inlineEditCancelButtonSx,
+                                    width: 32,
+                                    height: 32,
+                                    bgcolor: alpha("#64748B", 0.06),
+                                    color: "#64748B",
+                                    border: "1px solid",
+                                    borderColor: alpha("#64748B", 0.15),
+                                    "&:hover": {
+                                      bgcolor: alpha("#64748B", 0.12),
+                                      borderColor: alpha("#64748B", 0.25),
+                                    },
+                                  }}
                                 >
-                                  <CloseIcon fontSize="small" />
+                                  <CloseIcon sx={{ fontSize: 18 }} />
                                 </IconButton>
                               </Box>
                             </Box>
@@ -3875,16 +3929,27 @@ export function AdminDashboard() {
                   {/* Row 2: Email */}
                   <Box
                     sx={{
-                      p: 2.25,
+                      p: userDialogEditingFields.includes("email")
+                        ? 2.75
+                        : 2.25,
+                      bgcolor: userDialogEditingFields.includes("email")
+                        ? alpha("#6366F1", 0.035)
+                        : "transparent",
+                      borderLeft: userDialogEditingFields.includes("email")
+                        ? "4px solid"
+                        : "none",
+                      borderLeftColor: "#6366F1",
                       display: "flex",
-                      alignItems: "center",
+                      alignItems: "flex-start",
                       gap: 2.5,
-                      transition: "background-color 0.2s ease",
+                      transition: "all 0.25s ease",
                       "&:hover": {
                         bgcolor: (theme) =>
-                          theme.palette.mode === "light"
-                            ? alpha(theme.palette.text.primary, 0.01)
-                            : alpha(theme.palette.common.white, 0.02),
+                          userDialogEditingFields.includes("email")
+                            ? alpha("#6366F1", 0.05)
+                            : theme.palette.mode === "light"
+                              ? alpha(theme.palette.text.primary, 0.01)
+                              : alpha(theme.palette.common.white, 0.02),
                       },
                     }}
                   >
@@ -3902,6 +3967,9 @@ export function AdminDashboard() {
                             : alpha("#6366F1", 0.15),
                         color: "#6366F1",
                         flexShrink: 0,
+                        mt: userDialogEditingFields.includes("email")
+                          ? 0.75
+                          : 0,
                       }}
                     >
                       <EmailIcon fontSize="small" />
@@ -3912,17 +3980,18 @@ export function AdminDashboard() {
                         <Typography
                           variant="caption"
                           color="text.secondary"
-                          fontWeight={600}
+                          fontWeight={700}
                           display="block"
-                          sx={{ mb: 1 }}
+                          sx={{ mb: 1.5, letterSpacing: "0.02em" }}
                         >
-                          Edycja adresu e-mail
+                          EDYCJA ADRESU E-MAIL
                         </Typography>
+
                         <Stack spacing={1.5}>
                           <Box
                             sx={{
                               display: "flex",
-                              gap: 1.5,
+                              gap: 1.25,
                               alignItems: "flex-start",
                             }}
                           >
@@ -3949,23 +4018,58 @@ export function AdminDashboard() {
                               error={Boolean(userFieldErrors.email)}
                               helperText={
                                 userFieldErrors.email ??
-                                "Na ten adres będzie wysyłana komunikacja związana z kontem."
+                                "Na ten adres będzie wysyłana komunikacja."
                               }
-                              placeholder="Wprowadź e-mail"
+                              placeholder="Wprowadź nowy e-mail"
+                              sx={{
+                                "& .MuiOutlinedInput-root": {
+                                  bgcolor: "background.paper",
+                                  ...(userFieldErrors.email && {
+                                    bgcolor: alpha("#EF4444", 0.02),
+                                    "& fieldset": {
+                                      borderColor: alpha("#EF4444", 0.2),
+                                    },
+                                  }),
+                                },
+                              }}
                             />
-                            <Box sx={inlineEditActionButtonsSx}>
+                            <Box
+                              sx={{
+                                display: "flex",
+                                flexDirection: "row",
+                                gap: 1,
+                                alignItems: "center",
+                                mt: 0.5,
+                              }}
+                            >
                               <IconButton
                                 size="small"
                                 disabled={userInlineSavingField === "email"}
                                 onClick={() =>
                                   void saveUserInlineSection("email")
                                 }
-                                sx={inlineEditConfirmButtonSx}
+                                sx={{
+                                  ...inlineEditConfirmButtonSx,
+                                  width: 32,
+                                  height: 32,
+                                  bgcolor: alpha("#10B981", 0.08),
+                                  color: "#10B981",
+                                  border: "1px solid",
+                                  borderColor: alpha("#10B981", 0.2),
+                                  "&:hover": {
+                                    bgcolor: alpha("#10B981", 0.15),
+                                    borderColor: alpha("#10B981", 0.3),
+                                  },
+                                  "&.Mui-disabled": {
+                                    bgcolor: alpha("#64748B", 0.05),
+                                    borderColor: alpha("#64748B", 0.1),
+                                  },
+                                }}
                               >
                                 {userInlineSavingField === "email" ? (
-                                  <CircularProgress size={16} color="inherit" />
+                                  <CircularProgress size={14} color="inherit" />
                                 ) : (
-                                  <CheckIcon fontSize="small" />
+                                  <CheckIcon sx={{ fontSize: 18 }} />
                                 )}
                               </IconButton>
                               <IconButton
@@ -3986,42 +4090,83 @@ export function AdminDashboard() {
                                     prev.filter((f) => f !== "email"),
                                   );
                                 }}
-                                sx={inlineEditCancelButtonSx}
+                                sx={{
+                                  ...inlineEditCancelButtonSx,
+                                  width: 32,
+                                  height: 32,
+                                  bgcolor: alpha("#64748B", 0.06),
+                                  color: "#64748B",
+                                  border: "1px solid",
+                                  borderColor: alpha("#64748B", 0.15),
+                                  "&:hover": {
+                                    bgcolor: alpha("#64748B", 0.12),
+                                    borderColor: alpha("#64748B", 0.25),
+                                  },
+                                }}
                               >
-                                <CloseIcon fontSize="small" />
+                                <CloseIcon sx={{ fontSize: 18 }} />
                               </IconButton>
                             </Box>
                           </Box>
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            fontWeight={600}
-                            display="block"
-                          >
-                            Potwierdź adres e-mail
-                          </Typography>
-                          <TextField
-                            value={userDialogConfirmEmail}
-                            onChange={(event) => {
-                              setUserFieldErrors((current) => ({
-                                ...current,
-                                emailConfirm: undefined,
-                              }));
-                              setUserDialogConfirmEmail(
-                                event.target.value.slice(0, INPUT_LIMITS.email),
-                              );
-                            }}
-                            size="small"
-                            fullWidth
-                            placeholder="Powtórz e-mail"
-                            error={Boolean(userFieldErrors.emailConfirm)}
-                            helperText={
-                              userDialogConfirmEmail.length > 0 &&
-                              userDraft.email !== userDialogConfirmEmail
-                                ? "Adresy e-mail nie są zgodne"
-                                : ""
-                            }
-                          />
+
+                          <Box>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              fontWeight={600}
+                              display="block"
+                              sx={{ mb: 1, opacity: 0.8 }}
+                            >
+                              Potwierdź adres e-mail
+                            </Typography>
+                            <TextField
+                              value={userDialogConfirmEmail}
+                              onChange={(event) => {
+                                setUserFieldErrors((current) => ({
+                                  ...current,
+                                  emailConfirm: undefined,
+                                }));
+                                setUserDialogConfirmEmail(
+                                  event.target.value.slice(
+                                    0,
+                                    INPUT_LIMITS.email,
+                                  ),
+                                );
+                              }}
+                              size="small"
+                              fullWidth
+                              placeholder="Powtórz e-mail, aby zapisać"
+                              error={
+                                Boolean(userFieldErrors.emailConfirm) ||
+                                (userDialogConfirmEmail.length > 0 &&
+                                  userDraft.email !== userDialogConfirmEmail)
+                              }
+                              helperText={
+                                userFieldErrors.emailConfirm ??
+                                (userDialogConfirmEmail.length > 0 &&
+                                userDraft.email !== userDialogConfirmEmail
+                                  ? "Adresy e-mail nie są zgodne"
+                                  : "")
+                              }
+                              sx={{
+                                "& .MuiOutlinedInput-root": {
+                                  bgcolor: "background.paper",
+                                  opacity: 0.9,
+                                  ...((userDialogConfirmEmail.length > 0 &&
+                                    userDraft.email !==
+                                      userDialogConfirmEmail) ||
+                                  userFieldErrors.emailConfirm
+                                    ? {
+                                        bgcolor: alpha("#EF4444", 0.02),
+                                        "& fieldset": {
+                                          borderColor: alpha("#EF4444", 0.2),
+                                        },
+                                      }
+                                    : {}),
+                                },
+                              }}
+                            />
+                          </Box>
                         </Stack>
                       </Box>
                     ) : (
@@ -4092,16 +4237,27 @@ export function AdminDashboard() {
                       {/* Row 3: Group (Student only) */}
                       <Box
                         sx={{
-                          p: 2.25,
+                          p: userDialogEditingFields.includes("group")
+                            ? 2.75
+                            : 2.25,
+                          bgcolor: userDialogEditingFields.includes("group")
+                            ? alpha("#6366F1", 0.035)
+                            : "transparent",
+                          borderLeft: userDialogEditingFields.includes("group")
+                            ? "4px solid"
+                            : "none",
+                          borderLeftColor: "#6366F1",
                           display: "flex",
-                          alignItems: "center",
+                          alignItems: "flex-start",
                           gap: 2.5,
-                          transition: "background-color 0.2s ease",
+                          transition: "all 0.25s ease",
                           "&:hover": {
                             bgcolor: (theme) =>
-                              theme.palette.mode === "light"
-                                ? alpha(theme.palette.text.primary, 0.01)
-                                : alpha(theme.palette.common.white, 0.02),
+                              userDialogEditingFields.includes("group")
+                                ? alpha("#6366F1", 0.05)
+                                : theme.palette.mode === "light"
+                                  ? alpha(theme.palette.text.primary, 0.01)
+                                  : alpha(theme.palette.common.white, 0.02),
                           },
                         }}
                       >
@@ -4119,6 +4275,9 @@ export function AdminDashboard() {
                                 : alpha("#6366F1", 0.15),
                             color: "#6366F1",
                             flexShrink: 0,
+                            mt: userDialogEditingFields.includes("group")
+                              ? 0.75
+                              : 0,
                           }}
                         >
                           <GroupIcon fontSize="small" />
@@ -4126,23 +4285,23 @@ export function AdminDashboard() {
 
                         {userDialogEditingFields.includes("group") ? (
                           <Box sx={{ flex: 1 }}>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              fontWeight={700}
+                              display="block"
+                              sx={{ mb: 1.5, letterSpacing: "0.02em" }}
+                            >
+                              EDYCJA GRUPY
+                            </Typography>
                             <Box
                               sx={{
                                 display: "flex",
-                                gap: 1.5,
+                                gap: 1.25,
                                 alignItems: "flex-start",
                               }}
                             >
                               <Box sx={{ flex: 1 }}>
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                  fontWeight={600}
-                                  display="block"
-                                  sx={{ mb: 0.75 }}
-                                >
-                                  Edycja grupy
-                                </Typography>
                                 <TextField
                                   select
                                   value={userDraft.groupPublicId}
@@ -4156,8 +4315,16 @@ export function AdminDashboard() {
                                   }
                                   size="small"
                                   fullWidth
+                                  SelectProps={{
+                                    displayEmpty: true,
+                                  }}
+                                  sx={{
+                                    "& .MuiOutlinedInput-root": {
+                                      bgcolor: "background.paper",
+                                    },
+                                  }}
                                 >
-                                  <MenuItem value="">Bez grupy</MenuItem>
+                                  <MenuItem value="">Brak grupy</MenuItem>
                                   {assignableGroups.map((group) => (
                                     <MenuItem
                                       key={group.publicId}
@@ -4169,7 +4336,13 @@ export function AdminDashboard() {
                                 </TextField>
                               </Box>
                               <Box
-                                sx={{ ...inlineEditActionButtonsSx, mt: 3.5 }}
+                                sx={{
+                                  display: "flex",
+                                  flexDirection: "row",
+                                  gap: 1,
+                                  alignItems: "center",
+                                  mt: 0.5,
+                                }}
                               >
                                 <IconButton
                                   size="small"
@@ -4177,15 +4350,31 @@ export function AdminDashboard() {
                                   onClick={() =>
                                     void saveUserInlineSection("group")
                                   }
-                                  sx={inlineEditConfirmButtonSx}
+                                  sx={{
+                                    ...inlineEditConfirmButtonSx,
+                                    width: 32,
+                                    height: 32,
+                                    bgcolor: alpha("#10B981", 0.08),
+                                    color: "#10B981",
+                                    border: "1px solid",
+                                    borderColor: alpha("#10B981", 0.2),
+                                    "&:hover": {
+                                      bgcolor: alpha("#10B981", 0.15),
+                                      borderColor: alpha("#10B981", 0.3),
+                                    },
+                                    "&.Mui-disabled": {
+                                      bgcolor: alpha("#64748B", 0.05),
+                                      borderColor: alpha("#64748B", 0.1),
+                                    },
+                                  }}
                                 >
                                   {userInlineSavingField === "group" ? (
                                     <CircularProgress
-                                      size={16}
+                                      size={14}
                                       color="inherit"
                                     />
                                   ) : (
-                                    <CheckIcon fontSize="small" />
+                                    <CheckIcon sx={{ fontSize: 18 }} />
                                   )}
                                 </IconButton>
                                 <IconButton
@@ -4204,9 +4393,21 @@ export function AdminDashboard() {
                                       prev.filter((f) => f !== "group"),
                                     );
                                   }}
-                                  sx={inlineEditCancelButtonSx}
+                                  sx={{
+                                    ...inlineEditCancelButtonSx,
+                                    width: 32,
+                                    height: 32,
+                                    bgcolor: alpha("#64748B", 0.06),
+                                    color: "#64748B",
+                                    border: "1px solid",
+                                    borderColor: alpha("#64748B", 0.15),
+                                    "&:hover": {
+                                      bgcolor: alpha("#64748B", 0.12),
+                                      borderColor: alpha("#64748B", 0.25),
+                                    },
+                                  }}
                                 >
-                                  <CloseIcon fontSize="small" />
+                                  <CloseIcon sx={{ fontSize: 18 }} />
                                 </IconButton>
                               </Box>
                             </Box>
@@ -4237,7 +4438,7 @@ export function AdminDashboard() {
                               >
                                 {assignableGroups.find(
                                   (g) => g.publicId === userDraft.groupPublicId,
-                                )?.name ?? "Bez grupy"}
+                                )?.name || "Brak grupy"}
                               </Typography>
                             </Box>
                             <Button
@@ -4288,6 +4489,12 @@ export function AdminDashboard() {
                       alignItems: "center",
                       gap: 2.5,
                       transition: "all 0.2s ease",
+                      mt:
+                        (userDialogEditingFields.includes("email") &&
+                          userDialogRole === "TEACHER") ||
+                        userDialogEditingFields.includes("group")
+                          ? 1.5
+                          : 0,
                     }}
                   >
                     <Box
@@ -4351,6 +4558,8 @@ export function AdminDashboard() {
                         px: 1.5,
                         py: 0.6,
                         minHeight: 32,
+                        minWidth: 120,
+                        whiteSpace: "nowrap",
                         gap: 0.5,
                         "& .MuiButton-startIcon": { mr: 0.5 },
                         borderColor: passwordResetSent
@@ -4381,43 +4590,35 @@ export function AdminDashboard() {
               </Stack>
             )}
           </AppDialogBody>
-          <AppDialogFooter
-            sx={{
-              py: 2,
-              px: 3,
-              borderTop: "1px solid",
-              borderColor: "rgba(15, 23, 42, 0.06)",
-            }}
-          >
-            <FormActions sx={{ gap: 1.5 }}>
-              <Button
-                onClick={closeUserDialog}
-                sx={{
-                  ...panelFooterButtonSx,
-                  color: "text.secondary",
-                  minHeight: 44,
-                  px: 3,
-                }}
-              >
-                {selectedUser === null ? "Anuluj" : "Zamknij"}
-              </Button>
-              {selectedUser === null && (
+          {userDialogMode === "create" && (
+            <AppDialogFooter
+              sx={{
+                py: 2,
+                px: 3,
+                borderTop: "1px solid",
+                borderColor: "rgba(15, 23, 42, 0.06)",
+              }}
+            >
+              <FormActions sx={{ gap: 1.5 }}>
                 <Button
                   variant="contained"
-                  startIcon={<SendIcon />}
                   onClick={submitUserDialog}
                   disabled={userDialogLoading}
-                  sx={{ ...panelFooterButtonSx, minHeight: 44, px: 3 }}
+                  sx={{
+                    ...panelFooterButtonSx,
+                    minWidth: 140,
+                    boxShadow: "0 8px 20px -6px rgba(99, 102, 241, 0.5)",
+                  }}
                 >
-                  {userDialogLoading
-                    ? "Zapisywanie..."
-                    : isCreateTeacherDialog
-                      ? "Zaproś nauczyciela"
-                      : "Zaproś ucznia"}
+                  {userDialogLoading ? (
+                    <CircularProgress size={20} color="inherit" />
+                  ) : (
+                    "Dodaj użytkownika"
+                  )}
                 </Button>
-              )}
-            </FormActions>
-          </AppDialogFooter>
+              </FormActions>
+            </AppDialogFooter>
+          )}
         </AppDialog>
 
         <AppDialog
@@ -5255,12 +5456,6 @@ export function AdminDashboard() {
           <AppDialogFooter>
             <FormActions>
               <Button
-                onClick={closeGroupDialog}
-                sx={{ ...panelFooterButtonSx, color: "text.secondary" }}
-              >
-                Anuluj
-              </Button>
-              <Button
                 variant="contained"
                 startIcon={
                   groupDialogMode === "create" ? (
@@ -5378,13 +5573,6 @@ export function AdminDashboard() {
           <AppDialogFooter>
             <FormActions>
               <Button
-                onClick={closeDeleteDialog}
-                sx={{ ...panelFooterButtonSx, color: "text.secondary" }}
-              >
-                Anuluj
-              </Button>
-              <Button
-                color="error"
                 variant="contained"
                 startIcon={<DeleteIcon />}
                 onClick={confirmDelete}
@@ -5599,16 +5787,6 @@ export function AdminDashboard() {
               </FormSection>
             </Stack>
           </AppDialogBody>
-          <AppDialogFooter>
-            <FormActions>
-              <Button
-                onClick={closeMembershipDialog}
-                sx={{ ...panelFooterButtonSx, color: "text.secondary" }}
-              >
-                Anuluj
-              </Button>
-            </FormActions>
-          </AppDialogFooter>
         </AppDialog>
       </Container>
     </Box>
