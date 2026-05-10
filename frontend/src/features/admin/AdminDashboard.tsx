@@ -324,15 +324,8 @@ const toolbarFieldSx = {
 const segmentedGroupSx = {
   p: 0.375,
   borderRadius: 2.5,
-  bgcolor: (theme: Theme) =>
-    theme.palette.mode === "light"
-      ? alpha(theme.palette.common.black, 0.03)
-      : alpha(theme.palette.common.white, 0.03),
-  border: "1px solid",
-  borderColor: (theme: Theme) =>
-    theme.palette.mode === "light"
-      ? alpha(theme.palette.text.primary, 0.06)
-      : alpha(theme.palette.common.white, 0.05),
+  bgcolor: "transparent",
+  border: "none",
   gap: 0.375,
   "& .MuiToggleButtonGroup-grouped": {
     border: 0,
@@ -2641,10 +2634,12 @@ export function AdminDashboard() {
                                   useFlexGap
                                 >
                                   <Typography
-                                    component="span"
+                                    variant="caption"
                                     sx={{
                                       fontSize: "0.74rem",
                                       fontWeight: 700,
+                                      lineHeight: 1.2,
+                                      mt: 0.2, // Nudge down to align with value
                                       letterSpacing: "0.03em",
                                       textTransform: "uppercase",
                                       color: (theme) =>
@@ -2680,6 +2675,7 @@ export function AdminDashboard() {
                                         ...panelSingleLineSx,
                                         fontSize: "0.84rem",
                                         fontWeight: 600,
+                                        lineHeight: 1.2,
                                         color: (theme) =>
                                           theme.palette.mode === "light"
                                             ? alpha(
