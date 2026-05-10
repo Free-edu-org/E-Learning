@@ -193,6 +193,25 @@ class AdminAchievementControllerWebTest {
 				.isEqualTo("VALIDATION_FAILED");
 	}
 
+	@Test
+	void shouldDeleteAchievementForAdmin() {
+		when(achievementManagementService.deleteAchievement("FIRST_LESSON")).thenReturn(Mono.empty());
+
+		webTestClient.mutateWith(SecurityMockServerConfigurers.mockUser("admin").roles("ADMIN")).delete()
+				.uri("/api/v1/admin/achievements/FIRST_LESSON").exchange().expectStatus().isNoContent();
+		verify(achievementManagementService).deleteAchievement("FIRST_LESSON");
+	}
+
+	@Test
+	void shouldReturnNotFoundWhenDeletingMissingAchievement() {
+		when(achievementManagementService.deleteAchievement("MISSING"))
+				.thenReturn(Mono.error(new AchievementException(AchievementErrorCode.ACHIEVEMENT_NOT_FOUND)));
+
+		webTestClient.mutateWith(SecurityMockServerConfigurers.mockUser("admin").roles("ADMIN")).delete()
+				.uri("/api/v1/admin/achievements/MISSING").exchange().expectStatus().isNotFound().expectBody()
+				.jsonPath("$.code").isEqualTo("ACHIEVEMENT_NOT_FOUND");
+	}
+
 	@Configuration
 	static class TestConfig {
 

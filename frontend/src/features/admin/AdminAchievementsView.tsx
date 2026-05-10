@@ -117,6 +117,11 @@ type DialogFeedbackState = {
   message: string;
 };
 
+type DeleteAchievementState = {
+  code: string;
+  title: string;
+} | null;
+
 const ACHIEVEMENT_TYPE_OPTIONS: Array<{
   value: AchievementType;
   label: string;
@@ -733,7 +738,10 @@ export function AdminAchievementsView() {
   const [dialogDetailsLoading, setDialogDetailsLoading] = useState(false);
   const [dialogFeedback, setDialogFeedback] =
     useState<DialogFeedbackState | null>(null);
+  const [deleteDialog, setDeleteDialog] =
+    useState<DeleteAchievementState>(null);
 
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [toggleLoading, setToggleLoading] = useState(false);
   const [snackbar, setSnackbar] = useState<{
     severity: "success" | "error";
@@ -917,12 +925,38 @@ export function AdminAchievementsView() {
     }
   };
 
-  const handleDeleteUnavailable = () => {
-    setSnackbar({
-      severity: "error",
-      message:
-        "Usuwanie osiągnięć nie jest jeszcze dostępne, bo brakuje endpointu po stronie API.",
+  const openDeleteDialog = (achievement: AdminAchievement) => {
+    setDeleteDialog({
+      code: achievement.code,
+      title: achievement.title,
     });
+  };
+
+  const handleDeleteAchievement = async () => {
+    if (!deleteDialog) {
+      return;
+    }
+
+    setDeleteLoading(true);
+    try {
+      await adminService.deleteAchievement(deleteDialog.code);
+      setDeleteDialog(null);
+      setSnackbar({
+        severity: "success",
+        message: "Osiągnięcie zostało usunięte.",
+      });
+      await loadAchievements();
+    } catch (error) {
+      setSnackbar({
+        severity: "error",
+        message: getAchievementApiErrorState(
+          error,
+          "Nie udało się usunąć osiągnięcia.",
+        ).message,
+      });
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   const handleToggleActive = async (achievement: AdminAchievement) => {
@@ -1480,7 +1514,7 @@ export function AdminAchievementsView() {
                                     </Button>
                                     <Button
                                       size="small"
-                                      onClick={handleDeleteUnavailable}
+                                      onClick={() => openDeleteDialog(achievement)}
                                       sx={achievementDeleteTextActionButtonSx}
                                     >
                                       Usuń
@@ -1924,6 +1958,62 @@ export function AdminAchievementsView() {
               {dialogMode === "create" ? "Utwórz osiągnięcie" : "Zapisz zmiany"}
             </Button>
           </FormActions>
+        </AppDialogFooter>
+      </AppDialog>
+
+      <AppDialog
+        open={deleteDialog != null}
+        onClose={() => {
+          if (!deleteLoading) {
+            setDeleteDialog(null);
+          }
+        }}
+        maxWidth="xs"
+      >
+        <AppDialogHeader
+          icon={<AchievementIcon />}
+          title="Usuń osiągnięcie"
+          subtitle="Ta operacja usuwa definicję osiągnięcia z panelu administratora."
+        />
+        <AppDialogBody>
+          <Stack spacing={1.25}>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ lineHeight: 1.7 }}
+            >
+              Czy na pewno chcesz usunąć osiągnięcie
+              {" "}
+              <strong>{deleteDialog?.title}</strong>
+              ?
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Kod techniczny: {deleteDialog?.code}
+            </Typography>
+          </Stack>
+        </AppDialogBody>
+        <AppDialogFooter>
+          <Button
+            onClick={() => setDeleteDialog(null)}
+            disabled={deleteLoading}
+            sx={panelFooterButtonSx}
+          >
+            Anuluj
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={() => void handleDeleteAchievement()}
+            disabled={deleteLoading}
+            startIcon={
+              deleteLoading ? (
+                <CircularProgress size={16} color="inherit" />
+              ) : undefined
+            }
+            sx={{ ...panelFooterButtonSx, boxShadow: "none" }}
+          >
+            Usuń osiągnięcie
+          </Button>
         </AppDialogFooter>
       </AppDialog>
 

@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -101,5 +102,17 @@ public class AdminAchievementController {
 	public Mono<AdminAchievementResponse> updateAchievementActive(@PathVariable String code,
 			@Valid @RequestBody Mono<UpdateAchievementActiveRequest> request) {
 		return request.flatMap(payload -> achievementManagementService.updateAchievementActive(code, payload));
+	}
+
+	@Operation(summary = "Delete achievement definition")
+	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Achievement definition deleted"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized - invalid token", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden - requires ADMIN role", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "404", description = "Not Found - ACHIEVEMENT_NOT_FOUND", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
+	@DeleteMapping("/{code}")
+	@PreAuthorize("hasRole('ADMIN')")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public Mono<Void> deleteAchievement(@PathVariable String code) {
+		return achievementManagementService.deleteAchievement(code);
 	}
 }

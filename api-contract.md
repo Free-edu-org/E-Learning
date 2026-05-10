@@ -1584,6 +1584,20 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
 - `FORBIDDEN` (403 Forbidden): Token role does not permit access.
 
 ---
+### 6.11. Delete Achievement Definition
+- **URL**: `/api/v1/admin/achievements/{code}`
+- **Method**: `DELETE`
+- **Description**: Usuwa definicję achievementu po immutable `code`. Wymaga `ADMIN`. Powiązane rekordy historyczne w `user_get_achievement` są usuwane kaskadowo przez relację bazy danych.
+
+**Success (204 No Content):**
+- Brak body.
+
+**Known Errors:**
+- `ACHIEVEMENT_NOT_FOUND` (404 Not Found): Achievement does not exist.
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access.
+
+---
 ## 7. Student Dashboard (`/api/v1/student`)
 
 Warstwa BFF dla uczniow.
