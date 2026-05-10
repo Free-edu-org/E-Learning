@@ -23,6 +23,7 @@ import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
 import org.springframework.http.HttpMethod;
 import java.util.Arrays;
+import java.util.List;
 
 import pl.freeedu.backend.security.jwt.JwtAuthenticationFilter;
 import pl.freeedu.backend.security.jwt.JwtService;
@@ -38,6 +39,9 @@ public class SecurityConfig {
 
 	private final UserRepository userRepository;
 	private final JwtService jwtService;
+
+	@org.springframework.beans.factory.annotation.Value("${application.security.cors.allowed-origins:http://localhost:5173}")
+	private String allowedOrigins;
 
 	public SecurityConfig(UserRepository userRepository, JwtService jwtService) {
 		this.userRepository = userRepository;
@@ -82,7 +86,8 @@ public class SecurityConfig {
 				.authorizeExchange(exchanges -> exchanges.pathMatchers("/api/v1/auth/**").permitAll()
 						.pathMatchers("/api/v1/invitations/**").permitAll()
 						.pathMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**", "/webjars/**")
-						.permitAll().pathMatchers(HttpMethod.GET, "/uploads/avatars/**").permitAll()
+						.permitAll().pathMatchers("/actuator/**").permitAll()
+						.pathMatchers(HttpMethod.GET, "/uploads/avatars/**").permitAll()
 						.pathMatchers("/uploads/attachments/**").denyAll().pathMatchers("/uploads/task-hints/**")
 						.denyAll().pathMatchers("/api/v1/admin/**").hasRole("ADMIN").pathMatchers("/api/v1/teacher/**")
 						.hasRole("TEACHER").pathMatchers("/api/v1/student/**").hasRole("STUDENT").anyExchange()
@@ -93,8 +98,16 @@ public class SecurityConfig {
 	@Bean
 	public CorsConfigurationSource corsConfigurationSource() {
 		CorsConfiguration configuration = new CorsConfiguration();
-		configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "http://127.0.0.1:5173",
-				"http://localhost:5174", "http://127.0.0.1:5174"));
+
+		if (allowedOrigins != null && !allowedOrigins.isBlank()) {
+			List<String> origins = Arrays.stream(allowedOrigins.split(",")).map(String::trim).filter(s -> !s.isEmpty())
+					.toList();
+			configuration.setAllowedOrigins(origins);
+		} else {
+			// Fallback bezpieczny dla dev, ale na prod musi być skonfigurowane
+			configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "http://127.0.0.1:5173"));
+		}
+
 		configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"));
 		configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept"));
 		configuration.setAllowCredentials(true);

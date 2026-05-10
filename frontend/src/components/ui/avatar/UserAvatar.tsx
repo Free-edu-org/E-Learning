@@ -20,7 +20,7 @@ export function UserAvatar({
   const resolvedSrc = isPreset
     ? `/avatars/${presetName}.svg`
     : avatarUrl
-      ? `http://localhost:8080${avatarUrl}`
+      ? avatarUrl
       : undefined;
 
   const initials = username ? username.substring(0, 2).toUpperCase() : "?";

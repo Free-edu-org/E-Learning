@@ -497,7 +497,7 @@ export function LessonSolver() {
       }
 
       fetch(
-        `${import.meta.env.VITE_API_URL || "http://localhost:8080"}/api/v1/lessons/${lessonPublicId}/submit`,
+        `${import.meta.env.VITE_API_BASE_URL || ""}/api/v1/lessons/${lessonPublicId}/submit`,
         {
           method: "POST",
           headers,
