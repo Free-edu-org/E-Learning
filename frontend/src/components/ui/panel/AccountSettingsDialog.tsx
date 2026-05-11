@@ -147,39 +147,41 @@ function getInlineEditSectionSx(isEditing: boolean): SxProps<Theme> {
   };
 }
 
-const modalFieldSx: SxProps<Theme> = {
-  "& .MuiOutlinedInput-root": {
-    bgcolor: (theme: Theme) =>
-      theme.palette.mode === "light"
-        ? alpha(theme.palette.common.white, 0.18)
-        : alpha(theme.palette.common.white, 0.015),
-    minHeight: 40,
-    alignItems: "center",
-    border: "1px solid",
+const modalOutlinedInputSx = {
+  bgcolor: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.common.white, 0.18)
+      : alpha(theme.palette.common.white, 0.015),
+  minHeight: 40,
+  alignItems: "center",
+  border: "1px solid",
+  borderColor: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.text.primary, 0.08)
+      : alpha(theme.palette.common.white, 0.08),
+  boxShadow: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? "0 4px 12px rgba(15, 23, 42, 0.04)"
+      : "inset 0 1px 0 rgba(255,255,255,0.02)",
+  transition:
+    "border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease",
+  "& fieldset": {
+    border: "none",
+  },
+  "&:hover": {
     borderColor: (theme: Theme) =>
       theme.palette.mode === "light"
-        ? alpha(theme.palette.text.primary, 0.08)
-        : alpha(theme.palette.common.white, 0.08),
-    boxShadow: (theme: Theme) =>
-      theme.palette.mode === "light"
-        ? "0 4px 12px rgba(15, 23, 42, 0.04)"
-        : "inset 0 1px 0 rgba(255,255,255,0.02)",
-    transition:
-      "border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease",
-    "& fieldset": {
-      border: "none",
-    },
-    "&:hover": {
-      borderColor: (theme: Theme) =>
-        theme.palette.mode === "light"
-          ? alpha(theme.palette.primary.main, 0.16)
-          : alpha(theme.palette.primary.light, 0.18),
-    },
-    "&.Mui-focused": {
-      borderColor: inlineEditAccentColor,
-      boxShadow: `0 0 0 3px ${alpha(inlineEditAccentColor, 0.12)}`,
-    },
+        ? alpha(theme.palette.primary.main, 0.16)
+        : alpha(theme.palette.primary.light, 0.18),
   },
+  "&.Mui-focused": {
+    borderColor: inlineEditAccentColor,
+    boxShadow: `0 0 0 3px ${alpha(inlineEditAccentColor, 0.12)}`,
+  },
+};
+
+const modalFieldSx: SxProps<Theme> = {
+  "& .MuiOutlinedInput-root": modalOutlinedInputSx,
   "& .MuiInputBase-input": {
     fontSize: "0.92rem",
     lineHeight: 1.2,
@@ -697,7 +699,7 @@ export function AccountSettingsDialog({
                           sx={{
                             ...modalFieldSx,
                             "& .MuiOutlinedInput-root": {
-                              ...modalFieldSx["& .MuiOutlinedInput-root"],
+                              ...modalOutlinedInputSx,
                               ...(fieldErrors.username && {
                                 bgcolor: alpha("#EF4444", 0.02),
                                 "& fieldset": {
@@ -829,7 +831,7 @@ export function AccountSettingsDialog({
                             sx={{
                               ...modalFieldSx,
                               "& .MuiOutlinedInput-root": {
-                                ...modalFieldSx["& .MuiOutlinedInput-root"],
+                                ...modalOutlinedInputSx,
                                 ...(fieldErrors.email && {
                                   bgcolor: alpha("#EF4444", 0.02),
                                   "& fieldset": {
@@ -858,7 +860,7 @@ export function AccountSettingsDialog({
                             sx={{
                               ...modalFieldSx,
                               "& .MuiOutlinedInput-root": {
-                                ...modalFieldSx["& .MuiOutlinedInput-root"],
+                                ...modalOutlinedInputSx,
                                 ...(fieldErrors.confirmEmail && {
                                   bgcolor: alpha("#EF4444", 0.02),
                                   "& fieldset": {
@@ -1032,7 +1034,7 @@ export function AccountSettingsDialog({
                       sx={{
                         ...modalFieldSx,
                         "& .MuiOutlinedInput-root": {
-                          ...modalFieldSx["& .MuiOutlinedInput-root"],
+                          ...modalOutlinedInputSx,
                           ...(fieldErrors.oldPassword && {
                             bgcolor: alpha("#EF4444", 0.02),
                             "& fieldset": {
@@ -1078,7 +1080,7 @@ export function AccountSettingsDialog({
                         sx={{
                           ...modalFieldSx,
                           "& .MuiOutlinedInput-root": {
-                            ...modalFieldSx["& .MuiOutlinedInput-root"],
+                            ...modalOutlinedInputSx,
                             ...(fieldErrors.newPassword && {
                               bgcolor: alpha("#EF4444", 0.02),
                               "& fieldset": {
@@ -1152,7 +1154,7 @@ export function AccountSettingsDialog({
                       sx={{
                         ...modalFieldSx,
                         "& .MuiOutlinedInput-root": {
-                          ...modalFieldSx["& .MuiOutlinedInput-root"],
+                          ...modalOutlinedInputSx,
                           ...(fieldErrors.confirmPassword && {
                             bgcolor: alpha("#EF4444", 0.02),
                             "& fieldset": {
