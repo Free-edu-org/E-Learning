@@ -450,7 +450,6 @@ const inviteBadgeSx = {
   px: 0.5,
   bgcolor: (theme: Theme) => alpha(theme.palette.primary.main, 0.1),
   color: "primary.main",
-  borderColor: (theme: Theme) => alpha(theme.palette.error.main, 0.28),
 };
 
 const standardFormDialogPaperSx: SxProps<Theme> = {
@@ -3600,7 +3599,6 @@ export function AdminDashboard() {
                   ((selectedUser?.role as UserRole | undefined) ??
                     userDialogRole) as UserRole,
                 )}
-                variant="outlined"
                 sx={{
                   ...inviteBadgeSx,
                   borderRadius: "8px",
@@ -4807,14 +4805,12 @@ export function AdminDashboard() {
               <Chip
                 label={groupDialogMode === "create" ? "Nowa grupa" : "Edycja"}
                 size="small"
-                variant="outlined"
+                variant="filled"
                 sx={{
                   fontWeight: 700,
                   px: 0.5,
                   bgcolor: (theme) => alpha(theme.palette.warning.main, 0.1),
                   color: "warning.dark",
-                  borderColor: (theme) =>
-                    alpha(theme.palette.warning.main, 0.18),
                 }}
               />
             }
@@ -5654,7 +5650,6 @@ export function AdminDashboard() {
                 label="Ostrzeżenie"
                 size="small"
                 color="error"
-                variant="outlined"
                 sx={membershipHeaderBadgeSx}
               />
             }

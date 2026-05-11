@@ -7,15 +7,12 @@ import {
   Grid,
   Paper,
   Skeleton,
-  Stack,
   Typography,
 } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
 import {
   ArrowBackOutlined as BackIcon,
-  CheckCircleOutlined as CompletedIcon,
   EmojiEventsOutlined as AchievementIcon,
-  StarsOutlined as PointsIcon,
   TrendingUpOutlined as TrendIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
