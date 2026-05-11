@@ -152,6 +152,9 @@ jobs:
           EOF
           )
 
+          echo "Sending Teams payload:"
+          echo "${PAYLOAD}"
+
           curl --fail-with-body -X POST "${{ secrets.TEAMS_WEBHOOK_URL }}" \
             -H "Content-Type: application/json" \
             -d "${PAYLOAD}"
