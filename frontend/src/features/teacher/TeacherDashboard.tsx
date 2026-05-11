@@ -18,7 +18,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { alpha, useTheme } from "@mui/material/styles";
+import { alpha, useTheme, type Theme } from "@mui/material/styles";
 import {
   AddCircleOutlined as AddIcon,
   AttachFileOutlined as AttachIcon,
@@ -26,7 +26,7 @@ import {
   CloseOutlined as RemoveFileIcon,
   DeleteOutline as DeleteIcon,
   EditOutlined as EditLessonIcon,
-  GroupOutlined as GroupIcon,
+  SchoolOutlined as SchoolIcon,
   PersonAddOutlined as PersonAddIcon,
   SaveOutlined as SaveIcon,
 } from "@mui/icons-material";
@@ -96,9 +96,9 @@ const deleteHeaderBadgeSx = {
   borderRadius: 999,
   fontWeight: 700,
   px: 0.75,
-  borderColor: (theme) => alpha(theme.palette.error.main, 0.28),
+  borderColor: (theme: Theme) => alpha(theme.palette.error.main, 0.28),
   color: "error.main",
-  bgcolor: (theme) =>
+  bgcolor: (theme: Theme) =>
     theme.palette.mode === "light"
       ? alpha(theme.palette.error.main, 0.04)
       : alpha(theme.palette.error.main, 0.12),
@@ -931,7 +931,7 @@ export function TeacherDashboard() {
             icon={
               <Stack direction="row" spacing={0.5} alignItems="center">
                 <PersonAddIcon sx={{ fontSize: 30 }} />
-                <GroupIcon sx={{ fontSize: 30 }} />
+                <SchoolIcon sx={{ fontSize: 30 }} />
               </Stack>
             }
             title="Zarządzaj uczniami i grupami"

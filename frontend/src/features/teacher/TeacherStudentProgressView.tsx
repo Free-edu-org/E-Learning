@@ -10,8 +10,11 @@ import {
   Box,
   Button,
   Chip,
+  CircularProgress,
   Container,
   Grid,
+  IconButton,
+  InputAdornment,
   MenuItem,
   Paper,
   Skeleton,
@@ -20,12 +23,19 @@ import {
   Typography,
 } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
+import type { SxProps, Theme } from "@mui/material/styles";
 import {
   ArrowBackOutlined as BackIcon,
   EditOutlined as EditIcon,
   EmojiEventsOutlined as AchievementIcon,
   TrendingUpOutlined as TrendIcon,
   Visibility as VisibilityIcon,
+  PersonOutlined as PersonIcon,
+  EmailOutlined as EmailIcon,
+  SchoolOutlined as SchoolIcon,
+  LockResetOutlined as LockResetIcon,
+  CheckOutlined as CheckIcon,
+  CloseOutlined as CloseIcon,
 } from "@mui/icons-material";
 import {
   Bar,
@@ -45,16 +55,16 @@ import {
   type SkillStat,
   type TeacherStudentStatsResponse,
 } from "@/api/lessonService";
+import { authService } from "@/api/authService";
 import { userService, type UserProfile } from "@/api/userService";
 import { useAuth } from "@/context/AuthContext";
+import { ApiError } from "@/api/apiClient";
 import {
   AppDialog,
   AppDialogBody,
-  AppDialogFooter,
   AppDialogHeader,
   AppDialogStatus,
 } from "@/components/ui/dialog/AppDialog";
-import { FormActions, FormSection } from "@/components/ui/form/FormLayout";
 import { DashboardHeader } from "@/components/ui/panel/DashboardHeader";
 import { DashboardTopBar } from "@/components/ui/panel/DashboardTopBar";
 import { UserAvatar } from "@/components/ui/avatar/UserAvatar";
@@ -66,7 +76,11 @@ import {
 import { StatsCard } from "@/components/teacher/StatsCard";
 import { uiTokens } from "@/theme/uiTokens";
 import { INPUT_LIMITS } from "@/utils/inputLimits";
-import { formatPercent } from "@/utils/dashboardUtils";
+import {
+  formatPercent,
+  translateApiMessage,
+  getApiErrorMessage,
+} from "@/utils/dashboardUtils";
 
 type NormalizedSkill = SkillStat & {
   correctPct: number;
@@ -82,6 +96,8 @@ type EditStudentFeedback = {
   message: string;
 };
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const dialogFieldLabelSx = {
   fontSize: "0.82rem",
   fontWeight: 700,
@@ -89,14 +105,163 @@ const dialogFieldLabelSx = {
   letterSpacing: "0.01em",
 };
 
-const counterFieldSx = {
-  "& .MuiFormHelperText-root": {
-    display: "flex",
-    justifyContent: "flex-end",
-    textAlign: "right",
-    mr: 0,
+const settingsPanelSurfaceSx: SxProps<Theme> = {
+  borderRadius: 3,
+  bgcolor: (theme) =>
+    theme.palette.mode === "light"
+      ? "rgba(255, 255, 255, 0.78)"
+      : "rgba(255, 255, 255, 0.03)",
+  border: "1px solid",
+  borderColor: (theme) =>
+    theme.palette.mode === "light"
+      ? "rgba(148, 163, 184, 0.14)"
+      : "rgba(255, 255, 255, 0.06)",
+  backdropFilter: "blur(14px)",
+  boxShadow: (theme) =>
+    theme.palette.mode === "light"
+      ? "0 16px 32px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255,255,255,0.6)"
+      : "0 12px 24px rgba(0, 0, 0, 0.18)",
+  overflow: "hidden",
+};
+
+const settingsRowSx: SxProps<Theme> = {
+  display: "flex",
+  alignItems: "center",
+  gap: 2.5,
+};
+
+const settingsRowIconTileSx: SxProps<Theme> = {
+  width: 40,
+  height: 40,
+  borderRadius: "12px",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  bgcolor: (theme) =>
+    theme.palette.mode === "light"
+      ? alpha("#6366F1", 0.1)
+      : alpha("#6366F1", 0.15),
+  color: "#6366F1",
+  flexShrink: 0,
+};
+
+const settingsRowLabelSx: SxProps<Theme> = {
+  color: "text.secondary",
+  fontWeight: 600,
+  display: "block",
+  mb: 0.25,
+};
+
+const inlineChangeButtonSx: SxProps<Theme> = {
+  textTransform: "none",
+  fontWeight: 700,
+  borderRadius: 2,
+  px: 2,
+  py: 0.75,
+  bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
+  color: "primary.main",
+  "&:hover": {
+    bgcolor: (theme) => alpha(theme.palette.primary.main, 0.14),
   },
 };
+
+const inlineEditIconButtonSx = {
+  width: 34,
+  height: 34,
+  borderRadius: "50%",
+  border: "1px solid",
+  borderColor: (theme: Theme) => alpha(theme.palette.text.primary, 0.08),
+  bgcolor: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.common.white, 0.9)
+      : alpha(theme.palette.common.white, 0.03),
+  boxShadow: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? "0 6px 14px rgba(15, 23, 42, 0.06)"
+      : "none",
+  "& .MuiSvgIcon-root": {
+    fontSize: 18,
+  },
+};
+
+const compactInlineConfirmButtonSx = {
+  ...inlineEditIconButtonSx,
+  width: 32,
+  height: 32,
+  bgcolor: alpha("#10B981", 0.08),
+  color: "#10B981",
+  border: "1px solid",
+  borderColor: alpha("#10B981", 0.2),
+  "&:hover": {
+    bgcolor: alpha("#10B981", 0.15),
+    borderColor: alpha("#10B981", 0.3),
+  },
+  "&.Mui-disabled": {
+    bgcolor: alpha("#64748B", 0.05),
+    borderColor: alpha("#64748B", 0.1),
+  },
+};
+
+const compactInlineCancelButtonSx = {
+  ...inlineEditIconButtonSx,
+  width: 32,
+  height: 32,
+  bgcolor: alpha("#64748B", 0.06),
+  color: "#64748B",
+  border: "1px solid",
+  borderColor: alpha("#64748B", 0.15),
+  "&:hover": {
+    bgcolor: alpha("#64748B", 0.12),
+    borderColor: alpha("#64748B", 0.25),
+  },
+};
+
+const inlineFieldCounterTextSx: SxProps<Theme> = {
+  display: "block",
+  mt: 0.5,
+  pl: 1.5,
+  pr: 1.5,
+  fontSize: "0.75rem",
+  textAlign: "left",
+};
+
+const studentEditFieldRowSx: SxProps<Theme> = {
+  display: "flex",
+  gap: 1,
+  alignItems: "center",
+  width: "100%",
+};
+
+const groupEditActionsWrapSx = {
+  width: 72,
+  flex: "0 0 72px",
+  display: "flex",
+  flexDirection: "row",
+  justifyContent: "center",
+  alignItems: "center",
+  gap: 1,
+  flexShrink: 0,
+};
+
+const inlineEditAccentColor = "#6366F1";
+
+function getInlineEditSectionSx(isEditing: boolean): SxProps<Theme> {
+  return {
+    p: isEditing ? 2.75 : 2.25,
+    bgcolor: isEditing ? alpha(inlineEditAccentColor, 0.035) : "transparent",
+    borderLeft: isEditing ? "4px solid" : "none",
+    borderLeftColor: inlineEditAccentColor,
+    transition: "all 0.25s ease",
+    "&:hover": {
+      bgcolor: (theme: Theme) =>
+        isEditing
+          ? alpha(inlineEditAccentColor, 0.05)
+          : theme.palette.mode === "light"
+            ? alpha(theme.palette.text.primary, 0.01)
+            : alpha(theme.palette.common.white, 0.02),
+    },
+  };
+}
 
 function formatDate(iso: string | null): string {
   if (!iso) return "-";
@@ -109,6 +274,43 @@ function scoreColor(percent: number): string {
   if (percent >= 80) return "#16a34a";
   if (percent >= 50) return "#ca8a04";
   return "#dc2626";
+}
+
+function parseStudentApiFieldErrors(error: ApiError): EditStudentFieldErrors {
+  const code = error.problem.code ?? error.problem.title;
+  if (code === "EMAIL_ALREADY_TAKEN") {
+    return { email: "Ten adres e-mail jest już zajęty." };
+  }
+  if (code === "USERNAME_ALREADY_TAKEN") {
+    return { username: "Ta nazwa użytkownika jest już zajęta." };
+  }
+
+  const detail = error.problem.detail ?? "";
+  if (!detail.startsWith("Validation failed:")) {
+    return {};
+  }
+
+  return detail
+    .replace("Validation failed:", "")
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .reduce<EditStudentFieldErrors>((acc, part) => {
+      const separatorIndex = part.indexOf(":");
+      if (separatorIndex === -1) return acc;
+
+      let field = part.slice(0, separatorIndex).trim();
+      // Strip DTO prefixes if present (e.g. UpdateTeacherStudentRequest.email -> email)
+      if (field.includes(".")) {
+        field = field.split(".").pop() || field;
+      }
+
+      const fieldKey = field as keyof EditStudentFieldErrors;
+      const validationDetail = part.slice(separatorIndex + 1).trim();
+
+      acc[fieldKey] = translateApiMessage(validationDetail);
+      return acc;
+    }, {});
 }
 
 export function TeacherStudentProgressView() {
@@ -148,6 +350,16 @@ export function TeacherStudentProgressView() {
     emailConfirm: "",
     groupPublicId: "" as string | "",
   });
+  const [editStudentEditingFields, setEditStudentEditingFields] = useState<
+    string[]
+  >([]);
+  const [editStudentInlineSavingField, setEditStudentInlineSavingField] =
+    useState<string | null>(null);
+
+  const [passwordResetLoading, setPasswordResetLoading] = useState(false);
+  const [passwordResetStatus, setPasswordResetStatus] = useState<
+    "idle" | "sending" | "sent" | "error"
+  >("idle");
 
   useEffect(() => {
     userService
@@ -236,9 +448,11 @@ export function TeacherStudentProgressView() {
       setEditStudentDraft({
         username: stats.student.username ?? "",
         email: stats.student.email,
-        emailConfirm: stats.student.email,
+        emailConfirm: "",
         groupPublicId: stats.student.groupPublicId,
       });
+      setEditStudentEditingFields([]);
+      setPasswordResetStatus("idle");
       setEditStudentOpen(true);
     } catch {
       setEditStudentFeedback({
@@ -256,22 +470,26 @@ export function TeacherStudentProgressView() {
     setEditStudentFieldErrors({});
   };
 
-  const submitEditStudent = async () => {
+  const saveEditStudentInlineField = async (
+    field: "username" | "email" | "group",
+  ) => {
     if (!studentPublicId || !stats?.student || editStudentLoading) return;
 
     const nextFieldErrors: EditStudentFieldErrors = {};
-    if (!editStudentDraft.username.trim()) {
+    if (field === "username" && !editStudentDraft.username.trim()) {
       nextFieldErrors.username = "Wypełnij nazwę użytkownika.";
     }
-    if (!editStudentDraft.email.trim()) {
-      nextFieldErrors.email = "Wypełnij adres e-mail.";
+    if (field === "email") {
+      if (!editStudentDraft.email.trim()) {
+        nextFieldErrors.email = "Wypełnij adres e-mail.";
+      }
+      if (
+        editStudentDraft.email.trim() !== editStudentDraft.emailConfirm.trim()
+      ) {
+        nextFieldErrors.emailConfirm = "Adresy e-mail nie są zgodne.";
+      }
     }
-    if (
-      editStudentDraft.email.trim() !== editStudentDraft.emailConfirm.trim()
-    ) {
-      nextFieldErrors.emailConfirm = "Adresy e-mail nie są zgodne.";
-    }
-    if (!editStudentDraft.groupPublicId) {
+    if (field === "group" && !editStudentDraft.groupPublicId) {
       nextFieldErrors.groupPublicId = "Wybierz grupę ucznia.";
     }
 
@@ -282,28 +500,61 @@ export function TeacherStudentProgressView() {
 
     setEditStudentFieldErrors({});
     setEditStudentFeedback(null);
-    setEditStudentLoading(true);
+    setEditStudentInlineSavingField(field);
+
     try {
       await lessonService.updateTeacherStudent(studentPublicId, {
         username: editStudentDraft.username.trim(),
         email: editStudentDraft.email.trim(),
         groupPublicId: editStudentDraft.groupPublicId,
       });
+
       const refreshedStats =
         await lessonService.getStudentStats(studentPublicId);
       setStats(refreshedStats);
+
+      setEditStudentEditingFields((prev) => prev.filter((f) => f !== field));
       setEditStudentFeedback({
         severity: "success",
-        message: "Dane ucznia zostały zapisane.",
+        message: "Zmiana została zapisana.",
       });
-      window.setTimeout(() => closeEditStudentDialog(), 700);
-    } catch {
-      setEditStudentFeedback({
-        severity: "error",
-        message: "Nie udało się zapisać zmian ucznia.",
-      });
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setEditStudentFieldErrors(parseStudentApiFieldErrors(err));
+      }
+      const message =
+        err instanceof ApiError
+          ? getApiErrorMessage(err, "Nie udało się zapisać zmiany.", {
+              username: "Nazwa użytkownika",
+              email: "Adres e-mail",
+              groupPublicId: "Grupa",
+            })
+          : "Nie udało się zapisać zmiany.";
+      setEditStudentFeedback({ severity: "error", message });
     } finally {
-      setEditStudentLoading(false);
+      setEditStudentInlineSavingField(null);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!stats?.student?.email || passwordResetLoading) return;
+
+    setPasswordResetLoading(true);
+    setPasswordResetStatus("sending");
+    setEditStudentFeedback(null);
+
+    try {
+      await authService.forgotPassword({ email: stats.student.email });
+      setPasswordResetStatus("sent");
+    } catch (err) {
+      setPasswordResetStatus("error");
+      const message =
+        err instanceof ApiError
+          ? err.message
+          : "Nie udało się wysłać linku do resetu hasła.";
+      setEditStudentFeedback({ severity: "error", message });
+    } finally {
+      setPasswordResetLoading(false);
     }
   };
 
@@ -768,164 +1019,579 @@ export function TeacherStudentProgressView() {
               </AppDialogStatus>
             )}
 
-            <Stack spacing={2.25}>
-              <FormSection
-                title="Tożsamość konta"
-                description="Zaktualizuj nazwę użytkownika i dane kontaktowe ucznia."
+            <Box sx={settingsPanelSurfaceSx}>
+              {/* Username row */}
+              <Box
+                sx={{
+                  ...getInlineEditSectionSx(
+                    editStudentEditingFields.includes("username"),
+                  ),
+                  borderBottom: "1px solid",
+                  borderBottomColor: "divider",
+                }}
               >
-                <Stack spacing={1.25}>
-                  <Box>
-                    <Typography sx={{ ...dialogFieldLabelSx, mb: 1 }}>
-                      Nazwa użytkownika
-                    </Typography>
-                    <TextField
-                      value={editStudentDraft.username}
-                      onChange={(event) => {
-                        setEditStudentFieldErrors((prev) => ({
-                          ...prev,
-                          username: undefined,
-                        }));
-                        setEditStudentDraft((prev) => ({
-                          ...prev,
-                          username: event.target.value.slice(
-                            0,
-                            INPUT_LIMITS.username,
-                          ),
-                        }));
+                {editStudentEditingFields.includes("username") ? (
+                  <Box sx={settingsRowSx}>
+                    <Box
+                      sx={{
+                        ...settingsRowIconTileSx,
+                        alignSelf: "flex-start",
+                        mt: 0.25,
                       }}
-                      error={Boolean(editStudentFieldErrors.username)}
-                      helperText={
-                        editStudentFieldErrors.username ??
-                        `${editStudentDraft.username.length}/${INPUT_LIMITS.username}`
-                      }
-                      sx={counterFieldSx}
-                      fullWidth
-                      size="small"
-                      disabled={editStudentLoading}
-                      placeholder="Np. anna.nowak"
-                    />
+                    >
+                      <PersonIcon fontSize="small" />
+                    </Box>
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        display="block"
+                        sx={{ mb: 0.75 }}
+                      >
+                        Edycja nazwy użytkownika
+                      </Typography>
+                      <Box sx={studentEditFieldRowSx}>
+                        <TextField
+                          value={editStudentDraft.username}
+                          onChange={(event) => {
+                            setEditStudentFieldErrors((current) => ({
+                              ...current,
+                              username: undefined,
+                            }));
+                            setEditStudentDraft((draft) => ({
+                              ...draft,
+                              username: event.target.value.slice(
+                                0,
+                                INPUT_LIMITS.username,
+                              ),
+                            }));
+                          }}
+                          inputProps={{ maxLength: INPUT_LIMITS.username }}
+                          error={Boolean(editStudentFieldErrors.username)}
+                          fullWidth
+                          size="small"
+                          autoFocus
+                          disabled={editStudentLoading}
+                        />
+                        <Box sx={groupEditActionsWrapSx}>
+                          <IconButton
+                            size="small"
+                            disabled={
+                              editStudentLoading ||
+                              editStudentDraft.username.trim().length < 3 ||
+                              editStudentInlineSavingField === "username"
+                            }
+                            onClick={() =>
+                              void saveEditStudentInlineField("username")
+                            }
+                            sx={compactInlineConfirmButtonSx}
+                          >
+                            <CheckIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            disabled={editStudentLoading}
+                            onClick={() => {
+                              setEditStudentDraft((draft) => ({
+                                ...draft,
+                                username: stats?.student?.username ?? "",
+                              }));
+                              setEditStudentEditingFields((prev) =>
+                                prev.filter((f) => f !== "username"),
+                              );
+                            }}
+                            sx={compactInlineCancelButtonSx}
+                          >
+                            <CloseIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                      </Box>
+                      <Typography
+                        variant="caption"
+                        color={
+                          editStudentFieldErrors.username
+                            ? "error"
+                            : "text.secondary"
+                        }
+                        sx={inlineFieldCounterTextSx}
+                      >
+                        {editStudentFieldErrors.username ??
+                          `${editStudentDraft.username.length}/${INPUT_LIMITS.username}`}
+                      </Typography>
+                    </Box>
                   </Box>
+                ) : (
+                  <Box
+                    sx={{
+                      ...settingsRowSx,
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <Box sx={settingsRowIconTileSx}>
+                      <PersonIcon fontSize="small" />
+                    </Box>
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Typography variant="caption" sx={settingsRowLabelSx}>
+                        Nazwa użytkownika
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        fontWeight={700}
+                        fontSize="1rem"
+                      >
+                        {editStudentDraft.username || "—"}
+                      </Typography>
+                    </Box>
+                    <Button
+                      size="small"
+                      onClick={() =>
+                        setEditStudentEditingFields((prev) => [
+                          ...prev,
+                          "username",
+                        ])
+                      }
+                      sx={inlineChangeButtonSx}
+                    >
+                      Zmień
+                    </Button>
+                  </Box>
+                )}
+              </Box>
 
-                  <Box>
-                    <Typography sx={{ ...dialogFieldLabelSx, mb: 1 }}>
-                      Adres e-mail
-                    </Typography>
-                    <TextField
-                      value={editStudentDraft.email}
-                      onChange={(event) => {
+              {/* Email row */}
+              <Box
+                sx={{
+                  ...getInlineEditSectionSx(
+                    editStudentEditingFields.includes("email"),
+                  ),
+                  borderBottom: "1px solid",
+                  borderBottomColor: "divider",
+                }}
+              >
+                {editStudentEditingFields.includes("email") ? (
+                  <Box sx={settingsRowSx}>
+                    <Box
+                      sx={{
+                        ...settingsRowIconTileSx,
+                        alignSelf: "flex-start",
+                        mt: 0.25,
+                      }}
+                    >
+                      <EmailIcon fontSize="small" />
+                    </Box>
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        display="block"
+                        sx={{ mb: 0.75 }}
+                      >
+                        Edycja adresu e-mail
+                      </Typography>
+                      <Stack spacing={1}>
+                        <Box sx={studentEditFieldRowSx}>
+                          <TextField
+                            value={editStudentDraft.email}
+                            onChange={(event) => {
+                              setEditStudentFieldErrors((current) => ({
+                                ...current,
+                                email: undefined,
+                              }));
+                              setEditStudentDraft((draft) => ({
+                                ...draft,
+                                email: event.target.value,
+                              }));
+                            }}
+                            error={Boolean(editStudentFieldErrors.email)}
+                            helperText={editStudentFieldErrors.email}
+                            fullWidth
+                            size="small"
+                            autoFocus
+                            disabled={editStudentLoading}
+                            placeholder="np. uczen@szkola.pl"
+                            slotProps={{
+                              input: {
+                                startAdornment: (
+                                  <InputAdornment position="start">
+                                    <EmailIcon
+                                      sx={{ color: "text.secondary" }}
+                                    />
+                                  </InputAdornment>
+                                ),
+                              },
+                            }}
+                          />
+                          <Box sx={groupEditActionsWrapSx}>
+                            <IconButton
+                              size="small"
+                              disabled={
+                                editStudentLoading ||
+                                editStudentInlineSavingField === "email"
+                              }
+                              onClick={() =>
+                                void saveEditStudentInlineField("email")
+                              }
+                              sx={compactInlineConfirmButtonSx}
+                            >
+                              <CheckIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              disabled={editStudentLoading}
+                              onClick={() => {
+                                setEditStudentDraft((draft) => ({
+                                  ...draft,
+                                  email: stats?.student?.email ?? "",
+                                  emailConfirm: "",
+                                }));
+                                setEditStudentFieldErrors((prev) => ({
+                                  ...prev,
+                                  email: undefined,
+                                  emailConfirm: undefined,
+                                }));
+                                setEditStudentEditingFields((prev) =>
+                                  prev.filter((f) => f !== "email"),
+                                );
+                              }}
+                              sx={compactInlineCancelButtonSx}
+                            >
+                              <CloseIcon fontSize="small" />
+                            </IconButton>
+                          </Box>
+                        </Box>
+                        <Typography
+                          sx={{
+                            ...dialogFieldLabelSx,
+                            mb: 0.25,
+                            color: "#a7b0c0",
+                            fontSize: "0.75rem",
+                            fontWeight: 400,
+                          }}
+                        >
+                          Potwierdź adres e-mail
+                        </Typography>
+                        <TextField
+                          value={editStudentDraft.emailConfirm}
+                          slotProps={{
+                            input: {
+                              startAdornment: (
+                                <InputAdornment position="start">
+                                  <EmailIcon sx={{ color: "text.secondary" }} />
+                                </InputAdornment>
+                              ),
+                            },
+                          }}
+                          onChange={(event) => {
+                            setEditStudentFieldErrors((current) => ({
+                              ...current,
+                              emailConfirm: undefined,
+                            }));
+                            setEditStudentDraft((draft) => ({
+                              ...draft,
+                              emailConfirm: event.target.value,
+                            }));
+                          }}
+                          fullWidth
+                          size="small"
+                          disabled={editStudentLoading}
+                          error={
+                            Boolean(editStudentFieldErrors.emailConfirm) ||
+                            (editStudentDraft.emailConfirm.length > 0 &&
+                              editStudentDraft.email !==
+                                editStudentDraft.emailConfirm)
+                          }
+                          helperText={
+                            editStudentFieldErrors.emailConfirm ??
+                            (editStudentDraft.emailConfirm.length > 0 &&
+                            editStudentDraft.email !==
+                              editStudentDraft.emailConfirm
+                              ? "Adresy e-mail nie są zgodne"
+                              : "")
+                          }
+                          placeholder="Powtórz e-mail"
+                        />
+                      </Stack>
+                    </Box>
+                  </Box>
+                ) : (
+                  <Box
+                    sx={{
+                      ...settingsRowSx,
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <Box sx={settingsRowIconTileSx}>
+                      <EmailIcon fontSize="small" />
+                    </Box>
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Typography variant="caption" sx={settingsRowLabelSx}>
+                        Adres e-mail
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        fontWeight={700}
+                        fontSize="1rem"
+                      >
+                        {editStudentDraft.email || "—"}
+                      </Typography>
+                    </Box>
+                    <Button
+                      size="small"
+                      onClick={() => {
+                        setEditStudentDraft((draft) => ({
+                          ...draft,
+                          email: stats?.student?.email ?? "",
+                          emailConfirm: "",
+                        }));
                         setEditStudentFieldErrors((prev) => ({
                           ...prev,
                           email: undefined,
-                        }));
-                        setEditStudentDraft((prev) => ({
-                          ...prev,
-                          email: event.target.value,
-                        }));
-                      }}
-                      error={Boolean(editStudentFieldErrors.email)}
-                      helperText={
-                        editStudentFieldErrors.email ??
-                        "Na ten adres będą trafiać powiadomienia ucznia."
-                      }
-                      fullWidth
-                      size="small"
-                      disabled={editStudentLoading}
-                      placeholder="Np. uczen@szkola.pl"
-                    />
-                  </Box>
-
-                  <Box>
-                    <Typography sx={{ ...dialogFieldLabelSx, mb: 1 }}>
-                      Potwierdź adres e-mail
-                    </Typography>
-                    <TextField
-                      value={editStudentDraft.emailConfirm}
-                      onChange={(event) => {
-                        setEditStudentFieldErrors((prev) => ({
-                          ...prev,
                           emailConfirm: undefined,
                         }));
-                        setEditStudentDraft((prev) => ({
+                        setEditStudentEditingFields((prev) => [
                           ...prev,
-                          emailConfirm: event.target.value,
-                        }));
+                          "email",
+                        ]);
                       }}
-                      error={Boolean(editStudentFieldErrors.emailConfirm)}
-                      helperText={
-                        editStudentFieldErrors.emailConfirm ??
-                        "Powtórz e-mail, aby uniknąć literówki."
-                      }
-                      fullWidth
-                      size="small"
-                      disabled={editStudentLoading}
-                      placeholder="Powtórz adres e-mail"
-                    />
+                      sx={inlineChangeButtonSx}
+                    >
+                      Zmień
+                    </Button>
                   </Box>
-                </Stack>
-              </FormSection>
+                )}
+              </Box>
 
-              <FormSection
-                title="Przypisanie do grupy"
-                description="Wybierz grupę, do której jest przypisany uczeń."
+              {/* Group row */}
+              <Box
+                sx={{
+                  ...getInlineEditSectionSx(
+                    editStudentEditingFields.includes("group"),
+                  ),
+                  borderBottom: "1px solid",
+                  borderBottomColor: "divider",
+                }}
               >
-                <Box>
-                  <Typography sx={{ ...dialogFieldLabelSx, mb: 1 }}>
-                    Grupa ucznia
-                  </Typography>
-                  <TextField
-                    select
-                    value={editStudentDraft.groupPublicId}
-                    onChange={(event) => {
-                      setEditStudentFieldErrors((prev) => ({
-                        ...prev,
-                        groupPublicId: undefined,
-                      }));
-                      setEditStudentDraft((prev) => ({
-                        ...prev,
-                        groupPublicId: event.target.value,
-                      }));
+                {editStudentEditingFields.includes("group") ? (
+                  <Box sx={settingsRowSx}>
+                    <Box
+                      sx={{
+                        ...settingsRowIconTileSx,
+                        alignSelf: "flex-start",
+                        mt: 0.25,
+                      }}
+                    >
+                      <SchoolIcon fontSize="small" />
+                    </Box>
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        display="block"
+                        sx={{ mb: 0.75 }}
+                      >
+                        Edycja przypisanej grupy
+                      </Typography>
+                      <Box sx={studentEditFieldRowSx}>
+                        <TextField
+                          select
+                          value={editStudentDraft.groupPublicId}
+                          onChange={(event) => {
+                            setEditStudentFieldErrors((current) => ({
+                              ...current,
+                              groupPublicId: undefined,
+                            }));
+                            setEditStudentDraft((draft) => ({
+                              ...draft,
+                              groupPublicId: event.target.value,
+                            }));
+                          }}
+                          error={Boolean(editStudentFieldErrors.groupPublicId)}
+                          helperText={editStudentFieldErrors.groupPublicId}
+                          fullWidth
+                          size="small"
+                          autoFocus
+                          disabled={editStudentLoading}
+                        >
+                          {availableGroups.map((group) => (
+                            <MenuItem
+                              key={group.publicId}
+                              value={group.publicId}
+                            >
+                              {group.name}
+                            </MenuItem>
+                          ))}
+                        </TextField>
+                        <Box sx={groupEditActionsWrapSx}>
+                          <IconButton
+                            size="small"
+                            disabled={
+                              editStudentLoading ||
+                              !editStudentDraft.groupPublicId ||
+                              editStudentInlineSavingField === "group"
+                            }
+                            onClick={() =>
+                              void saveEditStudentInlineField("group")
+                            }
+                            sx={compactInlineConfirmButtonSx}
+                          >
+                            <CheckIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            disabled={editStudentLoading}
+                            onClick={() => {
+                              setEditStudentDraft((draft) => ({
+                                ...draft,
+                                groupPublicId:
+                                  stats?.student?.groupPublicId ?? "",
+                              }));
+                              setEditStudentEditingFields((prev) =>
+                                prev.filter((f) => f !== "group"),
+                              );
+                            }}
+                            sx={compactInlineCancelButtonSx}
+                          >
+                            <CloseIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                      </Box>
+                    </Box>
+                  </Box>
+                ) : (
+                  <Box
+                    sx={{
+                      ...settingsRowSx,
+                      justifyContent: "space-between",
                     }}
-                    error={Boolean(editStudentFieldErrors.groupPublicId)}
-                    helperText={
-                      editStudentFieldErrors.groupPublicId ??
-                      (availableGroups.length === 0
-                        ? "Brak dostępnych grup do przypisania."
-                        : "Możesz zmienić grupę ucznia w dowolnym momencie.")
-                    }
-                    fullWidth
-                    size="small"
-                    disabled={editStudentLoading}
                   >
-                    {availableGroups.map((group) => (
-                      <MenuItem key={group.publicId} value={group.publicId}>
-                        {group.name}
-                      </MenuItem>
-                    ))}
-                  </TextField>
+                    <Box sx={settingsRowIconTileSx}>
+                      <SchoolIcon fontSize="small" />
+                    </Box>
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Typography variant="caption" sx={settingsRowLabelSx}>
+                        Przypisana grupa
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        fontWeight={700}
+                        fontSize="1rem"
+                      >
+                        {availableGroups.find(
+                          (g) => g.publicId === editStudentDraft.groupPublicId,
+                        )?.name || "—"}
+                      </Typography>
+                    </Box>
+                    <Button
+                      size="small"
+                      onClick={() =>
+                        setEditStudentEditingFields((prev) => [
+                          ...prev,
+                          "group",
+                        ])
+                      }
+                      sx={inlineChangeButtonSx}
+                    >
+                      Zmień
+                    </Button>
+                  </Box>
+                )}
+              </Box>
+
+              {/* Password reset row */}
+              <Box
+                sx={{
+                  ...settingsRowSx,
+                  p: 2.25,
+                  justifyContent: "space-between",
+                  bgcolor: (theme) =>
+                    theme.palette.mode === "light"
+                      ? alpha("#6366F1", 0.04)
+                      : alpha("#6366F1", 0.08),
+                  borderTop: "1px solid",
+                  borderTopColor: "divider",
+                }}
+              >
+                <Box sx={settingsRowIconTileSx}>
+                  <LockResetIcon fontSize="small" />
                 </Box>
-              </FormSection>
-            </Stack>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{ ...settingsRowLabelSx, color: "#6366F1" }}
+                    fontWeight={700}
+                    display="block"
+                  >
+                    Reset hasła
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ lineHeight: 1.4, fontSize: "0.85rem" }}
+                  >
+                    Wyślij link do ustawienia nowego hasła.
+                  </Typography>
+                </Box>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={
+                    passwordResetLoading ? (
+                      <CircularProgress size={16} color="inherit" />
+                    ) : passwordResetStatus === "sent" ? (
+                      <CheckIcon fontSize="small" />
+                    ) : (
+                      <EmailIcon fontSize="small" />
+                    )
+                  }
+                  onClick={handleResetPassword}
+                  disabled={
+                    passwordResetLoading ||
+                    passwordResetStatus === "sent" ||
+                    !EMAIL_REGEX.test(editStudentDraft.email.trim())
+                  }
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 600,
+                    fontSize: "0.82rem",
+                    borderRadius: "10px",
+                    px: 1.5,
+                    py: 0.6,
+                    minHeight: 32,
+                    minWidth: 120,
+                    whiteSpace: "nowrap",
+                    gap: 0.5,
+                    "& .MuiButton-startIcon": { mr: 0.5 },
+                    borderColor:
+                      passwordResetStatus === "sent"
+                        ? alpha("#10B981", 0.3)
+                        : alpha("#6366F1", 0.2),
+                    bgcolor:
+                      passwordResetStatus === "sent"
+                        ? alpha("#10B981", 0.05)
+                        : "transparent",
+                    color:
+                      passwordResetStatus === "sent" ? "#10B981" : "#6366F1",
+                    "&:hover": {
+                      borderColor:
+                        passwordResetStatus === "sent"
+                          ? alpha("#10B981", 0.4)
+                          : alpha("#6366F1", 0.4),
+                      bgcolor:
+                        passwordResetStatus === "sent"
+                          ? alpha("#10B981", 0.08)
+                          : alpha("#6366F1", 0.04),
+                    },
+                  }}
+                >
+                  {passwordResetLoading
+                    ? "Wysyłanie..."
+                    : passwordResetStatus === "sent"
+                      ? "Wysłano"
+                      : "Wyślij link"}
+                </Button>
+              </Box>
+            </Box>
           </AppDialogBody>
-          <AppDialogFooter>
-            <FormActions>
-              <Button
-                variant="outlined"
-                onClick={closeEditStudentDialog}
-                disabled={editStudentLoading}
-                sx={{ textTransform: "none", fontWeight: 600 }}
-              >
-                Anuluj
-              </Button>
-              <Button
-                variant="contained"
-                onClick={submitEditStudent}
-                disabled={editStudentLoading}
-                sx={{ textTransform: "none", fontWeight: 700 }}
-              >
-                {editStudentLoading ? "Zapisywanie..." : "Zapisz zmiany"}
-              </Button>
-            </FormActions>
-          </AppDialogFooter>
         </AppDialog>
       </Container>
     </Box>

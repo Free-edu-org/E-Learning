@@ -48,6 +48,7 @@ import {
   LockResetOutlined as LockResetIcon,
   SendOutlined as SendIcon,
   CancelOutlined as CancelIcon,
+  ListOutlined as ListIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { ApiError } from "@/api/apiClient";
@@ -117,6 +118,8 @@ const getOperationErrorMessage = (error: unknown, fallback: string) => {
   }
   return fallback;
 };
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const emptyStudentDraft = {
   email: "",
@@ -212,15 +215,6 @@ const inlineEditIconButtonSx = {
   },
 };
 
-const compactInlineActionsWrapSx = {
-  display: "flex",
-  flexDirection: "row",
-  gap: 1,
-  alignItems: "center",
-  mt: 0.5,
-  flexShrink: 0,
-};
-
 const groupEditFieldRowSx = {
   display: "flex",
   gap: 1,
@@ -239,11 +233,51 @@ const groupEditActionsWrapSx = {
   flexShrink: 0,
 };
 
-const groupEditTextareaActionsWrapSx = {
-  ...groupEditActionsWrapSx,
-  alignSelf: "flex-start",
-  justifyContent: "flex-start",
-  mt: 1.5,
+const settingsPanelSurfaceSx: SxProps<Theme> = {
+  borderRadius: 3,
+  bgcolor: (theme) =>
+    theme.palette.mode === "light"
+      ? "rgba(255, 255, 255, 0.78)"
+      : "rgba(255, 255, 255, 0.03)",
+  border: "1px solid",
+  borderColor: (theme) =>
+    theme.palette.mode === "light"
+      ? "rgba(148, 163, 184, 0.14)"
+      : "rgba(255, 255, 255, 0.06)",
+  backdropFilter: "blur(14px)",
+  boxShadow: (theme) =>
+    theme.palette.mode === "light"
+      ? "0 16px 32px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255,255,255,0.6)"
+      : "0 12px 24px rgba(0, 0, 0, 0.18)",
+  overflow: "hidden",
+};
+
+const settingsRowSx: SxProps<Theme> = {
+  display: "flex",
+  alignItems: "center",
+  gap: 2.5,
+};
+
+const settingsRowIconTileSx: SxProps<Theme> = {
+  width: 40,
+  height: 40,
+  borderRadius: "12px",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  bgcolor: (theme) =>
+    theme.palette.mode === "light"
+      ? alpha("#6366F1", 0.1)
+      : alpha("#6366F1", 0.15),
+  color: "#6366F1",
+  flexShrink: 0,
+};
+
+const settingsRowLabelSx: SxProps<Theme> = {
+  color: "text.secondary",
+  fontWeight: 600,
+  display: "block",
+  mb: 0.25,
 };
 
 const inlineFieldCounterTextSx = {
@@ -318,6 +352,13 @@ function getInlineEditSectionSx(isEditing: boolean): SxProps<Theme> {
 }
 
 function parseGroupApiFieldErrors(error: ApiError): GroupFieldErrors {
+  const code = error.problem.code ?? error.problem.title;
+  if (code === "GROUP_NAME_ALREADY_EXISTS") {
+    return {
+      name: "Grupa o tej nazwie już istnieje.",
+    };
+  }
+
   const detail = error.problem.detail ?? "";
   if (!detail.startsWith("Validation failed:")) {
     return {};
@@ -348,6 +389,14 @@ function parseGroupApiFieldErrors(error: ApiError): GroupFieldErrors {
 }
 
 function parseStudentApiFieldErrors(error: ApiError): StudentFieldErrors {
+  const code = error.problem.code ?? error.problem.title;
+  if (code === "EMAIL_ALREADY_TAKEN") {
+    return { email: "Ten adres e-mail jest już zajęty." };
+  }
+  if (code === "USERNAME_ALREADY_TAKEN") {
+    return { username: "Ta nazwa użytkownika jest już zajęta." };
+  }
+
   const detail = error.problem.detail ?? "";
   if (!detail.startsWith("Validation failed:")) {
     return {};
@@ -419,6 +468,8 @@ export function TeacherStudentsView() {
     useState<DialogFeedbackState | null>(null);
   const [editStudentFieldErrors, setEditStudentFieldErrors] =
     useState<StudentFieldErrors>({});
+  const [editStudentPasswordResetSent, setEditStudentPasswordResetSent] =
+    useState(false);
   const [editStudentEditingFields, setEditStudentEditingFields] = useState<
     string[]
   >([]);
@@ -618,6 +669,7 @@ export function TeacherStudentsView() {
     });
     setEditStudentFieldErrors({});
     setEditStudentFeedback(null);
+    setEditStudentPasswordResetSent(false);
     setEditStudentEditingFields([]);
     setEditStudentOpen(true);
   };
@@ -627,6 +679,7 @@ export function TeacherStudentsView() {
     setEditStudentOpen(false);
     seteditingStudent(null);
     setEditStudentFieldErrors({});
+    setEditStudentPasswordResetSent(false);
   };
 
   const saveEditStudentInlineField = async (
@@ -643,6 +696,13 @@ export function TeacherStudentsView() {
     if (field === "email") {
       if (!editStudentDraft.email.trim()) {
         nextFieldErrors.email = "Wypełnij adres e-mail.";
+      } else if (!EMAIL_REGEX.test(editStudentDraft.email.trim())) {
+        nextFieldErrors.email = "Podaj poprawny adres e-mail.";
+      }
+      if (!editStudentDraft.emailConfirm.trim()) {
+        nextFieldErrors.emailConfirm = "Powtórz adres e-mail.";
+      } else if (!EMAIL_REGEX.test(editStudentDraft.emailConfirm.trim())) {
+        nextFieldErrors.emailConfirm = "Podaj poprawny adres e-mail.";
       }
       if (
         editStudentDraft.email.trim() !== editStudentDraft.emailConfirm.trim()
@@ -723,14 +783,13 @@ export function TeacherStudentsView() {
   };
 
   const resetStudentPassword = async () => {
-    if (!editingStudent || editStudentLoading) return;
+    if (!editingStudent || editStudentLoading || editStudentPasswordResetSent) {
+      return;
+    }
     try {
       setEditStudentLoading(true);
       await authService.forgotPassword({ email: editingStudent.email });
-      setEditStudentFeedback({
-        severity: "success",
-        message: "Link do resetu hasła został wysłany na adres e-mail ucznia.",
-      });
+      setEditStudentPasswordResetSent(true);
     } catch (error) {
       setEditStudentFeedback({
         severity: "error",
@@ -880,6 +939,14 @@ export function TeacherStudentsView() {
       setEditGroupFieldErrors((prev) => ({
         ...prev,
         name: "Podaj nazwę grupy.",
+      }));
+      return;
+    }
+
+    if (field === "description" && !editGroupDraft.description.trim()) {
+      setEditGroupFieldErrors((prev) => ({
+        ...prev,
+        description: "Opis grupy jest wymagany.",
       }));
       return;
     }
@@ -1717,26 +1784,7 @@ export function TeacherStudentsView() {
                 {editStudentFeedback.message}
               </AppDialogStatus>
             )}
-            <Box
-              sx={{
-                borderRadius: 3,
-                bgcolor: (theme) =>
-                  theme.palette.mode === "light"
-                    ? "rgba(255, 255, 255, 0.78)"
-                    : "rgba(255, 255, 255, 0.03)",
-                border: "1px solid",
-                borderColor: (theme) =>
-                  theme.palette.mode === "light"
-                    ? "rgba(148, 163, 184, 0.14)"
-                    : "rgba(255, 255, 255, 0.06)",
-                backdropFilter: "blur(14px)",
-                boxShadow: (theme) =>
-                  theme.palette.mode === "light"
-                    ? "0 16px 32px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255,255,255,0.6)"
-                    : "0 12px 24px rgba(0, 0, 0, 0.18)",
-                overflow: "hidden",
-              }}
-            >
+            <Box sx={settingsPanelSurfaceSx}>
               <Box
                 sx={{
                   ...getInlineEditSectionSx(
@@ -1747,92 +1795,116 @@ export function TeacherStudentsView() {
                 }}
               >
                 {editStudentEditingFields.includes("username") ? (
-                  <>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      display="block"
-                      sx={{ mb: 0.75 }}
+                  <Box sx={settingsRowSx}>
+                    <Box
+                      sx={{
+                        ...settingsRowIconTileSx,
+                        alignSelf: "flex-start",
+                        mt: 0.25,
+                      }}
                     >
-                      Edycja nazwy użytkownika
-                    </Typography>
-                    <Box sx={groupEditFieldRowSx}>
-                      <TextField
-                        name="teacher-edit-student-username"
-                        autoComplete="off"
-                        value={editStudentDraft.username}
-                        onChange={(event) => {
-                          setEditStudentFieldErrors((current) => ({
-                            ...current,
-                            username: undefined,
-                          }));
-                          setEditStudentDraft((draft) => ({
-                            ...draft,
-                            username: event.target.value.slice(
-                              0,
-                              INPUT_LIMITS.username,
-                            ),
-                          }));
-                        }}
-                        inputProps={{ maxLength: INPUT_LIMITS.username }}
-                        error={Boolean(editStudentFieldErrors.username)}
-                        helperText={
-                          editStudentFieldErrors.username ??
-                          `${editStudentDraft.username.length}/${INPUT_LIMITS.username}`
-                        }
-                        sx={counterFieldSx}
-                        fullWidth
-                        size="small"
-                        autoFocus
-                        disabled={editStudentLoading}
-                      />
-                      <Box sx={groupEditTextareaActionsWrapSx}>
-                        <IconButton
-                          size="small"
-                          disabled={
-                            editStudentLoading ||
-                            editStudentDraft.username.trim().length < 3 ||
-                            editStudentInlineSavingField === "username"
-                          }
-                          onClick={() =>
-                            void saveEditStudentInlineField("username")
-                          }
-                          sx={compactInlineConfirmButtonSx}
-                        >
-                          <CheckIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          disabled={editStudentLoading}
-                          onClick={() => {
+                      <PersonIcon fontSize="small" />
+                    </Box>
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        display="block"
+                        sx={{ mb: 0.75 }}
+                      >
+                        Edycja nazwy użytkownika
+                      </Typography>
+                      <Box sx={groupEditFieldRowSx}>
+                        <TextField
+                          name="teacher-edit-student-username"
+                          autoComplete="off"
+                          value={editStudentDraft.username}
+                          onChange={(event) => {
+                            setEditStudentFieldErrors((current) => ({
+                              ...current,
+                              username: undefined,
+                            }));
                             setEditStudentDraft((draft) => ({
                               ...draft,
-                              username: editingStudent?.username ?? "",
+                              username: event.target.value.slice(
+                                0,
+                                INPUT_LIMITS.username,
+                              ),
                             }));
-                            setEditStudentEditingFields((prev) =>
-                              prev.filter((f) => f !== "username"),
-                            );
                           }}
-                          sx={compactInlineCancelButtonSx}
-                        >
-                          <CloseIcon fontSize="small" />
-                        </IconButton>
+                          inputProps={{ maxLength: INPUT_LIMITS.username }}
+                          error={Boolean(editStudentFieldErrors.username)}
+                          fullWidth
+                          size="small"
+                          autoFocus
+                          disabled={editStudentLoading}
+                        />
+                        <Box sx={groupEditActionsWrapSx}>
+                          <IconButton
+                            size="small"
+                            disabled={
+                              editStudentLoading ||
+                              editStudentDraft.username.trim().length < 3 ||
+                              editStudentInlineSavingField === "username"
+                            }
+                            onClick={() =>
+                              void saveEditStudentInlineField("username")
+                            }
+                            sx={compactInlineConfirmButtonSx}
+                          >
+                            <CheckIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            disabled={editStudentLoading}
+                            onClick={() => {
+                              setEditStudentDraft((draft) => ({
+                                ...draft,
+                                username: editingStudent?.username ?? "",
+                              }));
+                              setEditStudentEditingFields((prev) =>
+                                prev.filter((f) => f !== "username"),
+                              );
+                            }}
+                            sx={compactInlineCancelButtonSx}
+                          >
+                            <CloseIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
                       </Box>
+                      <Typography
+                        variant="caption"
+                        color={
+                          editStudentFieldErrors.username
+                            ? "error"
+                            : "text.secondary"
+                        }
+                        sx={inlineFieldCounterTextSx}
+                      >
+                        {editStudentFieldErrors.username ??
+                          `${editStudentDraft.username.length}/${INPUT_LIMITS.username}`}
+                      </Typography>
                     </Box>
-                  </>
+                  </Box>
                 ) : (
                   <Box
                     sx={{
-                      display: "flex",
-                      alignItems: "center",
+                      ...settingsRowSx,
                       justifyContent: "space-between",
                     }}
                   >
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">
+                    <Box sx={settingsRowIconTileSx}>
+                      <PersonIcon fontSize="small" />
+                    </Box>
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Typography variant="caption" sx={settingsRowLabelSx}>
                         Nazwa użytkownika
                       </Typography>
-                      <Typography variant="body2" fontWeight={600}>
+                      <Typography
+                        variant="body2"
+                        fontWeight={700}
+                        fontSize="1rem"
+                      >
                         {editStudentDraft.username || "—"}
                       </Typography>
                     </Box>
@@ -1862,131 +1934,187 @@ export function TeacherStudentsView() {
                 }}
               >
                 {editStudentEditingFields.includes("email") ? (
-                  <>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      display="block"
-                      sx={{ mb: 0.75 }}
+                  <Box sx={settingsRowSx}>
+                    <Box
+                      sx={{
+                        ...settingsRowIconTileSx,
+                        alignSelf: "flex-start",
+                        mt: 0.25,
+                      }}
                     >
-                      Edycja adresu e-mail
-                    </Typography>
-                    <Stack spacing={1}>
-                      <Box
-                        sx={{ display: "flex", gap: 1, alignItems: "center" }}
+                      <EmailIcon fontSize="small" />
+                    </Box>
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        display="block"
+                        sx={{ mb: 0.75 }}
                       >
+                        Edycja adresu e-mail
+                      </Typography>
+                      <Stack spacing={1}>
+                        <Box sx={groupEditFieldRowSx}>
+                          <TextField
+                            type="email"
+                            value={editStudentDraft.email}
+                            onChange={(event) => {
+                              setEditStudentFieldErrors((current) => ({
+                                ...current,
+                                email: undefined,
+                              }));
+                              setEditStudentDraft((draft) => ({
+                                ...draft,
+                                email: event.target.value,
+                              }));
+                            }}
+                            error={Boolean(editStudentFieldErrors.email)}
+                            helperText={editStudentFieldErrors.email}
+                            fullWidth
+                            size="small"
+                            autoFocus
+                            disabled={editStudentLoading}
+                            placeholder="np. uczen@szkola.pl"
+                            slotProps={{
+                              input: {
+                                startAdornment: (
+                                  <InputAdornment position="start">
+                                    <EmailIcon
+                                      sx={{ color: "text.secondary" }}
+                                    />
+                                  </InputAdornment>
+                                ),
+                              },
+                            }}
+                          />
+                          <Box sx={groupEditActionsWrapSx}>
+                            <IconButton
+                              size="small"
+                              disabled={
+                                editStudentLoading ||
+                                editStudentInlineSavingField === "email"
+                              }
+                              onClick={() =>
+                                void saveEditStudentInlineField("email")
+                              }
+                              sx={compactInlineConfirmButtonSx}
+                            >
+                              <CheckIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              disabled={editStudentLoading}
+                              onClick={() => {
+                                setEditStudentDraft((draft) => ({
+                                  ...draft,
+                                  email: editingStudent?.email ?? "",
+                                  emailConfirm: "",
+                                }));
+                                setEditStudentEditingFields((prev) =>
+                                  prev.filter((f) => f !== "email"),
+                                );
+                              }}
+                              sx={compactInlineCancelButtonSx}
+                            >
+                              <CloseIcon fontSize="small" />
+                            </IconButton>
+                          </Box>
+                        </Box>
+                        <Typography
+                          sx={{
+                            ...dialogFieldLabelSx,
+                            mb: 0.25,
+                            color: "#a7b0c0",
+                            fontSize: "0.75rem",
+                            fontWeight: 400,
+                          }}
+                        >
+                          Potwierdź adres e-mail
+                        </Typography>
                         <TextField
-                          value={editStudentDraft.email}
+                          type="email"
+                          value={editStudentDraft.emailConfirm}
+                          slotProps={{
+                            input: {
+                              startAdornment: (
+                                <InputAdornment position="start">
+                                  <EmailIcon sx={{ color: "text.secondary" }} />
+                                </InputAdornment>
+                              ),
+                            },
+                          }}
                           onChange={(event) => {
                             setEditStudentFieldErrors((current) => ({
                               ...current,
-                              email: undefined,
+                              emailConfirm: undefined,
                             }));
                             setEditStudentDraft((draft) => ({
                               ...draft,
-                              email: event.target.value,
+                              emailConfirm: event.target.value,
                             }));
                           }}
-                          error={Boolean(editStudentFieldErrors.email)}
-                          helperText={editStudentFieldErrors.email}
                           fullWidth
                           size="small"
-                          autoFocus
                           disabled={editStudentLoading}
-                        />
-                        <Box sx={compactInlineActionsWrapSx}>
-                          <IconButton
-                            size="small"
-                            disabled={
-                              editStudentLoading ||
-                              editStudentInlineSavingField === "email"
-                            }
-                            onClick={() =>
-                              void saveEditStudentInlineField("email")
-                            }
-                            sx={compactInlineConfirmButtonSx}
-                          >
-                            <CheckIcon fontSize="small" />
-                          </IconButton>
-                          <IconButton
-                            size="small"
-                            disabled={editStudentLoading}
-                            onClick={() => {
-                              setEditStudentDraft((draft) => ({
-                                ...draft,
-                                email: editingStudent?.email ?? "",
-                                emailConfirm: editingStudent?.email ?? "",
-                              }));
-                              setEditStudentEditingFields((prev) =>
-                                prev.filter((f) => f !== "email"),
-                              );
-                            }}
-                            sx={compactInlineCancelButtonSx}
-                          >
-                            <CloseIcon fontSize="small" />
-                          </IconButton>
-                        </Box>
-                      </Box>
-                      <Typography sx={{ ...dialogFieldLabelSx, mb: 0.25 }}>
-                        Potwierdź adres e-mail
-                      </Typography>
-                      <TextField
-                        value={editStudentDraft.emailConfirm}
-                        onChange={(event) => {
-                          setEditStudentFieldErrors((current) => ({
-                            ...current,
-                            emailConfirm: undefined,
-                          }));
-                          setEditStudentDraft((draft) => ({
-                            ...draft,
-                            emailConfirm: event.target.value,
-                          }));
-                        }}
-                        fullWidth
-                        size="small"
-                        disabled={editStudentLoading}
-                        error={
-                          Boolean(editStudentFieldErrors.emailConfirm) ||
-                          (editStudentDraft.emailConfirm.length > 0 &&
+                          error={
+                            Boolean(editStudentFieldErrors.emailConfirm) ||
+                            (editStudentDraft.emailConfirm.length > 0 &&
+                              editStudentDraft.email !==
+                                editStudentDraft.emailConfirm)
+                          }
+                          helperText={
+                            editStudentFieldErrors.emailConfirm ??
+                            (editStudentDraft.emailConfirm.length > 0 &&
                             editStudentDraft.email !==
-                              editStudentDraft.emailConfirm)
-                        }
-                        helperText={
-                          editStudentFieldErrors.emailConfirm ??
-                          (editStudentDraft.emailConfirm.length > 0 &&
-                          editStudentDraft.email !==
-                            editStudentDraft.emailConfirm
-                            ? "Adresy e-mail nie są zgodne"
-                            : "")
-                        }
-                        placeholder="Powtórz e-mail"
-                      />
-                    </Stack>
-                  </>
+                              editStudentDraft.emailConfirm
+                              ? "Adresy e-mail nie są zgodne"
+                              : "")
+                          }
+                          placeholder="Powtórz e-mail"
+                        />
+                      </Stack>
+                    </Box>
+                  </Box>
                 ) : (
                   <Box
                     sx={{
-                      display: "flex",
-                      alignItems: "center",
+                      ...settingsRowSx,
                       justifyContent: "space-between",
                     }}
                   >
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">
+                    <Box sx={settingsRowIconTileSx}>
+                      <EmailIcon fontSize="small" />
+                    </Box>
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Typography variant="caption" sx={settingsRowLabelSx}>
                         Adres e-mail
                       </Typography>
-                      <Typography variant="body2" fontWeight={600}>
+                      <Typography
+                        variant="body2"
+                        fontWeight={700}
+                        fontSize="1rem"
+                      >
                         {editStudentDraft.email || "—"}
                       </Typography>
                     </Box>
                     <Button
                       size="small"
-                      onClick={() =>
+                      onClick={() => {
+                        setEditStudentDraft((draft) => ({
+                          ...draft,
+                          email: editingStudent?.email ?? "",
+                          emailConfirm: "",
+                        }));
+                        setEditStudentFieldErrors((prev) => ({
+                          ...prev,
+                          email: undefined,
+                          emailConfirm: undefined,
+                        }));
                         setEditStudentEditingFields((prev) => [
                           ...prev,
                           "email",
-                        ])
-                      }
+                        ]);
+                      }}
                       sx={inlineChangeButtonSx}
                     >
                       Zmień
@@ -2001,91 +2129,109 @@ export function TeacherStudentsView() {
                 )}
               >
                 {editStudentEditingFields.includes("group") ? (
-                  <>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      display="block"
-                      sx={{ mb: 0.75 }}
-                    >
-                      Edycja przypisanej grupy
-                    </Typography>
+                  <Box sx={settingsRowSx}>
                     <Box
-                      sx={{ display: "flex", gap: 1, alignItems: "flex-start" }}
+                      sx={{
+                        ...settingsRowIconTileSx,
+                        alignSelf: "flex-start",
+                        mt: 0.25,
+                      }}
                     >
-                      <TextField
-                        select
-                        value={editStudentDraft.groupPublicId}
-                        onChange={(event) => {
-                          setEditStudentFieldErrors((current) => ({
-                            ...current,
-                            groupPublicId: undefined,
-                          }));
-                          setEditStudentDraft((draft) => ({
-                            ...draft,
-                            groupPublicId: event.target.value,
-                          }));
-                        }}
-                        error={Boolean(editStudentFieldErrors.groupPublicId)}
-                        helperText={editStudentFieldErrors.groupPublicId}
-                        fullWidth
-                        size="small"
-                        disabled={editStudentLoading}
+                      <SchoolIcon fontSize="small" />
+                    </Box>
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        display="block"
+                        sx={{ mb: 0.75 }}
                       >
-                        {availableGroups.map((group) => (
-                          <MenuItem key={group.publicId} value={group.publicId}>
-                            {group.name}
-                          </MenuItem>
-                        ))}
-                      </TextField>
-                      <Box sx={groupEditActionsWrapSx}>
-                        <IconButton
-                          size="small"
-                          disabled={
-                            editStudentLoading ||
-                            !editStudentDraft.groupPublicId ||
-                            editStudentInlineSavingField === "group"
-                          }
-                          onClick={() =>
-                            void saveEditStudentInlineField("group")
-                          }
-                          sx={compactInlineConfirmButtonSx}
-                        >
-                          <CheckIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          disabled={editStudentLoading}
-                          onClick={() => {
+                        Edycja przypisanej grupy
+                      </Typography>
+                      <Box sx={groupEditFieldRowSx}>
+                        <TextField
+                          select
+                          value={editStudentDraft.groupPublicId}
+                          onChange={(event) => {
+                            setEditStudentFieldErrors((current) => ({
+                              ...current,
+                              groupPublicId: undefined,
+                            }));
                             setEditStudentDraft((draft) => ({
                               ...draft,
-                              groupPublicId:
-                                editingStudent?.groupPublicId ?? "",
+                              groupPublicId: event.target.value,
                             }));
-                            setEditStudentEditingFields((prev) =>
-                              prev.filter((f) => f !== "group"),
-                            );
                           }}
-                          sx={compactInlineCancelButtonSx}
+                          error={Boolean(editStudentFieldErrors.groupPublicId)}
+                          helperText={editStudentFieldErrors.groupPublicId}
+                          fullWidth
+                          size="small"
+                          disabled={editStudentLoading}
                         >
-                          <CloseIcon fontSize="small" />
-                        </IconButton>
+                          {availableGroups.map((group) => (
+                            <MenuItem
+                              key={group.publicId}
+                              value={group.publicId}
+                            >
+                              {group.name}
+                            </MenuItem>
+                          ))}
+                        </TextField>
+                        <Box sx={groupEditActionsWrapSx}>
+                          <IconButton
+                            size="small"
+                            disabled={
+                              editStudentLoading ||
+                              !editStudentDraft.groupPublicId ||
+                              editStudentInlineSavingField === "group"
+                            }
+                            onClick={() =>
+                              void saveEditStudentInlineField("group")
+                            }
+                            sx={compactInlineConfirmButtonSx}
+                          >
+                            <CheckIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            disabled={editStudentLoading}
+                            onClick={() => {
+                              setEditStudentDraft((draft) => ({
+                                ...draft,
+                                groupPublicId:
+                                  editingStudent?.groupPublicId ?? "",
+                              }));
+                              setEditStudentEditingFields((prev) =>
+                                prev.filter((f) => f !== "group"),
+                              );
+                            }}
+                            sx={compactInlineCancelButtonSx}
+                          >
+                            <CloseIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
                       </Box>
                     </Box>
-                  </>
+                  </Box>
                 ) : (
                   <Box
                     sx={{
-                      display: "flex",
-                      alignItems: "center",
+                      ...settingsRowSx,
                       justifyContent: "space-between",
                     }}
                   >
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">
+                    <Box sx={settingsRowIconTileSx}>
+                      <SchoolIcon fontSize="small" />
+                    </Box>
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Typography variant="caption" sx={settingsRowLabelSx}>
                         Przypisana grupa
                       </Typography>
-                      <Typography variant="body2" fontWeight={600}>
+                      <Typography
+                        variant="body2"
+                        fontWeight={700}
+                        fontSize="1rem"
+                      >
                         {availableGroups.find(
                           (g) => g.publicId === editStudentDraft.groupPublicId,
                         )?.name ?? "—"}
@@ -2106,87 +2252,93 @@ export function TeacherStudentsView() {
                   </Box>
                 )}
               </Box>
-            </Box>
-
-            <Box
-              sx={{
-                p: 2.25,
-                bgcolor: "rgba(99, 102, 241, 0.04)",
-                display: "flex",
-                alignItems: "center",
-                gap: 2.5,
-                transition: "all 0.2s ease",
-                mt:
-                  editStudentEditingFields.includes("email") ||
-                  editStudentEditingFields.includes("group")
-                    ? 1.5
-                    : 0,
-              }}
-            >
               <Box
                 sx={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: "12px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  ...settingsRowSx,
+                  p: 2.25,
+                  justifyContent: "space-between",
                   bgcolor: (theme) =>
                     theme.palette.mode === "light"
-                      ? alpha("#6366F1", 0.1)
-                      : alpha("#6366F1", 0.15),
-                  color: "#6366F1",
-                  flexShrink: 0,
+                      ? alpha("#6366F1", 0.04)
+                      : alpha("#6366F1", 0.08),
+                  borderTop: "1px solid",
+                  borderTopColor: "divider",
                 }}
               >
-                <LockResetIcon fontSize="small" />
-              </Box>
-              <Box sx={{ minWidth: 0, flex: 1 }}>
-                <Typography
-                  variant="caption"
-                  sx={{ color: "#6366F1", mb: 0.25 }}
-                  fontWeight={700}
-                  display="block"
+                <Box sx={settingsRowIconTileSx}>
+                  <LockResetIcon fontSize="small" />
+                </Box>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{ ...settingsRowLabelSx, color: "#6366F1" }}
+                    fontWeight={700}
+                    display="block"
+                  >
+                    Reset hasła
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ lineHeight: 1.4, fontSize: "0.85rem" }}
+                  >
+                    Wyślij link do ustawienia nowego hasła.
+                  </Typography>
+                </Box>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={
+                    editStudentLoading ? (
+                      <CircularProgress size={16} color="inherit" />
+                    ) : editStudentPasswordResetSent ? (
+                      <CheckIcon fontSize="small" />
+                    ) : (
+                      <EmailIcon fontSize="small" />
+                    )
+                  }
+                  onClick={resetStudentPassword}
+                  disabled={
+                    editStudentLoading ||
+                    editStudentPasswordResetSent ||
+                    !EMAIL_REGEX.test(editStudentDraft.email.trim())
+                  }
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 600,
+                    fontSize: "0.82rem",
+                    borderRadius: "10px",
+                    px: 1.5,
+                    py: 0.6,
+                    minHeight: 32,
+                    minWidth: 120,
+                    whiteSpace: "nowrap",
+                    gap: 0.5,
+                    "& .MuiButton-startIcon": { mr: 0.5 },
+                    borderColor: editStudentPasswordResetSent
+                      ? alpha("#10B981", 0.3)
+                      : alpha("#6366F1", 0.2),
+                    bgcolor: editStudentPasswordResetSent
+                      ? alpha("#10B981", 0.05)
+                      : "transparent",
+                    color: editStudentPasswordResetSent ? "#10B981" : "#6366F1",
+                    "&:hover": {
+                      borderColor: editStudentPasswordResetSent
+                        ? alpha("#10B981", 0.4)
+                        : alpha("#6366F1", 0.4),
+                      bgcolor: editStudentPasswordResetSent
+                        ? alpha("#10B981", 0.08)
+                        : alpha("#6366F1", 0.04),
+                    },
+                  }}
                 >
-                  Reset hasła
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ lineHeight: 1.4, fontSize: "0.85rem" }}
-                >
-                  Wyślij link do ustawienia nowego hasła.
-                </Typography>
+                  {editStudentLoading
+                    ? "Wysyłanie..."
+                    : editStudentPasswordResetSent
+                      ? "Wysłano"
+                      : "Wyślij link"}
+                </Button>
               </Box>
-              <Button
-                size="small"
-                variant="outlined"
-                startIcon={<EmailIcon fontSize="small" />}
-                onClick={resetStudentPassword}
-                disabled={editStudentLoading}
-                sx={{
-                  textTransform: "none",
-                  fontWeight: 600,
-                  fontSize: "0.82rem",
-                  borderRadius: "10px",
-                  px: 1.5,
-                  py: 0.6,
-                  minHeight: 32,
-                  minWidth: 120,
-                  whiteSpace: "nowrap",
-                  gap: 0.5,
-                  "& .MuiButton-startIcon": { mr: 0.5 },
-                  borderColor: alpha("#6366F1", 0.2),
-                  color: "#6366F1",
-                  bgcolor: "transparent",
-                  "&:hover": {
-                    borderColor: alpha("#6366F1", 0.4),
-                    bgcolor: alpha("#6366F1", 0.04),
-                  },
-                }}
-              >
-                {editStudentLoading ? "Wysyłanie..." : "Wyślij link"}
-              </Button>
             </Box>
           </AppDialogBody>
         </AppDialog>
@@ -2220,26 +2372,7 @@ export function TeacherStudentsView() {
                 {editGroupFeedback.message}
               </AppDialogStatus>
             )}
-            <Box
-              sx={{
-                borderRadius: 3,
-                bgcolor: (theme) =>
-                  theme.palette.mode === "light"
-                    ? "rgba(255, 255, 255, 0.78)"
-                    : "rgba(255, 255, 255, 0.03)",
-                border: "1px solid",
-                borderColor: (theme) =>
-                  theme.palette.mode === "light"
-                    ? "rgba(148, 163, 184, 0.14)"
-                    : "rgba(255, 255, 255, 0.06)",
-                backdropFilter: "blur(14px)",
-                boxShadow: (theme) =>
-                  theme.palette.mode === "light"
-                    ? "0 16px 32px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255,255,255,0.6)"
-                    : "0 12px 24px rgba(0, 0, 0, 0.18)",
-                overflow: "hidden",
-              }}
-            >
+            <Box sx={settingsPanelSurfaceSx}>
               <Box
                 sx={{
                   ...getInlineEditSectionSx(
@@ -2250,93 +2383,112 @@ export function TeacherStudentsView() {
                 }}
               >
                 {editGroupEditingFields.includes("name") ? (
-                  <>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      display="block"
-                      sx={{ mb: 0.75 }}
+                  <Box sx={settingsRowSx}>
+                    <Box
+                      sx={{
+                        ...settingsRowIconTileSx,
+                        alignSelf: "flex-start",
+                        mt: 0.25,
+                      }}
                     >
-                      Edycja nazwy grupy
-                    </Typography>
-                    <Box sx={groupEditFieldRowSx}>
-                      <TextField
-                        value={editGroupDraft.name}
-                        onChange={(event) => {
-                          setEditGroupFieldErrors((current) => ({
-                            ...current,
-                            name: undefined,
-                          }));
-                          setEditGroupDraft((draft) => ({
-                            ...draft,
-                            name: event.target.value.slice(
-                              0,
-                              INPUT_LIMITS.groupName,
-                            ),
-                          }));
-                        }}
-                        inputProps={{ maxLength: INPUT_LIMITS.groupName }}
-                        error={Boolean(editGroupFieldErrors.name)}
-                        fullWidth
-                        size="small"
-                        autoFocus
-                        disabled={editGroupLoading}
-                      />
-                      <Box sx={groupEditActionsWrapSx}>
-                        <IconButton
-                          size="small"
-                          disabled={
-                            editGroupLoading ||
-                            editGroupDraft.name.trim().length < 1 ||
-                            editGroupInlineSavingField === "name"
-                          }
-                          onClick={() => void saveEditGroupInlineField("name")}
-                          sx={compactInlineConfirmButtonSx}
-                        >
-                          <CheckIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          disabled={editGroupLoading}
-                          onClick={() => {
+                      <SchoolIcon fontSize="small" />
+                    </Box>
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        display="block"
+                        sx={{ mb: 0.75 }}
+                      >
+                        Edycja nazwy grupy
+                      </Typography>
+                      <Box sx={groupEditFieldRowSx}>
+                        <TextField
+                          value={editGroupDraft.name}
+                          onChange={(event) => {
+                            setEditGroupFieldErrors((current) => ({
+                              ...current,
+                              name: undefined,
+                            }));
                             setEditGroupDraft((draft) => ({
                               ...draft,
-                              name: editingGroup?.name ?? "",
+                              name: event.target.value.slice(
+                                0,
+                                INPUT_LIMITS.groupName,
+                              ),
                             }));
-                            setEditGroupEditingFields((prev) =>
-                              prev.filter((f) => f !== "name"),
-                            );
                           }}
-                          sx={compactInlineCancelButtonSx}
-                        >
-                          <CloseIcon fontSize="small" />
-                        </IconButton>
+                          inputProps={{ maxLength: INPUT_LIMITS.groupName }}
+                          error={Boolean(editGroupFieldErrors.name)}
+                          fullWidth
+                          size="small"
+                          autoFocus
+                          disabled={editGroupLoading}
+                        />
+                        <Box sx={groupEditActionsWrapSx}>
+                          <IconButton
+                            size="small"
+                            disabled={
+                              editGroupLoading ||
+                              editGroupDraft.name.trim().length < 1 ||
+                              editGroupInlineSavingField === "name"
+                            }
+                            onClick={() =>
+                              void saveEditGroupInlineField("name")
+                            }
+                            sx={compactInlineConfirmButtonSx}
+                          >
+                            <CheckIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            disabled={editGroupLoading}
+                            onClick={() => {
+                              setEditGroupDraft((draft) => ({
+                                ...draft,
+                                name: editingGroup?.name ?? "",
+                              }));
+                              setEditGroupEditingFields((prev) =>
+                                prev.filter((f) => f !== "name"),
+                              );
+                            }}
+                            sx={compactInlineCancelButtonSx}
+                          >
+                            <CloseIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
                       </Box>
+                      <Typography
+                        variant="caption"
+                        color={
+                          editGroupFieldErrors.name ? "error" : "text.secondary"
+                        }
+                        sx={inlineFieldCounterTextSx}
+                      >
+                        {editGroupFieldErrors.name ??
+                          `${editGroupDraft.name.length}/${INPUT_LIMITS.groupName}`}
+                      </Typography>
                     </Box>
-                    <Typography
-                      variant="caption"
-                      color={
-                        editGroupFieldErrors.name ? "error" : "text.secondary"
-                      }
-                      sx={inlineFieldCounterTextSx}
-                    >
-                      {editGroupFieldErrors.name ??
-                        `${editGroupDraft.name.length}/${INPUT_LIMITS.groupName}`}
-                    </Typography>
-                  </>
+                  </Box>
                 ) : (
                   <Box
                     sx={{
-                      display: "flex",
-                      alignItems: "center",
+                      ...settingsRowSx,
                       justifyContent: "space-between",
                     }}
                   >
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">
+                    <Box sx={settingsRowIconTileSx}>
+                      <SchoolIcon fontSize="small" />
+                    </Box>
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Typography variant="caption" sx={settingsRowLabelSx}>
                         Nazwa grupy
                       </Typography>
-                      <Typography variant="body2" fontWeight={600}>
+                      <Typography
+                        variant="body2"
+                        fontWeight={700}
+                        fontSize="1rem"
+                      >
                         {editGroupDraft.name || "—"}
                       </Typography>
                     </Box>
@@ -2359,115 +2511,131 @@ export function TeacherStudentsView() {
                 )}
               >
                 {editGroupEditingFields.includes("description") ? (
-                  <>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      display="block"
-                      sx={{ mb: 0.75 }}
+                  <Box sx={settingsRowSx}>
+                    <Box
+                      sx={{
+                        ...settingsRowIconTileSx,
+                        alignSelf: "flex-start",
+                        mt: 0.25,
+                      }}
                     >
-                      Edycja opisu grupy
-                    </Typography>
-                    <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-                      <TextField
-                        value={editGroupDraft.description}
-                        onChange={(event) => {
-                          setEditGroupFieldErrors((current) => ({
-                            ...current,
-                            description: undefined,
-                          }));
-                          setEditGroupDraft((draft) => ({
-                            ...draft,
-                            description: event.target.value.slice(
-                              0,
-                              INPUT_LIMITS.groupDescription,
-                            ),
-                          }));
-                        }}
-                        inputProps={{
-                          maxLength: INPUT_LIMITS.groupDescription,
-                        }}
-                        error={Boolean(editGroupFieldErrors.description)}
-                        sx={{
-                          "& .MuiOutlinedInput-root": {
-                            alignItems: "flex-start",
-                            py: 0.3,
-                          },
-                          "& .MuiInputBase-inputMultiline": {
-                            lineHeight: 1.65,
-                            resize: "vertical",
-                            minHeight: 48,
-                            pt: 1.35,
-                            pb: 0.9,
-                          },
-                        }}
-                        fullWidth
-                        size="small"
-                        minRows={3}
-                        multiline
-                        autoFocus
-                        disabled={editGroupLoading}
-                      />
-                      <Box sx={groupEditActionsWrapSx}>
-                        <IconButton
-                          size="small"
-                          disabled={
-                            editGroupLoading ||
-                            editGroupInlineSavingField === "description"
-                          }
-                          onClick={() =>
-                            void saveEditGroupInlineField("description")
-                          }
-                          sx={compactInlineConfirmButtonSx}
-                        >
-                          <CheckIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          disabled={editGroupLoading}
-                          onClick={() => {
+                      <ListIcon fontSize="small" />
+                    </Box>
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        display="block"
+                        sx={{ mb: 0.75 }}
+                      >
+                        Edycja opisu grupy
+                      </Typography>
+                      <Box
+                        sx={{ display: "flex", gap: 1, alignItems: "center" }}
+                      >
+                        <TextField
+                          value={editGroupDraft.description}
+                          onChange={(event) => {
+                            setEditGroupFieldErrors((current) => ({
+                              ...current,
+                              description: undefined,
+                            }));
                             setEditGroupDraft((draft) => ({
                               ...draft,
-                              description: editingGroup?.description ?? "",
+                              description: event.target.value.slice(
+                                0,
+                                INPUT_LIMITS.groupDescription,
+                              ),
                             }));
-                            setEditGroupEditingFields((prev) =>
-                              prev.filter((f) => f !== "description"),
-                            );
                           }}
-                          sx={compactInlineCancelButtonSx}
-                        >
-                          <CloseIcon fontSize="small" />
-                        </IconButton>
+                          inputProps={{
+                            maxLength: INPUT_LIMITS.groupDescription,
+                          }}
+                          error={Boolean(editGroupFieldErrors.description)}
+                          sx={{
+                            "& .MuiOutlinedInput-root": {
+                              alignItems: "flex-start",
+                              py: 0.3,
+                            },
+                            "& .MuiInputBase-inputMultiline": {
+                              lineHeight: 1.65,
+                              resize: "vertical",
+                              minHeight: 48,
+                              pt: 1.35,
+                              pb: 0.9,
+                            },
+                          }}
+                          fullWidth
+                          size="small"
+                          minRows={3}
+                          multiline
+                          autoFocus
+                          disabled={editGroupLoading}
+                        />
+                        <Box sx={groupEditActionsWrapSx}>
+                          <IconButton
+                            size="small"
+                            disabled={
+                              editGroupLoading ||
+                              editGroupInlineSavingField === "description"
+                            }
+                            onClick={() =>
+                              void saveEditGroupInlineField("description")
+                            }
+                            sx={compactInlineConfirmButtonSx}
+                          >
+                            <CheckIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            disabled={editGroupLoading}
+                            onClick={() => {
+                              setEditGroupDraft((draft) => ({
+                                ...draft,
+                                description: editingGroup?.description ?? "",
+                              }));
+                              setEditGroupEditingFields((prev) =>
+                                prev.filter((f) => f !== "description"),
+                              );
+                            }}
+                            sx={compactInlineCancelButtonSx}
+                          >
+                            <CloseIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
                       </Box>
+                      <Typography
+                        variant="caption"
+                        color={
+                          editGroupFieldErrors.description
+                            ? "error"
+                            : "text.secondary"
+                        }
+                        sx={inlineFieldCounterTextSx}
+                      >
+                        {editGroupFieldErrors.description ??
+                          `${editGroupDraft.description.length}/${INPUT_LIMITS.groupDescription}`}
+                      </Typography>
                     </Box>
-                    <Typography
-                      variant="caption"
-                      color={
-                        editGroupFieldErrors.description
-                          ? "error"
-                          : "text.secondary"
-                      }
-                      sx={inlineFieldCounterTextSx}
-                    >
-                      {editGroupFieldErrors.description ??
-                        `${editGroupDraft.description.length}/${INPUT_LIMITS.groupDescription}`}
-                    </Typography>
-                  </>
+                  </Box>
                 ) : (
                   <Box
                     sx={{
-                      display: "flex",
-                      alignItems: "center",
+                      ...settingsRowSx,
                       justifyContent: "space-between",
                     }}
                   >
+                    <Box sx={settingsRowIconTileSx}>
+                      <ListIcon fontSize="small" />
+                    </Box>
                     <Box sx={{ minWidth: 0, flex: 1 }}>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" sx={settingsRowLabelSx}>
                         Opis grupy
                       </Typography>
                       <Typography
                         variant="body2"
-                        fontWeight={600}
+                        fontWeight={700}
+                        fontSize="1rem"
                         sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
                       >
                         {editGroupDraft.description || "Brak opisu"}
@@ -2481,7 +2649,7 @@ export function TeacherStudentsView() {
                           "description",
                         ])
                       }
-                      sx={{ ...inlineChangeButtonSx, ml: 1 }}
+                      sx={inlineChangeButtonSx}
                     >
                       Zmień
                     </Button>
