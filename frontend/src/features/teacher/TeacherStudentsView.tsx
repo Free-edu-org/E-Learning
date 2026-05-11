@@ -221,6 +221,40 @@ const compactInlineActionsWrapSx = {
   flexShrink: 0,
 };
 
+const groupEditFieldRowSx = {
+  display: "flex",
+  gap: 1,
+  alignItems: "center",
+  width: "100%",
+};
+
+const groupEditActionsWrapSx = {
+  width: 72,
+  flex: "0 0 72px",
+  display: "flex",
+  flexDirection: "row",
+  justifyContent: "center",
+  alignItems: "center",
+  gap: 1,
+  flexShrink: 0,
+};
+
+const groupEditTextareaActionsWrapSx = {
+  ...groupEditActionsWrapSx,
+  alignSelf: "flex-start",
+  justifyContent: "flex-start",
+  mt: 1.5,
+};
+
+const inlineFieldCounterTextSx = {
+  display: "block",
+  mt: 0.5,
+  pl: 1.5,
+  pr: 1.5,
+  fontSize: "0.75rem",
+  textAlign: "left",
+};
+
 const compactInlineConfirmButtonSx = {
   ...inlineEditIconButtonSx,
   width: 32,
@@ -1722,7 +1756,7 @@ export function TeacherStudentsView() {
                     >
                       Edycja nazwy użytkownika
                     </Typography>
-                    <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                    <Box sx={groupEditFieldRowSx}>
                       <TextField
                         name="teacher-edit-student-username"
                         autoComplete="off"
@@ -1752,7 +1786,7 @@ export function TeacherStudentsView() {
                         autoFocus
                         disabled={editStudentLoading}
                       />
-                      <Box sx={{ ...compactInlineActionsWrapSx, mt: 0 }}>
+                      <Box sx={groupEditTextareaActionsWrapSx}>
                         <IconButton
                           size="small"
                           disabled={
@@ -2004,7 +2038,7 @@ export function TeacherStudentsView() {
                           </MenuItem>
                         ))}
                       </TextField>
-                      <Box sx={compactInlineActionsWrapSx}>
+                      <Box sx={groupEditActionsWrapSx}>
                         <IconButton
                           size="small"
                           disabled={
@@ -2225,7 +2259,7 @@ export function TeacherStudentsView() {
                     >
                       Edycja nazwy grupy
                     </Typography>
-                    <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                    <Box sx={groupEditFieldRowSx}>
                       <TextField
                         value={editGroupDraft.name}
                         onChange={(event) => {
@@ -2243,17 +2277,12 @@ export function TeacherStudentsView() {
                         }}
                         inputProps={{ maxLength: INPUT_LIMITS.groupName }}
                         error={Boolean(editGroupFieldErrors.name)}
-                        helperText={
-                          editGroupFieldErrors.name ??
-                          `${editGroupDraft.name.length}/${INPUT_LIMITS.groupName}`
-                        }
-                        sx={counterFieldSx}
                         fullWidth
                         size="small"
                         autoFocus
                         disabled={editGroupLoading}
                       />
-                      <Box sx={compactInlineActionsWrapSx}>
+                      <Box sx={groupEditActionsWrapSx}>
                         <IconButton
                           size="small"
                           disabled={
@@ -2284,6 +2313,16 @@ export function TeacherStudentsView() {
                         </IconButton>
                       </Box>
                     </Box>
+                    <Typography
+                      variant="caption"
+                      color={
+                        editGroupFieldErrors.name ? "error" : "text.secondary"
+                      }
+                      sx={inlineFieldCounterTextSx}
+                    >
+                      {editGroupFieldErrors.name ??
+                        `${editGroupDraft.name.length}/${INPUT_LIMITS.groupName}`}
+                    </Typography>
                   </>
                 ) : (
                   <Box
@@ -2349,11 +2388,19 @@ export function TeacherStudentsView() {
                           maxLength: INPUT_LIMITS.groupDescription,
                         }}
                         error={Boolean(editGroupFieldErrors.description)}
-                        helperText={
-                          editGroupFieldErrors.description ??
-                          `${editGroupDraft.description.length}/${INPUT_LIMITS.groupDescription}`
-                        }
-                        sx={counterFieldSx}
+                        sx={{
+                          "& .MuiOutlinedInput-root": {
+                            alignItems: "flex-start",
+                            py: 0.3,
+                          },
+                          "& .MuiInputBase-inputMultiline": {
+                            lineHeight: 1.65,
+                            resize: "vertical",
+                            minHeight: 48,
+                            pt: 1.35,
+                            pb: 0.9,
+                          },
+                        }}
                         fullWidth
                         size="small"
                         minRows={3}
@@ -2361,7 +2408,7 @@ export function TeacherStudentsView() {
                         autoFocus
                         disabled={editGroupLoading}
                       />
-                      <Box sx={compactInlineActionsWrapSx}>
+                      <Box sx={groupEditActionsWrapSx}>
                         <IconButton
                           size="small"
                           disabled={
@@ -2393,6 +2440,18 @@ export function TeacherStudentsView() {
                         </IconButton>
                       </Box>
                     </Box>
+                    <Typography
+                      variant="caption"
+                      color={
+                        editGroupFieldErrors.description
+                          ? "error"
+                          : "text.secondary"
+                      }
+                      sx={inlineFieldCounterTextSx}
+                    >
+                      {editGroupFieldErrors.description ??
+                        `${editGroupDraft.description.length}/${INPUT_LIMITS.groupDescription}`}
+                    </Typography>
                   </>
                 ) : (
                   <Box
