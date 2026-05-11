@@ -197,7 +197,7 @@ const modalSectionSurfaceSx: SxProps<Theme> = {
   bgcolor: (theme: Theme) =>
     theme.palette.mode === "light"
       ? "rgba(255, 255, 255, 0.78)"
-      : "rgba(255, 255, 255, 0.02)",
+      : "transparent",
   border: "1px solid",
   borderColor: (theme: Theme) =>
     theme.palette.mode === "light"

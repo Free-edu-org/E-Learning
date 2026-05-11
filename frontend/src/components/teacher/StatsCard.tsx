@@ -2,12 +2,14 @@ import { Box, Paper, Stack, Typography } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
 import {
   AutoAwesomeOutlined as SparklesIcon,
+  EmojiEventsOutlined as TrophyIcon,
   GroupOutlined as GroupIcon,
   MenuBookOutlined as LessonsIcon,
   PeopleOutlineOutlined as UsersIcon,
   PersonOutlineOutlined as StudentIcon,
   SchoolOutlined as TeacherIcon,
   TaskAltOutlined as TasksIcon,
+  TrendingUpOutlined as TrendUpIcon,
   VerifiedOutlined as AdminIcon,
 } from "@mui/icons-material";
 import { panelSurfaceSx } from "@/components/ui/panel/panelStyles";
@@ -16,9 +18,18 @@ interface StatsCardProps {
   label: string;
   value: string | number;
   highlightColor?: string;
+  helperText?: string;
 }
 
-function resolveMetricMeta(label: string, fallbackColor: string) {
+type MetricMeta = {
+  icon: typeof SparklesIcon;
+  helper: string;
+  gradient: string;
+  glow: string;
+  iconColor?: string;
+};
+
+function resolveMetricMeta(label: string, fallbackColor: string): MetricMeta {
   const normalized = label.toLowerCase();
 
   if (normalized.includes("wszyscy użytkownicy")) {
@@ -51,6 +62,15 @@ function resolveMetricMeta(label: string, fallbackColor: string) {
     };
   }
 
+  if (normalized.includes("ukończyli")) {
+    return {
+      icon: StudentIcon,
+      helper: "Uczniowie z ukończoną lekcją",
+      gradient: `linear-gradient(135deg, ${alpha(fallbackColor, 0.82)} 0%, ${alpha(fallbackColor, 0.76)} 100%)`,
+      glow: alpha(fallbackColor, 0.075),
+    };
+  }
+
   if (normalized.includes("uczniowie")) {
     return {
       icon: StudentIcon,
@@ -58,6 +78,25 @@ function resolveMetricMeta(label: string, fallbackColor: string) {
       gradient:
         "linear-gradient(135deg, rgba(107,218,146,0.8) 0%, rgba(47,169,95,0.74) 100%)",
       glow: alpha("#16a34a", 0.075),
+    };
+  }
+
+  if (normalized.includes("średni wynik")) {
+    return {
+      icon: TrendUpIcon,
+      helper: "Średni rezultat wszystkich prób",
+      gradient: `linear-gradient(135deg, ${alpha(fallbackColor, 0.82)} 0%, ${alpha(fallbackColor, 0.76)} 100%)`,
+      glow: alpha(fallbackColor, 0.075),
+    };
+  }
+
+  if (normalized.includes("najlepszy wynik")) {
+    return {
+      icon: TrophyIcon,
+      helper: "Najwyższy wynik w tej lekcji",
+      gradient:
+        "linear-gradient(135deg, rgba(247,164,96,0.82) 0%, rgba(226,110,47,0.76) 100%)",
+      glow: alpha("#ea580c", 0.075),
     };
   }
 
@@ -91,6 +130,16 @@ function resolveMetricMeta(label: string, fallbackColor: string) {
     };
   }
 
+  if (normalized.includes("poprawne odpowiedzi")) {
+    return {
+      icon: TasksIcon,
+      helper: "Suma prawidłowych odpowiedzi",
+      gradient:
+        "linear-gradient(135deg, rgba(125,177,247,0.82) 0%, rgba(72,123,229,0.76) 100%)",
+      glow: alpha("#2563eb", 0.07),
+    };
+  }
+
   return {
     icon: SparklesIcon,
     helper: "Kluczowy wskaźnik panelu",
@@ -99,7 +148,12 @@ function resolveMetricMeta(label: string, fallbackColor: string) {
   };
 }
 
-export function StatsCard({ label, value, highlightColor }: StatsCardProps) {
+export function StatsCard({
+  label,
+  value,
+  highlightColor,
+  helperText,
+}: StatsCardProps) {
   const theme = useTheme();
   const accentColor =
     highlightColor ??
@@ -114,7 +168,7 @@ export function StatsCard({ label, value, highlightColor }: StatsCardProps) {
       elevation={0}
       sx={{
         ...panelSurfaceSx,
-        borderRadius: 2,
+        borderRadius: 3.5,
         px: 1.85,
         py: 0.9,
         flex: 1,
@@ -182,7 +236,7 @@ export function StatsCard({ label, value, highlightColor }: StatsCardProps) {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              color: "common.white",
+              color: metricMeta.iconColor ?? "common.white",
               background: metricMeta.gradient,
               boxShadow: `0 4px 8px ${metricMeta.glow}`,
               flexShrink: 0,
@@ -247,7 +301,7 @@ export function StatsCard({ label, value, highlightColor }: StatsCardProps) {
                 : alpha(theme.palette.common.white, 0.36),
           }}
         >
-          {metricMeta.helper}
+          {helperText ?? metricMeta.helper}
         </Typography>
       </Stack>
     </Paper>

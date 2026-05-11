@@ -270,6 +270,12 @@ function formatDate(value?: string) {
 const toolbarFieldSx = {
   minWidth: 180,
   flex: "1 1 180px",
+  "& .MuiAutocomplete-inputRoot": {
+    bgcolor: (theme: Theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.common.white, 0.98)
+        : "#151a2c",
+  },
   "& .MuiOutlinedInput-root": {
     borderRadius: 2,
     minHeight: 40,
@@ -634,6 +640,7 @@ const subtleMetaRowSx = {
 
 const userCardSurfaceSx: SxProps<Theme> = {
   ...(panelGridCardSx as object),
+  borderRadius: 3.5,
   display: "flex",
   flexDirection: "column",
   position: "relative",
@@ -1054,7 +1061,7 @@ export function AdminDashboard() {
       minWidth: 220,
       minHeight: 142,
       p: { xs: 1.5, md: 1.75 },
-      borderRadius: 3,
+      borderRadius: 3.5,
       position: "relative",
       overflow: "hidden",
       display: "flex",

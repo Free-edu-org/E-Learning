@@ -14,9 +14,7 @@ import {
 import { alpha, useTheme } from "@mui/material/styles";
 import {
   ArrowBack as ArrowBackIcon,
-  EmojiEvents as TrophyIcon,
   Replay as ReplayIcon,
-  TrendingUp as TrendingUpIcon,
   Visibility as VisibilityIcon,
   WarningAmberOutlined as WarningIcon,
 } from "@mui/icons-material";
@@ -47,8 +45,8 @@ import { FormActions } from "@/components/ui/form/FormLayout";
 import { DashboardHeader } from "@/components/ui/panel/DashboardHeader";
 import { DashboardTopBar } from "@/components/ui/panel/DashboardTopBar";
 import { UserAvatar } from "@/components/ui/avatar/UserAvatar";
+import { StatsCard } from "@/components/teacher/StatsCard";
 import {
-  panelGridCardSx,
   outlinedMetaChipSx,
   panelDeleteButtonSx,
   panelFooterButtonSx,
@@ -64,101 +62,6 @@ function formatDate(value: string | null): string {
   const date = `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.${d.getFullYear()}`;
   const time = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
   return `${date} ${time}`;
-}
-
-function StatCard({
-  label,
-  value,
-  icon,
-  emphasized,
-  labelSx,
-  valueSx,
-}: {
-  label: string;
-  value: string;
-  icon: React.ReactNode;
-  emphasized?: boolean;
-  labelSx?: object;
-  valueSx?: object;
-}) {
-  return (
-    <Box
-      sx={{
-        ...panelGridCardSx,
-        minWidth: 0,
-        px: { xs: 1.35, sm: 1.5 },
-        py: { xs: 0.95, sm: 1.05 },
-        display: "flex",
-        alignItems: "center",
-        gap: 0.8,
-        minHeight: 62,
-        border: "1px solid",
-        borderColor: (theme) =>
-          alpha(theme.palette.text.primary, emphasized ? 0.12 : 0.08),
-        bgcolor: (theme) =>
-          emphasized
-            ? theme.palette.mode === "dark"
-              ? alpha(theme.palette.primary.main, 0.09)
-              : alpha(theme.palette.primary.main, 0.045)
-            : theme.palette.mode === "dark"
-              ? alpha(theme.palette.common.black, 0.12)
-              : alpha(theme.palette.common.white, 0.58),
-        boxShadow: (theme) =>
-          theme.palette.mode === "dark"
-            ? "0 6px 16px rgba(2, 6, 23, 0.24)"
-            : "0 8px 20px rgba(15, 23, 42, 0.05)",
-      }}
-    >
-      <Box
-        sx={{
-          width: 23,
-          height: 23,
-          borderRadius: 1.5,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          bgcolor: (theme) => alpha(theme.palette.primary.main, 0.07),
-          flexShrink: 0,
-          opacity: 0.9,
-        }}
-      >
-        {icon}
-      </Box>
-      <Box
-        sx={{
-          minWidth: 0,
-          flex: 1,
-          textAlign: "center",
-        }}
-      >
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          sx={{
-            display: "block",
-            lineHeight: 1.1,
-            mb: 0.2,
-            opacity: 0.86,
-            ...labelSx,
-          }}
-        >
-          {label}
-        </Typography>
-        <Typography
-          variant="subtitle1"
-          fontWeight={800}
-          sx={{
-            lineHeight: 1,
-            fontSize: emphasized ? "1.28rem" : "1.05rem",
-            letterSpacing: emphasized ? "-0.02em" : "-0.01em",
-            ...valueSx,
-          }}
-        >
-          {value}
-        </Typography>
-      </Box>
-    </Box>
-  );
 }
 
 function buildDistributionData(results: LessonStatsStudentResult[]) {
@@ -384,50 +287,26 @@ export function LessonStatsView() {
             {/* Top stat cards */}
             <Box
               sx={{
-                display: "grid",
-                gridTemplateColumns: {
-                  xs: "1fr",
-                  sm: "repeat(3, minmax(0, 1fr))",
-                },
-                gap: 1,
-                mb: 1.75,
+                display: "flex",
+                gap: 2,
+                mb: 3,
+                flexWrap: "wrap",
               }}
             >
-              <StatCard
+              <StatsCard
                 label="Średni wynik"
                 value={formatPercent(stats.avgScore)}
-                emphasized
-                labelSx={{ fontSize: "0.73rem" }}
-                valueSx={{ fontSize: "1.34rem" }}
-                icon={
-                  <TrendingUpIcon
-                    sx={{ color: "success.main", fontSize: 14 }}
-                  />
-                }
+                highlightColor={theme.palette.success.main}
               />
-              <StatCard
+              <StatsCard
                 label="Uczniowie, którzy ukończyli"
                 value={String(stats.studentsCompleted)}
-                icon={
-                  <Box
-                    sx={{
-                      width: 10,
-                      height: 10,
-                      borderRadius: "50%",
-                      bgcolor: "primary.main",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  />
-                }
+                highlightColor={theme.palette.primary.main}
               />
-              <StatCard
+              <StatsCard
                 label="Najlepszy wynik"
                 value={formatPercent(stats.bestScore)}
-                labelSx={{ fontSize: "0.73rem" }}
-                valueSx={{ fontSize: "1.08rem" }}
-                icon={<TrophyIcon sx={{ color: "#ca8a04", fontSize: 14 }} />}
+                highlightColor={theme.palette.warning.main}
               />
             </Box>
 

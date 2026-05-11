@@ -211,6 +211,7 @@ const lessonDeleteButtonSx: SxProps<Theme> = {
 };
 
 const lessonCardSurfaceSx: SxProps<Theme> = {
+  borderRadius: 3.5,
   display: "flex",
   flexDirection: "column",
   position: "relative",

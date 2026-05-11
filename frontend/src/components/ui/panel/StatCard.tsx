@@ -25,7 +25,7 @@ export function StatCard({
   centerText = false,
 }: StatCardProps) {
   return (
-    <Paper elevation={0} sx={{ ...panelGridCardSx, borderRadius: 2 }}>
+    <Paper elevation={0} sx={{ ...panelGridCardSx, borderRadius: 3.5 }}>
       <Box sx={panelGridCardContentSx}>
         <Box
           sx={{

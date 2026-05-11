@@ -925,6 +925,7 @@ export function TeacherDashboard() {
             title="Utwórz lekcję"
             subtitle="Nowa lekcja z zadaniami"
             onClick={() => navigate("/teacher/lessons/new")}
+            sx={{ borderRadius: 3.5 }}
           />
           <ActionButton
             icon={

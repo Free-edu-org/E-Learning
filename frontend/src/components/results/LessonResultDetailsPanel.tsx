@@ -8,7 +8,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { alpha } from "@mui/material/styles";
+import { alpha, useTheme } from "@mui/material/styles";
 import {
   CheckCircleOutlined as CorrectIcon,
   CancelOutlined as IncorrectIcon,
@@ -16,6 +16,7 @@ import {
   VisibilityOffOutlined as VisibilityOffIcon,
 } from "@mui/icons-material";
 import type { LessonResultDetailsResponse } from "@/api/studentService";
+import { StatsCard } from "@/components/teacher/StatsCard";
 import { panelSurfaceSx } from "@/components/ui/panel/panelStyles";
 import { formatPercent } from "@/utils/dashboardUtils";
 
@@ -55,6 +56,7 @@ export function LessonResultDetailsPanel({
   performerLabel,
   showTabSwitchInfo = false,
 }: LessonResultDetailsPanelProps) {
+  const theme = useTheme();
   const correctCount = result.tasks.filter((task) => task.isCorrect).length;
   const incorrectCount = result.tasks.length - correctCount;
 
@@ -70,8 +72,8 @@ export function LessonResultDetailsPanel({
         <Box
           sx={{
             ...panelSurfaceSx,
+            borderRadius: 3.5,
             p: 2.25,
-            bgcolor: (theme) => alpha(theme.palette.primary.main, 0.06),
           }}
         >
           <Typography variant="overline" color="text.secondary">
@@ -91,45 +93,26 @@ export function LessonResultDetailsPanel({
           )}
         </Box>
 
-        <Box sx={{ ...panelSurfaceSx, p: 2.25, textAlign: "center" }}>
-          <Typography variant="overline" color="text.secondary">
-            Wynik
-          </Typography>
-          <Typography
-            variant="h4"
-            fontWeight={800}
-            sx={{ lineHeight: 1.1, letterSpacing: "-0.02em" }}
-          >
-            {formatPercent(result.resultPercent)}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {result.score} / {result.maxScore} punktów
-          </Typography>
-        </Box>
+        <StatsCard
+          label="Wynik"
+          value={formatPercent(result.resultPercent)}
+          helperText={`${result.score} / ${result.maxScore} punktów`}
+          highlightColor={theme.palette.primary.main}
+        />
 
-        <Box sx={{ ...panelSurfaceSx, p: 2.25, textAlign: "center" }}>
-          <Typography variant="overline" color="text.secondary">
-            Poprawne
-          </Typography>
-          <Typography variant="h5" fontWeight={800} color="success.main">
-            {correctCount}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            zadań
-          </Typography>
-        </Box>
+        <StatsCard
+          label="Poprawne"
+          value={correctCount}
+          helperText="zadań"
+          highlightColor={theme.palette.success.main}
+        />
 
-        <Box sx={{ ...panelSurfaceSx, p: 2.25, textAlign: "center" }}>
-          <Typography variant="overline" color="text.secondary">
-            Błędne
-          </Typography>
-          <Typography variant="h5" fontWeight={800} color="error.main">
-            {incorrectCount}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            zadań
-          </Typography>
-        </Box>
+        <StatsCard
+          label="Błędne"
+          value={incorrectCount}
+          helperText="zadań"
+          highlightColor={theme.palette.error.main}
+        />
       </Box>
 
       <Box sx={{ ...panelSurfaceSx, p: 0, overflow: "hidden" }}>

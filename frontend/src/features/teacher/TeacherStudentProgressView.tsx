@@ -19,9 +19,7 @@ import {
 import { alpha, useTheme } from "@mui/material/styles";
 import {
   ArrowBackOutlined as BackIcon,
-  CheckCircleOutlined as CompletedIcon,
   EmojiEventsOutlined as AchievementIcon,
-  StarsOutlined as PointsIcon,
   TrendingUpOutlined as TrendIcon,
   Visibility as VisibilityIcon,
 } from "@mui/icons-material";
@@ -52,7 +50,7 @@ import {
   panelGridCardSx,
   panelSurfaceSx,
 } from "@/components/ui/panel/panelStyles";
-import { StatCard } from "@/components/ui/panel/StatCard";
+import { StatsCard } from "@/components/teacher/StatsCard";
 import { formatPercent } from "@/utils/dashboardUtils";
 
 type NormalizedSkill = SkillStat & {
@@ -156,6 +154,24 @@ export function TeacherStudentProgressView() {
       ? "#e8eef7"
       : theme.palette.background.default;
 
+  const chartGridColor = alpha(
+    theme.palette.text.primary,
+    theme.palette.mode === "dark" ? 0.14 : 0.08,
+  );
+  const chartAxisColor = alpha(theme.palette.text.secondary, 0.92);
+  const chartLabelColor = alpha(theme.palette.text.secondary, 0.75);
+  const chartTooltipStyle = {
+    background:
+      theme.palette.mode === "dark"
+        ? "rgba(12, 18, 32, 0.92)"
+        : "rgba(15, 23, 42, 0.94)",
+    border: `1px solid ${alpha(theme.palette.primary.main, 0.28)}`,
+    borderRadius: 12,
+    boxShadow: "0 12px 30px rgba(2, 6, 23, 0.35)",
+    color: "#e2e8f0",
+    fontSize: "12px",
+  };
+
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: pageBg, pb: 6 }}>
       <Container maxWidth="xl" sx={{ pt: 4, position: "relative" }}>
@@ -241,33 +257,27 @@ export function TeacherStudentProgressView() {
           stats && (
             <Grid container spacing={2} sx={{ mb: 4 }}>
               <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                <StatCard
-                  icon={CompletedIcon}
-                  title="Ukończone lekcje"
+                <StatsCard
+                  label="Ukończone lekcje"
                   value={stats.completedLessons}
-                  subtitle={`z ${stats.totalLessons} lekcji`}
-                  color="success"
-                  centerText
+                  helperText={`z ${stats.totalLessons} lekcji`}
+                  highlightColor={theme.palette.success.main}
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                <StatCard
-                  icon={TrendIcon}
-                  title="Średni wynik"
+                <StatsCard
+                  label="Średni wynik"
                   value={`${Math.round(stats.avgScore)}%`}
-                  subtitle="ukończonych lekcji"
-                  color="primary"
-                  centerText
+                  helperText="ukończonych lekcji"
+                  highlightColor={theme.palette.primary.main}
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                <StatCard
-                  icon={PointsIcon}
-                  title="Poprawne odpowiedzi"
+                <StatsCard
+                  label="Poprawne odpowiedzi"
                   value={correctAnswers}
-                  subtitle={`${totalAnswers} odpowiedzi łącznie`}
-                  color="info"
-                  centerText
+                  helperText={`${totalAnswers} odpowiedzi łącznie`}
+                  highlightColor={theme.palette.info.main}
                 />
               </Grid>
             </Grid>
@@ -276,7 +286,10 @@ export function TeacherStudentProgressView() {
 
         <Grid container spacing={2} sx={{ mb: 4 }}>
           <Grid size={{ xs: 12, md: 6 }}>
-            <Paper elevation={0} sx={{ ...panelGridCardSx, minHeight: 350 }}>
+            <Paper
+              elevation={0}
+              sx={{ ...panelGridCardSx, borderRadius: 3.5, minHeight: 350 }}
+            >
               <Box sx={panelGridCardContentSx}>
                 <Box
                   sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}
@@ -290,45 +303,46 @@ export function TeacherStudentProgressView() {
                 {loading ? (
                   <Skeleton variant="rounded" height={280} />
                 ) : progressChartData.length === 0 ? (
-                  <Alert severity="info" sx={{ borderRadius: 2 }}>
+                  <Alert severity="info" sx={{ borderRadius: 3.5 }}>
                     Historia pojawi się po ukończeniu pierwszej lekcji.
                   </Alert>
                 ) : (
                   <ResponsiveContainer width="100%" height={280}>
                     <LineChart data={progressChartData}>
                       <CartesianGrid
-                        strokeDasharray="3 3"
-                        stroke={alpha(theme.palette.divider, 0.5)}
+                        stroke={chartGridColor}
+                        strokeDasharray="4 6"
+                        vertical={false}
                       />
                       <XAxis
                         dataKey="date"
-                        stroke={theme.palette.text.secondary}
-                        style={{ fontSize: 12 }}
+                        tick={{ fontSize: 11, fill: chartLabelColor }}
+                        tickLine={false}
+                        axisLine={{
+                          stroke: alpha(theme.palette.text.primary, 0.14),
+                        }}
                         interval={Math.max(
                           0,
                           Math.floor(progressChartData.length / 5) - 1,
                         )}
                       />
                       <YAxis
-                        stroke={theme.palette.text.secondary}
-                        style={{ fontSize: 12 }}
+                        tick={{ fontSize: 11, fill: chartAxisColor }}
+                        tickLine={false}
+                        axisLine={false}
                         domain={[0, 100]}
                         tickFormatter={(v) => `${v}%`}
                       />
                       <Tooltip
-                        contentStyle={{
-                          borderRadius: 8,
-                          border: "1px solid",
-                          borderColor: theme.palette.divider,
-                          backgroundColor: theme.palette.background.paper,
-                        }}
+                        contentStyle={chartTooltipStyle}
+                        labelStyle={{ color: "#cbd5e1", fontWeight: 600 }}
                         formatter={(v) => [`${v}%`, "Wynik"]}
                       />
                       <Line
                         type="monotone"
                         dataKey="progress"
                         stroke={theme.palette.primary.main}
-                        strokeWidth={2}
+                        strokeWidth={2.5}
                         dot={false}
                         isAnimationActive={false}
                       />
@@ -340,7 +354,10 @@ export function TeacherStudentProgressView() {
           </Grid>
 
           <Grid size={{ xs: 12, md: 6 }}>
-            <Paper elevation={0} sx={{ ...panelGridCardSx, minHeight: 350 }}>
+            <Paper
+              elevation={0}
+              sx={{ ...panelGridCardSx, borderRadius: 3.5, minHeight: 350 }}
+            >
               <Box sx={panelGridCardContentSx}>
                 <Box
                   sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}
@@ -359,31 +376,66 @@ export function TeacherStudentProgressView() {
                       data={normalizedSkillsData}
                       margin={{ top: 12, right: 20, bottom: 8, left: 20 }}
                     >
+                      <defs>
+                        <linearGradient
+                          id="progressSkillsCorrectBars"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="0%"
+                            stopColor={theme.palette.success.main}
+                            stopOpacity={0.9}
+                          />
+                          <stop
+                            offset="100%"
+                            stopColor={theme.palette.success.main}
+                            stopOpacity={0.58}
+                          />
+                        </linearGradient>
+                        <linearGradient
+                          id="progressSkillsWrongBars"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="0%"
+                            stopColor={theme.palette.error.main}
+                            stopOpacity={0.9}
+                          />
+                          <stop
+                            offset="100%"
+                            stopColor={theme.palette.error.main}
+                            stopOpacity={0.58}
+                          />
+                        </linearGradient>
+                      </defs>
                       <CartesianGrid
-                        strokeDasharray="3 3"
-                        stroke={alpha(theme.palette.divider, 0.5)}
+                        stroke={chartGridColor}
+                        strokeDasharray="4 6"
+                        vertical={false}
                       />
                       <XAxis
                         dataKey="category"
-                        stroke={theme.palette.text.secondary}
-                        style={{ fontSize: 12 }}
+                        tick={{ fontSize: 11, fill: chartLabelColor }}
+                        tickLine={false}
+                        axisLine={{
+                          stroke: alpha(theme.palette.text.primary, 0.14),
+                        }}
                       />
                       <YAxis
-                        stroke={theme.palette.text.secondary}
-                        style={{ fontSize: 12 }}
+                        tick={{ fontSize: 11, fill: chartAxisColor }}
+                        tickLine={false}
+                        axisLine={false}
                         domain={[0, 100]}
                       />
                       <Tooltip
-                        contentStyle={{
-                          borderRadius: 8,
-                          border: "1px solid",
-                          borderColor: theme.palette.divider,
-                          backgroundColor: theme.palette.background.paper,
-                        }}
-                        labelStyle={{
-                          color: theme.palette.text.primary,
-                          fontWeight: 600,
-                        }}
+                        contentStyle={chartTooltipStyle}
+                        labelStyle={{ color: "#cbd5e1", fontWeight: 600 }}
                         formatter={(value: unknown, name: unknown, item) => {
                           const entry = item.payload as
                             | NormalizedSkill
@@ -398,12 +450,17 @@ export function TeacherStudentProgressView() {
                           return [`${pct} (${entry?.wrong ?? 0})`, "Źle"];
                         }}
                       />
-                      <Legend />
+                      <Legend
+                        wrapperStyle={{
+                          color: theme.palette.text.secondary,
+                          fontSize: 12,
+                        }}
+                      />
                       <Bar
                         dataKey="correctPct"
                         stackId="a"
                         name="Dobrze"
-                        fill={theme.palette.success.main}
+                        fill="url(#progressSkillsCorrectBars)"
                         radius={[0, 0, 4, 4]}
                         isAnimationActive={false}
                       />
@@ -411,7 +468,7 @@ export function TeacherStudentProgressView() {
                         dataKey="wrongPct"
                         stackId="a"
                         name="Źle"
-                        fill={theme.palette.error.main}
+                        fill="url(#progressSkillsWrongBars)"
                         radius={[4, 4, 0, 0]}
                         isAnimationActive={false}
                       />
@@ -426,7 +483,7 @@ export function TeacherStudentProgressView() {
         {/* Completed lessons list */}
         {!loading && stats && stats.lessonResults.length > 0 && (
           <Box sx={{ mb: 4 }}>
-            <Paper elevation={0} sx={{ ...panelGridCardSx }}>
+            <Paper elevation={0} sx={{ ...panelGridCardSx, borderRadius: 3.5 }}>
               <Box sx={panelGridCardContentSx}>
                 <Box
                   sx={{ display: "flex", alignItems: "center", gap: 1, mb: 3 }}
@@ -446,7 +503,7 @@ export function TeacherStudentProgressView() {
                         alignItems: "center",
                         gap: 2,
                         p: 1.5,
-                        borderRadius: 2,
+                        borderRadius: 3.5,
                         border: "1px solid",
                         borderColor: "divider",
                         flexWrap: "wrap",
@@ -489,7 +546,7 @@ export function TeacherStudentProgressView() {
                           textTransform: "none",
                           fontWeight: 600,
                           fontSize: "0.8rem",
-                          borderRadius: 2,
+                          borderRadius: 3.5,
                           border: "1px solid",
                           borderColor: (t) => alpha(t.palette.divider, 0.5),
                           color: "text.secondary",

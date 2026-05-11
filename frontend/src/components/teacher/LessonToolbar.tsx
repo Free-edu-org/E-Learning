@@ -23,6 +23,12 @@ import { panelToolbarSx } from "@/components/ui/panel/panelStyles";
 const toolbarFieldSx: SxProps<Theme> = {
   minWidth: 180,
   flex: "1 1 180px",
+  "& .MuiAutocomplete-inputRoot": {
+    bgcolor: (theme: Theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.common.white, 0.98)
+        : "#151a2c",
+  },
   "& .MuiOutlinedInput-root": {
     borderRadius: 2,
     minHeight: 40,
