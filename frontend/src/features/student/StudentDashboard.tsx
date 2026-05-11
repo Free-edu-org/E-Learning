@@ -33,6 +33,9 @@ import {
   LockOutlined as LockIcon,
   SortOutlined as SortIcon,
   TrendingUpOutlined as ResultIcon,
+  PlayArrowOutlined as PlayIcon,
+  MicNoneOutlined as MicIcon,
+  AutoAwesomeOutlined as AIIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import {
@@ -47,14 +50,12 @@ import { userService, type UserProfile } from "@/api/userService";
 import { DashboardHeader } from "@/components/ui/panel/DashboardHeader";
 import { DashboardTopBar } from "@/components/ui/panel/DashboardTopBar";
 import {
-  panelCardFooterSx,
-  panelFooterButtonSx,
   panelGridCardContentSx,
   panelGridCardSx,
   panelSurfaceSx,
   panelToolbarSx,
 } from "@/components/ui/panel/panelStyles";
-import { UserAvatar } from "@/components/ui/avatar/UserAvatar";
+import { StatsCard } from "@/components/teacher/StatsCard";
 import { useAuth } from "@/context/AuthContext";
 import { formatPercent, getErrorMessage } from "@/utils/dashboardUtils";
 
@@ -125,21 +126,6 @@ function getLessonStatusTag(lesson: StudentLesson) {
   );
 }
 
-function buildProgressSummary(stats: StudentStats | null) {
-  if (!stats || stats.totalLessons === 0) {
-    return "Nie masz jeszcze przypisanych lekcji.";
-  }
-  if (stats.completedLessons === 0 && stats.inProgressLessons === 0) {
-    return `Masz przypisane ${stats.totalLessons} lekcje. Rozpocznij pierwsza, aby zaczac budowac historie wynikow.`;
-  }
-  if (stats.completedLessons === 0) {
-    return `Masz ${stats.inProgressLessons} rozpoczete lekcje. Dokoncz je, aby zobaczyc pierwszy wynik procentowy.`;
-  }
-  return `Ukonczono ${stats.completedLessons} z ${stats.totalLessons} lekcji. Sredni wynik wynosi ${
-    Math.round((stats.averageScore ?? 0) * 10) / 10
-  }%.`;
-}
-
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 // ── Result Dialog ─────────────────────────────────────────────────────────────
@@ -160,7 +146,7 @@ function ResultDialog({ lesson, onClose, onOpenDetails }: ResultDialogProps) {
       onClose={onClose}
       maxWidth="xs"
       fullWidth
-      PaperProps={{ sx: { borderRadius: 3 } }}
+      PaperProps={{ sx: { borderRadius: 4, backgroundImage: "none" } }}
     >
       <DialogTitle
         sx={{
@@ -168,53 +154,96 @@ function ResultDialog({ lesson, onClose, onOpenDetails }: ResultDialogProps) {
           alignItems: "center",
           justifyContent: "space-between",
           pb: 1,
+          pt: 3,
+          px: 3,
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <ResultIcon sx={{ color: "primary.main" }} />
-          <Typography variant="h6" fontWeight={700}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+          <Box
+            sx={{
+              width: 36,
+              height: 36,
+              borderRadius: 2,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              bgcolor: alpha(theme.palette.success.main, 0.1),
+              color: "success.main",
+            }}
+          >
+            <ResultIcon />
+          </Box>
+          <Typography variant="h6" fontWeight={800}>
             Wynik lekcji
           </Typography>
         </Box>
-        <IconButton size="small" onClick={onClose}>
-          <CloseIcon fontSize="small" />
-        </IconButton>
       </DialogTitle>
-      <DialogContent>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+      <DialogContent sx={{ px: 3, pb: 2 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
           {lesson.title}
         </Typography>
         <Box
           sx={{
             ...panelSurfaceSx,
-            p: 2.5,
+            p: 4,
             textAlign: "center",
-            bgcolor: alpha(theme.palette.success.main, 0.07),
-            mb: 2,
+            background:
+              theme.palette.mode === "light"
+                ? `linear-gradient(135deg, ${alpha(theme.palette.success.main, 0.08)} 0%, ${alpha(theme.palette.success.main, 0.02)} 100%)`
+                : alpha(theme.palette.success.main, 0.05),
+            mb: 3,
+            borderRadius: 4,
+            border: `1px solid ${alpha(theme.palette.success.main, 0.12)}`,
           }}
         >
-          <Typography variant="h3" fontWeight={800} color="success.main">
+          <Typography
+            variant="h2"
+            fontWeight={900}
+            color="success.main"
+            sx={{ letterSpacing: "-0.05em", lineHeight: 1 }}
+          >
             {formatPercent(lesson.resultPercent)}
           </Typography>
           {lesson.score != null && lesson.maxScore != null && (
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            <Typography
+              variant="subtitle1"
+              fontWeight={600}
+              color="text.secondary"
+              sx={{ mt: 1.5, opacity: 0.8 }}
+            >
               {lesson.score} / {lesson.maxScore} punktów
             </Typography>
           )}
         </Box>
-        <Chip
-          icon={<CompletedIcon />}
-          label="Lekcja ukończona"
-          color="success"
-          variant="outlined"
-          sx={{ width: "100%", justifyContent: "center" }}
-        />
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="center"
+          sx={{
+            p: 1.5,
+            borderRadius: 2,
+            bgcolor: alpha(theme.palette.success.main, 0.05),
+            border: `1px dashed ${alpha(theme.palette.success.main, 0.2)}`,
+          }}
+        >
+          <CompletedIcon color="success" />
+          <Typography variant="body2" fontWeight={700} color="success.main">
+            Lekcja ukończona pomyślnie
+          </Typography>
+        </Stack>
       </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2 }}>
+      <DialogActions sx={{ px: 3, pb: 3 }}>
         <Button
+          fullWidth
           variant="contained"
           onClick={() => onOpenDetails(lesson.publicId)}
-          sx={{ textTransform: "none", fontWeight: 600, borderRadius: 2 }}
+          sx={{
+            textTransform: "none",
+            fontWeight: 700,
+            borderRadius: 3,
+            py: 1.2,
+            boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.25)}`,
+          }}
         >
           Przejdź do szczegółów
         </Button>
@@ -249,6 +278,7 @@ function AttachmentDialog({
   onClose,
   onDownload,
 }: AttachmentDialogProps) {
+  const theme = useTheme();
   if (!lesson || lesson.attachments.length === 0) return null;
 
   return (
@@ -257,7 +287,7 @@ function AttachmentDialog({
       onClose={onClose}
       maxWidth="xs"
       fullWidth
-      PaperProps={{ sx: { borderRadius: 3 } }}
+      PaperProps={{ sx: { borderRadius: 4, backgroundImage: "none" } }}
     >
       <DialogTitle
         sx={{
@@ -265,25 +295,40 @@ function AttachmentDialog({
           alignItems: "center",
           justifyContent: "space-between",
           pb: 1,
+          pt: 3,
+          px: 3,
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <AttachFileIcon sx={{ color: "info.main" }} />
-          <Typography variant="h6" fontWeight={700}>
-            Materiały do lekcji
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+          <Box
+            sx={{
+              width: 36,
+              height: 36,
+              borderRadius: 2,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              bgcolor: alpha(theme.palette.info.main, 0.1),
+              color: "info.main",
+            }}
+          >
+            <AttachFileIcon />
+          </Box>
+          <Typography variant="h6" fontWeight={800}>
+            Materiały
           </Typography>
         </Box>
-        <IconButton size="small" onClick={onClose}>
+        <IconButton size="small" onClick={onClose} sx={{ mt: -1, mr: -1 }}>
           <CloseIcon fontSize="small" />
         </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{ pt: 0.5 }}>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+      <DialogContent sx={{ px: 3, pb: 2 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
           {lesson.title}
         </Typography>
 
-        <Stack spacing={1}>
+        <Stack spacing={1.5}>
           {lesson.attachments.map((att) => {
             const isDownloading = downloadingAttachmentId === att.publicId;
             return (
@@ -292,21 +337,38 @@ function AttachmentDialog({
                 sx={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 1.5,
-                  p: 1.5,
-                  borderRadius: 2,
-                  bgcolor: (t) => alpha(t.palette.info.main, 0.07),
+                  gap: 2,
+                  p: 2,
+                  borderRadius: 3,
+                  bgcolor: (t) => alpha(t.palette.info.main, 0.05),
                   border: "1px solid",
-                  borderColor: (t) => alpha(t.palette.info.main, 0.18),
+                  borderColor: (t) => alpha(t.palette.info.main, 0.12),
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    bgcolor: (t) => alpha(t.palette.info.main, 0.08),
+                    borderColor: (t) => alpha(t.palette.info.main, 0.25),
+                  },
                 }}
               >
-                <AttachFileIcon
-                  sx={{ fontSize: 18, color: "info.main", flexShrink: 0 }}
-                />
+                <Box
+                  sx={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 1.5,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    bgcolor: alpha(theme.palette.info.main, 0.1),
+                    color: "info.main",
+                    flexShrink: 0,
+                  }}
+                >
+                  <AttachFileIcon sx={{ fontSize: 18 }} />
+                </Box>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography
                     variant="body2"
-                    fontWeight={600}
+                    fontWeight={700}
                     sx={{
                       overflow: "hidden",
                       textOverflow: "ellipsis",
@@ -315,31 +377,35 @@ function AttachmentDialog({
                   >
                     {att.originalFileName}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {formatBytes(att.fileSize)} · {att.contentType}
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ fontWeight: 600, opacity: 0.8 }}
+                  >
+                    {formatBytes(att.fileSize)} ·{" "}
+                    {att.contentType.split("/").pop()?.toUpperCase()}
                   </Typography>
                 </Box>
-                <Tooltip title="Pobierz">
-                  <span>
-                    <IconButton
-                      size="small"
-                      disabled={isDownloading}
-                      onClick={() => onDownload(lesson.publicId, att)}
-                      sx={{
-                        flexShrink: 0,
-                        color: "info.main",
-                        "&:hover": {
-                          bgcolor: (t) => alpha(t.palette.info.main, 0.12),
-                        },
-                      }}
-                    >
-                      {isDownloading ? (
-                        <CircularProgress size={16} />
-                      ) : (
-                        <DownloadIcon fontSize="small" />
-                      )}
-                    </IconButton>
-                  </span>
+                <Tooltip title="Pobierz plik">
+                  <IconButton
+                    size="small"
+                    disabled={isDownloading}
+                    onClick={() => onDownload(lesson.publicId, att)}
+                    sx={{
+                      flexShrink: 0,
+                      color: "primary.main",
+                      bgcolor: alpha(theme.palette.primary.main, 0.08),
+                      "&:hover": {
+                        bgcolor: alpha(theme.palette.primary.main, 0.15),
+                      },
+                    }}
+                  >
+                    {isDownloading ? (
+                      <CircularProgress size={16} />
+                    ) : (
+                      <DownloadIcon fontSize="small" />
+                    )}
+                  </IconButton>
                 </Tooltip>
               </Box>
             );
@@ -347,16 +413,23 @@ function AttachmentDialog({
         </Stack>
 
         {downloadError && (
-          <Alert severity="error" sx={{ mt: 1.5, borderRadius: 2 }}>
+          <Alert severity="error" sx={{ mt: 2, borderRadius: 2.5 }}>
             {downloadError}
           </Alert>
         )}
       </DialogContent>
 
-      <DialogActions sx={{ px: 3, pb: 2 }}>
+      <DialogActions sx={{ px: 3, pb: 3 }}>
         <Button
+          fullWidth
+          variant="outlined"
           onClick={onClose}
-          sx={{ textTransform: "none", fontWeight: 600 }}
+          sx={{
+            textTransform: "none",
+            fontWeight: 700,
+            borderRadius: 3,
+            py: 1,
+          }}
         >
           Zamknij
         </Button>
@@ -457,7 +530,7 @@ export function StudentDashboard() {
   const heroGradient = useMemo(
     () =>
       theme.palette.mode === "light"
-        ? "linear-gradient(135deg, rgba(79,70,229,0.96) 0%, rgba(168,85,247,0.94) 100%)"
+        ? "linear-gradient(135deg, rgba(79,70,229,0.94) 0%, rgba(168,85,247,0.92) 100%)"
         : "linear-gradient(135deg, rgba(67,56,202,0.88) 0%, rgba(147,51,234,0.84) 100%)",
     [theme.palette.mode],
   );
@@ -480,7 +553,6 @@ export function StudentDashboard() {
         return a.title.localeCompare(b.title, "pl");
       if (lessonSort === "title_desc")
         return b.title.localeCompare(a.title, "pl");
-      // status: in_progress first, then not_started, then completed
       return STATUS_ORDER[a.status] - STATUS_ORDER[b.status];
     });
 
@@ -497,7 +569,7 @@ export function StudentDashboard() {
         <DashboardHeader
           loading={loading}
           username={user?.username}
-          subtitle="Panel ucznia"
+          subtitle="Twoja strefa nauki"
           fallbackName="Uczniu"
           user={user}
           onUserUpdated={setUser}
@@ -516,151 +588,147 @@ export function StudentDashboard() {
           elevation={0}
           sx={{
             mb: 4,
-            p: { xs: 2.5, md: 3 },
+            p: { xs: 3, md: 4 },
             color: "#fff",
-            borderRadius: 4,
+            borderRadius: 5,
             background: heroGradient,
-            boxShadow: "0 20px 40px rgba(79, 70, 229, 0.28)",
+            boxShadow: "0 24px 48px rgba(79, 70, 229, 0.28)",
+            position: "relative",
+            overflow: "hidden",
+            "&::after": {
+              content: '""',
+              position: "absolute",
+              top: "-50%",
+              right: "-10%",
+              width: "40%",
+              height: "200%",
+              background: "rgba(255,255,255,0.06)",
+              transform: "rotate(15deg)",
+              pointerEvents: "none",
+            },
           }}
         >
           <Stack
             direction={{ xs: "column", md: "row" }}
-            spacing={2}
+            spacing={4}
             alignItems={{ xs: "flex-start", md: "center" }}
             justifyContent="space-between"
           >
-            <Box>
-              <Typography variant="body2" sx={{ opacity: 0.82, mb: 0.5 }}>
+            <Box sx={{ maxWidth: 600 }}>
+              <Typography
+                variant="overline"
+                sx={{ opacity: 0.9, fontWeight: 700, letterSpacing: "0.1em" }}
+              >
                 Twój postęp nauki
               </Typography>
-              <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
+              <Typography
+                variant="h4"
+                fontWeight={900}
+                sx={{ mb: 2, mt: 1, letterSpacing: "-0.02em" }}
+              >
                 {progressPercent === 0
                   ? "Zacznij od pierwszej lekcji — każdy krok się liczy!"
                   : progressPercent === 100
                     ? "Świetnie! Ukończyłeś wszystkie przypisane lekcje 🎉"
-                    : `Ukończyłeś ${formatPercent(progressPercent)} przypisanych lekcji — tak trzymaj!`}
+                    : `Brawo! Masz już ${formatPercent(progressPercent)} planu za sobą.`}
               </Typography>
-              {stats && (
-                <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                  {buildProgressSummary(stats)}
-                </Typography>
-              )}
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                <Button
+                  variant="contained"
+                  color="inherit"
+                  startIcon={<InsightsIcon />}
+                  onClick={() => navigate("/student/progress")}
+                  sx={{
+                    bgcolor: "rgba(255,255,255,0.15)",
+                    backdropFilter: "blur(10px)",
+                    color: "#fff",
+                    fontWeight: 700,
+                    textTransform: "none",
+                    borderRadius: 2.5,
+                    px: 3,
+                    "&:hover": {
+                      bgcolor: "rgba(255,255,255,0.25)",
+                    },
+                  }}
+                >
+                  Szczegółowe statystyki
+                </Button>
+              </Box>
             </Box>
             <Box
               sx={{
-                bgcolor: alpha("#fff", 0.12),
-                borderRadius: 3,
-                px: 3,
-                py: 2,
+                bgcolor: "rgba(255,255,255,0.15)",
+                backdropFilter: "blur(12px)",
+                borderRadius: 4,
+                px: 5,
+                py: 3,
                 textAlign: "center",
                 flexShrink: 0,
-                minWidth: 110,
+                minWidth: 160,
+                border: "1px solid rgba(255,255,255,0.2)",
               }}
             >
-              <Typography variant="h4" fontWeight={800}>
+              <Typography variant="h2" fontWeight={900} sx={{ lineHeight: 1 }}>
                 {formatPercent(progressPercent)}
               </Typography>
-              <Typography variant="caption" sx={{ opacity: 0.85 }}>
+              <Typography
+                variant="subtitle1"
+                sx={{ opacity: 0.9, fontWeight: 600, mt: 0.5 }}
+              >
                 ukończono
               </Typography>
             </Box>
           </Stack>
         </Paper>
 
-        {/* ── Info grid: Postępy ── */}
+        {/* ── Stats Grid ── */}
         <Grid container spacing={2} sx={{ mb: 4 }}>
-          {/* Postępy - uproszczone */}
-          <Grid size={{ xs: 12 }}>
-            <Paper elevation={0} sx={{ ...panelGridCardSx, minHeight: 200 }}>
-              <Box sx={panelGridCardContentSx}>
-                <Box
-                  sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}
-                >
-                  <InsightsIcon sx={{ color: "primary.main" }} />
-                  <Typography variant="h6" fontWeight={700}>
-                    Twoje postępy
-                  </Typography>
-                </Box>
-
-                {loading ? (
-                  <Stack spacing={1.25}>
-                    <Skeleton variant="rounded" height={24} />
-                    <Skeleton variant="rounded" height={24} width="85%" />
-                    <Skeleton variant="rounded" height={24} width="55%" />
-                  </Stack>
-                ) : stats ? (
-                  <Stack spacing={1.5}>
-                    <Stack
-                      direction={{ xs: "column", sm: "row" }}
-                      spacing={1}
-                      flexWrap="wrap"
-                    >
-                      <Chip
-                        icon={<CompletedIcon />}
-                        label={`Ukończono: ${stats.completedLessons}`}
-                        color="success"
-                        variant="outlined"
-                      />
-                      <Chip
-                        label={`Punkty: ${stats.points}`}
-                        color="info"
-                        variant="outlined"
-                      />
-                    </Stack>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ lineHeight: 1.7 }}
-                    >
-                      {buildProgressSummary(stats)}
-                    </Typography>
-                    <Box sx={{ mt: "auto", pt: 1 }}>
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<InsightsIcon />}
-                        onClick={() => navigate("/student/progress")}
-                        sx={{ ...panelFooterButtonSx }}
-                      >
-                        Szczegóły postępów
-                      </Button>
-                    </Box>
-                  </Stack>
-                ) : (
-                  <Alert severity="info" sx={{ borderRadius: 2 }}>
-                    Brak danych postępu do wyświetlenia.
-                  </Alert>
-                )}
-              </Box>
-            </Paper>
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <StatsCard
+              label="Ukończone lekcje"
+              value={stats?.completedLessons ?? 0}
+              helperText={`z ${stats?.totalLessons ?? 0} lekcji`}
+              highlightColor={theme.palette.success.main}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <StatsCard
+              label="Średni wynik"
+              value={`${Math.round(stats?.averageScore ?? 0)}%`}
+              helperText="wszystkich lekcji"
+              highlightColor={theme.palette.primary.main}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <StatsCard
+              label="Punkty"
+              value={stats?.points ?? 0}
+              highlightColor={theme.palette.info.main}
+            />
           </Grid>
         </Grid>
 
-        {/* ── Lesson list ── */}
+        {/* ── Lesson list header ── */}
         <Box
           sx={{
             ...panelToolbarSx,
             flexDirection: { xs: "column", md: "row" },
             alignItems: { xs: "stretch", md: "center" },
-            mb: 2,
+            mb: 3,
+            gap: 2,
           }}
         >
           <Typography
-            variant="subtitle1"
-            fontWeight={700}
-            color="primary.main"
+            variant="h6"
+            fontWeight={800}
+            color="text.primary"
             sx={{ mr: "auto" }}
           >
-            Dostępne lekcje
+            Twoje lekcje
           </Typography>
 
           {!loading && lessons.length > 0 && (
-            <Stack
-              direction={{ xs: "column", sm: "row" }}
-              spacing={1.5}
-              sx={{ ml: "auto" }}
-            >
-              {/* Status filter */}
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
               <ToggleButtonGroup
                 value={lessonFilter}
                 exclusive
@@ -669,23 +737,35 @@ export function StudentDashboard() {
                 }}
                 size="small"
                 sx={{
-                  flexShrink: 0,
-                  bgcolor: "background.paper",
+                  bgcolor:
+                    theme.palette.mode === "light"
+                      ? alpha(theme.palette.primary.main, 0.04)
+                      : "background.paper",
+                  p: 0.5,
+                  borderRadius: 2.5,
                   "& .MuiToggleButton-root": {
+                    border: "none",
+                    borderRadius: 2,
                     textTransform: "none",
-                    fontWeight: 600,
-                    px: 1.5,
-                    py: 0.5,
-                    fontSize: "0.82rem",
+                    fontWeight: 700,
+                    px: 2,
+                    fontSize: "0.8rem",
+                    "&.Mui-selected": {
+                      bgcolor: "background.paper",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                      color: "primary.main",
+                      "&:hover": {
+                        bgcolor: "background.paper",
+                      },
+                    },
                   },
                 }}
               >
                 <ToggleButton value="ALL">Wszystkie</ToggleButton>
                 <ToggleButton value="COMPLETED">Ukończone</ToggleButton>
-                <ToggleButton value="NOT_STARTED">Do rozpoczęcia</ToggleButton>
+                <ToggleButton value="NOT_STARTED">Do zrobienia</ToggleButton>
               </ToggleButtonGroup>
 
-              {/* Sort */}
               <Select
                 value={lessonSort}
                 onChange={(e) =>
@@ -694,20 +774,20 @@ export function StudentDashboard() {
                 size="small"
                 startAdornment={
                   <SortIcon
-                    sx={{ mr: 0.75, fontSize: 18, color: "text.secondary" }}
+                    sx={{ mr: 1, fontSize: 18, color: "text.secondary" }}
                   />
                 }
                 sx={{
-                  minWidth: 165,
-                  borderRadius: 2,
+                  minWidth: 170,
+                  borderRadius: 2.5,
                   fontSize: "0.85rem",
-                  fontWeight: 600,
+                  fontWeight: 700,
                   bgcolor: "background.paper",
                 }}
               >
-                <MenuItem value="status">Sortuj: Status</MenuItem>
-                <MenuItem value="title_asc">Sortuj: A → Z</MenuItem>
-                <MenuItem value="title_desc">Sortuj: Z → A</MenuItem>
+                <MenuItem value="status">Domyślnie</MenuItem>
+                <MenuItem value="title_asc">Tytuł: A → Z</MenuItem>
+                <MenuItem value="title_desc">Tytuł: Z → A</MenuItem>
               </Select>
             </Stack>
           )}
@@ -715,44 +795,71 @@ export function StudentDashboard() {
 
         {loading ? (
           <Grid container spacing={2}>
-            {[...Array(3)].map((_, index) => (
-              <Grid key={index} size={{ xs: 12, md: 4 }}>
+            {[...Array(6)].map((_, index) => (
+              <Grid key={index} size={{ xs: 12, md: 6, lg: 4 }}>
                 <Skeleton
                   variant="rounded"
-                  height={220}
-                  sx={{ borderRadius: 3 }}
+                  height={200}
+                  sx={{ borderRadius: 4 }}
                 />
               </Grid>
             ))}
           </Grid>
         ) : lessons.length === 0 ? (
-          <Alert severity="info" sx={{ borderRadius: 2 }}>
-            Nie masz jeszcze przypisanych lekcji.
-          </Alert>
+          <Paper
+            sx={{
+              ...panelSurfaceSx,
+              p: 6,
+              textAlign: "center",
+              borderRadius: 4,
+            }}
+          >
+            <LessonIcon
+              sx={{ fontSize: 64, color: "text.disabled", mb: 2, opacity: 0.3 }}
+            />
+            <Typography variant="h6" fontWeight={700} color="text.secondary">
+              Nie masz jeszcze przypisanych lekcji.
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Gdy Twój nauczyciel udostępni materiały, pojawią się one tutaj.
+            </Typography>
+          </Paper>
         ) : displayedLessons.length === 0 ? (
-          <Alert severity="info" sx={{ borderRadius: 2 }}>
-            Brak lekcji pasujących do wybranego filtra.
+          <Alert severity="info" sx={{ borderRadius: 3 }}>
+            Brak lekcji pasujących do wybranych filtrów.
           </Alert>
         ) : (
-          <Grid container spacing={2}>
+          <Grid container spacing={2.5}>
             {displayedLessons.map((lesson) => {
               const isCompleted = lesson.status === "COMPLETED";
-              const isInProgress = lesson.status === "IN_PROGRESS";
               const isLocked = !lesson.isActive && !isCompleted;
 
               return (
-                <Grid key={lesson.publicId} size={{ xs: 12, md: 6, xl: 4 }}>
+                <Grid key={lesson.publicId} size={{ xs: 12, md: 6, lg: 4 }}>
                   <Paper
                     elevation={0}
                     sx={{
                       ...panelGridCardSx,
+                      borderRadius: 4,
                       cursor: isLocked ? "default" : "pointer",
-                      transition: "box-shadow 0.15s, border-color 0.15s",
+                      transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+                      position: "relative",
+                      overflow: "hidden",
+                      border: "1px solid",
+                      borderColor: "divider",
                       ...(!isLocked && {
                         "&:hover": {
-                          boxShadow: 2,
-                          borderColor: "primary.light",
+                          transform: "translateY(-4px)",
+                          boxShadow: "0 12px 28px rgba(0,0,0,0.08)",
+                          borderColor: alpha(theme.palette.primary.main, 0.3),
                         },
+                      }),
+                      ...(isLocked && {
+                        opacity: 0.7,
+                        bgcolor: alpha(
+                          theme.palette.action.disabledBackground,
+                          0.05,
+                        ),
                       }),
                     }}
                     onClick={() => {
@@ -764,223 +871,133 @@ export function StudentDashboard() {
                       }
                     }}
                   >
-                    <Box sx={panelGridCardContentSx}>
-                      {/* Header row: icon + title + status icon */}
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "flex-start",
-                          justifyContent: "space-between",
-                          gap: 1.5,
-                          mb: 2,
-                        }}
+                    <Box sx={{ ...panelGridCardContentSx, p: 3 }}>
+                      <Stack
+                        direction="row"
+                        justifyContent="space-between"
+                        alignItems="flex-start"
+                        sx={{ mb: 2.5 }}
                       >
-                        <Box sx={{ display: "flex", gap: 1.5, minWidth: 0 }}>
-                          <LessonIcon
-                            sx={{
-                              color: "primary.main",
-                              mt: 0.25,
-                              flexShrink: 0,
-                            }}
-                          />
-                          <Box sx={{ minWidth: 0 }}>
-                            <Typography variant="body1" fontWeight={700}>
-                              {lesson.title}
-                            </Typography>
-                            <Typography
-                              variant="body2"
-                              color="text.secondary"
-                              sx={{ mt: 0.25 }}
-                            >
-                              {lesson.theme}
-                            </Typography>
-                          </Box>
+                        <Box
+                          sx={{
+                            width: 44,
+                            height: 44,
+                            borderRadius: 2.5,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            bgcolor: alpha(theme.palette.primary.main, 0.08),
+                            color: "primary.main",
+                          }}
+                        >
+                          {isLocked ? (
+                            <LockIcon fontSize="small" />
+                          ) : (
+                            <LessonIcon />
+                          )}
                         </Box>
                         {getLessonStatusTag(lesson)}
-                      </Box>
+                      </Stack>
 
-                      {/* Wynik — only for completed lessons */}
-                      {isCompleted && lesson.resultPercent != null && (
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            mb: 2,
-                            px: 1.5,
-                            py: 1,
-                            borderRadius: 2,
-                            bgcolor: alpha(theme.palette.success.main, 0.08),
-                            border: "1px solid",
-                            borderColor: alpha(theme.palette.success.main, 0.2),
-                          }}
-                        >
-                          <Typography variant="body2" color="text.secondary">
-                            Wynik
-                          </Typography>
-                          <Typography
-                            variant="body1"
-                            fontWeight={700}
-                            color="success.main"
-                          >
-                            {formatPercent(lesson.resultPercent)}
-                          </Typography>
-                        </Box>
-                      )}
-
-                      <Box sx={{ mt: "auto" }}>
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 1,
-                            mb: 1.5,
-                          }}
-                        >
-                          <UserAvatar
-                            avatarUrl={lesson.teacherAvatarUrl}
-                            username={lesson.teacherName}
-                            size={20}
-                          />
-                          <Typography
-                            variant="body2"
-                            color="text.secondary"
-                            fontWeight={500}
-                          >
-                            {lesson.teacherName}
-                          </Typography>
-                        </Box>
-                      </Box>
-
-                      {/* Footer actions */}
-                      <Box
-                        sx={panelCardFooterSx}
-                        onClick={(e) => e.stopPropagation()}
+                      <Typography
+                        variant="h6"
+                        fontWeight={800}
+                        sx={{
+                          mb: 1,
+                          lineHeight: 1.3,
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                          minHeight: "2.6em",
+                        }}
                       >
-                        {isCompleted ? (
-                          <Stack
-                            direction="row"
-                            spacing={1}
-                            sx={{ width: "100%" }}
-                          >
-                            {lesson.attachments.length > 0 && (
-                              <Tooltip
-                                title={`${lesson.attachments.length} ${lesson.attachments.length === 1 ? "plik" : "pliki"}`}
-                              >
-                                <Button
-                                  variant="outlined"
-                                  startIcon={<AttachFileIcon />}
-                                  onClick={() => setAttachmentLesson(lesson)}
-                                  sx={{
-                                    ...panelFooterButtonSx,
-                                    px: 2,
-                                    flexShrink: 0,
-                                    color: "info.main",
-                                    borderColor: (t) =>
-                                      alpha(t.palette.info.main, 0.5),
-                                    "&:hover": {
-                                      borderColor: "info.main",
-                                      bgcolor: (t) =>
-                                        alpha(t.palette.info.main, 0.06),
-                                    },
-                                  }}
-                                >
-                                  Materiały
-                                </Button>
-                              </Tooltip>
-                            )}
-                            <Button
-                              fullWidth
-                              variant="outlined"
-                              startIcon={<ResultIcon />}
-                              onClick={() => setResultLesson(lesson)}
-                              sx={{
-                                ...panelFooterButtonSx,
-                                px: 2,
-                              }}
-                            >
-                              Wynik
-                            </Button>
-                            <Button
-                              fullWidth
-                              variant="contained"
-                              onClick={() =>
-                                navigate(
-                                  `/student/lessons/${lesson.publicId}/result`,
-                                )
-                              }
-                              sx={{
-                                ...panelFooterButtonSx,
-                                px: 2,
-                              }}
-                            >
-                              Szczegóły
-                            </Button>
-                          </Stack>
-                        ) : isLocked ? (
+                        {lesson.title}
+                      </Typography>
+
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{
+                          mb: 3,
+                          fontWeight: 600,
+                          opacity: 0.8,
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {lesson.theme || "Temat nieokreślony"}
+                      </Typography>
+
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        sx={{ mt: "auto", pt: 1 }}
+                      >
+                        {lesson.attachments.length > 0 && (
                           <Button
-                            fullWidth
-                            variant="outlined"
-                            startIcon={<LockIcon />}
-                            disabled
-                            sx={panelFooterButtonSx}
+                            size="small"
+                            variant="text"
+                            startIcon={<AttachFileIcon sx={{ fontSize: 16 }} />}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setAttachmentLesson(lesson);
+                            }}
+                            sx={{
+                              textTransform: "none",
+                              fontWeight: 700,
+                              color: "info.main",
+                              fontSize: "0.75rem",
+                              borderRadius: 1.5,
+                              px: 1.5,
+                              "&:hover": {
+                                bgcolor: alpha(theme.palette.info.main, 0.08),
+                              },
+                            }}
                           >
-                            Lekcja nieaktywna
-                          </Button>
-                        ) : lesson.attachments.length > 0 ? (
-                          <Stack
-                            direction="row"
-                            spacing={1}
-                            sx={{ width: "100%" }}
-                          >
-                            <Tooltip
-                              title={`${lesson.attachments.length} ${lesson.attachments.length === 1 ? "plik" : "pliki"}`}
-                            >
-                              <Button
-                                variant="outlined"
-                                startIcon={<AttachFileIcon />}
-                                onClick={() => setAttachmentLesson(lesson)}
-                                sx={{
-                                  ...panelFooterButtonSx,
-                                  px: 2,
-                                  flexShrink: 0,
-                                  color: "info.main",
-                                  borderColor: (t) =>
-                                    alpha(t.palette.info.main, 0.5),
-                                  "&:hover": {
-                                    borderColor: "info.main",
-                                    bgcolor: (t) =>
-                                      alpha(t.palette.info.main, 0.06),
-                                  },
-                                }}
-                              >
-                                Materiały
-                              </Button>
-                            </Tooltip>
-                            <Button
-                              fullWidth
-                              variant="contained"
-                              sx={{ ...panelFooterButtonSx }}
-                              onClick={() => setConfirmStartLesson(lesson)}
-                            >
-                              {isInProgress
-                                ? "Kontynuuj lekcję"
-                                : "Rozpocznij lekcję"}
-                            </Button>
-                          </Stack>
-                        ) : (
-                          <Button
-                            fullWidth
-                            variant="contained"
-                            sx={panelFooterButtonSx}
-                            onClick={() => setConfirmStartLesson(lesson)}
-                          >
-                            {isInProgress
-                              ? "Kontynuuj lekcję"
-                              : "Rozpocznij lekcję"}
+                            Materiały ({lesson.attachments.length})
                           </Button>
                         )}
-                      </Box>
+
+                        <Box sx={{ ml: "auto" }}>
+                          {isCompleted ? (
+                            <Button
+                              size="small"
+                              variant="contained"
+                              startIcon={<ResultIcon sx={{ fontSize: 16 }} />}
+                              sx={{
+                                textTransform: "none",
+                                fontWeight: 800,
+                                borderRadius: 2,
+                                fontSize: "0.75rem",
+                                pointerEvents: "none",
+                                bgcolor: alpha(theme.palette.success.main, 0.1),
+                                color: "success.main",
+                                boxShadow: "none",
+                              }}
+                            >
+                              {formatPercent(lesson.resultPercent)}
+                            </Button>
+                          ) : !isLocked ? (
+                            <Button
+                              size="small"
+                              variant="contained"
+                              endIcon={<PlayIcon sx={{ fontSize: 16 }} />}
+                              sx={{
+                                textTransform: "none",
+                                fontWeight: 700,
+                                borderRadius: 2,
+                                fontSize: "0.75rem",
+                                px: 2,
+                                boxShadow: "none",
+                              }}
+                            >
+                              Rozpocznij
+                            </Button>
+                          ) : null}
+                        </Box>
+                      </Stack>
                     </Box>
                   </Paper>
                 </Grid>
@@ -988,107 +1005,148 @@ export function StudentDashboard() {
             })}
           </Grid>
         )}
-      </Container>
 
-      {/* ── Dialogs ── */}
-      {resultLesson && (
+        {/* ── Dialogs ── */}
         <ResultDialog
           lesson={resultLesson}
           onClose={() => setResultLesson(null)}
-          onOpenDetails={(publicId) =>
-            navigate(`/student/lessons/${publicId}/result`)
-          }
+          onOpenDetails={(id) => navigate(`/student/lessons/${id}/result`)}
         />
-      )}
-      {attachmentLesson && attachmentLesson.attachments.length > 0 && (
+
+        <Dialog
+          open={Boolean(confirmStartLesson)}
+          onClose={() => setConfirmStartLesson(null)}
+          PaperProps={{ sx: { borderRadius: 4, backgroundImage: "none" } }}
+        >
+          <DialogTitle sx={{ pt: 3, px: 3 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+              <Box
+                sx={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 2,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  bgcolor: alpha(theme.palette.primary.main, 0.1),
+                  color: "primary.main",
+                }}
+              >
+                <PlayIcon />
+              </Box>
+              <Typography variant="h6" fontWeight={800}>
+                Rozpocząć lekcję?
+              </Typography>
+            </Box>
+          </DialogTitle>
+          <DialogContent sx={{ px: 3, pb: 2 }}>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ mb: 1, fontWeight: 600 }}
+            >
+              {confirmStartLesson?.title}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Czy jesteś gotowy, aby rozpocząć? Po przejściu do zadań nie będzie
+              można wrócić bez ukończenia lekcji.
+            </Typography>
+
+            <Stack
+              spacing={1.5}
+              sx={{
+                p: 2,
+                borderRadius: 3,
+                bgcolor: alpha(theme.palette.info.main, 0.05),
+                border: `1px solid ${alpha(theme.palette.info.main, 0.1)}`,
+              }}
+            >
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <Box
+                  sx={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 1.5,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    bgcolor: alpha(theme.palette.info.main, 0.1),
+                    color: "info.main",
+                  }}
+                >
+                  <MicIcon sx={{ fontSize: 18 }} />
+                </Box>
+                <Typography
+                  variant="caption"
+                  fontWeight={600}
+                  color="text.secondary"
+                >
+                  Lekcja wykorzystuje rozpoznawanie mowy — upewnij się, że
+                  mikrofon działa.
+                </Typography>
+              </Stack>
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <Box
+                  sx={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 1.5,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    bgcolor: alpha(theme.palette.secondary.main, 0.1),
+                    color: "secondary.main",
+                  }}
+                >
+                  <AIIcon sx={{ fontSize: 18 }} />
+                </Box>
+                <Typography
+                  variant="caption"
+                  fontWeight={600}
+                  color="text.secondary"
+                >
+                  Twoje odpowiedzi będą analizowane przez sztuczną inteligencję
+                  (AI).
+                </Typography>
+              </Stack>
+            </Stack>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 3, gap: 1.5 }}>
+            <Button
+              onClick={() => setConfirmStartLesson(null)}
+              sx={{ textTransform: "none", fontWeight: 700 }}
+            >
+              Anuluj
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => {
+                if (confirmStartLesson) {
+                  navigate(`/student/lessons/${confirmStartLesson.publicId}`);
+                  setConfirmStartLesson(null);
+                }
+              }}
+              sx={{
+                textTransform: "none",
+                fontWeight: 700,
+                borderRadius: 2.5,
+                px: 3,
+                boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.2)}`,
+              }}
+            >
+              Rozpocznij lekcję
+            </Button>
+          </DialogActions>
+        </Dialog>
+
         <AttachmentDialog
           lesson={attachmentLesson}
           downloadingAttachmentId={downloadingAttachmentId}
           downloadError={downloadError}
-          onClose={() => {
-            setAttachmentLesson(null);
-            setDownloadError(null);
-          }}
-          onDownload={(lessonPublicId, att) =>
-            void handleDownloadAttachment(lessonPublicId, att)
-          }
+          onClose={() => setAttachmentLesson(null)}
+          onDownload={handleDownloadAttachment}
         />
-      )}
-
-      {/* Confirm start lesson dialog */}
-      <Dialog
-        open={confirmStartLesson != null}
-        onClose={() => setConfirmStartLesson(null)}
-        maxWidth="xs"
-        fullWidth
-        PaperProps={{ sx: { borderRadius: 3 } }}
-      >
-        <DialogTitle sx={{ fontWeight: 700 }}>
-          {confirmStartLesson?.status === "IN_PROGRESS"
-            ? "Kontynuować lekcję?"
-            : "Rozpocząć lekcję?"}
-        </DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary">
-            {confirmStartLesson?.status === "IN_PROGRESS"
-              ? `Czy chcesz wrócić do lekcji "${confirmStartLesson?.title}"?`
-              : `Czy na pewno chcesz rozpocząć lekcję "${confirmStartLesson?.title}"? Po rozpoczęciu musisz ją ukończyć.`}
-          </Typography>
-          {confirmStartLesson?.status !== "IN_PROGRESS" && (
-            <Box
-              sx={{
-                mt: 2,
-                p: 1.5,
-                borderRadius: 2,
-                bgcolor: "action.hover",
-                border: "1px solid",
-                borderColor: "divider",
-              }}
-            >
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                display="block"
-              >
-                🎙️ <strong>Zadania z mówieniem</strong> — lekcja może zawierać
-                ćwiczenia wymagające nagrania głosu. Twoja odpowiedź zostanie
-                oceniona automatycznie przez lokalny model AI{" "}
-                <strong>Whisper</strong> (faster-whisper, uruchomiony na
-                serwerze aplikacji). Nagranie nie jest wysyłane do zewnętrznych
-                usług.
-              </Typography>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button
-            onClick={() => setConfirmStartLesson(null)}
-            sx={{ textTransform: "none", fontWeight: 600 }}
-          >
-            Anuluj
-          </Button>
-          <Button
-            variant="contained"
-            onClick={() => {
-              if (confirmStartLesson) {
-                navigate(`/student/lessons/${confirmStartLesson.publicId}`, {
-                  state: { attachments: confirmStartLesson.attachments },
-                });
-              }
-            }}
-            sx={{
-              textTransform: "none",
-              fontWeight: 600,
-              borderRadius: 2,
-              boxShadow: "none",
-            }}
-          >
-            {confirmStartLesson?.status === "IN_PROGRESS"
-              ? "Kontynuuj"
-              : "Rozpocznij"}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      </Container>
     </Box>
   );
 }

@@ -140,6 +140,16 @@ function resolveMetricMeta(label: string, fallbackColor: string): MetricMeta {
     };
   }
 
+  if (normalized.includes("punkty")) {
+    return {
+      icon: TrophyIcon,
+      helper: "Suma punktów z ukończonych lekcji",
+      gradient:
+        "linear-gradient(135deg, rgba(247,164,96,0.82) 0%, rgba(226,110,47,0.76) 100%)",
+      glow: alpha("#ea580c", 0.075),
+    };
+  }
+
   return {
     icon: SparklesIcon,
     helper: "Kluczowy wskaźnik panelu",

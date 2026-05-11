@@ -5,11 +5,6 @@ import {
   Button,
   Chip,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Divider,
   IconButton,
   Stack,
   TextField,
@@ -25,6 +20,8 @@ import {
   LinkOutlined as LinkIcon,
   QrCodeOutlined as QrIcon,
   RefreshOutlined as RefreshIcon,
+  CalendarMonthOutlined as CalendarIcon,
+  PeopleOutlined as PeopleIcon,
 } from "@mui/icons-material";
 import QRCode from "react-qr-code";
 import {
@@ -33,6 +30,13 @@ import {
 } from "@/api/invitationService";
 import { ApiError } from "@/api/apiClient";
 import { getApiErrorMessage } from "@/utils/dashboardUtils";
+import {
+  AppDialog,
+  AppDialogBody,
+  AppDialogFooter,
+  AppDialogHeader,
+  AppDialogStatus,
+} from "@/components/ui/dialog/AppDialog";
 
 interface Props {
   groupPublicId: string;
@@ -94,6 +98,17 @@ export function GroupInvitationsSection({ groupPublicId }: Props) {
     fetchInvitations();
   }, [fetchInvitations]);
 
+  const handleOpenCreate = () => {
+    setMaxUses("10");
+    const nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    // Adjust for local time for datetime-local input
+    nextWeek.setMinutes(nextWeek.getMinutes() - nextWeek.getTimezoneOffset());
+    setExpiresAt(nextWeek.toISOString().slice(0, 16));
+    setCreateError(null);
+    setCreateOpen(true);
+  };
+
   const handleCreate = async () => {
     setCreateError(null);
     const parsedMax = parseInt(maxUses, 10);
@@ -113,7 +128,7 @@ export function GroupInvitationsSection({ groupPublicId }: Props) {
     try {
       const inv = await invitationService.createInvitation(groupPublicId, {
         maxUses: parsedMax,
-        expiresAt: new Date(expiresAt).toISOString().replace("Z", ""),
+        expiresAt: expiresAt + ":00",
       });
       setInvitations((prev) => [inv, ...prev]);
       setCreateOpen(false);
@@ -186,7 +201,7 @@ export function GroupInvitationsSection({ groupPublicId }: Props) {
             size="small"
             variant="contained"
             startIcon={<AddLinkIcon />}
-            onClick={() => setCreateOpen(true)}
+            onClick={handleOpenCreate}
           >
             Generuj link
           </Button>
@@ -332,100 +347,165 @@ export function GroupInvitationsSection({ groupPublicId }: Props) {
       </Stack>
 
       {/* Create invitation dialog */}
-      <Dialog
+      <AppDialog
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         maxWidth="xs"
-        fullWidth
       >
-        <DialogTitle>Nowe zaproszenie</DialogTitle>
-        <DialogContent>
-          <Stack gap={2} mt={1}>
-            {createError && <Alert severity="error">{createError}</Alert>}
-            <TextField
-              label="Maksymalna liczba użyć"
-              type="number"
-              value={maxUses}
-              onChange={(e) => setMaxUses(e.target.value)}
-              inputProps={{ min: 1 }}
-              fullWidth
-            />
-            <TextField
-              label="Data wygaśnięcia"
-              type="datetime-local"
-              value={expiresAt}
-              onChange={(e) => setExpiresAt(e.target.value)}
-              fullWidth
-              InputLabelProps={{ shrink: true }}
-              inputProps={{
-                min: new Date(Date.now() + 60_000).toISOString().slice(0, 16),
-              }}
-            />
+        <AppDialogHeader
+          icon={<AddLinkIcon />}
+          title="Nowe zaproszenie"
+          subtitle="Stwórz klucz dostępu dla nowych uczniów. Link pozwoli na błyskawiczną rejestrację i przypisanie do Twojej grupy."
+        />
+        <AppDialogBody>
+          <Stack gap={2.5}>
+            {createError && (
+              <AppDialogStatus severity="error">{createError}</AppDialogStatus>
+            )}
+
+            <Box>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                fontWeight={600}
+                display="block"
+                sx={{ mb: 1, ml: 0.5 }}
+              >
+                Limit użyć linku
+              </Typography>
+              <TextField
+                type="number"
+                value={maxUses}
+                onChange={(e) => setMaxUses(e.target.value)}
+                inputProps={{ min: 1 }}
+                fullWidth
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <PeopleIcon
+                        sx={{ color: "text.secondary", mr: 1, fontSize: 20 }}
+                      />
+                    ),
+                  },
+                }}
+                placeholder="np. 10"
+              />
+            </Box>
+
+            <Box>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                fontWeight={600}
+                display="block"
+                sx={{ mb: 1, ml: 0.5 }}
+              >
+                Data i godzina wygaśnięcia
+              </Typography>
+              <TextField
+                type="datetime-local"
+                value={expiresAt}
+                onChange={(e) => setExpiresAt(e.target.value)}
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <CalendarIcon
+                        sx={{ color: "text.secondary", mr: 1, fontSize: 20 }}
+                      />
+                    ),
+                  },
+                }}
+                inputProps={{
+                  min: new Date(Date.now() + 60_000).toISOString().slice(0, 16),
+                }}
+              />
+            </Box>
           </Stack>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setCreateOpen(false)} disabled={creating}>
-            Anuluj
-          </Button>
+        </AppDialogBody>
+        <AppDialogFooter>
           <Button
             variant="contained"
             onClick={handleCreate}
             disabled={creating}
+            sx={{ width: "100%" }}
           >
-            {creating ? <CircularProgress size={20} /> : "Generuj"}
+            {creating ? <CircularProgress size={20} /> : "Generuj link"}
           </Button>
-        </DialogActions>
-      </Dialog>
+        </AppDialogFooter>
+      </AppDialog>
 
       {/* QR dialog */}
-      <Dialog
+      <AppDialog
         open={qrToken !== null}
         onClose={() => setQrToken(null)}
         maxWidth="xs"
-        fullWidth
-        slotProps={{
-          backdrop: { sx: { backdropFilter: "blur(6px)" } },
-        }}
       >
-        <DialogTitle>Kod QR zaproszenia</DialogTitle>
-        <DialogContent>
-          <Stack alignItems="center" gap={2} py={1}>
+        <AppDialogHeader
+          icon={<QrIcon />}
+          title="Kod QR zaproszenia"
+          subtitle="Uczniowie mogą zeskanować ten kod aparatem w telefonie, aby natychmiast przejść do rejestracji."
+        />
+        <AppDialogBody>
+          <Stack alignItems="center" gap={3} py={1}>
             {qrToken && (
               <>
                 <Box
                   sx={{
-                    p: 2,
+                    p: 2.5,
                     bgcolor: "white",
-                    borderRadius: 2,
+                    borderRadius: 4,
                     display: "inline-block",
+                    boxShadow: (theme) =>
+                      theme.palette.mode === "light"
+                        ? "0 20px 40px rgba(0,0,0,0.08)"
+                        : "0 20px 40px rgba(0,0,0,0.4)",
                   }}
                 >
                   <QRCode value={buildInviteUrl(qrToken)} size={200} />
                 </Box>
-                <Divider flexItem />
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  align="center"
-                  sx={{ wordBreak: "break-all" }}
-                >
-                  {buildInviteUrl(qrToken)}
-                </Typography>
-                <Button
-                  size="small"
-                  startIcon={<CopyIcon />}
-                  onClick={() => handleCopy(qrToken)}
-                >
-                  {copied === qrToken ? "Skopiowano!" : "Kopiuj link"}
-                </Button>
+                <Box sx={{ width: "100%", textAlign: "center" }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{
+                      wordBreak: "break-all",
+                      fontFamily: "monospace",
+                      opacity: 0.8,
+                      display: "block",
+                      mb: 2,
+                    }}
+                  >
+                    {buildInviteUrl(qrToken)}
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    size="medium"
+                    startIcon={<CopyIcon />}
+                    onClick={() => handleCopy(qrToken)}
+                    sx={{
+                      borderRadius: 99,
+                      textTransform: "none",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {copied === qrToken ? "Skopiowano!" : "Kopiuj link"}
+                  </Button>
+                </Box>
               </>
             )}
           </Stack>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setQrToken(null)}>Zamknij</Button>
-        </DialogActions>
-      </Dialog>
+        </AppDialogBody>
+        <AppDialogFooter>
+          <Button
+            onClick={() => setQrToken(null)}
+            sx={{ width: "100%", fontWeight: 700 }}
+          >
+            Gotowe
+          </Button>
+        </AppDialogFooter>
+      </AppDialog>
     </Box>
   );
 }
