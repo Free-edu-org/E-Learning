@@ -175,25 +175,20 @@ export function TeacherStudentProgressView() {
           onUserUpdated={setUser}
         />
 
-        <Box
-          sx={{ display: "flex", alignItems: "center", gap: 1.5, mt: 1, mb: 3 }}
+        <Button
+          startIcon={<BackIcon />}
+          onClick={() => navigate(backTo)}
+          sx={{
+            textTransform: "none",
+            fontWeight: 600,
+            mb: 2,
+            mt: -1,
+            color: "text.secondary",
+            "&:hover": { bgcolor: "transparent", color: "primary.main" },
+          }}
         >
-          <Button
-            startIcon={<BackIcon />}
-            onClick={() => navigate(backTo)}
-            sx={{
-              textTransform: "none",
-              fontWeight: 600,
-              mb: 2,
-              mt: -1,
-              color: "primary.main",
-              px: 3,
-              "&:hover": { bgcolor: "transparent", color: "text.secondary" },
-            }}
-          >
-            {backLabel}
-          </Button>
-        </Box>
+          {backLabel}
+        </Button>
 
         {error && (
           <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>

@@ -4,13 +4,14 @@ import {
   Alert,
   Box,
   Button,
+  Chip,
   CircularProgress,
   Container,
   Divider,
   Tooltip as MuiTooltip,
   Typography,
 } from "@mui/material";
-import { alpha } from "@mui/material/styles";
+import { alpha, useTheme } from "@mui/material/styles";
 import {
   ArrowBack as ArrowBackIcon,
   EmojiEvents as TrophyIcon,
@@ -22,6 +23,7 @@ import {
 import {
   Bar,
   BarChart,
+  Cell,
   CartesianGrid,
   ResponsiveContainer,
   Tooltip,
@@ -47,7 +49,10 @@ import { DashboardTopBar } from "@/components/ui/panel/DashboardTopBar";
 import { UserAvatar } from "@/components/ui/avatar/UserAvatar";
 import {
   panelGridCardSx,
+  outlinedMetaChipSx,
+  panelDeleteButtonSx,
   panelFooterButtonSx,
+  panelInlineActionsSx,
   panelSurfaceSx,
 } from "@/components/ui/panel/panelStyles";
 import { formatPercent } from "@/utils/dashboardUtils";
@@ -61,36 +66,18 @@ function formatDate(value: string | null): string {
   return `${date} ${time}`;
 }
 
-function scoreColor(percent: number): string {
-  if (percent >= 80) return "#16a34a";
-  if (percent >= 60) return "#ca8a04";
-  return "#dc2626";
-}
-
-const lessonStatsActionButtonSx = {
-  textTransform: "none",
-  fontWeight: 600,
-  borderRadius: 2,
-  boxShadow: "none",
-};
-
-const lessonStatsSmallActionButtonSx = {
-  ...lessonStatsActionButtonSx,
-  minHeight: 32,
-  fontSize: "0.8rem",
-  px: 1.25,
-};
-
 function StatCard({
   label,
   value,
   icon,
+  emphasized,
   labelSx,
   valueSx,
 }: {
   label: string;
   value: string;
   icon: React.ReactNode;
+  emphasized?: boolean;
   labelSx?: object;
   valueSx?: object;
 }) {
@@ -99,24 +86,40 @@ function StatCard({
       sx={{
         ...panelGridCardSx,
         minWidth: 0,
-        px: 1.75,
-        py: 1.25,
+        px: { xs: 1.35, sm: 1.5 },
+        py: { xs: 0.95, sm: 1.05 },
         display: "flex",
         alignItems: "center",
-        gap: 1,
-        minHeight: 72,
+        gap: 0.8,
+        minHeight: 62,
+        border: "1px solid",
+        borderColor: (theme) =>
+          alpha(theme.palette.text.primary, emphasized ? 0.12 : 0.08),
+        bgcolor: (theme) =>
+          emphasized
+            ? theme.palette.mode === "dark"
+              ? alpha(theme.palette.primary.main, 0.09)
+              : alpha(theme.palette.primary.main, 0.045)
+            : theme.palette.mode === "dark"
+              ? alpha(theme.palette.common.black, 0.12)
+              : alpha(theme.palette.common.white, 0.58),
+        boxShadow: (theme) =>
+          theme.palette.mode === "dark"
+            ? "0 6px 16px rgba(2, 6, 23, 0.24)"
+            : "0 8px 20px rgba(15, 23, 42, 0.05)",
       }}
     >
       <Box
         sx={{
-          width: 28,
-          height: 28,
-          borderRadius: 2,
+          width: 23,
+          height: 23,
+          borderRadius: 1.5,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
+          bgcolor: (theme) => alpha(theme.palette.primary.main, 0.07),
           flexShrink: 0,
+          opacity: 0.9,
         }}
       >
         {icon}
@@ -131,14 +134,25 @@ function StatCard({
         <Typography
           variant="caption"
           color="text.secondary"
-          sx={{ display: "block", lineHeight: 1.1, mb: 0.35, ...labelSx }}
+          sx={{
+            display: "block",
+            lineHeight: 1.1,
+            mb: 0.2,
+            opacity: 0.86,
+            ...labelSx,
+          }}
         >
           {label}
         </Typography>
         <Typography
           variant="subtitle1"
           fontWeight={800}
-          sx={{ lineHeight: 1.05, ...valueSx }}
+          sx={{
+            lineHeight: 1,
+            fontSize: emphasized ? "1.28rem" : "1.05rem",
+            letterSpacing: emphasized ? "-0.02em" : "-0.01em",
+            ...valueSx,
+          }}
         >
           {value}
         </Typography>
@@ -164,9 +178,16 @@ function buildDistributionData(results: LessonStatsStudentResult[]) {
   return buckets.map((b) => ({ name: b.range, value: b.count }));
 }
 
+function getPerformanceTier(percent: number): "success" | "warning" | "error" {
+  if (percent >= 80) return "success";
+  if (percent >= 50) return "warning";
+  return "error";
+}
+
 export function LessonStatsView() {
   const { lessonPublicId } = useParams<{ lessonPublicId: string }>();
   const navigate = useNavigate();
+  const theme = useTheme();
   const { logout } = useAuth();
   const [stats, setStats] = useState<LessonStatsResponse | null>(null);
   const [lessonTitle, setLessonTitle] = useState<string>("");
@@ -250,6 +271,24 @@ export function LessonStatsView() {
     ? buildDistributionData(stats.studentResults)
     : [];
 
+  const chartGridColor = alpha(
+    theme.palette.text.primary,
+    theme.palette.mode === "dark" ? 0.14 : 0.08,
+  );
+  const chartAxisColor = alpha(theme.palette.text.secondary, 0.92);
+  const chartLabelColor = alpha(theme.palette.text.secondary, 0.75);
+  const chartTooltipStyle = {
+    background:
+      theme.palette.mode === "dark"
+        ? "rgba(12, 18, 32, 0.92)"
+        : "rgba(15, 23, 42, 0.94)",
+    border: `1px solid ${alpha(theme.palette.primary.main, 0.28)}`,
+    borderRadius: 12,
+    boxShadow: "0 12px 30px rgba(2, 6, 23, 0.35)",
+    color: "#e2e8f0",
+    fontSize: "12px",
+  };
+
   return (
     <Box
       sx={{
@@ -284,22 +323,20 @@ export function LessonStatsView() {
             flexDirection: "column",
             alignItems: "flex-start",
             gap: 1,
-            mb: { xs: 2, sm: 3 },
+            mb: { xs: 1.6, sm: 2.2 },
             mt: { xs: 0.5, sm: 1 },
           }}
         >
           <Button
-            variant="outlined"
             startIcon={<ArrowBackIcon />}
             onClick={() => navigate("/teacher")}
             sx={{
-              ...panelFooterButtonSx,
-              ...lessonStatsActionButtonSx,
-              color: "text.secondary",
-              borderColor: (theme) => alpha(theme.palette.divider, 0.7),
+              textTransform: "none",
+              fontWeight: 600,
+              color: "primary.main",
               "&:hover": {
-                borderColor: "primary.main",
-                color: "primary.main",
+                bgcolor: "transparent",
+                color: "primary.dark",
               },
             }}
           >
@@ -352,16 +389,19 @@ export function LessonStatsView() {
                   xs: "1fr",
                   sm: "repeat(3, minmax(0, 1fr))",
                 },
-                gap: 1.25,
-                mb: 2.25,
+                gap: 1,
+                mb: 1.75,
               }}
             >
               <StatCard
                 label="Średni wynik"
                 value={formatPercent(stats.avgScore)}
+                emphasized
+                labelSx={{ fontSize: "0.73rem" }}
+                valueSx={{ fontSize: "1.34rem" }}
                 icon={
                   <TrendingUpIcon
-                    sx={{ color: "success.main", fontSize: 16 }}
+                    sx={{ color: "success.main", fontSize: 14 }}
                   />
                 }
               />
@@ -371,8 +411,8 @@ export function LessonStatsView() {
                 icon={
                   <Box
                     sx={{
-                      width: 14,
-                      height: 14,
+                      width: 10,
+                      height: 10,
                       borderRadius: "50%",
                       bgcolor: "primary.main",
                       display: "flex",
@@ -385,9 +425,9 @@ export function LessonStatsView() {
               <StatCard
                 label="Najlepszy wynik"
                 value={formatPercent(stats.bestScore)}
-                labelSx={{ fontSize: "0.78rem" }}
-                valueSx={{ fontSize: "1.1rem" }}
-                icon={<TrophyIcon sx={{ color: "#ca8a04", fontSize: 16 }} />}
+                labelSx={{ fontSize: "0.73rem" }}
+                valueSx={{ fontSize: "1.08rem" }}
+                icon={<TrophyIcon sx={{ color: "#ca8a04", fontSize: 14 }} />}
               />
             </Box>
 
@@ -397,15 +437,15 @@ export function LessonStatsView() {
                 sx={{
                   display: "grid",
                   gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
-                  gap: 2,
-                  mb: 3,
+                  gap: 1.5,
+                  mb: 2.25,
                 }}
               >
                 {/* Per-student bar chart */}
                 <Box
                   sx={{
                     ...panelSurfaceSx,
-                    p: 2.5,
+                    p: 2,
                   }}
                 >
                   <Typography variant="subtitle1" fontWeight={700} mb={0.5}>
@@ -415,29 +455,80 @@ export function LessonStatsView() {
                     variant="caption"
                     color="text.secondary"
                     display="block"
-                    mb={2}
+                    mb={1.35}
+                    sx={{ opacity: 0.8 }}
                   >
                     Porównanie wyników procentowych
                   </Typography>
                   <ResponsiveContainer width="100%" height={220}>
                     <BarChart data={studentChartData} margin={{ bottom: 40 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <defs>
+                        <linearGradient
+                          id="lessonStatsStudentBars"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="0%"
+                            stopColor="#7c8cff"
+                            stopOpacity={0.95}
+                          />
+                          <stop
+                            offset="100%"
+                            stopColor="#5b6ded"
+                            stopOpacity={0.62}
+                          />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid
+                        stroke={chartGridColor}
+                        strokeDasharray="4 6"
+                        vertical={false}
+                      />
                       <XAxis
                         dataKey="name"
-                        tick={{ fontSize: 11 }}
+                        tick={{ fontSize: 11, fill: chartLabelColor }}
                         angle={-35}
                         textAnchor="end"
                         interval={0}
+                        tickLine={false}
+                        axisLine={{
+                          stroke: alpha(theme.palette.text.primary, 0.14),
+                        }}
                       />
-                      <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
+                      <YAxis
+                        domain={[0, 100]}
+                        tick={{ fontSize: 11, fill: chartAxisColor }}
+                        tickLine={false}
+                        axisLine={false}
+                      />
                       <Tooltip
                         formatter={(v) => [formatPercent(Number(v)), "Wynik"]}
+                        cursor={{
+                          fill: alpha(theme.palette.primary.main, 0.09),
+                        }}
+                        contentStyle={chartTooltipStyle}
+                        labelStyle={{ color: "#cbd5e1", fontWeight: 600 }}
                       />
                       <Bar
                         dataKey="value"
-                        fill="#6366f1"
-                        radius={[4, 4, 0, 0]}
-                      />
+                        fill="url(#lessonStatsStudentBars)"
+                        radius={[10, 10, 0, 0]}
+                        barSize={22}
+                      >
+                        {studentChartData.map((entry) => (
+                          <Cell
+                            key={entry.name}
+                            fill={
+                              entry.value >= 80
+                                ? "url(#lessonStatsStudentBars)"
+                                : alpha("#7c8cff", 0.84)
+                            }
+                          />
+                        ))}
+                      </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 </Box>
@@ -446,7 +537,7 @@ export function LessonStatsView() {
                 <Box
                   sx={{
                     ...panelSurfaceSx,
-                    p: 2.5,
+                    p: 2,
                   }}
                 >
                   <Typography variant="subtitle1" fontWeight={700} mb={0.5}>
@@ -456,20 +547,65 @@ export function LessonStatsView() {
                     variant="caption"
                     color="text.secondary"
                     display="block"
-                    mb={2}
+                    mb={1.35}
+                    sx={{ opacity: 0.8 }}
                   >
                     Liczba uczniów w przedziałach procentowych
                   </Typography>
                   <ResponsiveContainer width="100%" height={220}>
                     <BarChart data={distributionData} margin={{ bottom: 10 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                      <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                      <Tooltip formatter={(v) => [v, "Uczniów"]} />
+                      <defs>
+                        <linearGradient
+                          id="lessonStatsDistributionBars"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="0%"
+                            stopColor="#34d399"
+                            stopOpacity={0.9}
+                          />
+                          <stop
+                            offset="100%"
+                            stopColor="#0ea5a4"
+                            stopOpacity={0.55}
+                          />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid
+                        stroke={chartGridColor}
+                        strokeDasharray="4 6"
+                        vertical={false}
+                      />
+                      <XAxis
+                        dataKey="name"
+                        tick={{ fontSize: 11, fill: chartLabelColor }}
+                        tickLine={false}
+                        axisLine={{
+                          stroke: alpha(theme.palette.text.primary, 0.14),
+                        }}
+                      />
+                      <YAxis
+                        allowDecimals={false}
+                        tick={{ fontSize: 11, fill: chartAxisColor }}
+                        tickLine={false}
+                        axisLine={false}
+                      />
+                      <Tooltip
+                        formatter={(v) => [v, "Uczniów"]}
+                        cursor={{
+                          fill: alpha(theme.palette.success.main, 0.1),
+                        }}
+                        contentStyle={chartTooltipStyle}
+                        labelStyle={{ color: "#cbd5e1", fontWeight: 600 }}
+                      />
                       <Bar
                         dataKey="value"
-                        fill="#10b981"
-                        radius={[4, 4, 0, 0]}
+                        fill="url(#lessonStatsDistributionBars)"
+                        radius={[10, 10, 0, 0]}
+                        barSize={22}
                       />
                     </BarChart>
                   </ResponsiveContainer>
@@ -482,7 +618,7 @@ export function LessonStatsView() {
               <Typography
                 variant="subtitle1"
                 fontWeight={700}
-                sx={{ px: 3, py: 2 }}
+                sx={{ px: 2.5, py: 1.5 }}
               >
                 Szczegółowe wyniki
               </Typography>
@@ -495,200 +631,258 @@ export function LessonStatsView() {
                   </Typography>
                 </Box>
               ) : (
-                stats.studentResults.map((student, idx) => (
-                  <Box key={student.userPublicId}>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        px: 3,
-                        py: 1.75,
-                        gap: 2,
-                      }}
-                    >
-                      {/* Name + date */}
+                <Box sx={{ p: 1.25, display: "grid", gap: 0.85 }}>
+                  {stats.studentResults.map((student) => {
+                    const pointsPercent =
+                      student.maxScore > 0
+                        ? (student.score / student.maxScore) * 100
+                        : 0;
+                    const pointsTier = getPerformanceTier(pointsPercent);
+                    const percentTier = getPerformanceTier(
+                      student.resultPercent,
+                    );
+
+                    return (
                       <Box
-                        component={RouterLink}
-                        to={`/teacher/students/${student.userPublicId}/progress?fromLessonPublicId=${lessonPublicId}`}
-                        state={{
-                          backTo: `/teacher/lessons/${lessonPublicId}/stats`,
-                          backLabel: "Wróć do wyników lekcji",
-                        }}
-                        aria-label={`Przejdź do profilu ucznia ${student.username}`}
+                        key={student.userPublicId}
                         sx={{
-                          display: "inline-flex",
-                          flexShrink: 0,
-                          borderRadius: "50%",
-                          textDecoration: "none",
-                          outline: "none",
-                          "&:focus-visible": {
-                            boxShadow: (theme) =>
-                              `0 0 0 3px ${alpha(theme.palette.primary.main, 0.35)}`,
-                          },
-                        }}
-                      >
-                        <UserAvatar
-                          avatarUrl={student.avatarUrl}
-                          username={student.username}
-                          size={36}
-                          sx={{
-                            transition:
-                              "box-shadow 0.2s ease, transform 0.2s ease",
-                            "&:hover": {
-                              boxShadow: (theme) =>
-                                `0 0 0 3px ${alpha(theme.palette.primary.main, 0.18)}`,
-                              transform: "translateY(-1px)",
-                            },
-                          }}
-                        />
-                      </Box>
-                      <Box
-                        sx={{
-                          flex: 1,
-                          minWidth: 180,
                           display: "flex",
-                          flexDirection: "column",
-                          alignItems: "flex-start",
-                          gap: 0.35,
+                          alignItems: "center",
+                          px: 1.5,
+                          py: 1.2,
+                          gap: 1.25,
+                          borderRadius: 2.25,
+                          border: "1px solid",
+                          borderColor: (theme) =>
+                            alpha(theme.palette.text.primary, 0.08),
+                          bgcolor: (theme) =>
+                            theme.palette.mode === "dark"
+                              ? alpha(theme.palette.common.black, 0.2)
+                              : alpha(theme.palette.common.white, 0.7),
+                          boxShadow: (theme) =>
+                            theme.palette.mode === "dark"
+                              ? "0 8px 18px rgba(2, 6, 23, 0.2)"
+                              : "0 8px 22px rgba(15, 23, 42, 0.035)",
                         }}
                       >
-                        <Typography
+                        {/* Name + date */}
+                        <Box
                           component={RouterLink}
                           to={`/teacher/students/${student.userPublicId}/progress?fromLessonPublicId=${lessonPublicId}`}
                           state={{
                             backTo: `/teacher/lessons/${lessonPublicId}/stats`,
                             backLabel: "Wróć do wyników lekcji",
                           }}
-                          variant="body2"
-                          fontWeight={600}
+                          aria-label={`Przejdź do profilu ucznia ${student.username}`}
                           sx={{
-                            color: "text.primary",
-                            display: "block",
-                            lineHeight: 1.25,
-                            maxWidth: "100%",
-                            overflowWrap: "anywhere",
+                            display: "inline-flex",
+                            flexShrink: 0,
+                            borderRadius: "50%",
                             textDecoration: "none",
                             outline: "none",
-                            "&:hover": {
-                              color: "primary.main",
-                              textDecoration: "underline",
-                              textUnderlineOffset: "3px",
-                            },
                             "&:focus-visible": {
-                              color: "primary.main",
-                              textDecoration: "underline",
-                              textUnderlineOffset: "3px",
+                              boxShadow: (theme) =>
+                                `0 0 0 3px ${alpha(theme.palette.primary.main, 0.35)}`,
                             },
                           }}
                         >
-                          {student.username}
-                        </Typography>
-                        <Typography
-                          component="span"
-                          variant="caption"
-                          color="text.secondary"
-                          sx={{ display: "block", lineHeight: 1.3 }}
-                        >
-                          Ukończono: {formatDate(student.completedAt)}
-                        </Typography>
-                      </Box>
-
-                      {/* Score */}
-                      <Box sx={{ textAlign: "right", minWidth: 60 }}>
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          display="block"
-                        >
-                          Punkty
-                        </Typography>
-                        <Typography variant="body2" fontWeight={700}>
-                          {student.score} / {student.maxScore}
-                        </Typography>
-                      </Box>
-
-                      {/* Percent */}
-                      <Box sx={{ textAlign: "right", minWidth: 60 }}>
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          display="block"
-                        >
-                          Procent
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          fontWeight={700}
-                          sx={{ color: scoreColor(student.resultPercent) }}
-                        >
-                          {formatPercent(student.resultPercent)}
-                        </Typography>
-                      </Box>
-
-                      <Box
-                        sx={{
-                          width: 28,
-                          display: "flex",
-                          justifyContent: "center",
-                        }}
-                      >
-                        {student.totalTabSwitchCount > 0 && (
-                          <MuiTooltip
-                            title={`Uczen wychodzil z zakladek: ${student.totalTabSwitchCount}`}
-                          >
-                            <WarningIcon
-                              sx={{ color: "warning.main", fontSize: 20 }}
-                            />
-                          </MuiTooltip>
-                        )}
-                      </Box>
-
-                      <Box
-                        sx={{ display: "flex", gap: 1, alignItems: "center" }}
-                      >
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          color="warning"
-                          startIcon={<ReplayIcon fontSize="small" />}
-                          sx={lessonStatsSmallActionButtonSx}
-                          disabled={resettingUserPublicIds.includes(
-                            student.userPublicId,
-                          )}
-                          onClick={() => setResetConfirmStudent(student)}
-                        >
-                          {resettingUserPublicIds.includes(student.userPublicId)
-                            ? "Resetowanie..."
-                            : "Resetuj wynik"}
-                        </Button>
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          startIcon={<VisibilityIcon fontSize="small" />}
+                          <UserAvatar
+                            avatarUrl={student.avatarUrl}
+                            username={student.username}
+                            size={36}
+                            sx={{
+                              transition:
+                                "box-shadow 0.2s ease, transform 0.2s ease",
+                              "&:hover": {
+                                boxShadow: (theme) =>
+                                  `0 0 0 3px ${alpha(theme.palette.primary.main, 0.18)}`,
+                                transform: "translateY(-1px)",
+                              },
+                            }}
+                          />
+                        </Box>
+                        <Box
                           sx={{
-                            ...lessonStatsSmallActionButtonSx,
-                            border: "1px solid",
-                            borderColor: (theme) =>
-                              alpha(theme.palette.divider, 0.5),
-                            color: "text.secondary",
-                            "&:hover": {
-                              borderColor: "primary.main",
-                              color: "primary.main",
-                            },
+                            flex: 1,
+                            minWidth: 180,
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "flex-start",
+                            gap: 0.35,
                           }}
-                          onClick={() =>
-                            navigate(
-                              `/teacher/lessons/${lessonPublicId}/students/${student.userPublicId}/result`,
-                            )
-                          }
                         >
-                          Szczegóły
-                        </Button>
+                          <Typography
+                            component={RouterLink}
+                            to={`/teacher/students/${student.userPublicId}/progress?fromLessonPublicId=${lessonPublicId}`}
+                            state={{
+                              backTo: `/teacher/lessons/${lessonPublicId}/stats`,
+                              backLabel: "Wróć do wyników lekcji",
+                            }}
+                            variant="body2"
+                            fontWeight={600}
+                            sx={{
+                              color: "text.primary",
+                              display: "block",
+                              lineHeight: 1.25,
+                              maxWidth: "100%",
+                              overflowWrap: "anywhere",
+                              textDecoration: "none",
+                              outline: "none",
+                              "&:hover": {
+                                color: "primary.main",
+                                textDecoration: "underline",
+                                textUnderlineOffset: "3px",
+                              },
+                              "&:focus-visible": {
+                                color: "primary.main",
+                                textDecoration: "underline",
+                                textUnderlineOffset: "3px",
+                              },
+                            }}
+                          >
+                            {student.username}
+                          </Typography>
+                          <Typography
+                            component="span"
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ display: "block", lineHeight: 1.3 }}
+                          >
+                            Ukończono: {formatDate(student.completedAt)}
+                          </Typography>
+                        </Box>
+
+                        <Box
+                          sx={{
+                            ml: "auto",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "flex-end",
+                            gap: 1,
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 0.75,
+                            }}
+                          >
+                            <Chip
+                              label={`Punkty: ${student.score} / ${student.maxScore}`}
+                              variant="outlined"
+                              sx={{
+                                ...outlinedMetaChipSx,
+                                height: 32,
+                                borderRadius: 999,
+                                color: `${pointsTier}.main`,
+                                borderColor: (theme) =>
+                                  alpha(theme.palette[pointsTier].main, 0.34),
+                                bgcolor: (theme) =>
+                                  alpha(theme.palette[pointsTier].main, 0.09),
+                                "& .MuiChip-label": {
+                                  px: 1.15,
+                                  fontSize: "0.74rem",
+                                  fontWeight: 700,
+                                },
+                              }}
+                            />
+                            <Chip
+                              label={`Procent: ${formatPercent(student.resultPercent)}`}
+                              variant="outlined"
+                              sx={{
+                                ...outlinedMetaChipSx,
+                                height: 32,
+                                borderRadius: 999,
+                                color: `${percentTier}.main`,
+                                borderColor: (theme) =>
+                                  alpha(theme.palette[percentTier].main, 0.34),
+                                bgcolor: (theme) =>
+                                  alpha(theme.palette[percentTier].main, 0.09),
+                                "& .MuiChip-label": {
+                                  px: 1.15,
+                                  fontSize: "0.74rem",
+                                  fontWeight: 700,
+                                },
+                              }}
+                            />
+                            <Box
+                              sx={{
+                                width: 20,
+                                display: "flex",
+                                justifyContent: "center",
+                              }}
+                            >
+                              {student.totalTabSwitchCount > 0 && (
+                                <MuiTooltip
+                                  title={`Uczen wychodzil z zakladek: ${student.totalTabSwitchCount}`}
+                                >
+                                  <WarningIcon
+                                    sx={{ color: "warning.main", fontSize: 18 }}
+                                  />
+                                </MuiTooltip>
+                              )}
+                            </Box>
+                          </Box>
+
+                          <Box sx={{ ...panelInlineActionsSx, gap: 0.5 }}>
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              startIcon={<ReplayIcon fontSize="small" />}
+                              sx={{
+                                ...panelDeleteButtonSx,
+                                minHeight: 32,
+                                borderRadius: 999,
+                                px: 1.15,
+                                fontSize: "0.76rem",
+                                boxShadow: "none",
+                                "& .MuiButton-startIcon": {
+                                  marginRight: 0.4,
+                                  marginLeft: 0,
+                                },
+                              }}
+                              disabled={resettingUserPublicIds.includes(
+                                student.userPublicId,
+                              )}
+                              onClick={() => setResetConfirmStudent(student)}
+                            >
+                              {resettingUserPublicIds.includes(
+                                student.userPublicId,
+                              )
+                                ? "Resetowanie..."
+                                : "Resetuj wynik"}
+                            </Button>
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              startIcon={<VisibilityIcon fontSize="small" />}
+                              sx={{
+                                ...panelFooterButtonSx,
+                                minHeight: 32,
+                                borderRadius: 999,
+                                px: 1.15,
+                                fontSize: "0.76rem",
+                                boxShadow: "none",
+                                "& .MuiButton-startIcon": {
+                                  marginRight: 0.4,
+                                  marginLeft: 0,
+                                },
+                              }}
+                              onClick={() =>
+                                navigate(
+                                  `/teacher/lessons/${lessonPublicId}/students/${student.userPublicId}/result`,
+                                )
+                              }
+                            >
+                              Szczegóły
+                            </Button>
+                          </Box>
+                        </Box>
                       </Box>
-                    </Box>
-                    {idx < stats.studentResults.length - 1 && <Divider />}
-                  </Box>
-                ))
+                    );
+                  })}
+                </Box>
               )}
             </Box>
           </>

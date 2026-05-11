@@ -62,7 +62,7 @@ const inlineEditIconButtonSx: SxProps<Theme> = {
   bgcolor: (theme: Theme) =>
     theme.palette.mode === "light"
       ? alpha(theme.palette.common.white, 0.9)
-      : alpha(theme.palette.common.white, 0.03),
+      : alpha(theme.palette.common.white, 0.02),
   boxShadow: (theme: Theme) =>
     theme.palette.mode === "light"
       ? "0 6px 14px rgba(15, 23, 42, 0.06)"
@@ -197,7 +197,7 @@ const modalSectionSurfaceSx: SxProps<Theme> = {
   bgcolor: (theme: Theme) =>
     theme.palette.mode === "light"
       ? "rgba(255, 255, 255, 0.78)"
-      : "rgba(255, 255, 255, 0.03)",
+      : "rgba(255, 255, 255, 0.02)",
   border: "1px solid",
   borderColor: (theme: Theme) =>
     theme.palette.mode === "light"
