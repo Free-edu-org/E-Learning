@@ -68,9 +68,12 @@ export function StatCard({
           sx={{
             p: 1.75,
             borderRadius: 1.5,
-            bgcolor: (t) => alpha(t.palette[color].main, 0.06),
+            bgcolor: (t) =>
+              t.palette.mode === "light"
+                ? "rgba(255,255,255,0.72)"
+                : "rgba(255,255,255,0.02)",
             border: "1px solid",
-            borderColor: (t) => alpha(t.palette[color].main, 0.12),
+            borderColor: (t) => alpha(t.palette.text.primary, 0.08),
             textAlign: "center",
             mb: 1.5,
           }}

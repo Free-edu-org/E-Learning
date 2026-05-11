@@ -9,16 +9,20 @@ import {
   Alert,
   Box,
   Button,
+  Chip,
   Container,
   Grid,
+  MenuItem,
   Paper,
   Skeleton,
   Stack,
+  TextField,
   Typography,
 } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
 import {
   ArrowBackOutlined as BackIcon,
+  EditOutlined as EditIcon,
   EmojiEventsOutlined as AchievementIcon,
   TrendingUpOutlined as TrendIcon,
   Visibility as VisibilityIcon,
@@ -37,11 +41,20 @@ import {
 } from "recharts";
 import {
   lessonService,
+  type Group,
   type SkillStat,
   type TeacherStudentStatsResponse,
 } from "@/api/lessonService";
 import { userService, type UserProfile } from "@/api/userService";
 import { useAuth } from "@/context/AuthContext";
+import {
+  AppDialog,
+  AppDialogBody,
+  AppDialogFooter,
+  AppDialogHeader,
+  AppDialogStatus,
+} from "@/components/ui/dialog/AppDialog";
+import { FormActions, FormSection } from "@/components/ui/form/FormLayout";
 import { DashboardHeader } from "@/components/ui/panel/DashboardHeader";
 import { DashboardTopBar } from "@/components/ui/panel/DashboardTopBar";
 import { UserAvatar } from "@/components/ui/avatar/UserAvatar";
@@ -51,11 +64,38 @@ import {
   panelSurfaceSx,
 } from "@/components/ui/panel/panelStyles";
 import { StatsCard } from "@/components/teacher/StatsCard";
+import { uiTokens } from "@/theme/uiTokens";
+import { INPUT_LIMITS } from "@/utils/inputLimits";
 import { formatPercent } from "@/utils/dashboardUtils";
 
 type NormalizedSkill = SkillStat & {
   correctPct: number;
   wrongPct: number;
+};
+
+type EditStudentFieldErrors = Partial<
+  Record<"username" | "email" | "emailConfirm" | "groupPublicId", string>
+>;
+
+type EditStudentFeedback = {
+  severity: "success" | "error";
+  message: string;
+};
+
+const dialogFieldLabelSx = {
+  fontSize: "0.82rem",
+  fontWeight: 700,
+  color: "text.primary",
+  letterSpacing: "0.01em",
+};
+
+const counterFieldSx = {
+  "& .MuiFormHelperText-root": {
+    display: "flex",
+    justifyContent: "flex-end",
+    textAlign: "right",
+    mr: 0,
+  },
 };
 
 function formatDate(iso: string | null): string {
@@ -67,7 +107,7 @@ function formatDate(iso: string | null): string {
 
 function scoreColor(percent: number): string {
   if (percent >= 80) return "#16a34a";
-  if (percent >= 60) return "#ca8a04";
+  if (percent >= 50) return "#ca8a04";
   return "#dc2626";
 }
 
@@ -95,6 +135,19 @@ export function TeacherStudentProgressView() {
   const [loading, setLoading] = useState(true);
   const [loadingUser, setLoadingUser] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [availableGroups, setAvailableGroups] = useState<Group[]>([]);
+  const [editStudentOpen, setEditStudentOpen] = useState(false);
+  const [editStudentLoading, setEditStudentLoading] = useState(false);
+  const [editStudentFeedback, setEditStudentFeedback] =
+    useState<EditStudentFeedback | null>(null);
+  const [editStudentFieldErrors, setEditStudentFieldErrors] =
+    useState<EditStudentFieldErrors>({});
+  const [editStudentDraft, setEditStudentDraft] = useState({
+    username: "",
+    email: "",
+    emailConfirm: "",
+    groupPublicId: "" as string | "",
+  });
 
   useEffect(() => {
     userService
@@ -172,6 +225,88 @@ export function TeacherStudentProgressView() {
     fontSize: "12px",
   };
 
+  const openEditStudentDialog = async () => {
+    if (!stats?.student) return;
+    setEditStudentFeedback(null);
+    setEditStudentFieldErrors({});
+    setEditStudentLoading(true);
+    try {
+      const groups = await lessonService.getTeacherGroups();
+      setAvailableGroups(groups);
+      setEditStudentDraft({
+        username: stats.student.username ?? "",
+        email: stats.student.email,
+        emailConfirm: stats.student.email,
+        groupPublicId: stats.student.groupPublicId,
+      });
+      setEditStudentOpen(true);
+    } catch {
+      setEditStudentFeedback({
+        severity: "error",
+        message: "Nie udało się przygotować edycji ucznia.",
+      });
+    } finally {
+      setEditStudentLoading(false);
+    }
+  };
+
+  const closeEditStudentDialog = () => {
+    if (editStudentLoading) return;
+    setEditStudentOpen(false);
+    setEditStudentFieldErrors({});
+  };
+
+  const submitEditStudent = async () => {
+    if (!studentPublicId || !stats?.student || editStudentLoading) return;
+
+    const nextFieldErrors: EditStudentFieldErrors = {};
+    if (!editStudentDraft.username.trim()) {
+      nextFieldErrors.username = "Wypełnij nazwę użytkownika.";
+    }
+    if (!editStudentDraft.email.trim()) {
+      nextFieldErrors.email = "Wypełnij adres e-mail.";
+    }
+    if (
+      editStudentDraft.email.trim() !== editStudentDraft.emailConfirm.trim()
+    ) {
+      nextFieldErrors.emailConfirm = "Adresy e-mail nie są zgodne.";
+    }
+    if (!editStudentDraft.groupPublicId) {
+      nextFieldErrors.groupPublicId = "Wybierz grupę ucznia.";
+    }
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setEditStudentFieldErrors(nextFieldErrors);
+      return;
+    }
+
+    setEditStudentFieldErrors({});
+    setEditStudentFeedback(null);
+    setEditStudentLoading(true);
+    try {
+      await lessonService.updateTeacherStudent(studentPublicId, {
+        username: editStudentDraft.username.trim(),
+        email: editStudentDraft.email.trim(),
+        groupPublicId: editStudentDraft.groupPublicId,
+      });
+      const refreshedStats =
+        await lessonService.getStudentStats(studentPublicId);
+      setStats(refreshedStats);
+      setEditStudentFeedback({
+        severity: "success",
+        message: "Dane ucznia zostały zapisane.",
+      });
+      window.setTimeout(() => closeEditStudentDialog(), 700);
+    } catch {
+      setEditStudentFeedback({
+        severity: "error",
+        message: "Nie udało się zapisać zmian ucznia.",
+      });
+    } finally {
+      setEditStudentLoading(false);
+    }
+  };
+
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: pageBg, pb: 6 }}>
       <Container maxWidth="xl" sx={{ pt: 4, position: "relative" }}>
@@ -199,8 +334,11 @@ export function TeacherStudentProgressView() {
             fontWeight: 600,
             mb: 2,
             mt: -1,
-            color: "text.secondary",
-            "&:hover": { bgcolor: "transparent", color: "primary.main" },
+            color: "primary.main",
+            "&:hover": {
+              bgcolor: (t) => alpha(t.palette.primary.main, 0.08),
+              color: "primary.main",
+            },
           }}
         >
           {backLabel}
@@ -242,6 +380,23 @@ export function TeacherStudentProgressView() {
                 {new Date(stats.student.createdAt).toLocaleDateString("pl-PL")}
               </Typography>
             </Stack>
+            <Box
+              sx={{ ml: "auto", alignSelf: { xs: "stretch", sm: "center" } }}
+            >
+              <Button
+                startIcon={<EditIcon />}
+                variant="outlined"
+                onClick={openEditStudentDialog}
+                disabled={editStudentLoading}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 600,
+                  width: { xs: "100%", sm: "auto" },
+                }}
+              >
+                Edytuj ucznia
+              </Button>
+            </Box>
           </Box>
         )}
 
@@ -570,6 +725,208 @@ export function TeacherStudentProgressView() {
             </Paper>
           </Box>
         )}
+
+        <AppDialog
+          open={editStudentOpen}
+          onClose={closeEditStudentDialog}
+          maxWidth="sm"
+          paperSx={{
+            width: {
+              xs: "calc(100% - 24px)",
+              sm: uiTokens.modal.comfortableWidth,
+            },
+          }}
+        >
+          <AppDialogHeader
+            icon={<EditIcon />}
+            title="Edytuj ucznia"
+            subtitle="Zmiana danych ucznia i przypisanej grupy."
+            badge={
+              <Chip
+                label="Uczeń"
+                size="small"
+                variant="outlined"
+                sx={{
+                  fontWeight: 700,
+                  px: 0.5,
+                  bgcolor: (t) => alpha(t.palette.primary.main, 0.1),
+                  color: "primary.main",
+                  borderColor: (t) => alpha(t.palette.primary.main, 0.16),
+                }}
+              />
+            }
+          />
+          <AppDialogBody
+            sx={{
+              p: 2.5,
+              bgcolor: "transparent",
+            }}
+          >
+            {editStudentFeedback && (
+              <AppDialogStatus severity={editStudentFeedback.severity}>
+                {editStudentFeedback.message}
+              </AppDialogStatus>
+            )}
+
+            <Stack spacing={2.25}>
+              <FormSection
+                title="Tożsamość konta"
+                description="Zaktualizuj nazwę użytkownika i dane kontaktowe ucznia."
+              >
+                <Stack spacing={1.25}>
+                  <Box>
+                    <Typography sx={{ ...dialogFieldLabelSx, mb: 1 }}>
+                      Nazwa użytkownika
+                    </Typography>
+                    <TextField
+                      value={editStudentDraft.username}
+                      onChange={(event) => {
+                        setEditStudentFieldErrors((prev) => ({
+                          ...prev,
+                          username: undefined,
+                        }));
+                        setEditStudentDraft((prev) => ({
+                          ...prev,
+                          username: event.target.value.slice(
+                            0,
+                            INPUT_LIMITS.username,
+                          ),
+                        }));
+                      }}
+                      error={Boolean(editStudentFieldErrors.username)}
+                      helperText={
+                        editStudentFieldErrors.username ??
+                        `${editStudentDraft.username.length}/${INPUT_LIMITS.username}`
+                      }
+                      sx={counterFieldSx}
+                      fullWidth
+                      size="small"
+                      disabled={editStudentLoading}
+                      placeholder="Np. anna.nowak"
+                    />
+                  </Box>
+
+                  <Box>
+                    <Typography sx={{ ...dialogFieldLabelSx, mb: 1 }}>
+                      Adres e-mail
+                    </Typography>
+                    <TextField
+                      value={editStudentDraft.email}
+                      onChange={(event) => {
+                        setEditStudentFieldErrors((prev) => ({
+                          ...prev,
+                          email: undefined,
+                        }));
+                        setEditStudentDraft((prev) => ({
+                          ...prev,
+                          email: event.target.value,
+                        }));
+                      }}
+                      error={Boolean(editStudentFieldErrors.email)}
+                      helperText={
+                        editStudentFieldErrors.email ??
+                        "Na ten adres będą trafiać powiadomienia ucznia."
+                      }
+                      fullWidth
+                      size="small"
+                      disabled={editStudentLoading}
+                      placeholder="Np. uczen@szkola.pl"
+                    />
+                  </Box>
+
+                  <Box>
+                    <Typography sx={{ ...dialogFieldLabelSx, mb: 1 }}>
+                      Potwierdź adres e-mail
+                    </Typography>
+                    <TextField
+                      value={editStudentDraft.emailConfirm}
+                      onChange={(event) => {
+                        setEditStudentFieldErrors((prev) => ({
+                          ...prev,
+                          emailConfirm: undefined,
+                        }));
+                        setEditStudentDraft((prev) => ({
+                          ...prev,
+                          emailConfirm: event.target.value,
+                        }));
+                      }}
+                      error={Boolean(editStudentFieldErrors.emailConfirm)}
+                      helperText={
+                        editStudentFieldErrors.emailConfirm ??
+                        "Powtórz e-mail, aby uniknąć literówki."
+                      }
+                      fullWidth
+                      size="small"
+                      disabled={editStudentLoading}
+                      placeholder="Powtórz adres e-mail"
+                    />
+                  </Box>
+                </Stack>
+              </FormSection>
+
+              <FormSection
+                title="Przypisanie do grupy"
+                description="Wybierz grupę, do której jest przypisany uczeń."
+              >
+                <Box>
+                  <Typography sx={{ ...dialogFieldLabelSx, mb: 1 }}>
+                    Grupa ucznia
+                  </Typography>
+                  <TextField
+                    select
+                    value={editStudentDraft.groupPublicId}
+                    onChange={(event) => {
+                      setEditStudentFieldErrors((prev) => ({
+                        ...prev,
+                        groupPublicId: undefined,
+                      }));
+                      setEditStudentDraft((prev) => ({
+                        ...prev,
+                        groupPublicId: event.target.value,
+                      }));
+                    }}
+                    error={Boolean(editStudentFieldErrors.groupPublicId)}
+                    helperText={
+                      editStudentFieldErrors.groupPublicId ??
+                      (availableGroups.length === 0
+                        ? "Brak dostępnych grup do przypisania."
+                        : "Możesz zmienić grupę ucznia w dowolnym momencie.")
+                    }
+                    fullWidth
+                    size="small"
+                    disabled={editStudentLoading}
+                  >
+                    {availableGroups.map((group) => (
+                      <MenuItem key={group.publicId} value={group.publicId}>
+                        {group.name}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Box>
+              </FormSection>
+            </Stack>
+          </AppDialogBody>
+          <AppDialogFooter>
+            <FormActions>
+              <Button
+                variant="outlined"
+                onClick={closeEditStudentDialog}
+                disabled={editStudentLoading}
+                sx={{ textTransform: "none", fontWeight: 600 }}
+              >
+                Anuluj
+              </Button>
+              <Button
+                variant="contained"
+                onClick={submitEditStudent}
+                disabled={editStudentLoading}
+                sx={{ textTransform: "none", fontWeight: 700 }}
+              >
+                {editStudentLoading ? "Zapisywanie..." : "Zapisz zmiany"}
+              </Button>
+            </FormActions>
+          </AppDialogFooter>
+        </AppDialog>
       </Container>
     </Box>
   );

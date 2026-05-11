@@ -178,37 +178,9 @@ export function StatsCard({
         overflow: "hidden",
         minHeight: 124,
         display: "flex",
-        bgcolor: theme.palette.mode === "light" ? "#ffffff" : "#182133",
-        backgroundImage:
-          theme.palette.mode === "light"
-            ? "linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(248,250,255,0.96) 100%)"
-            : "linear-gradient(180deg, rgba(255,255,255,0.026) 0%, rgba(255,255,255,0.004) 100%)",
-        boxShadow:
-          theme.palette.mode === "light"
-            ? "0 10px 22px rgba(15, 23, 42, 0.045), inset 0 1px 0 rgba(255,255,255,0.88)"
-            : "0 5px 14px rgba(0, 0, 0, 0.13)",
-        transition:
-          "transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease",
-        "&::before": {
-          content: '""',
-          position: "absolute",
-          inset: 0,
-          background:
-            theme.palette.mode === "light"
-              ? "linear-gradient(180deg, rgba(255,255,255,0.26) 0%, rgba(255,255,255,0) 38%)"
-              : "linear-gradient(180deg, rgba(255,255,255,0.022) 0%, rgba(255,255,255,0) 38%)",
-          pointerEvents: "none",
-        },
+        transition: "transform 0.22s ease, box-shadow 0.22s ease",
         "&:hover": {
           transform: "translateY(-2px)",
-          boxShadow:
-            theme.palette.mode === "light"
-              ? `0 12px 24px rgba(15, 23, 42, 0.07), 0 0 0 1px ${alpha(accentColor, 0.06)}`
-              : `0 9px 18px rgba(0, 0, 0, 0.18), 0 0 0 1px ${alpha(accentColor, 0.06)}`,
-          borderColor: alpha(
-            accentColor,
-            theme.palette.mode === "light" ? 0.14 : 0.1,
-          ),
         },
       }}
     >

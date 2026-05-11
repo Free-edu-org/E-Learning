@@ -4,7 +4,6 @@ import {
   Alert,
   Box,
   Button,
-  Chip,
   CircularProgress,
   Container,
   Divider,
@@ -47,7 +46,6 @@ import { DashboardTopBar } from "@/components/ui/panel/DashboardTopBar";
 import { UserAvatar } from "@/components/ui/avatar/UserAvatar";
 import { StatsCard } from "@/components/teacher/StatsCard";
 import {
-  outlinedMetaChipSx,
   panelDeleteButtonSx,
   panelFooterButtonSx,
   panelInlineActionsSx,
@@ -512,11 +510,6 @@ export function LessonStatsView() {
               ) : (
                 <Box sx={{ p: 1.25, display: "grid", gap: 0.85 }}>
                   {stats.studentResults.map((student) => {
-                    const pointsPercent =
-                      student.maxScore > 0
-                        ? (student.score / student.maxScore) * 100
-                        : 0;
-                    const pointsTier = getPerformanceTier(pointsPercent);
                     const percentTier = getPerformanceTier(
                       student.resultPercent,
                     );
@@ -647,44 +640,34 @@ export function LessonStatsView() {
                               gap: 0.75,
                             }}
                           >
-                            <Chip
-                              label={`Punkty: ${student.score} / ${student.maxScore}`}
-                              variant="outlined"
+                            <Box
                               sx={{
-                                ...outlinedMetaChipSx,
-                                height: 32,
-                                borderRadius: 999,
-                                color: `${pointsTier}.main`,
-                                borderColor: (theme) =>
-                                  alpha(theme.palette[pointsTier].main, 0.34),
-                                bgcolor: (theme) =>
-                                  alpha(theme.palette[pointsTier].main, 0.09),
-                                "& .MuiChip-label": {
-                                  px: 1.15,
-                                  fontSize: "0.74rem",
-                                  fontWeight: 700,
-                                },
+                                minWidth: 150,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "flex-end",
+                                gap: 1.1,
                               }}
-                            />
-                            <Chip
-                              label={`Procent: ${formatPercent(student.resultPercent)}`}
-                              variant="outlined"
-                              sx={{
-                                ...outlinedMetaChipSx,
-                                height: 32,
-                                borderRadius: 999,
-                                color: `${percentTier}.main`,
-                                borderColor: (theme) =>
-                                  alpha(theme.palette[percentTier].main, 0.34),
-                                bgcolor: (theme) =>
-                                  alpha(theme.palette[percentTier].main, 0.09),
-                                "& .MuiChip-label": {
-                                  px: 1.15,
-                                  fontSize: "0.74rem",
-                                  fontWeight: 700,
-                                },
-                              }}
-                            />
+                            >
+                              <Typography
+                                variant="body2"
+                                fontWeight={700}
+                                sx={{
+                                  color: `${percentTier}.main`,
+                                  minWidth: 48,
+                                  textAlign: "right",
+                                }}
+                              >
+                                {formatPercent(student.resultPercent)}
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                sx={{ minWidth: 72, textAlign: "right" }}
+                              >
+                                {student.score}/{student.maxScore} pkt
+                              </Typography>
+                            </Box>
                             <Box
                               sx={{
                                 width: 20,
