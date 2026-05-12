@@ -140,7 +140,7 @@ const dialogFooterSx: SxProps<Theme> = {
   bgcolor: (theme) =>
     theme.palette.mode === "light"
       ? "rgba(255, 255, 255, 0.48)"
-      : "rgba(255, 255, 255, 0.03)",
+      : "rgba(255, 255, 255, 0.02)",
   backdropFilter: "blur(18px)",
   gap: 1.25,
   "& .MuiButton-root": {

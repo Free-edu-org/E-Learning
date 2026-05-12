@@ -40,7 +40,8 @@ export function LessonResultDialog({
     <AppDialog
       open={open}
       onClose={() => undefined}
-      maxWidth="xs"
+      maxWidth="sm"
+      paperSx={{ maxWidth: 500 }}
       backdropSx={{
         backgroundColor: alpha(
           "#0f172a",
@@ -54,6 +55,7 @@ export function LessonResultDialog({
         icon={<ResultIcon />}
         title="Wynik lekcji"
         subtitle="Lekcja została zakończona. Wybierz kolejny krok, aby przejść dalej."
+        hideCloseButton={true}
       />
 
       <AppDialogBody>

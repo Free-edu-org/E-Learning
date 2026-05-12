@@ -652,5 +652,45 @@ describe('Admin Dashboard API (/api/v1/admin)', () => {
             expect(response.status).toBe(200);
             expect(response.data.active).toBe(true);
         });
+
+        it('should delete achievement for ADMIN (204)', async () => {
+            setAuthToken(adminToken);
+            const deleteCode = createCode();
+            createdAchievementCodes.add(deleteCode);
+
+            let response = await apiClient.post('/admin/achievements', {
+                code: deleteCode,
+                title: `Admin Test Achievement ${uniqueId} Delete`,
+                description: 'Will be deleted from admin panel',
+                icon: 'icon',
+                color: 'warning',
+                type: 'LESSONS_COMPLETED',
+                threshold: 3,
+                active: true,
+                sortOrder: 9300
+            });
+            expect(response.status).toBe(201);
+
+            response = await apiClient.delete(`/admin/achievements/${deleteCode}`);
+            expect(response.status).toBe(204);
+            createdAchievementCodes.delete(deleteCode);
+
+            response = await apiClient.get(`/admin/achievements/${deleteCode}`);
+            expect(response.status).toBe(404);
+            expect(response.data.code).toBe('ACHIEVEMENT_NOT_FOUND');
+        });
+
+        it('should return 403 for achievement delete when role is TEACHER', async () => {
+            setAuthToken(teacherToken);
+            const response = await apiClient.delete(`/admin/achievements/${createdAchievementCode}`);
+            expect(response.status).toBe(403);
+        });
+
+        it('should return 404 when deleting missing achievement', async () => {
+            setAuthToken(adminToken);
+            const response = await apiClient.delete('/admin/achievements/MISSING_ACHIEVEMENT_CODE');
+            expect(response.status).toBe(404);
+            expect(response.data.code).toBe('ACHIEVEMENT_NOT_FOUND');
+        });
     });
 });

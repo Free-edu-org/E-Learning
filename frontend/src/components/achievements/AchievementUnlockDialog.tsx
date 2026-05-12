@@ -190,7 +190,7 @@ export function AchievementUnlockDialog({
                   position: "relative",
                   width: 88,
                   height: 88,
-                  borderRadius: 4,
+                  borderRadius: 3.5,
                   display: "grid",
                   placeItems: "center",
                   fontSize: 44,

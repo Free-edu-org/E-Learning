@@ -37,7 +37,6 @@ import {
   EditOutlined as EditIcon,
   EmailOutlined as EmailIcon,
   ExpandMoreOutlined as ExpandMoreIcon,
-  GroupOutlined as GroupIcon,
   HourglassEmptyOutlined as PendingIcon,
   ListOutlined as ListIcon,
   PeopleOutline as PeopleIcon,
@@ -238,15 +237,19 @@ function parseUserApiFieldErrors(error: ApiError): UserFieldErrors {
         return acc;
       }
 
-      const field = part
-        .slice(0, separatorIndex)
-        .trim() as keyof UserFieldErrors;
+      let field = part.slice(0, separatorIndex).trim();
+      // Strip DTO prefixes if present (e.g. UpdateUserRequest.email -> email)
+      if (field.includes(".")) {
+        field = field.split(".").pop() || field;
+      }
+
+      const fieldKey = field as keyof UserFieldErrors;
       const validationDetail = part.slice(separatorIndex + 1).trim();
-      if (!(field in emptyUserDraft)) {
+      if (!(fieldKey in emptyUserDraft)) {
         return acc;
       }
 
-      acc[field] = translateApiMessage(validationDetail);
+      acc[fieldKey] = translateApiMessage(validationDetail);
       return acc;
     }, {});
 }
@@ -270,6 +273,12 @@ function formatDate(value?: string) {
 const toolbarFieldSx = {
   minWidth: 180,
   flex: "1 1 180px",
+  "& .MuiAutocomplete-inputRoot": {
+    bgcolor: (theme: Theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.common.white, 0.98)
+        : "#151a2c",
+  },
   "& .MuiOutlinedInput-root": {
     borderRadius: 2,
     minHeight: 40,
@@ -316,6 +325,24 @@ const toolbarFieldSx = {
       theme.palette.mode === "light"
         ? alpha(theme.palette.text.secondary, 0.8)
         : alpha(theme.palette.common.white, 0.38),
+  },
+};
+
+const compactToolbarFieldSx = {
+  "& .MuiOutlinedInput-root.MuiInputBase-root": {
+    minHeight: 38,
+  },
+  "& .MuiInputBase-input": {
+    fontSize: "0.85rem",
+  },
+};
+
+const groupCompactToolbarFieldSx = {
+  "& .MuiOutlinedInput-root.MuiInputBase-root": {
+    minHeight: 36,
+  },
+  "& .MuiInputBase-input": {
+    fontSize: "0.82rem",
   },
 };
 
@@ -423,7 +450,6 @@ const inviteBadgeSx = {
   px: 0.5,
   bgcolor: (theme: Theme) => alpha(theme.palette.primary.main, 0.1),
   color: "primary.main",
-  borderColor: (theme: Theme) => alpha(theme.palette.primary.main, 0.16),
 };
 
 const standardFormDialogPaperSx: SxProps<Theme> = {
@@ -468,6 +494,101 @@ const inlineEditCancelButtonSx = {
   "&:hover": {
     bgcolor: (theme: Theme) => alpha(theme.palette.text.primary, 0.06),
     borderColor: (theme: Theme) => alpha(theme.palette.text.primary, 0.12),
+  },
+};
+
+const compactInlineActionsWrapSx = {
+  display: "flex",
+  flexDirection: "row",
+  gap: 1,
+  alignItems: "center",
+  mt: 0.5,
+  flexShrink: 0,
+};
+
+const compactInlineConfirmButtonSx = {
+  ...inlineEditConfirmButtonSx,
+  width: 32,
+  height: 32,
+  bgcolor: alpha("#10B981", 0.08),
+  color: "#10B981",
+  border: "1px solid",
+  borderColor: alpha("#10B981", 0.2),
+  "&:hover": {
+    bgcolor: alpha("#10B981", 0.15),
+    borderColor: alpha("#10B981", 0.3),
+  },
+  "&.Mui-disabled": {
+    bgcolor: alpha("#64748B", 0.05),
+    borderColor: alpha("#64748B", 0.1),
+  },
+};
+
+const compactInlineCancelButtonSx = {
+  ...inlineEditCancelButtonSx,
+  width: 32,
+  height: 32,
+  bgcolor: alpha("#64748B", 0.06),
+  color: "#64748B",
+  border: "1px solid",
+  borderColor: alpha("#64748B", 0.15),
+  "&:hover": {
+    bgcolor: alpha("#64748B", 0.12),
+    borderColor: alpha("#64748B", 0.25),
+  },
+};
+
+const membershipHeaderBadgeSx = {
+  ...inviteBadgeSx,
+  borderRadius: "8px",
+  fontWeight: 600,
+  fontSize: "0.75rem",
+  height: 24,
+  mt: 0.5,
+  bgcolor: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.primary.main, 0.05)
+      : alpha(theme.palette.primary.main, 0.1),
+};
+
+const membershipAddButtonSx: SxProps<Theme> = {
+  ...panelFooterButtonSx,
+  height: 40,
+  px: 1.6,
+  flexShrink: 0,
+  whiteSpace: "nowrap",
+  alignSelf: { xs: "stretch", sm: "auto" },
+};
+
+const inlineEditAccentColor = "#6366F1";
+
+function getInlineEditSectionSx(isEditing: boolean): SxProps<Theme> {
+  return {
+    p: isEditing ? 2.75 : 2.25,
+    bgcolor: isEditing ? alpha(inlineEditAccentColor, 0.035) : "transparent",
+    borderLeft: isEditing ? "4px solid" : "none",
+    borderLeftColor: inlineEditAccentColor,
+    transition: "all 0.25s ease",
+    "&:hover": {
+      bgcolor: (theme: Theme) =>
+        isEditing
+          ? alpha(inlineEditAccentColor, 0.05)
+          : theme.palette.mode === "light"
+            ? alpha(theme.palette.text.primary, 0.01)
+            : alpha(theme.palette.common.white, 0.02),
+    },
+  };
+}
+
+const inlineChangeButtonSx = {
+  textTransform: "none",
+  fontWeight: 600,
+  fontSize: "0.82rem",
+  borderRadius: "10px",
+  px: 1.5,
+  bgcolor: (theme: Theme) => alpha(theme.palette.text.primary, 0.03),
+  "&:hover": {
+    bgcolor: (theme: Theme) => alpha(theme.palette.text.primary, 0.07),
   },
 };
 
@@ -519,8 +640,56 @@ const subtleMetaRowSx = {
   lineHeight: 1.45,
 };
 
+const settingsPanelSurfaceSx: SxProps<Theme> = {
+  borderRadius: 3,
+  bgcolor: (theme) =>
+    theme.palette.mode === "light"
+      ? "rgba(255, 255, 255, 0.78)"
+      : "rgba(255, 255, 255, 0.03)",
+  border: "1px solid",
+  borderColor: (theme) =>
+    theme.palette.mode === "light"
+      ? "rgba(148, 163, 184, 0.14)"
+      : "rgba(255, 255, 255, 0.06)",
+  backdropFilter: "blur(14px)",
+  boxShadow: (theme) =>
+    theme.palette.mode === "light"
+      ? "0 16px 32px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255,255,255,0.6)"
+      : "0 12px 24px rgba(0, 0, 0, 0.18)",
+  overflow: "hidden",
+};
+
+const settingsRowSx: SxProps<Theme> = {
+  display: "flex",
+  alignItems: "center",
+  gap: 2.5,
+};
+
+const settingsRowIconTileSx: SxProps<Theme> = {
+  width: 40,
+  height: 40,
+  borderRadius: "12px",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  bgcolor: (theme) =>
+    theme.palette.mode === "light"
+      ? alpha("#6366F1", 0.1)
+      : alpha("#6366F1", 0.15),
+  color: "#6366F1",
+  flexShrink: 0,
+};
+
+const settingsRowLabelSx: SxProps<Theme> = {
+  color: "text.secondary",
+  fontWeight: 600,
+  display: "block",
+  mb: 0.25,
+};
+
 const userCardSurfaceSx: SxProps<Theme> = {
   ...(panelGridCardSx as object),
+  borderRadius: 3.5,
   display: "flex",
   flexDirection: "column",
   position: "relative",
@@ -941,7 +1110,7 @@ export function AdminDashboard() {
       minWidth: 220,
       minHeight: 142,
       p: { xs: 1.5, md: 1.75 },
-      borderRadius: 3,
+      borderRadius: 3.5,
       position: "relative",
       overflow: "hidden",
       display: "flex",
@@ -1930,7 +2099,7 @@ export function AdminDashboard() {
                   transition: "transform 0.25s ease, box-shadow 0.25s ease",
                 }}
               >
-                <GroupIcon sx={{ fontSize: 21 }} />
+                <SchoolIcon sx={{ fontSize: 21 }} />
               </Box>
               <Box
                 className="quick-action-arrow"
@@ -2075,7 +2244,7 @@ export function AdminDashboard() {
               />
               <Tab
                 value="groups"
-                icon={<GroupIcon fontSize="small" />}
+                icon={<SchoolIcon fontSize="small" />}
                 iconPosition="start"
                 label="Grupy"
               />
@@ -2141,6 +2310,7 @@ export function AdminDashboard() {
                     }}
                     sx={{
                       ...toolbarFieldSx,
+                      ...compactToolbarFieldSx,
                       minWidth: { xs: "100%", sm: 260, lg: 320 },
                       flex: { xs: "1 1 100%", md: "1.5 1 280px" },
                     }}
@@ -2191,6 +2361,7 @@ export function AdminDashboard() {
                     )}
                     sx={{
                       ...toolbarFieldSx,
+                      ...compactToolbarFieldSx,
                       minWidth: { xs: "100%", sm: 220 },
                       flex: { xs: "1 1 100%", lg: "1 1 230px" },
                     }}
@@ -2241,6 +2412,7 @@ export function AdminDashboard() {
                     )}
                     sx={{
                       ...toolbarFieldSx,
+                      ...groupCompactToolbarFieldSx,
                       minWidth: { xs: "100%", sm: 220 },
                       flex: { xs: "1 1 100%", lg: "1 1 230px" },
                     }}
@@ -2972,6 +3144,7 @@ export function AdminDashboard() {
                     }}
                     sx={{
                       ...toolbarFieldSx,
+                      ...groupCompactToolbarFieldSx,
                       minWidth: { xs: "100%", sm: 260, lg: 320 },
                       flex: { xs: "1 1 100%", md: "1.4 1 280px" },
                     }}
@@ -3107,7 +3280,7 @@ export function AdminDashboard() {
                                 {group.name}
                               </Typography>
                               <Chip
-                                icon={<GroupIcon />}
+                                icon={<SchoolIcon />}
                                 label={`${group.studentCount} uczniów`}
                                 color="warning"
                                 size="small"
@@ -3293,7 +3466,7 @@ export function AdminDashboard() {
                                   </Stack>
                                 </Box>
                                 <Chip
-                                  icon={<GroupIcon />}
+                                  icon={<SchoolIcon />}
                                   label={`${group.studentCount} uczniów`}
                                   color="warning"
                                   size="small"
@@ -3426,7 +3599,6 @@ export function AdminDashboard() {
                   ((selectedUser?.role as UserRole | undefined) ??
                     userDialogRole) as UserRole,
                 )}
-                variant="outlined"
                 sx={{
                   ...inviteBadgeSx,
                   borderRadius: "8px",
@@ -3637,12 +3809,12 @@ export function AdminDashboard() {
                         ? 2.75
                         : 2.25,
                       bgcolor: userDialogEditingFields.includes("username")
-                        ? alpha("#6366F1", 0.035)
+                        ? alpha(inlineEditAccentColor, 0.035)
                         : "transparent",
                       borderLeft: userDialogEditingFields.includes("username")
                         ? "4px solid"
                         : "none",
-                      borderLeftColor: "#6366F1",
+                      borderLeftColor: inlineEditAccentColor,
                       display: "flex",
                       alignItems: "flex-start",
                       gap: 2.5,
@@ -3650,7 +3822,7 @@ export function AdminDashboard() {
                       "&:hover": {
                         bgcolor: (theme) =>
                           userDialogEditingFields.includes("username")
-                            ? alpha("#6366F1", 0.05)
+                            ? alpha(inlineEditAccentColor, 0.05)
                             : theme.palette.mode === "light"
                               ? alpha(theme.palette.text.primary, 0.01)
                               : alpha(theme.palette.common.white, 0.02),
@@ -3901,12 +4073,12 @@ export function AdminDashboard() {
                         ? 2.75
                         : 2.25,
                       bgcolor: userDialogEditingFields.includes("email")
-                        ? alpha("#6366F1", 0.035)
+                        ? alpha(inlineEditAccentColor, 0.035)
                         : "transparent",
                       borderLeft: userDialogEditingFields.includes("email")
                         ? "4px solid"
                         : "none",
-                      borderLeftColor: "#6366F1",
+                      borderLeftColor: inlineEditAccentColor,
                       display: "flex",
                       alignItems: "flex-start",
                       gap: 2.5,
@@ -3914,7 +4086,7 @@ export function AdminDashboard() {
                       "&:hover": {
                         bgcolor: (theme) =>
                           userDialogEditingFields.includes("email")
-                            ? alpha("#6366F1", 0.05)
+                            ? alpha(inlineEditAccentColor, 0.05)
                             : theme.palette.mode === "light"
                               ? alpha(theme.palette.text.primary, 0.01)
                               : alpha(theme.palette.common.white, 0.02),
@@ -4209,12 +4381,12 @@ export function AdminDashboard() {
                             ? 2.75
                             : 2.25,
                           bgcolor: userDialogEditingFields.includes("group")
-                            ? alpha("#6366F1", 0.035)
+                            ? alpha(inlineEditAccentColor, 0.035)
                             : "transparent",
                           borderLeft: userDialogEditingFields.includes("group")
                             ? "4px solid"
                             : "none",
-                          borderLeftColor: "#6366F1",
+                          borderLeftColor: inlineEditAccentColor,
                           display: "flex",
                           alignItems: "flex-start",
                           gap: 2.5,
@@ -4222,7 +4394,7 @@ export function AdminDashboard() {
                           "&:hover": {
                             bgcolor: (theme) =>
                               userDialogEditingFields.includes("group")
-                                ? alpha("#6366F1", 0.05)
+                                ? alpha(inlineEditAccentColor, 0.05)
                                 : theme.palette.mode === "light"
                                   ? alpha(theme.palette.text.primary, 0.01)
                                   : alpha(theme.palette.common.white, 0.02),
@@ -4248,7 +4420,7 @@ export function AdminDashboard() {
                               : 0,
                           }}
                         >
-                          <GroupIcon fontSize="small" />
+                          <SchoolIcon fontSize="small" />
                         </Box>
 
                         {userDialogEditingFields.includes("group") ? (
@@ -4273,22 +4445,34 @@ export function AdminDashboard() {
                                 <TextField
                                   select
                                   value={userDraft.groupPublicId}
-                                  onChange={(event) =>
+                                  onChange={(event) => {
+                                    setUserFieldErrors((current) => ({
+                                      ...current,
+                                      groupPublicId: undefined,
+                                    }));
                                     setUserDraft((current) => ({
                                       ...current,
                                       groupPublicId: event.target.value as
                                         | string
                                         | "",
-                                    }))
-                                  }
+                                    }));
+                                  }}
                                   size="small"
                                   fullWidth
+                                  error={Boolean(userFieldErrors.groupPublicId)}
+                                  helperText={userFieldErrors.groupPublicId}
                                   SelectProps={{
                                     displayEmpty: true,
                                   }}
                                   sx={{
                                     "& .MuiOutlinedInput-root": {
                                       bgcolor: "background.paper",
+                                      ...(userFieldErrors.groupPublicId && {
+                                        bgcolor: alpha("#EF4444", 0.02),
+                                        "& fieldset": {
+                                          borderColor: alpha("#EF4444", 0.2),
+                                        },
+                                      }),
                                     },
                                   }}
                                 >
@@ -4599,7 +4783,7 @@ export function AdminDashboard() {
           }}
         >
           <AppDialogHeader
-            icon={groupDialogMode === "create" ? <GroupIcon /> : <EditIcon />}
+            icon={groupDialogMode === "create" ? <SchoolIcon /> : <EditIcon />}
             iconContainerSx={
               groupDialogMode === "edit"
                 ? {
@@ -4621,14 +4805,12 @@ export function AdminDashboard() {
               <Chip
                 label={groupDialogMode === "create" ? "Nowa grupa" : "Edycja"}
                 size="small"
-                variant="outlined"
+                variant="filled"
                 sx={{
                   fontWeight: 700,
                   px: 0.5,
                   bgcolor: (theme) => alpha(theme.palette.warning.main, 0.1),
                   color: "warning.dark",
-                  borderColor: (theme) =>
-                    alpha(theme.palette.warning.main, 0.18),
                 }}
               />
             }
@@ -4702,7 +4884,7 @@ export function AdminDashboard() {
                         input: {
                           startAdornment: (
                             <InputAdornment position="start">
-                              <GroupIcon sx={{ color: "text.secondary" }} />
+                              <SchoolIcon sx={{ color: "text.secondary" }} />
                             </InputAdornment>
                           ),
                         },
@@ -4875,153 +5057,134 @@ export function AdminDashboard() {
                 </FormSection>
               </Stack>
             ) : (
-              <Box
-                sx={{
-                  borderRadius: 2,
-                  border: "1px solid",
-                  borderColor: "divider",
-                  overflow: "hidden",
-                }}
-              >
+              <Box sx={settingsPanelSurfaceSx}>
                 <Box
                   sx={{
-                    px: 2,
-                    py: 1.5,
+                    ...getInlineEditSectionSx(
+                      groupDialogEditingFields.includes("name"),
+                    ),
                     borderBottom: "1px solid",
-                    borderColor: "divider",
+                    borderBottomColor: "divider",
                   }}
                 >
                   {groupDialogEditingFields.includes("name") ? (
-                    <>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        display="block"
-                        sx={{ mb: 0.75 }}
-                      >
-                        Edycja nazwy grupy
-                      </Typography>
+                    <Box sx={settingsRowSx}>
                       <Box
                         sx={{
-                          display: "flex",
-                          gap: 1,
-                          alignItems: "center",
+                          ...settingsRowIconTileSx,
+                          alignSelf: "flex-start",
+                          mt: 0.25,
                         }}
                       >
-                        <TextField
-                          value={groupDraft.name}
-                          onChange={(event) => {
-                            setGroupFieldErrors((current) => ({
-                              ...current,
-                              name: undefined,
-                            }));
-                            setGroupDraft((current) => ({
-                              ...current,
-                              name: event.target.value.slice(
-                                0,
-                                INPUT_LIMITS.groupName,
-                              ),
-                            }));
-                          }}
-                          autoFocus
-                          size="small"
-                          fullWidth
-                          inputProps={{ maxLength: INPUT_LIMITS.groupName }}
-                          error={Boolean(groupFieldErrors.name)}
-                          sx={counterFieldSx}
-                        />
-                        <Box
-                          sx={{
-                            display: "flex",
-                            flexDirection: "row",
-                            gap: 1,
-                            alignItems: "center",
-                            mt: 0.5,
-                            flexShrink: 0,
-                          }}
-                        >
-                          <IconButton
-                            size="small"
-                            disabled={groupDialogLoading}
-                            onClick={() => saveGroupInlineSection("name")}
-                            sx={{
-                              borderRadius: 999,
-                              color: "success.main",
-                              bgcolor: (theme) =>
-                                alpha(theme.palette.success.main, 0.08),
-                              "&:hover": {
-                                bgcolor: (theme) =>
-                                  alpha(theme.palette.success.main, 0.16),
-                              },
-                            }}
-                          >
-                            {groupDialogLoading ? (
-                              <CircularProgress size={16} color="success" />
-                            ) : (
-                              <CheckIcon />
-                            )}
-                          </IconButton>
-                          <IconButton
-                            size="small"
-                            disabled={groupDialogLoading}
-                            onClick={() => {
-                              setGroupDraft((current) => ({
-                                ...current,
-                                name: selectedGroup?.name ?? "",
-                              }));
-                              setGroupFieldErrors((current) => ({
-                                ...current,
-                                name: undefined,
-                              }));
-                              setGroupDialogEditingFields((prev) =>
-                                prev.filter((field) => field !== "name"),
-                              );
-                            }}
-                            sx={{
-                              borderRadius: 1.5,
-                              color: "text.secondary",
-                              "&:hover": {
-                                bgcolor: (theme) =>
-                                  alpha(theme.palette.text.primary, 0.06),
-                              },
-                            }}
-                          >
-                            <CloseIcon />
-                          </IconButton>
-                        </Box>
+                        <SchoolIcon fontSize="small" />
                       </Box>
-                      {(groupFieldErrors.name ||
-                        groupDraft.name.length > 0) && (
-                        <Typography
-                          variant="caption"
-                          color={
-                            groupFieldErrors.name ? "error" : "text.secondary"
-                          }
-                          sx={{ display: "block", mt: 0.5 }}
-                        >
-                          {groupFieldErrors.name ??
-                            `${groupDraft.name.length}/${INPUT_LIMITS.groupName}`}
-                        </Typography>
-                      )}
-                    </>
-                  ) : (
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        gap: 2,
-                      }}
-                    >
-                      <Box sx={{ minWidth: 0 }}>
+                      <Box sx={{ minWidth: 0, flex: 1 }}>
                         <Typography
                           variant="caption"
                           color="text.secondary"
                           display="block"
+                          sx={{ mb: 0.75 }}
                         >
+                          Edycja nazwy grupy
+                        </Typography>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            gap: 1,
+                            alignItems: "center",
+                          }}
+                        >
+                          <TextField
+                            value={groupDraft.name}
+                            onChange={(event) => {
+                              setGroupFieldErrors((current) => ({
+                                ...current,
+                                name: undefined,
+                              }));
+                              setGroupDraft((current) => ({
+                                ...current,
+                                name: event.target.value.slice(
+                                  0,
+                                  INPUT_LIMITS.groupName,
+                                ),
+                              }));
+                            }}
+                            autoFocus
+                            size="small"
+                            fullWidth
+                            inputProps={{ maxLength: INPUT_LIMITS.groupName }}
+                            error={Boolean(groupFieldErrors.name)}
+                            sx={counterFieldSx}
+                          />
+                          <Box sx={compactInlineActionsWrapSx}>
+                            <IconButton
+                              size="small"
+                              disabled={groupDialogLoading}
+                              onClick={() => saveGroupInlineSection("name")}
+                              sx={compactInlineConfirmButtonSx}
+                            >
+                              {groupDialogLoading ? (
+                                <CircularProgress size={14} color="inherit" />
+                              ) : (
+                                <CheckIcon sx={{ fontSize: 18 }} />
+                              )}
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              disabled={groupDialogLoading}
+                              onClick={() => {
+                                setGroupDraft((current) => ({
+                                  ...current,
+                                  name: selectedGroup?.name ?? "",
+                                }));
+                                setGroupFieldErrors((current) => ({
+                                  ...current,
+                                  name: undefined,
+                                }));
+                                setGroupDialogEditingFields((prev) =>
+                                  prev.filter((field) => field !== "name"),
+                                );
+                              }}
+                              sx={compactInlineCancelButtonSx}
+                            >
+                              <CloseIcon sx={{ fontSize: 18 }} />
+                            </IconButton>
+                          </Box>
+                        </Box>
+                        {(groupFieldErrors.name ||
+                          groupDraft.name.length > 0) && (
+                          <Typography
+                            variant="caption"
+                            color={
+                              groupFieldErrors.name ? "error" : "text.secondary"
+                            }
+                            sx={{ display: "block", mt: 0.5 }}
+                          >
+                            {groupFieldErrors.name ??
+                              `${groupDraft.name.length}/${INPUT_LIMITS.groupName}`}
+                          </Typography>
+                        )}
+                      </Box>
+                    </Box>
+                  ) : (
+                    <Box
+                      sx={{
+                        ...settingsRowSx,
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <Box sx={settingsRowIconTileSx}>
+                        <SchoolIcon fontSize="small" />
+                      </Box>
+                      <Box sx={{ minWidth: 0, flex: 1 }}>
+                        <Typography variant="caption" sx={settingsRowLabelSx}>
                           Nazwa grupy
                         </Typography>
-                        <Typography variant="body2" fontWeight={500}>
+                        <Typography
+                          variant="body2"
+                          fontWeight={700}
+                          fontSize="1rem"
+                        >
                           {groupDraft.name || "—"}
                         </Typography>
                       </Box>
@@ -5033,12 +5196,7 @@ export function AdminDashboard() {
                             "name",
                           ])
                         }
-                        sx={{
-                          textTransform: "none",
-                          fontWeight: 500,
-                          fontSize: "0.8rem",
-                          flexShrink: 0,
-                        }}
+                        sx={inlineChangeButtonSx}
                       >
                         Zmień
                       </Button>
@@ -5048,164 +5206,153 @@ export function AdminDashboard() {
 
                 <Box
                   sx={{
-                    px: 2,
-                    py: 1.5,
+                    ...getInlineEditSectionSx(
+                      groupDialogEditingFields.includes("description"),
+                    ),
                     borderBottom: "1px solid",
-                    borderColor: "divider",
+                    borderBottomColor: "divider",
                   }}
                 >
                   {groupDialogEditingFields.includes("description") ? (
-                    <>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        display="block"
-                        sx={{ mb: 0.75 }}
-                      >
-                        Edycja opisu grupy
-                      </Typography>
+                    <Box sx={settingsRowSx}>
                       <Box
                         sx={{
-                          display: "flex",
-                          gap: 1,
-                          alignItems: "flex-start",
+                          ...settingsRowIconTileSx,
+                          alignSelf: "flex-start",
+                          mt: 0.25,
                         }}
                       >
-                        <TextField
-                          value={groupDraft.description}
-                          onChange={(event) => {
-                            setGroupFieldErrors((current) => ({
-                              ...current,
-                              description: undefined,
-                            }));
-                            setGroupDraft((current) => ({
-                              ...current,
-                              description: event.target.value.slice(
-                                0,
-                                INPUT_LIMITS.groupDescription,
-                              ),
-                            }));
-                          }}
-                          multiline
-                          minRows={2}
-                          autoFocus
-                          size="small"
-                          fullWidth
-                          inputProps={{
-                            maxLength: INPUT_LIMITS.groupDescription,
-                          }}
-                          error={Boolean(groupFieldErrors.description)}
-                          sx={{
-                            ...counterFieldSx,
-                            "& .MuiOutlinedInput-root": {
-                              alignItems: "flex-start",
-                              py: 0.3,
-                            },
-                            "& .MuiInputBase-inputMultiline": {
-                              lineHeight: 1.65,
-                              resize: "vertical",
-                              minHeight: 48,
-                              pt: 1.2,
-                              pb: 0.85,
-                            },
-                          }}
-                        />
-                        <Box
-                          sx={{
-                            display: "flex",
-                            gap: 0.5,
-                            flexShrink: 0,
-                            pt: "3px",
-                          }}
-                        >
-                          <IconButton
-                            size="small"
-                            disabled={groupDialogLoading}
-                            onClick={() =>
-                              saveGroupInlineSection("description")
-                            }
-                            sx={{
-                              borderRadius: 1.5,
-                              color: "success.main",
-                              bgcolor: (theme) =>
-                                alpha(theme.palette.success.main, 0.08),
-                              "&:hover": {
-                                bgcolor: (theme) =>
-                                  alpha(theme.palette.success.main, 0.16),
-                              },
-                            }}
-                          >
-                            {groupDialogLoading ? (
-                              <CircularProgress size={16} color="success" />
-                            ) : (
-                              <CheckIcon />
-                            )}
-                          </IconButton>
-                          <IconButton
-                            size="small"
-                            disabled={groupDialogLoading}
-                            onClick={() => {
-                              setGroupDraft((current) => ({
-                                ...current,
-                                description: selectedGroup?.description ?? "",
-                              }));
-                              setGroupFieldErrors((current) => ({
-                                ...current,
-                                description: undefined,
-                              }));
-                              setGroupDialogEditingFields((prev) =>
-                                prev.filter((field) => field !== "description"),
-                              );
-                            }}
-                            sx={{
-                              borderRadius: 1.5,
-                              color: "text.secondary",
-                              "&:hover": {
-                                bgcolor: (theme) =>
-                                  alpha(theme.palette.text.primary, 0.06),
-                              },
-                            }}
-                          >
-                            <CloseIcon />
-                          </IconButton>
-                        </Box>
+                        <ListIcon fontSize="small" />
                       </Box>
-                      {(groupFieldErrors.description ||
-                        groupDraft.description.length > 0) && (
-                        <Typography
-                          variant="caption"
-                          color={
-                            groupFieldErrors.description
-                              ? "error"
-                              : "text.secondary"
-                          }
-                          sx={{ display: "block", mt: 0.5 }}
-                        >
-                          {groupFieldErrors.description ??
-                            `${groupDraft.description.length}/${INPUT_LIMITS.groupDescription}`}
-                        </Typography>
-                      )}
-                    </>
-                  ) : (
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "flex-start",
-                        justifyContent: "space-between",
-                        gap: 2,
-                      }}
-                    >
-                      <Box sx={{ minWidth: 0 }}>
+                      <Box sx={{ minWidth: 0, flex: 1 }}>
                         <Typography
                           variant="caption"
                           color="text.secondary"
                           display="block"
+                          sx={{ mb: 0.75 }}
                         >
+                          Edycja opisu grupy
+                        </Typography>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            gap: 1,
+                            alignItems: "flex-start",
+                          }}
+                        >
+                          <TextField
+                            value={groupDraft.description}
+                            onChange={(event) => {
+                              setGroupFieldErrors((current) => ({
+                                ...current,
+                                description: undefined,
+                              }));
+                              setGroupDraft((current) => ({
+                                ...current,
+                                description: event.target.value.slice(
+                                  0,
+                                  INPUT_LIMITS.groupDescription,
+                                ),
+                              }));
+                            }}
+                            multiline
+                            minRows={2}
+                            autoFocus
+                            size="small"
+                            fullWidth
+                            inputProps={{
+                              maxLength: INPUT_LIMITS.groupDescription,
+                            }}
+                            error={Boolean(groupFieldErrors.description)}
+                            sx={{
+                              ...counterFieldSx,
+                              "& .MuiOutlinedInput-root": {
+                                alignItems: "flex-start",
+                                py: 0.3,
+                              },
+                              "& .MuiInputBase-inputMultiline": {
+                                lineHeight: 1.65,
+                                resize: "vertical",
+                                minHeight: 48,
+                                pt: 1.2,
+                                pb: 0.85,
+                              },
+                            }}
+                          />
+                          <Box sx={compactInlineActionsWrapSx}>
+                            <IconButton
+                              size="small"
+                              disabled={groupDialogLoading}
+                              onClick={() =>
+                                saveGroupInlineSection("description")
+                              }
+                              sx={compactInlineConfirmButtonSx}
+                            >
+                              {groupDialogLoading ? (
+                                <CircularProgress size={14} color="inherit" />
+                              ) : (
+                                <CheckIcon sx={{ fontSize: 18 }} />
+                              )}
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              disabled={groupDialogLoading}
+                              onClick={() => {
+                                setGroupDraft((current) => ({
+                                  ...current,
+                                  description: selectedGroup?.description ?? "",
+                                }));
+                                setGroupFieldErrors((current) => ({
+                                  ...current,
+                                  description: undefined,
+                                }));
+                                setGroupDialogEditingFields((prev) =>
+                                  prev.filter(
+                                    (field) => field !== "description",
+                                  ),
+                                );
+                              }}
+                              sx={compactInlineCancelButtonSx}
+                            >
+                              <CloseIcon sx={{ fontSize: 18 }} />
+                            </IconButton>
+                          </Box>
+                        </Box>
+                        {(groupFieldErrors.description ||
+                          groupDraft.description.length > 0) && (
+                          <Typography
+                            variant="caption"
+                            color={
+                              groupFieldErrors.description
+                                ? "error"
+                                : "text.secondary"
+                            }
+                            sx={{ display: "block", mt: 0.5 }}
+                          >
+                            {groupFieldErrors.description ??
+                              `${groupDraft.description.length}/${INPUT_LIMITS.groupDescription}`}
+                          </Typography>
+                        )}
+                      </Box>
+                    </Box>
+                  ) : (
+                    <Box
+                      sx={{
+                        ...settingsRowSx,
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <Box sx={settingsRowIconTileSx}>
+                        <ListIcon fontSize="small" />
+                      </Box>
+                      <Box sx={{ minWidth: 0, flex: 1 }}>
+                        <Typography variant="caption" sx={settingsRowLabelSx}>
                           Opis grupy
                         </Typography>
                         <Typography
                           variant="body2"
-                          fontWeight={500}
+                          fontWeight={700}
+                          fontSize="1rem"
                           sx={{ color: "text.primary", whiteSpace: "pre-wrap" }}
                         >
                           {groupDraft.description?.trim() ||
@@ -5220,13 +5367,7 @@ export function AdminDashboard() {
                             "description",
                           ])
                         }
-                        sx={{
-                          textTransform: "none",
-                          fontWeight: 500,
-                          fontSize: "0.8rem",
-                          flexShrink: 0,
-                          mt: 0.125,
-                        }}
+                        sx={inlineChangeButtonSx}
                       >
                         Zmień
                       </Button>
@@ -5234,192 +5375,170 @@ export function AdminDashboard() {
                   )}
                 </Box>
 
-                <Box sx={{ px: 2, py: 1.5 }}>
+                <Box
+                  sx={getInlineEditSectionSx(
+                    groupDialogEditingFields.includes("teacherPublicId"),
+                  )}
+                >
                   {groupDialogEditingFields.includes("teacherPublicId") ? (
-                    <>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        display="block"
-                        sx={{ mb: 0.75 }}
-                      >
-                        Edycja nauczyciela prowadzącego
-                      </Typography>
+                    <Box sx={settingsRowSx}>
                       <Box
                         sx={{
-                          display: "flex",
-                          gap: 1,
-                          alignItems: "center",
+                          ...settingsRowIconTileSx,
+                          alignSelf: "flex-start",
+                          mt: 0.25,
                         }}
                       >
-                        <TextField
-                          select
-                          value={groupDraft.teacherPublicId}
-                          onChange={(event) => {
-                            setGroupFieldErrors((current) => ({
-                              ...current,
-                              teacherPublicId: undefined,
-                            }));
-                            setGroupDraft((current) => ({
-                              ...current,
-                              teacherPublicId: event.target.value,
-                            }));
-                          }}
-                          SelectProps={{
-                            displayEmpty: true,
-                            IconComponent: ExpandMoreIcon,
-                          }}
-                          fullWidth
-                          size="small"
-                          autoFocus
-                          error={Boolean(groupFieldErrors.teacherPublicId)}
-                        >
-                          <MenuItem value="">
-                            Bez przypisanego nauczyciela
-                          </MenuItem>
-                          {teachers.map((teacher) => (
-                            <MenuItem
-                              key={teacher.publicId}
-                              value={teacher.publicId}
-                              sx={{ py: 1.25 }}
-                            >
-                              <Stack
-                                direction="row"
-                                spacing={1.5}
-                                alignItems="center"
-                              >
-                                <UserAvatar
-                                  avatarUrl={teacher.avatarUrl}
-                                  username={teacher.username}
-                                  size={26}
-                                />
-                                <Box sx={{ minWidth: 0 }}>
-                                  <Typography
-                                    variant="body2"
-                                    fontWeight={600}
-                                    noWrap
-                                  >
-                                    {teacher.username}
-                                  </Typography>
-                                  <Typography
-                                    variant="caption"
-                                    color="text.secondary"
-                                    noWrap
-                                  >
-                                    {teacher.email}
-                                  </Typography>
-                                </Box>
-                              </Stack>
-                            </MenuItem>
-                          ))}
-                        </TextField>
-                        <Box
-                          sx={{
-                            display: "flex",
-                            gap: 0.5,
-                            flexShrink: 0,
-                          }}
-                        >
-                          <IconButton
-                            size="small"
-                            disabled={groupDialogLoading}
-                            onClick={() =>
-                              saveGroupInlineSection("teacherPublicId")
-                            }
-                            sx={{
-                              ...inlineEditConfirmButtonSx,
-                              width: 32,
-                              height: 32,
-                              bgcolor: alpha("#10B981", 0.08),
-                              color: "#10B981",
-                              border: "1px solid",
-                              borderColor: alpha("#10B981", 0.2),
-                              "&:hover": {
-                                bgcolor: alpha("#10B981", 0.15),
-                                borderColor: alpha("#10B981", 0.3),
-                              },
-                              "&.Mui-disabled": {
-                                bgcolor: alpha("#64748B", 0.05),
-                                borderColor: alpha("#64748B", 0.1),
-                              },
-                            }}
-                          >
-                            {groupDialogLoading ? (
-                              <CircularProgress size={14} color="inherit" />
-                            ) : (
-                              <CheckIcon sx={{ fontSize: 18 }} />
-                            )}
-                          </IconButton>
-                          <IconButton
-                            size="small"
-                            disabled={groupDialogLoading}
-                            onClick={() => {
-                              setGroupDraft((current) => ({
-                                ...current,
-                                teacherPublicId:
-                                  selectedGroup?.teacherPublicId ?? "",
-                              }));
-                              setGroupFieldErrors((current) => ({
-                                ...current,
-                                teacherPublicId: undefined,
-                              }));
-                              setGroupDialogEditingFields((prev) =>
-                                prev.filter(
-                                  (field) => field !== "teacherPublicId",
-                                ),
-                              );
-                            }}
-                            sx={{
-                              ...inlineEditCancelButtonSx,
-                              width: 32,
-                              height: 32,
-                              bgcolor: alpha("#64748B", 0.06),
-                              color: "#64748B",
-                              border: "1px solid",
-                              borderColor: alpha("#64748B", 0.15),
-                              "&:hover": {
-                                bgcolor: alpha("#64748B", 0.12),
-                                borderColor: alpha("#64748B", 0.25),
-                              },
-                            }}
-                          >
-                            <CloseIcon sx={{ fontSize: 18 }} />
-                          </IconButton>
-                        </Box>
+                        <PersonIcon fontSize="small" />
                       </Box>
-                      {groupFieldErrors.teacherPublicId && (
-                        <Typography
-                          variant="caption"
-                          color="error"
-                          sx={{ display: "block", mt: 0.5 }}
-                        >
-                          {groupFieldErrors.teacherPublicId}
-                        </Typography>
-                      )}
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ display: "block", mt: 0.5 }}
-                      >
-                        Możesz przypisać nowego opiekuna lub pozostawić grupę
-                        bez nauczyciela.
-                      </Typography>
-                    </>
-                  ) : (
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        gap: 2,
-                      }}
-                    >
-                      <Box sx={{ minWidth: 0 }}>
+                      <Box sx={{ minWidth: 0, flex: 1 }}>
                         <Typography
                           variant="caption"
                           color="text.secondary"
                           display="block"
+                          sx={{ mb: 0.75 }}
                         >
+                          Edycja nauczyciela prowadzącego
+                        </Typography>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            gap: 1,
+                            alignItems: "center",
+                          }}
+                        >
+                          <TextField
+                            select
+                            value={groupDraft.teacherPublicId}
+                            onChange={(event) => {
+                              setGroupFieldErrors((current) => ({
+                                ...current,
+                                teacherPublicId: undefined,
+                              }));
+                              setGroupDraft((current) => ({
+                                ...current,
+                                teacherPublicId: event.target.value,
+                              }));
+                            }}
+                            SelectProps={{
+                              displayEmpty: true,
+                              IconComponent: ExpandMoreIcon,
+                            }}
+                            fullWidth
+                            size="small"
+                            autoFocus
+                            error={Boolean(groupFieldErrors.teacherPublicId)}
+                          >
+                            <MenuItem value="">
+                              Bez przypisanego nauczyciela
+                            </MenuItem>
+                            {teachers.map((teacher) => (
+                              <MenuItem
+                                key={teacher.publicId}
+                                value={teacher.publicId}
+                                sx={{ py: 1.25 }}
+                              >
+                                <Stack
+                                  direction="row"
+                                  spacing={1.5}
+                                  alignItems="center"
+                                >
+                                  <UserAvatar
+                                    avatarUrl={teacher.avatarUrl}
+                                    username={teacher.username}
+                                    size={26}
+                                  />
+                                  <Box sx={{ minWidth: 0 }}>
+                                    <Typography
+                                      variant="body2"
+                                      fontWeight={600}
+                                      noWrap
+                                    >
+                                      {teacher.username}
+                                    </Typography>
+                                    <Typography
+                                      variant="caption"
+                                      color="text.secondary"
+                                      noWrap
+                                    >
+                                      {teacher.email}
+                                    </Typography>
+                                  </Box>
+                                </Stack>
+                              </MenuItem>
+                            ))}
+                          </TextField>
+                          <Box sx={compactInlineActionsWrapSx}>
+                            <IconButton
+                              size="small"
+                              disabled={groupDialogLoading}
+                              onClick={() =>
+                                saveGroupInlineSection("teacherPublicId")
+                              }
+                              sx={compactInlineConfirmButtonSx}
+                            >
+                              {groupDialogLoading ? (
+                                <CircularProgress size={14} color="inherit" />
+                              ) : (
+                                <CheckIcon sx={{ fontSize: 18 }} />
+                              )}
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              disabled={groupDialogLoading}
+                              onClick={() => {
+                                setGroupDraft((current) => ({
+                                  ...current,
+                                  teacherPublicId:
+                                    selectedGroup?.teacherPublicId ?? "",
+                                }));
+                                setGroupFieldErrors((current) => ({
+                                  ...current,
+                                  teacherPublicId: undefined,
+                                }));
+                                setGroupDialogEditingFields((prev) =>
+                                  prev.filter(
+                                    (field) => field !== "teacherPublicId",
+                                  ),
+                                );
+                              }}
+                              sx={compactInlineCancelButtonSx}
+                            >
+                              <CloseIcon sx={{ fontSize: 18 }} />
+                            </IconButton>
+                          </Box>
+                        </Box>
+                        {groupFieldErrors.teacherPublicId && (
+                          <Typography
+                            variant="caption"
+                            color="error"
+                            sx={{ display: "block", mt: 0.5 }}
+                          >
+                            {groupFieldErrors.teacherPublicId}
+                          </Typography>
+                        )}
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ display: "block", mt: 0.5 }}
+                        >
+                          Możesz przypisać nowego opiekuna lub pozostawić grupę
+                          bez nauczyciela.
+                        </Typography>
+                      </Box>
+                    </Box>
+                  ) : (
+                    <Box
+                      sx={{
+                        ...settingsRowSx,
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <Box sx={settingsRowIconTileSx}>
+                        <PersonIcon fontSize="small" />
+                      </Box>
+                      <Box sx={{ minWidth: 0, flex: 1 }}>
+                        <Typography variant="caption" sx={settingsRowLabelSx}>
                           Nauczyciel prowadzący
                         </Typography>
                         {groupDraft.teacherPublicId ? (
@@ -5440,28 +5559,22 @@ export function AdminDashboard() {
                             <Box sx={{ minWidth: 0 }}>
                               <Typography
                                 variant="body2"
-                                fontWeight={500}
+                                fontWeight={700}
+                                fontSize="1rem"
                                 noWrap
                               >
                                 {teacherNameById.get(
                                   groupDraft.teacherPublicId,
                                 ) ?? "Brak danych"}
                               </Typography>
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                noWrap
-                              >
-                                {teachers.find(
-                                  (teacher) =>
-                                    teacher.publicId ===
-                                    groupDraft.teacherPublicId,
-                                )?.email ?? "Brak danych"}
-                              </Typography>
                             </Box>
                           </Stack>
                         ) : (
-                          <Typography variant="body2" fontWeight={500}>
+                          <Typography
+                            variant="body2"
+                            fontWeight={700}
+                            fontSize="1rem"
+                          >
                             Bez przypisanego nauczyciela
                           </Typography>
                         )}
@@ -5474,12 +5587,7 @@ export function AdminDashboard() {
                             "teacherPublicId",
                           ])
                         }
-                        sx={{
-                          textTransform: "none",
-                          fontWeight: 500,
-                          fontSize: "0.8rem",
-                          flexShrink: 0,
-                        }}
+                        sx={inlineChangeButtonSx}
                       >
                         Zmień
                       </Button>
@@ -5542,7 +5650,7 @@ export function AdminDashboard() {
                 label="Ostrzeżenie"
                 size="small"
                 color="error"
-                sx={{ fontWeight: 700 }}
+                sx={membershipHeaderBadgeSx}
               />
             }
           />
@@ -5638,7 +5746,8 @@ export function AdminDashboard() {
                 label="Członkowie"
                 size="small"
                 color="primary"
-                sx={{ fontWeight: 700 }}
+                variant="outlined"
+                sx={membershipHeaderBadgeSx}
               />
             }
           />
@@ -5754,7 +5863,7 @@ export function AdminDashboard() {
                                 removeMembershipStudent(student.publicId)
                               }
                               disabled={membershipLoading}
-                              sx={panelDeleteButtonSx}
+                              sx={userCardDeleteButtonSx}
                             >
                               Usuń
                             </Button>
@@ -5811,14 +5920,7 @@ export function AdminDashboard() {
                       disabled={
                         membershipLoading || membershipStudentPublicId === ""
                       }
-                      sx={{
-                        ...panelFooterButtonSx,
-                        height: 40,
-                        px: 1.6,
-                        flexShrink: 0,
-                        whiteSpace: "nowrap",
-                        alignSelf: { xs: "stretch", sm: "auto" },
-                      }}
+                      sx={membershipAddButtonSx}
                     >
                       {membershipLoading ? "Dodawanie..." : "Dodaj"}
                     </Button>

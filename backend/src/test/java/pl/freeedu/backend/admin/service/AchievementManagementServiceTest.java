@@ -196,6 +196,30 @@ class AchievementManagementServiceTest {
 				.verifyComplete();
 	}
 
+	@Test
+	void shouldDeleteAchievement() {
+		Achievement existing = achievement("DELETE_ME", "Delete me", AchievementType.LESSONS_COMPLETED, 1, true, 1);
+		when(achievementRepository.findByCode("DELETE_ME")).thenReturn(Optional.of(existing));
+
+		Mono<Void> result = achievementManagementService.deleteAchievement("DELETE_ME");
+
+		StepVerifier.create(result).verifyComplete();
+		verify(achievementRepository).delete(existing);
+	}
+
+	@Test
+	void shouldReturnNotFoundWhenDeletingMissingAchievement() {
+		when(achievementRepository.findByCode("MISSING_DELETE")).thenReturn(Optional.empty());
+
+		Mono<Void> result = achievementManagementService.deleteAchievement("MISSING_DELETE");
+
+		StepVerifier.create(result).expectErrorSatisfies(error -> {
+			assertTrue(error instanceof AchievementException);
+			assertEquals(AchievementErrorCode.ACHIEVEMENT_NOT_FOUND, ((AchievementException) error).getErrorCode());
+		}).verify();
+		verify(achievementRepository, never()).delete(any());
+	}
+
 	private Achievement achievement(String code, String title, AchievementType type, Integer threshold, Boolean active,
 			Integer sortOrder) {
 		return Achievement.builder().code(code).name(title).description("Description").icon("icon").color("warning")

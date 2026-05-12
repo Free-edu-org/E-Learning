@@ -8,6 +8,7 @@ import {
   Stack,
   TextField,
   Collapse,
+  Divider,
   Typography,
   InputAdornment,
   CircularProgress,
@@ -22,13 +23,13 @@ import {
   VisibilityOffOutlined as VisibilityOffIcon,
 } from "@mui/icons-material";
 import { alpha, useTheme } from "@mui/material/styles";
+import type { SxProps, Theme } from "@mui/material/styles";
 import { userService, type UserProfile } from "@/api/userService";
 import { requestAchievementNotificationsRefresh } from "@/components/achievements/achievementNotificationEvents";
 import {
   AppDialog,
   AppDialogHeader,
   AppDialogBody,
-  AppDialogFooter,
   AppDialogStatus,
 } from "@/components/ui/dialog/AppDialog";
 import { useAuth } from "@/context/AuthContext";
@@ -50,6 +51,167 @@ interface AccountSettingsDialogProps {
 }
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const inlineEditAccentColor = "#6366F1";
+
+const inlineEditIconButtonSx: SxProps<Theme> = {
+  width: 34,
+  height: 34,
+  borderRadius: "50%",
+  border: "1px solid",
+  borderColor: (theme: Theme) => alpha(theme.palette.text.primary, 0.08),
+  bgcolor: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.common.white, 0.9)
+      : alpha(theme.palette.common.white, 0.02),
+  boxShadow: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? "0 6px 14px rgba(15, 23, 42, 0.06)"
+      : "none",
+  "& .MuiSvgIcon-root": {
+    fontSize: 18,
+  },
+};
+
+const compactInlineConfirmButtonSx: SxProps<Theme> = {
+  ...inlineEditIconButtonSx,
+  width: 32,
+  height: 32,
+  bgcolor: alpha("#10B981", 0.08),
+  color: "#10B981",
+  border: "1px solid",
+  borderColor: alpha("#10B981", 0.2),
+  "&:hover": {
+    bgcolor: alpha("#10B981", 0.15),
+    borderColor: alpha("#10B981", 0.3),
+  },
+  "&.Mui-disabled": {
+    bgcolor: alpha("#64748B", 0.05),
+    borderColor: alpha("#64748B", 0.1),
+  },
+};
+
+const compactInlineCancelButtonSx: SxProps<Theme> = {
+  ...inlineEditIconButtonSx,
+  width: 32,
+  height: 32,
+  bgcolor: alpha("#64748B", 0.06),
+  color: "#64748B",
+  border: "1px solid",
+  borderColor: alpha("#64748B", 0.15),
+  "&:hover": {
+    bgcolor: alpha("#64748B", 0.12),
+    borderColor: alpha("#64748B", 0.25),
+  },
+};
+
+const compactInlineActionsWrapSx: SxProps<Theme> = {
+  display: "flex",
+  flexDirection: "row",
+  gap: 1,
+  alignItems: "center",
+  mt: 0.5,
+  flexShrink: 0,
+};
+
+const inlineChangeButtonSx: SxProps<Theme> = {
+  textTransform: "none",
+  fontWeight: 600,
+  fontSize: "0.82rem",
+  borderRadius: "10px",
+  px: 1.5,
+  whiteSpace: "nowrap",
+  bgcolor: (theme: Theme) => alpha(theme.palette.text.primary, 0.03),
+  "&:hover": {
+    bgcolor: (theme: Theme) => alpha(theme.palette.text.primary, 0.07),
+  },
+};
+
+function getInlineEditSectionSx(isEditing: boolean): SxProps<Theme> {
+  return {
+    p: isEditing ? 2.75 : 2.25,
+    bgcolor: isEditing ? alpha(inlineEditAccentColor, 0.035) : "transparent",
+    borderLeft: isEditing ? "4px solid" : "none",
+    borderLeftColor: inlineEditAccentColor,
+    display: "flex",
+    alignItems: "flex-start",
+    gap: 2.5,
+    transition: "all 0.25s ease",
+    "&:hover": {
+      bgcolor: (theme: Theme) =>
+        isEditing
+          ? alpha(inlineEditAccentColor, 0.05)
+          : theme.palette.mode === "light"
+            ? alpha(theme.palette.text.primary, 0.01)
+            : alpha(theme.palette.common.white, 0.02),
+    },
+  };
+}
+
+const modalOutlinedInputSx = {
+  bgcolor: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.common.white, 0.18)
+      : alpha(theme.palette.common.white, 0.015),
+  minHeight: 40,
+  alignItems: "center",
+  border: "1px solid",
+  borderColor: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.text.primary, 0.08)
+      : alpha(theme.palette.common.white, 0.08),
+  boxShadow: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? "0 4px 12px rgba(15, 23, 42, 0.04)"
+      : "inset 0 1px 0 rgba(255,255,255,0.02)",
+  transition:
+    "border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease",
+  "& fieldset": {
+    border: "none",
+  },
+  "&:hover": {
+    borderColor: (theme: Theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.primary.main, 0.16)
+        : alpha(theme.palette.primary.light, 0.18),
+  },
+  "&.Mui-focused": {
+    borderColor: inlineEditAccentColor,
+    boxShadow: `0 0 0 3px ${alpha(inlineEditAccentColor, 0.12)}`,
+  },
+};
+
+const modalFieldSx: SxProps<Theme> = {
+  "& .MuiOutlinedInput-root": modalOutlinedInputSx,
+  "& .MuiInputBase-input": {
+    fontSize: "0.92rem",
+    lineHeight: 1.2,
+    paddingTop: 0.75,
+    paddingBottom: 0.75,
+    boxSizing: "border-box",
+  },
+  "& .MuiInputLabel-root": {
+    fontSize: "0.90rem",
+  },
+};
+
+const modalSectionSurfaceSx: SxProps<Theme> = {
+  borderRadius: 3,
+  bgcolor: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? "rgba(255, 255, 255, 0.78)"
+      : "transparent",
+  border: "1px solid",
+  borderColor: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? "rgba(148, 163, 184, 0.14)"
+      : "rgba(255, 255, 255, 0.06)",
+  backdropFilter: "blur(14px)",
+  boxShadow: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? "0 16px 32px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255,255,255,0.6)"
+      : "0 12px 24px rgba(0, 0, 0, 0.18)",
+  overflow: "hidden",
+};
 
 export function AccountSettingsDialog({
   open,
@@ -488,52 +650,438 @@ export function AccountSettingsDialog({
 
           {/* Profile Section */}
           <FormSection title="Dane profilowe">
-            <Stack spacing={2.5}>
-              {/* Username Row */}
-              <Box>
-                {isEditingUsername ? (
+            <Box sx={modalSectionSurfaceSx}>
+              <Stack spacing={0}>
+                {/* Username Row */}
+                <Box sx={getInlineEditSectionSx(isEditingUsername)}>
+                  {isEditingUsername ? (
+                    <Box sx={{ flex: 1 }}>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        fontWeight={700}
+                        display="block"
+                        sx={{
+                          mb: 1.5,
+                          letterSpacing: "0.02em",
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        Edycja nazwy użytkownika
+                      </Typography>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          gap: 1.25,
+                          alignItems: "flex-start",
+                        }}
+                      >
+                        <TextField
+                          fullWidth
+                          size="small"
+                          value={username}
+                          onChange={(e) => {
+                            setFieldErrors((curr) => ({
+                              ...curr,
+                              username: "",
+                            }));
+                            setUsername(
+                              e.target.value.slice(0, INPUT_LIMITS.username),
+                            );
+                          }}
+                          placeholder="Wprowadź nową nazwę"
+                          autoFocus
+                          error={Boolean(fieldErrors.username)}
+                          helperText={
+                            fieldErrors.username ||
+                            `Nazwa widoczna dla innych. Max ${INPUT_LIMITS.username} znaków.`
+                          }
+                          sx={{
+                            ...modalFieldSx,
+                            "& .MuiOutlinedInput-root": {
+                              ...modalOutlinedInputSx,
+                              ...(fieldErrors.username && {
+                                bgcolor: alpha("#EF4444", 0.02),
+                                "& fieldset": {
+                                  borderColor: alpha("#EF4444", 0.2),
+                                },
+                              }),
+                            },
+                          }}
+                        />
+                        <Box sx={compactInlineActionsWrapSx}>
+                          <IconButton
+                            onClick={handleSaveProfile}
+                            disabled={profileLoading}
+                            size="small"
+                            sx={compactInlineConfirmButtonSx}
+                          >
+                            <CheckIcon sx={{ fontSize: 18 }} />
+                          </IconButton>
+                          <IconButton
+                            onClick={() => {
+                              setIsEditingUsername(false);
+                              setUsername(user?.username || "");
+                              setFieldErrors((curr) => ({
+                                ...curr,
+                                username: "",
+                              }));
+                            }}
+                            size="small"
+                            sx={compactInlineCancelButtonSx}
+                          >
+                            <CloseIcon sx={{ fontSize: 18 }} />
+                          </IconButton>
+                        </Box>
+                      </Box>
+                    </Box>
+                  ) : (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        minHeight: 48,
+                        flex: 1,
+                      }}
+                    >
+                      <Box>
+                        <Typography
+                          variant="caption"
+                          fontWeight={700}
+                          sx={{
+                            color: "text.secondary",
+                            textTransform: "uppercase",
+                          }}
+                        >
+                          Nazwa użytkownika
+                        </Typography>
+                        <Typography fontWeight={600}>
+                          {user?.username}
+                        </Typography>
+                      </Box>
+                      <Button
+                        size="small"
+                        onClick={() => {
+                          setIsEditingUsername(true);
+                          resetFeedback();
+                        }}
+                        sx={inlineChangeButtonSx}
+                      >
+                        Zmień
+                      </Button>
+                    </Box>
+                  )}
+                </Box>
+
+                <Divider
+                  sx={{
+                    borderColor: (theme) =>
+                      theme.palette.mode === "light"
+                        ? "rgba(148, 163, 184, 0.12)"
+                        : "rgba(255, 255, 255, 0.05)",
+                  }}
+                />
+
+                {/* Email Row */}
+                <Box sx={getInlineEditSectionSx(isEditingEmail)}>
+                  {isEditingEmail ? (
+                    <Box sx={{ flex: 1 }}>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        fontWeight={700}
+                        display="block"
+                        sx={{
+                          mb: 1.5,
+                          letterSpacing: "0.02em",
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        Edycja adresu e-mail
+                      </Typography>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          gap: 1.25,
+                          alignItems: "flex-start",
+                        }}
+                      >
+                        <Stack spacing={1.5} flex={1}>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            value={email}
+                            onChange={(e) => {
+                              setFieldErrors((curr) => ({
+                                ...curr,
+                                email: "",
+                              }));
+                              setEmail(
+                                e.target.value.slice(0, INPUT_LIMITS.email),
+                              );
+                            }}
+                            placeholder="Wprowadź nowy email"
+                            autoFocus
+                            error={Boolean(fieldErrors.email)}
+                            helperText={
+                              fieldErrors.email ||
+                              "Adres do logowania i odzyskiwania hasła."
+                            }
+                            sx={{
+                              ...modalFieldSx,
+                              "& .MuiOutlinedInput-root": {
+                                ...modalOutlinedInputSx,
+                                ...(fieldErrors.email && {
+                                  bgcolor: alpha("#EF4444", 0.02),
+                                  "& fieldset": {
+                                    borderColor: alpha("#EF4444", 0.2),
+                                  },
+                                }),
+                              },
+                            }}
+                          />
+                          <TextField
+                            fullWidth
+                            size="small"
+                            value={confirmEmail}
+                            onChange={(e) => {
+                              setFieldErrors((curr) => ({
+                                ...curr,
+                                confirmEmail: "",
+                              }));
+                              setConfirmEmail(
+                                e.target.value.slice(0, INPUT_LIMITS.email),
+                              );
+                            }}
+                            placeholder="Powtórz nowy email"
+                            error={Boolean(fieldErrors.confirmEmail)}
+                            helperText={fieldErrors.confirmEmail}
+                            sx={{
+                              ...modalFieldSx,
+                              "& .MuiOutlinedInput-root": {
+                                ...modalOutlinedInputSx,
+                                ...(fieldErrors.confirmEmail && {
+                                  bgcolor: alpha("#EF4444", 0.02),
+                                  "& fieldset": {
+                                    borderColor: alpha("#EF4444", 0.2),
+                                  },
+                                }),
+                              },
+                            }}
+                          />
+                        </Stack>
+                        <Box sx={compactInlineActionsWrapSx}>
+                          <IconButton
+                            onClick={handleSaveProfile}
+                            disabled={profileLoading}
+                            size="small"
+                            sx={compactInlineConfirmButtonSx}
+                          >
+                            <CheckIcon sx={{ fontSize: 18 }} />
+                          </IconButton>
+                          <IconButton
+                            onClick={() => {
+                              setIsEditingEmail(false);
+                              setEmail(user?.email || "");
+                              setConfirmEmail("");
+                              setFieldErrors((curr) => ({
+                                ...curr,
+                                email: "",
+                                confirmEmail: "",
+                              }));
+                            }}
+                            size="small"
+                            sx={compactInlineCancelButtonSx}
+                          >
+                            <CloseIcon sx={{ fontSize: 18 }} />
+                          </IconButton>
+                        </Box>
+                      </Box>
+                    </Box>
+                  ) : (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        minHeight: 48,
+                        flex: 1,
+                      }}
+                    >
+                      <Box>
+                        <Typography
+                          variant="caption"
+                          fontWeight={700}
+                          sx={{
+                            color: "text.secondary",
+                            textTransform: "uppercase",
+                          }}
+                        >
+                          Email
+                        </Typography>
+                        <Typography fontWeight={600}>{user?.email}</Typography>
+                      </Box>
+                      <Button
+                        size="small"
+                        onClick={() => {
+                          setIsEditingEmail(true);
+                          setEmail("");
+                          setConfirmEmail("");
+                          resetFeedback();
+                        }}
+                        sx={inlineChangeButtonSx}
+                      >
+                        Zmień
+                      </Button>
+                    </Box>
+                  )}
+                </Box>
+              </Stack>
+            </Box>
+          </FormSection>
+
+          {/* Security Section */}
+          <FormSection title="Bezpieczeństwo" sx={{ mt: 3 }}>
+            <Box sx={modalSectionSurfaceSx}>
+              <Box
+                sx={{
+                  ...getInlineEditSectionSx(passwordExpanded),
+                  width: "100%",
+                  display: "block",
+                }}
+              >
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    flex: 1,
+                    width: "100%",
+                    minHeight: 48,
+                  }}
+                >
                   <Box>
+                    <Typography
+                      variant="caption"
+                      fontWeight={700}
+                      sx={{
+                        color: "text.secondary",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Hasło
+                    </Typography>
+                    <Typography fontWeight={600}>••••••••••••</Typography>
+                  </Box>
+                  <Button
+                    size="small"
+                    onClick={() => {
+                      setPasswordExpanded(!passwordExpanded);
+                      resetFeedback();
+                    }}
+                    sx={{
+                      ...inlineChangeButtonSx,
+                      ml: "auto",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {passwordExpanded ? "Anuluj" : "Zmień hasło"}
+                  </Button>
+                </Box>
+
+                <Collapse in={passwordExpanded}>
+                  <Divider
+                    sx={{
+                      borderColor: (theme) =>
+                        theme.palette.mode === "light"
+                          ? "rgba(148, 163, 184, 0.12)"
+                          : "rgba(255, 255, 255, 0.05)",
+                    }}
+                  />
+                  <Stack
+                    spacing={2.5}
+                    sx={{ mt: 0, p: 2.75, alignItems: "stretch" }}
+                  >
                     <Typography
                       variant="caption"
                       color="text.secondary"
                       fontWeight={700}
                       display="block"
                       sx={{
-                        mb: 1.5,
                         letterSpacing: "0.02em",
                         textTransform: "uppercase",
                       }}
                     >
-                      Edycja nazwy użytkownika
+                      Zmiana hasła
                     </Typography>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        gap: 1.25,
-                        alignItems: "flex-start",
+
+                    <TextField
+                      placeholder="Obecne hasło"
+                      type={showPasswords ? "text" : "password"}
+                      fullWidth
+                      size="small"
+                      value={oldPassword}
+                      onChange={(e) => {
+                        setFieldErrors((curr) => ({
+                          ...curr,
+                          oldPassword: "",
+                        }));
+                        setOldPassword(e.target.value);
                       }}
-                    >
+                      error={Boolean(fieldErrors.oldPassword)}
+                      helperText={fieldErrors.oldPassword}
+                      sx={{
+                        ...modalFieldSx,
+                        "& .MuiOutlinedInput-root": {
+                          ...modalOutlinedInputSx,
+                          ...(fieldErrors.oldPassword && {
+                            bgcolor: alpha("#EF4444", 0.02),
+                            "& fieldset": {
+                              borderColor: alpha("#EF4444", 0.2),
+                            },
+                          }),
+                        },
+                      }}
+                      InputProps={{
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton
+                              onClick={() => setShowPasswords(!showPasswords)}
+                              edge="end"
+                              size="small"
+                            >
+                              {showPasswords ? (
+                                <VisibilityOffIcon />
+                              ) : (
+                                <VisibilityIcon />
+                              )}
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                    <Box>
                       <TextField
+                        placeholder="Nowe hasło"
+                        type={showPasswords ? "text" : "password"}
                         fullWidth
                         size="small"
-                        value={username}
+                        value={newPassword}
                         onChange={(e) => {
-                          setFieldErrors((curr) => ({ ...curr, username: "" }));
-                          setUsername(
-                            e.target.value.slice(0, INPUT_LIMITS.username),
-                          );
+                          setFieldErrors((curr) => ({
+                            ...curr,
+                            newPassword: "",
+                          }));
+                          setNewPassword(e.target.value);
                         }}
-                        placeholder="Wprowadź nową nazwę"
-                        autoFocus
-                        error={Boolean(fieldErrors.username)}
-                        helperText={
-                          fieldErrors.username ||
-                          `Nazwa widoczna dla innych. Max ${INPUT_LIMITS.username} znaków.`
-                        }
+                        error={Boolean(fieldErrors.newPassword)}
+                        helperText={fieldErrors.newPassword}
                         sx={{
+                          ...modalFieldSx,
                           "& .MuiOutlinedInput-root": {
-                            bgcolor: "background.paper",
-                            ...(fieldErrors.username && {
+                            ...modalOutlinedInputSx,
+                            ...(fieldErrors.newPassword && {
                               bgcolor: alpha("#EF4444", 0.02),
                               "& fieldset": {
                                 borderColor: alpha("#EF4444", 0.2),
@@ -541,451 +1089,108 @@ export function AccountSettingsDialog({
                             }),
                           },
                         }}
+                        InputProps={{
+                          endAdornment: (
+                            <InputAdornment position="end">
+                              <IconButton
+                                onClick={() => setShowPasswords(!showPasswords)}
+                                edge="end"
+                                size="small"
+                              >
+                                {showPasswords ? (
+                                  <VisibilityOffIcon />
+                                ) : (
+                                  <VisibilityIcon />
+                                )}
+                              </IconButton>
+                            </InputAdornment>
+                          ),
+                        }}
                       />
-                      <Stack direction="row" spacing={0.75} sx={{ mt: 0.5 }}>
-                        <IconButton
-                          onClick={handleSaveProfile}
-                          disabled={profileLoading}
-                          size="small"
-                          sx={{
-                            bgcolor: alpha("#10b981", 0.08),
-                            color: "#10b981",
-                            "&:hover": { bgcolor: alpha("#10b981", 0.16) },
-                          }}
-                        >
-                          <CheckIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          onClick={() => {
-                            setIsEditingUsername(false);
-                            setUsername(user?.username || "");
-                            setFieldErrors((curr) => ({
-                              ...curr,
-                              username: "",
-                            }));
-                          }}
-                          size="small"
-                          sx={{
-                            bgcolor: alpha("#64748b", 0.08),
-                            color: "#64748b",
-                            "&:hover": { bgcolor: alpha("#64748b", 0.16) },
-                          }}
-                        >
-                          <CloseIcon fontSize="small" />
-                        </IconButton>
-                      </Stack>
-                    </Box>
-                  </Box>
-                ) : (
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      minHeight: 48,
-                    }}
-                  >
-                    <Box>
-                      <Typography
-                        variant="caption"
-                        fontWeight={700}
-                        sx={{
-                          color: "text.secondary",
-                          textTransform: "uppercase",
-                        }}
-                      >
-                        Nazwa użytkownika
-                      </Typography>
-                      <Typography fontWeight={600}>{user?.username}</Typography>
-                    </Box>
-                    <Button
-                      size="small"
-                      onClick={() => {
-                        setIsEditingUsername(true);
-                        resetFeedback();
-                      }}
-                      sx={{ textTransform: "none", fontWeight: 600 }}
-                    >
-                      Zmień
-                    </Button>
-                  </Box>
-                )}
-              </Box>
-
-              {/* Email Row */}
-              <Box>
-                {isEditingEmail ? (
-                  <Box>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      fontWeight={700}
-                      display="block"
-                      sx={{
-                        mb: 1.5,
-                        letterSpacing: "0.02em",
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      Edycja adresu e-mail
-                    </Typography>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        gap: 1.25,
-                        alignItems: "flex-start",
-                      }}
-                    >
-                      <Stack spacing={1.5} flex={1}>
-                        <TextField
-                          fullWidth
-                          size="small"
-                          value={email}
-                          onChange={(e) => {
-                            setFieldErrors((curr) => ({ ...curr, email: "" }));
-                            setEmail(
-                              e.target.value.slice(0, INPUT_LIMITS.email),
-                            );
-                          }}
-                          placeholder="Wprowadź nowy email"
-                          autoFocus
-                          error={Boolean(fieldErrors.email)}
-                          helperText={
-                            fieldErrors.email ||
-                            "Adres do logowania i odzyskiwania hasła."
-                          }
-                          sx={{
-                            "& .MuiOutlinedInput-root": {
-                              bgcolor: "background.paper",
-                              ...(fieldErrors.email && {
-                                bgcolor: alpha("#EF4444", 0.02),
-                                "& fieldset": {
-                                  borderColor: alpha("#EF4444", 0.2),
-                                },
-                              }),
-                            },
-                          }}
-                        />
-                        <TextField
-                          fullWidth
-                          size="small"
-                          value={confirmEmail}
-                          onChange={(e) => {
-                            setFieldErrors((curr) => ({
-                              ...curr,
-                              confirmEmail: "",
-                            }));
-                            setConfirmEmail(
-                              e.target.value.slice(0, INPUT_LIMITS.email),
-                            );
-                          }}
-                          placeholder="Powtórz nowy email"
-                          error={Boolean(fieldErrors.confirmEmail)}
-                          helperText={fieldErrors.confirmEmail}
-                          sx={{
-                            "& .MuiOutlinedInput-root": {
-                              bgcolor: "background.paper",
-                              ...(fieldErrors.confirmEmail && {
-                                bgcolor: alpha("#EF4444", 0.02),
-                                "& fieldset": {
-                                  borderColor: alpha("#EF4444", 0.2),
-                                },
-                              }),
-                            },
-                          }}
-                        />
-                      </Stack>
-                      <Stack direction="row" spacing={0.75} sx={{ mt: 0.5 }}>
-                        <IconButton
-                          onClick={handleSaveProfile}
-                          disabled={profileLoading}
-                          size="small"
-                          sx={{
-                            bgcolor: alpha("#10b981", 0.08),
-                            color: "#10b981",
-                            "&:hover": { bgcolor: alpha("#10b981", 0.16) },
-                          }}
-                        >
-                          <CheckIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          onClick={() => {
-                            setIsEditingEmail(false);
-                            setEmail(user?.email || "");
-                            setConfirmEmail("");
-                            setFieldErrors((curr) => ({
-                              ...curr,
-                              email: "",
-                              confirmEmail: "",
-                            }));
-                          }}
-                          size="small"
-                          sx={{
-                            bgcolor: alpha("#64748b", 0.08),
-                            color: "#64748b",
-                            "&:hover": { bgcolor: alpha("#64748b", 0.16) },
-                          }}
-                        >
-                          <CloseIcon fontSize="small" />
-                        </IconButton>
-                      </Stack>
-                    </Box>
-                  </Box>
-                ) : (
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      minHeight: 48,
-                    }}
-                  >
-                    <Box>
-                      <Typography
-                        variant="caption"
-                        fontWeight={700}
-                        sx={{
-                          color: "text.secondary",
-                          textTransform: "uppercase",
-                        }}
-                      >
-                        Email
-                      </Typography>
-                      <Typography fontWeight={600}>{user?.email}</Typography>
-                    </Box>
-                    <Button
-                      size="small"
-                      onClick={() => {
-                        setIsEditingEmail(true);
-                        setEmail("");
-                        setConfirmEmail("");
-                        resetFeedback();
-                      }}
-                      sx={{ textTransform: "none", fontWeight: 600 }}
-                    >
-                      Zmień
-                    </Button>
-                  </Box>
-                )}
-              </Box>
-            </Stack>
-          </FormSection>
-
-          {/* Security Section */}
-          <FormSection title="Bezpieczeństwo" sx={{ mt: 3 }}>
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                mb: passwordExpanded ? 2 : 0,
-              }}
-            >
-              <Box>
-                <Typography
-                  variant="caption"
-                  fontWeight={700}
-                  sx={{ color: "text.secondary", textTransform: "uppercase" }}
-                >
-                  Hasło
-                </Typography>
-                <Typography fontWeight={600}>••••••••••••</Typography>
-              </Box>
-              <Button
-                size="small"
-                onClick={() => {
-                  setPasswordExpanded(!passwordExpanded);
-                  resetFeedback();
-                }}
-                sx={{ textTransform: "none", fontWeight: 600 }}
-              >
-                {passwordExpanded ? "Anuluj" : "Zmień hasło"}
-              </Button>
-            </Box>
-
-            <Collapse in={passwordExpanded}>
-              <Stack spacing={2.5} sx={{ mt: 1 }}>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  fontWeight={700}
-                  display="block"
-                  sx={{ letterSpacing: "0.02em", textTransform: "uppercase" }}
-                >
-                  Zmiana hasła
-                </Typography>
-
-                <TextField
-                  label="Obecne hasło"
-                  type={showPasswords ? "text" : "password"}
-                  fullWidth
-                  size="small"
-                  value={oldPassword}
-                  onChange={(e) => {
-                    setFieldErrors((curr) => ({ ...curr, oldPassword: "" }));
-                    setOldPassword(e.target.value);
-                  }}
-                  error={Boolean(fieldErrors.oldPassword)}
-                  helperText={fieldErrors.oldPassword}
-                  sx={{
-                    "& .MuiOutlinedInput-root": {
-                      bgcolor: "background.paper",
-                      ...(fieldErrors.oldPassword && {
-                        bgcolor: alpha("#EF4444", 0.02),
-                        "& fieldset": { borderColor: alpha("#EF4444", 0.2) },
-                      }),
-                    },
-                  }}
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton
-                          onClick={() => setShowPasswords(!showPasswords)}
-                          edge="end"
-                          size="small"
-                        >
-                          {showPasswords ? (
-                            <VisibilityOffIcon />
-                          ) : (
-                            <VisibilityIcon />
-                          )}
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-                <Box>
-                  <TextField
-                    label="Nowe hasło"
-                    type={showPasswords ? "text" : "password"}
-                    fullWidth
-                    size="small"
-                    value={newPassword}
-                    onChange={(e) => {
-                      setFieldErrors((curr) => ({ ...curr, newPassword: "" }));
-                      setNewPassword(e.target.value);
-                    }}
-                    error={Boolean(fieldErrors.newPassword)}
-                    helperText={fieldErrors.newPassword}
-                    sx={{
-                      "& .MuiOutlinedInput-root": {
-                        bgcolor: "background.paper",
-                        ...(fieldErrors.newPassword && {
-                          bgcolor: alpha("#EF4444", 0.02),
-                          "& fieldset": { borderColor: alpha("#EF4444", 0.2) },
-                        }),
-                      },
-                    }}
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton
-                            onClick={() => setShowPasswords(!showPasswords)}
-                            edge="end"
-                            size="small"
+                      {newPassword && (
+                        <Box sx={{ mt: 1, px: 0.5 }}>
+                          <Box
+                            sx={{
+                              height: 3,
+                              bgcolor: alpha(theme.palette.text.primary, 0.08),
+                              borderRadius: 999,
+                              overflow: "hidden",
+                              mb: 0.5,
+                            }}
                           >
-                            {showPasswords ? (
-                              <VisibilityOffIcon />
-                            ) : (
-                              <VisibilityIcon />
-                            )}
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                  {newPassword && (
-                    <Box sx={{ mt: 1, px: 0.5 }}>
-                      <Box
-                        sx={{
-                          height: 3,
-                          bgcolor: alpha(theme.palette.text.primary, 0.08),
-                          borderRadius: 999,
-                          overflow: "hidden",
-                          mb: 0.5,
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            height: "100%",
-                            width: `${passwordStrength}%`,
-                            bgcolor: strengthColor(),
-                            transition: "all 0.3s ease",
-                          }}
-                        />
-                      </Box>
-                      <Typography
-                        variant="caption"
-                        sx={{ color: "text.secondary", fontWeight: 500 }}
-                      >
-                        Siła hasła: {strengthLabel()}
-                      </Typography>
+                            <Box
+                              sx={{
+                                height: "100%",
+                                width: `${passwordStrength}%`,
+                                bgcolor: strengthColor(),
+                                transition: "all 0.3s ease",
+                              }}
+                            />
+                          </Box>
+                          <Typography
+                            variant="caption"
+                            sx={{ color: "text.secondary", fontWeight: 500 }}
+                          >
+                            Siła hasła: {strengthLabel()}
+                          </Typography>
+                        </Box>
+                      )}
                     </Box>
-                  )}
-                </Box>
-                <TextField
-                  label="Powtórz nowe hasło"
-                  type="password"
-                  fullWidth
-                  size="small"
-                  value={confirmPassword}
-                  onChange={(e) => {
-                    setFieldErrors((curr) => ({
-                      ...curr,
-                      confirmPassword: "",
-                    }));
-                    setConfirmPassword(e.target.value);
-                  }}
-                  error={Boolean(fieldErrors.confirmPassword)}
-                  helperText={fieldErrors.confirmPassword}
-                  sx={{
-                    "& .MuiOutlinedInput-root": {
-                      bgcolor: "background.paper",
-                      ...(fieldErrors.confirmPassword && {
-                        bgcolor: alpha("#EF4444", 0.02),
-                        "& fieldset": { borderColor: alpha("#EF4444", 0.2) },
-                      }),
-                    },
-                  }}
-                />
-                <Button
-                  variant="contained"
-                  fullWidth
-                  onClick={handleSavePassword}
-                  disabled={passwordLoading}
-                  sx={{
-                    py: 1.25,
-                    borderRadius: "12px",
-                    fontWeight: 700,
-                    textTransform: "none",
-                    boxShadow: (theme) =>
-                      `0 8px 20px ${alpha(theme.palette.primary.main, 0.25)}`,
-                  }}
-                >
-                  {passwordLoading ? (
-                    <CircularProgress size={20} color="inherit" />
-                  ) : (
-                    "Zapisz nowe hasło"
-                  )}
-                </Button>
-              </Stack>
-            </Collapse>
+                    <TextField
+                      placeholder="Powtórz nowe hasło"
+                      type="password"
+                      fullWidth
+                      size="small"
+                      value={confirmPassword}
+                      onChange={(e) => {
+                        setFieldErrors((curr) => ({
+                          ...curr,
+                          confirmPassword: "",
+                        }));
+                        setConfirmPassword(e.target.value);
+                      }}
+                      error={Boolean(fieldErrors.confirmPassword)}
+                      helperText={fieldErrors.confirmPassword}
+                      sx={{
+                        ...modalFieldSx,
+                        "& .MuiOutlinedInput-root": {
+                          ...modalOutlinedInputSx,
+                          ...(fieldErrors.confirmPassword && {
+                            bgcolor: alpha("#EF4444", 0.02),
+                            "& fieldset": {
+                              borderColor: alpha("#EF4444", 0.2),
+                            },
+                          }),
+                        },
+                      }}
+                    />
+                    <Button
+                      variant="contained"
+                      onClick={handleSavePassword}
+                      disabled={passwordLoading}
+                      sx={{
+                        width: { xs: "100%", sm: "auto" },
+                        minWidth: 220,
+                        py: 1.25,
+                        borderRadius: "12px",
+                        fontWeight: 700,
+                        textTransform: "none",
+                        boxShadow: (theme) =>
+                          `0 8px 20px ${alpha(theme.palette.primary.main, 0.25)}`,
+                      }}
+                    >
+                      {passwordLoading ? (
+                        <CircularProgress size={20} color="inherit" />
+                      ) : (
+                        "Zapisz nowe hasło"
+                      )}
+                    </Button>
+                  </Stack>
+                </Collapse>
+              </Box>
+            </Box>
           </FormSection>
         </AppDialogBody>
-
-        <AppDialogFooter>
-          <Button
-            onClick={closeDialog}
-            sx={{
-              fontWeight: 700,
-              textTransform: "none",
-              color: "text.secondary",
-              px: 3,
-            }}
-          >
-            Zamknij
-          </Button>
-        </AppDialogFooter>
       </AppDialog>
 
       <Snackbar

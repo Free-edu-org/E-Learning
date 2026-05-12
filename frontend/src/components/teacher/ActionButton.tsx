@@ -10,6 +10,7 @@ interface ActionButtonProps {
   title: string;
   subtitle: string;
   onClick?: () => void;
+  sx?: SxProps<Theme>;
 }
 
 export function ActionButton({
@@ -17,11 +18,13 @@ export function ActionButton({
   title,
   subtitle,
   onClick,
+  sx,
 }: ActionButtonProps) {
   const actionTileSx = [
     panelSurfaceSx,
     panelSurfaceActionSx,
-    { flex: 1 },
+    { flex: 1, borderRadius: 3.5 },
+    ...(sx ? [sx] : []),
   ] as SxProps<Theme>;
 
   return (

@@ -10,6 +10,7 @@ import {
   Container,
   FormControlLabel,
   Grid,
+  IconButton,
   InputAdornment,
   MenuItem,
   Paper,
@@ -20,14 +21,19 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { alpha, useTheme } from "@mui/material/styles";
+import { alpha, type Theme, useTheme } from "@mui/material/styles";
 import {
   AddCircleOutline as AddCircleIcon,
+  BarChartOutlined as ThresholdIcon,
   ArrowBackOutlined as BackIcon,
   AutoAwesomeOutlined as AchievementIcon,
-  EditOutlined as EditIcon,
+  LayersOutlined as SortOrderIcon,
+  PaletteOutlined as ColorIcon,
   RefreshOutlined as RefreshIcon,
+  ScheduleOutlined as UpdatedAtIcon,
   SearchOutlined as SearchIcon,
+  SaveOutlined as SaveIcon,
+  TrackChangesOutlined as ConditionIcon,
 } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -59,10 +65,9 @@ import {
   panelFooterButtonSx,
   panelGridCardContentSx,
   panelGridCardSx,
-  panelInlineActionsSx,
+  panelIconButtonSx,
   panelSingleLineSx,
   panelSurfaceSx,
-  panelToolbarButtonSx,
   panelToolbarSx,
   panelTwoLinesSx,
 } from "@/components/ui/panel/panelStyles";
@@ -113,10 +118,9 @@ type DialogFeedbackState = {
   message: string;
 };
 
-type ConfirmToggleState = {
+type DeleteAchievementState = {
   code: string;
   title: string;
-  active: boolean;
 } | null;
 
 const ACHIEVEMENT_TYPE_OPTIONS: Array<{
@@ -214,11 +218,11 @@ function getThresholdSummary(achievement: AdminAchievement) {
   }
 
   if (achievement.type === "POINTS") {
-    return `Próg: ${achievement.threshold} punktów`;
+    return `${achievement.threshold} punktów`;
   }
 
-  return `Próg: ${achievement.threshold} ${
-    achievement.threshold === 1 ? "lekcji" : "lekcji"
+  return `${achievement.threshold} ${
+    achievement.threshold === 1 ? "lekcja" : "lekcji"
   }`;
 }
 
@@ -232,10 +236,12 @@ function getDraftThresholdSummary(draft: AchievementDraft) {
   }
 
   if (draft.type === "POINTS") {
-    return `Próg: ${draft.threshold} punktów`;
+    return `${draft.threshold} punktów`;
   }
 
-  return `Próg: ${draft.threshold} lekcji`;
+  return `${draft.threshold} ${
+    Number(draft.threshold) === 1 ? "lekcja" : "lekcji"
+  }`;
 }
 
 function getColorLabel(color: string) {
@@ -591,6 +597,120 @@ function AchievementListSkeleton() {
   );
 }
 
+const achievementSearchFieldSx = {
+  minWidth: { xs: "100%", md: 300 },
+  flex: 1,
+  "& .MuiOutlinedInput-root": {
+    borderRadius: 2.5,
+    minHeight: 38,
+    fontSize: "0.9rem",
+  },
+};
+
+const achievementStatChipSx = {
+  ...outlinedMetaChipSx,
+  height: 22,
+  fontSize: "0.69rem",
+  "& .MuiChip-label": {
+    px: 1,
+  },
+};
+
+const achievementCardSx = {
+  ...panelGridCardSx,
+  width: "100%",
+  minHeight: 0,
+  borderColor: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.text.primary, 0.05)
+      : alpha(theme.palette.common.white, 0.05),
+  boxShadow: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? "0 6px 18px rgba(15, 23, 42, 0.045), 0 1px 2px rgba(15, 23, 42, 0.025)"
+      : "0 6px 16px rgba(0, 0, 0, 0.18)",
+  "&:hover": {
+    boxShadow: (theme: Theme) =>
+      theme.palette.mode === "light"
+        ? "0 10px 24px rgba(15, 23, 42, 0.07)"
+        : "0 10px 22px rgba(0, 0, 0, 0.22)",
+    transform: "translateY(-2px)",
+    borderColor: (theme: Theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.primary.main, 0.22)
+        : alpha(theme.palette.primary.light, 0.14),
+  },
+};
+
+const achievementCardContentSx = {
+  ...panelGridCardContentSx,
+  gap: 1.1,
+  p: { xs: 2, md: 2.25 },
+  "&:last-child": {
+    pb: { xs: 2, md: 2.25 },
+  },
+};
+
+const achievementMetadataLabelSx = {
+  fontSize: "0.69rem",
+  fontWeight: 700,
+  letterSpacing: "0.04em",
+  textTransform: "uppercase",
+  color: "text.secondary",
+};
+
+const achievementMetadataValueSx = {
+  fontSize: "0.78rem",
+  fontWeight: 700,
+  lineHeight: 1.35,
+  color: "text.primary",
+};
+
+const achievementMetadataLabelRowSx = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 0.8,
+};
+
+const achievementMetadataIconSx = {
+  fontSize: 15,
+  color: "text.secondary",
+  flexShrink: 0,
+};
+
+const achievementInlineActionsWrapSx = {
+  display: "flex",
+  flexDirection: "row",
+  gap: 1,
+  alignItems: "center",
+  flexShrink: 0,
+};
+
+const achievementTextActionButtonSx = {
+  textTransform: "none",
+  fontWeight: 600,
+  fontSize: "0.82rem",
+  borderRadius: "10px",
+  px: 1.5,
+  minWidth: 0,
+  whiteSpace: "nowrap",
+  bgcolor: (theme: Theme) => alpha(theme.palette.text.primary, 0.03),
+  "&:hover": {
+    bgcolor: (theme: Theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.text.primary, 0.05)
+        : alpha(theme.palette.common.white, 0.06),
+  },
+};
+
+const achievementDeleteTextActionButtonSx = {
+  ...achievementTextActionButtonSx,
+  bgcolor: alpha("#EF4444", 0.06),
+  color: "#EF4444",
+  "&:hover": {
+    bgcolor: alpha("#EF4444", 0.12),
+  },
+};
+
 export function AdminAchievementsView() {
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -619,8 +739,10 @@ export function AdminAchievementsView() {
   const [dialogDetailsLoading, setDialogDetailsLoading] = useState(false);
   const [dialogFeedback, setDialogFeedback] =
     useState<DialogFeedbackState | null>(null);
+  const [deleteDialog, setDeleteDialog] =
+    useState<DeleteAchievementState>(null);
 
-  const [toggleDialog, setToggleDialog] = useState<ConfirmToggleState>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [toggleLoading, setToggleLoading] = useState(false);
   const [snackbar, setSnackbar] = useState<{
     severity: "success" | "error";
@@ -804,32 +926,53 @@ export function AdminAchievementsView() {
     }
   };
 
-  const openToggleDialog = (achievement: AdminAchievement) => {
-    setToggleDialog({
+  const openDeleteDialog = (achievement: AdminAchievement) => {
+    setDeleteDialog({
       code: achievement.code,
       title: achievement.title,
-      active: achievement.active,
     });
   };
 
-  const confirmToggleActive = async () => {
-    if (!toggleDialog) {
+  const handleDeleteAchievement = async () => {
+    if (!deleteDialog) {
       return;
     }
 
+    setDeleteLoading(true);
+    try {
+      await adminService.deleteAchievement(deleteDialog.code);
+      setDeleteDialog(null);
+      setSnackbar({
+        severity: "success",
+        message: "Osiągnięcie zostało usunięte.",
+      });
+      await loadAchievements();
+    } catch (error) {
+      setSnackbar({
+        severity: "error",
+        message: getAchievementApiErrorState(
+          error,
+          "Nie udało się usunąć osiągnięcia.",
+        ).message,
+      });
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleToggleActive = async (achievement: AdminAchievement) => {
     setToggleLoading(true);
     try {
       await adminService.setAchievementActive(
-        toggleDialog.code,
-        !toggleDialog.active,
+        achievement.code,
+        !achievement.active,
       );
       setSnackbar({
         severity: "success",
-        message: toggleDialog.active
+        message: achievement.active
           ? "Osiągnięcie zostało wyłączone."
           : "Osiągnięcie zostało aktywowane.",
       });
-      setToggleDialog(null);
       await loadAchievements();
     } catch (error) {
       setSnackbar({
@@ -883,26 +1026,6 @@ export function AdminAchievementsView() {
           >
             Wróć do panelu administratora
           </Button>
-
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-            <Button
-              variant="outlined"
-              startIcon={<RefreshIcon />}
-              onClick={() => void loadAchievements()}
-              disabled={loadingAchievements}
-              sx={panelToolbarButtonSx}
-            >
-              Odśwież
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<AddCircleIcon />}
-              onClick={openCreateDialog}
-              sx={{ ...panelFooterButtonSx, px: 2.25, boxShadow: "none" }}
-            >
-              Nowe osiągnięcie
-            </Button>
-          </Stack>
         </Stack>
 
         {currentUserError && (
@@ -918,6 +1041,7 @@ export function AdminAchievementsView() {
                 direction={{ xs: "column", lg: "row" }}
                 spacing={2}
                 justifyContent="space-between"
+                alignItems={{ xs: "flex-start", lg: "center" }}
               >
                 <Stack spacing={1}>
                   <Typography variant="h6" fontWeight={800}>
@@ -927,6 +1051,24 @@ export function AdminAchievementsView() {
                     Twórz i edytuj osiągnięcia widoczne dla uczniów oraz
                     decyduj, które z nich są aktywne.
                   </Typography>
+                </Stack>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <IconButton
+                    aria-label="Odśwież listę osiągnięć"
+                    onClick={() => void loadAchievements()}
+                    disabled={loadingAchievements}
+                    sx={panelIconButtonSx}
+                  >
+                    <RefreshIcon fontSize="small" />
+                  </IconButton>
+                  <Button
+                    variant="contained"
+                    startIcon={<AddCircleIcon />}
+                    onClick={openCreateDialog}
+                    sx={{ ...panelFooterButtonSx, px: 2.25, boxShadow: "none" }}
+                  >
+                    Nowe osiągnięcie
+                  </Button>
                 </Stack>
               </Stack>
 
@@ -948,26 +1090,19 @@ export function AdminAchievementsView() {
                       ),
                     },
                   }}
-                  sx={{
-                    minWidth: { xs: "100%", md: 320 },
-                    flex: 1,
-                    "& .MuiOutlinedInput-root": {
-                      borderRadius: 2,
-                      minHeight: 40,
-                    },
-                  }}
+                  sx={achievementSearchFieldSx}
                 />
 
                 <Chip
                   label={`Łącznie: ${achievements.length}`}
                   variant="outlined"
-                  sx={outlinedMetaChipSx}
+                  sx={achievementStatChipSx}
                 />
                 <Chip
                   label={`Aktywne: ${achievements.filter((item) => item.active).length}`}
                   color="success"
                   variant="outlined"
-                  sx={outlinedMetaChipSx}
+                  sx={achievementStatChipSx}
                 />
               </Paper>
 
@@ -1018,11 +1153,8 @@ export function AdminAchievementsView() {
                       size={{ xs: 12, md: 6, xl: 4 }}
                       sx={{ display: "flex" }}
                     >
-                      <Card
-                        elevation={0}
-                        sx={{ ...panelGridCardSx, width: "100%" }}
-                      >
-                        <Box sx={panelGridCardContentSx}>
+                      <Card elevation={0} sx={achievementCardSx}>
+                        <Box sx={achievementCardContentSx}>
                           {(() => {
                             const visuals = getAchievementVisuals(
                               theme,
@@ -1034,28 +1166,31 @@ export function AdminAchievementsView() {
                               <>
                                 <Stack
                                   direction="row"
-                                  spacing={1.5}
+                                  spacing={1.25}
                                   alignItems="center"
                                 >
                                   <Stack
                                     direction="row"
-                                    spacing={1.5}
+                                    spacing={1.25}
                                     alignItems="center"
                                     sx={{ minWidth: 0 }}
                                   >
                                     <Box
                                       sx={{
-                                        width: 50,
-                                        height: 50,
-                                        borderRadius: 3,
+                                        width: 44,
+                                        height: 44,
+                                        borderRadius: 2.75,
                                         display: "grid",
                                         placeItems: "center",
-                                        fontSize: 28,
+                                        fontSize: 24,
                                         flexShrink: 0,
                                         color: visuals.accent,
-                                        bgcolor: visuals.strongBackground,
+                                        bgcolor: alpha(visuals.accent, 0.12),
                                         border: "1px solid",
-                                        borderColor: visuals.border,
+                                        borderColor: alpha(
+                                          visuals.accent,
+                                          0.16,
+                                        ),
                                       }}
                                     >
                                       {icon}
@@ -1063,15 +1198,18 @@ export function AdminAchievementsView() {
                                     <Box
                                       sx={{
                                         minWidth: 0,
-                                        minHeight: 44,
+                                        minHeight: 38,
                                         display: "flex",
                                         alignItems: "center",
                                       }}
                                     >
                                       <Typography
-                                        variant="h6"
+                                        variant="subtitle1"
                                         fontWeight={800}
-                                        sx={panelSingleLineSx}
+                                        sx={{
+                                          ...panelSingleLineSx,
+                                          lineHeight: 1.25,
+                                        }}
                                       >
                                         {achievement.title}
                                       </Typography>
@@ -1082,50 +1220,70 @@ export function AdminAchievementsView() {
                                 <Typography
                                   variant="body2"
                                   color="text.secondary"
-                                  sx={{ ...panelTwoLinesSx, mt: 1.25 }}
+                                  sx={{
+                                    ...panelTwoLinesSx,
+                                    mt: 0.15,
+                                    minHeight: 36,
+                                    fontSize: "0.88rem",
+                                    lineHeight: 1.45,
+                                  }}
                                 >
                                   {achievement.description}
                                 </Typography>
 
                                 <Box
                                   sx={{
-                                    mt: 0.5,
-                                    mb: 2,
-                                    minHeight: 104,
-                                    px: 1.5,
+                                    mt: 0.15,
+                                    mb: 0.2,
+                                    minHeight: 0,
+                                    px: 0.2,
                                     py: 1,
-                                    borderRadius: 2.5,
-                                    display: "flex",
-                                    alignItems: "center",
-                                    border: "1px solid",
+                                    borderTop: "1px solid",
+                                    borderBottom: "1px solid",
                                     borderColor: alpha(
                                       theme.palette.divider,
-                                      0.22,
-                                    ),
-                                    bgcolor: alpha(
-                                      theme.palette.common.white,
-                                      theme.palette.mode === "dark"
-                                        ? 0.02
-                                        : 0.52,
+                                      0.2,
                                     ),
                                   }}
                                 >
-                                  <Stack spacing={0.85} sx={{ width: "100%" }}>
+                                  <Stack
+                                    spacing={0.55}
+                                    sx={{
+                                      width: "100%",
+                                      "& > .MuiStack-root": {
+                                        alignItems: "baseline",
+                                      },
+                                      "& > .MuiStack-root > .MuiTypography-root:first-of-type":
+                                        achievementMetadataLabelSx,
+                                      "& > .MuiStack-root > .MuiTypography-root:last-of-type":
+                                        achievementMetadataValueSx,
+                                    }}
+                                  >
                                     <Stack
                                       direction="row"
                                       justifyContent="space-between"
                                       spacing={2}
                                     >
-                                      <Typography
-                                        variant="caption"
-                                        color="text.secondary"
+                                      <Stack
+                                        direction="row"
+                                        sx={achievementMetadataLabelRowSx}
                                       >
-                                        Warunek zdobycia
-                                      </Typography>
+                                        <ConditionIcon
+                                          sx={achievementMetadataIconSx}
+                                        />
+                                        <Typography
+                                          variant="caption"
+                                          color="text.secondary"
+                                          sx={achievementMetadataLabelSx}
+                                        >
+                                          Warunek zdobycia
+                                        </Typography>
+                                      </Stack>
                                       <Typography
                                         variant="caption"
                                         fontWeight={700}
                                         textAlign="right"
+                                        sx={achievementMetadataValueSx}
                                       >
                                         {getTypeLabel(achievement.type)}
                                       </Typography>
@@ -1135,16 +1293,26 @@ export function AdminAchievementsView() {
                                       justifyContent="space-between"
                                       spacing={2}
                                     >
-                                      <Typography
-                                        variant="caption"
-                                        color="text.secondary"
+                                      <Stack
+                                        direction="row"
+                                        sx={achievementMetadataLabelRowSx}
                                       >
-                                        Próg
-                                      </Typography>
+                                        <ThresholdIcon
+                                          sx={achievementMetadataIconSx}
+                                        />
+                                        <Typography
+                                          variant="caption"
+                                          color="text.secondary"
+                                          sx={achievementMetadataLabelSx}
+                                        >
+                                          Próg
+                                        </Typography>
+                                      </Stack>
                                       <Typography
                                         variant="caption"
                                         fontWeight={700}
                                         textAlign="right"
+                                        sx={achievementMetadataValueSx}
                                       >
                                         {getThresholdSummary(achievement)}
                                       </Typography>
@@ -1154,16 +1322,26 @@ export function AdminAchievementsView() {
                                       justifyContent="space-between"
                                       spacing={2}
                                     >
-                                      <Typography
-                                        variant="caption"
-                                        color="text.secondary"
+                                      <Stack
+                                        direction="row"
+                                        sx={achievementMetadataLabelRowSx}
                                       >
-                                        Kolor
-                                      </Typography>
+                                        <ColorIcon
+                                          sx={achievementMetadataIconSx}
+                                        />
+                                        <Typography
+                                          variant="caption"
+                                          color="text.secondary"
+                                          sx={achievementMetadataLabelSx}
+                                        >
+                                          Kolor
+                                        </Typography>
+                                      </Stack>
                                       <Typography
                                         variant="caption"
                                         fontWeight={700}
                                         textAlign="right"
+                                        sx={achievementMetadataValueSx}
                                       >
                                         {getColorLabel(
                                           resolveAchievementColor(
@@ -1177,16 +1355,26 @@ export function AdminAchievementsView() {
                                       justifyContent="space-between"
                                       spacing={2}
                                     >
-                                      <Typography
-                                        variant="caption"
-                                        color="text.secondary"
+                                      <Stack
+                                        direction="row"
+                                        sx={achievementMetadataLabelRowSx}
                                       >
-                                        Kolejność
-                                      </Typography>
+                                        <SortOrderIcon
+                                          sx={achievementMetadataIconSx}
+                                        />
+                                        <Typography
+                                          variant="caption"
+                                          color="text.secondary"
+                                          sx={achievementMetadataLabelSx}
+                                        >
+                                          Kolejność
+                                        </Typography>
+                                      </Stack>
                                       <Typography
                                         variant="caption"
                                         fontWeight={700}
                                         textAlign="right"
+                                        sx={achievementMetadataValueSx}
                                       >
                                         {achievement.sortOrder}
                                       </Typography>
@@ -1196,16 +1384,26 @@ export function AdminAchievementsView() {
                                       justifyContent="space-between"
                                       spacing={2}
                                     >
-                                      <Typography
-                                        variant="caption"
-                                        color="text.secondary"
+                                      <Stack
+                                        direction="row"
+                                        sx={achievementMetadataLabelRowSx}
                                       >
-                                        Ostatnia aktualizacja
-                                      </Typography>
+                                        <UpdatedAtIcon
+                                          sx={achievementMetadataIconSx}
+                                        />
+                                        <Typography
+                                          variant="caption"
+                                          color="text.secondary"
+                                          sx={achievementMetadataLabelSx}
+                                        >
+                                          Ostatnia aktualizacja
+                                        </Typography>
+                                      </Stack>
                                       <Typography
                                         variant="caption"
                                         fontWeight={700}
                                         textAlign="right"
+                                        sx={achievementMetadataValueSx}
                                       >
                                         {formatDate(achievement.updatedAt)}
                                       </Typography>
@@ -1213,61 +1411,81 @@ export function AdminAchievementsView() {
                                   </Stack>
                                 </Box>
 
-                                <Box sx={panelCardFooterSx}>
-                                  <Box />
-                                  <Box sx={panelInlineActionsSx}>
+                                <Box
+                                  sx={{
+                                    ...panelCardFooterSx,
+                                    borderTop: "none",
+                                    borderColor: "transparent",
+                                    backgroundColor: "transparent",
+                                  }}
+                                >
+                                  <Box
+                                    sx={{
+                                      minHeight: 32,
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 0.5,
+                                      border: "none",
+                                      bgcolor: "transparent",
+                                    }}
+                                  >
                                     <Box
                                       sx={{
                                         minHeight: 32,
-                                        px: 0,
-                                        borderRadius: 0,
                                         display: "flex",
                                         alignItems: "center",
                                         gap: 0.5,
-                                        border: "none",
-                                        bgcolor: "transparent",
                                       }}
                                     >
                                       <Switch
                                         size="small"
                                         checked={achievement.active}
                                         disabled={toggleLoading}
-                                        onChange={() =>
-                                          openToggleDialog(achievement)
-                                        }
+                                        onChange={() => {
+                                          void handleToggleActive(achievement);
+                                        }}
                                         inputProps={{
                                           "aria-label": achievement.active
                                             ? `Dezaktywuj osiągnięcie ${achievement.title}`
                                             : `Aktywuj osiągnięcie ${achievement.title}`,
                                         }}
-                                        color="success"
                                         sx={{
                                           mr: 0.25,
                                           "& .MuiSwitch-switchBase": {
                                             p: 0.5,
+                                            color: achievement.active
+                                              ? theme.palette.success.main
+                                              : theme.palette.error.main,
                                           },
+                                          "& .MuiSwitch-switchBase.Mui-checked":
+                                            {
+                                              color: theme.palette.success.main,
+                                            },
                                           "& .MuiSwitch-thumb": {
                                             boxShadow: "none",
                                           },
                                           "& .MuiSwitch-track": {
                                             borderRadius: 999,
                                             opacity: 1,
-                                            bgcolor: achievement.active
-                                              ? alpha(
-                                                  theme.palette.success.main,
-                                                  0.35,
-                                                )
-                                              : alpha(
-                                                  theme.palette.text.disabled,
-                                                  0.35,
-                                                ),
+                                            backgroundColor: alpha(
+                                              theme.palette.error.main,
+                                              0.35,
+                                            ),
                                           },
+                                          "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                                            {
+                                              backgroundColor: alpha(
+                                                theme.palette.success.main,
+                                                0.35,
+                                              ),
+                                            },
                                         }}
                                       />
                                       <Box sx={{ minWidth: 0 }}>
                                         <Typography
                                           variant="body2"
                                           fontWeight={700}
+                                          sx={{ fontSize: "0.84rem" }}
                                         >
                                           {achievement.active
                                             ? "Aktywne"
@@ -1284,15 +1502,25 @@ export function AdminAchievementsView() {
                                         </Typography>
                                       </Box>
                                     </Box>
+                                  </Box>
+                                  <Box sx={achievementInlineActionsWrapSx}>
                                     <Button
-                                      variant="outlined"
-                                      startIcon={<EditIcon />}
+                                      size="small"
                                       onClick={() =>
                                         void openEditDialog(achievement.code)
                                       }
-                                      sx={panelFooterButtonSx}
+                                      sx={achievementTextActionButtonSx}
                                     >
                                       Edytuj
+                                    </Button>
+                                    <Button
+                                      size="small"
+                                      onClick={() =>
+                                        openDeleteDialog(achievement)
+                                      }
+                                      sx={achievementDeleteTextActionButtonSx}
+                                    >
+                                      Usuń
                                     </Button>
                                   </Box>
                                 </Box>
@@ -1713,7 +1941,7 @@ export function AdminAchievementsView() {
             <Button
               onClick={closeDialog}
               disabled={dialogLoading || dialogDetailsLoading}
-              sx={panelFooterButtonSx}
+              sx={{ ...panelFooterButtonSx, color: "text.secondary" }}
             >
               Anuluj
             </Button>
@@ -1724,8 +1952,10 @@ export function AdminAchievementsView() {
               startIcon={
                 dialogLoading ? (
                   <CircularProgress size={16} color="inherit" />
-                ) : (
+                ) : dialogMode === "create" ? (
                   <AddCircleIcon />
+                ) : (
+                  <SaveIcon />
                 )
               }
               sx={{ ...panelFooterButtonSx, boxShadow: "none" }}
@@ -1737,18 +1967,18 @@ export function AdminAchievementsView() {
       </AppDialog>
 
       <AppDialog
-        open={toggleDialog != null}
-        onClose={() => (toggleLoading ? undefined : setToggleDialog(null))}
+        open={deleteDialog != null}
+        onClose={() => {
+          if (!deleteLoading) {
+            setDeleteDialog(null);
+          }
+        }}
         maxWidth="xs"
       >
         <AppDialogHeader
           icon={<AchievementIcon />}
-          title={
-            toggleDialog?.active
-              ? "Ukryć osiągnięcie?"
-              : "Aktywować osiągnięcie?"
-          }
-          subtitle={undefined}
+          title="Usuń osiągnięcie"
+          subtitle="Ta operacja usuwa definicję osiągnięcia z panelu administratora."
         />
         <AppDialogBody>
           <Stack spacing={1.25}>
@@ -1757,33 +1987,35 @@ export function AdminAchievementsView() {
               color="text.secondary"
               sx={{ lineHeight: 1.7 }}
             >
-              {toggleDialog?.active
-                ? "Zmiana statusu zapisze się od razu. Osiągnięcie zostanie ukryte przed uczniami, ale historia już zdobytych osiągnięć pozostanie bez zmian."
-                : "Zmiana statusu zapisze się od razu. Osiągnięcie znów będzie widoczne dla uczniów i będzie mogło zostać zdobyte."}
+              Czy na pewno chcesz usunąć osiągnięcie{" "}
+              <strong>{deleteDialog?.title}</strong>?
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Kod techniczny: {deleteDialog?.code}
             </Typography>
           </Stack>
         </AppDialogBody>
         <AppDialogFooter>
           <Button
-            onClick={() => setToggleDialog(null)}
-            disabled={toggleLoading}
+            onClick={() => setDeleteDialog(null)}
+            disabled={deleteLoading}
             sx={panelFooterButtonSx}
           >
             Anuluj
           </Button>
           <Button
             variant="contained"
-            color={toggleDialog?.active ? "warning" : "success"}
-            onClick={() => void confirmToggleActive()}
-            disabled={toggleLoading}
+            color="error"
+            onClick={() => void handleDeleteAchievement()}
+            disabled={deleteLoading}
             startIcon={
-              toggleLoading ? (
+              deleteLoading ? (
                 <CircularProgress size={16} color="inherit" />
               ) : undefined
             }
             sx={{ ...panelFooterButtonSx, boxShadow: "none" }}
           >
-            {toggleDialog?.active ? "Ukryj osiągnięcie" : "Aktywuj osiągnięcie"}
+            Usuń osiągnięcie
           </Button>
         </AppDialogFooter>
       </AppDialog>
