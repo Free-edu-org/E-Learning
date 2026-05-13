@@ -14,6 +14,7 @@ import {
   type DragOverEvent,
   type DragStartEvent,
   type CollisionDetection,
+  type Modifier,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -21,7 +22,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { restrictToVerticalAxis, snapCenterToCursor } from "@dnd-kit/modifiers";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import type { TaskType } from "@/api/taskService";
 import { uiTokens } from "@/theme/uiTokens";
 import { TaskCard, TaskCardOverlay } from "./TaskCard";
@@ -29,6 +30,26 @@ import type { LessonTaskDraft } from "./TaskCard";
 import { SectionRow, SectionOverlay } from "./SectionRow";
 import { TaskTypeSelector } from "./TaskTypeSelector";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+// ─── Modifiers ────────────────────────────────────────────────────────────────
+
+// Centers overlay on cursor at drag start regardless of where the element was clicked.
+// X stays fixed at that grab point (no horizontal drift); Y tracks cursor vertically.
+const centeredOnCursor: Modifier = ({
+  activatorCoordinates,
+  draggingNodeRect,
+  transform,
+}) => {
+  if (!activatorCoordinates || !draggingNodeRect) return transform;
+  return {
+    ...transform,
+    x: activatorCoordinates.x - (draggingNodeRect.left + draggingNodeRect.width / 2),
+    y:
+      transform.y +
+      activatorCoordinates.y -
+      (draggingNodeRect.top + draggingNodeRect.height / 2),
+  };
+};
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -115,11 +136,10 @@ export function TaskEditor({
   );
 
   // Ref keeps handlers free of stale closures — always reads latest tasks.
-  // Updated in an effect (not during render) to satisfy the no-ref-write-in-render rule.
+  // Written during render so every handler invocation sees the current tasks,
+  // even if multiple dragover events fire before the next render completes.
   const tasksRef = useRef(tasks);
-  useEffect(() => {
-    tasksRef.current = tasks;
-  });
+  tasksRef.current = tasks;
 
   // Snapshot at drag-start so onDragCancel can restore the original state
   const clonedTasksRef = useRef<LessonTaskDraft[] | null>(null);
@@ -157,6 +177,18 @@ export function TaskEditor({
     if (!hasSections) return tasks.map((t) => t.id);
     return groups.map((g) => g.sectionId);
   }, [hasSections, tasks, groups]);
+
+  // Auto-expand all sections once when task data first arrives (e.g. lesson edit view).
+  // Before the state-lifting refactor, SectionRow managed its own `expanded` state and
+  // defaulted to `true`. Now TaskEditor owns it, but always initialised to empty Set,
+  // leaving sections collapsed and tasks un-draggable until the user clicks each header.
+  const autoExpandDoneRef = useRef(false);
+  useEffect(() => {
+    if (!autoExpandDoneRef.current && groups.length > 0) {
+      autoExpandDoneRef.current = true;
+      setExpandedSections(new Set(groups.map((g) => g.sectionId)));
+    }
+  }, [groups]);
 
   // ── Collision detection ──────────────────────────────────────────────────────
   // When dragging a section, restrict candidates to section IDs only.
@@ -577,7 +609,7 @@ export function TaskEditor({
 
           <DragOverlay
             dropAnimation={null}
-            modifiers={[snapCenterToCursor, restrictToVerticalAxis]}
+            modifiers={[centeredOnCursor]}
           >
             {activeId &&
               activeType === "section" &&
