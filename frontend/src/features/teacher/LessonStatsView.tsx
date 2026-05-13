@@ -519,7 +519,8 @@ export function LessonStatsView() {
                         key={student.userPublicId}
                         sx={{
                           display: "flex",
-                          alignItems: "center",
+                          flexWrap: { xs: "wrap", sm: "nowrap" },
+                          alignItems: { xs: "flex-start", sm: "center" },
                           px: 1.5,
                           py: 1.2,
                           gap: 1.25,
@@ -537,7 +538,7 @@ export function LessonStatsView() {
                               : "0 8px 22px rgba(15, 23, 42, 0.035)",
                         }}
                       >
-                        {/* Name + date */}
+                        {/* Avatar */}
                         <Box
                           component={RouterLink}
                           to={`/teacher/students/${student.userPublicId}/progress?fromLessonPublicId=${lessonPublicId}`}
@@ -573,10 +574,12 @@ export function LessonStatsView() {
                             }}
                           />
                         </Box>
+
+                        {/* Name + date — takes remaining width of first row */}
                         <Box
                           sx={{
                             flex: 1,
-                            minWidth: 180,
+                            minWidth: 0,
                             display: "flex",
                             flexDirection: "column",
                             alignItems: "flex-start",
@@ -624,13 +627,20 @@ export function LessonStatsView() {
                           </Typography>
                         </Box>
 
+                        {/* Score + actions — full-width second row on mobile */}
                         <Box
                           sx={{
-                            ml: "auto",
+                            width: { xs: "100%", sm: "auto" },
+                            ml: { xs: 0, sm: "auto" },
+                            pl: { xs: "calc(36px + 10px)", sm: 0 },
                             display: "flex",
                             alignItems: "center",
-                            justifyContent: "flex-end",
+                            justifyContent: {
+                              xs: "space-between",
+                              sm: "flex-end",
+                            },
                             gap: 1,
+                            flexWrap: { xs: "wrap", sm: "nowrap" },
                           }}
                         >
                           <Box
@@ -638,11 +648,11 @@ export function LessonStatsView() {
                               display: "flex",
                               alignItems: "center",
                               gap: 0.75,
+                              flexShrink: 0,
                             }}
                           >
                             <Box
                               sx={{
-                                minWidth: 150,
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "flex-end",
@@ -687,7 +697,13 @@ export function LessonStatsView() {
                             </Box>
                           </Box>
 
-                          <Box sx={{ ...panelInlineActionsSx, gap: 0.5 }}>
+                          <Box
+                            sx={{
+                              ...panelInlineActionsSx,
+                              gap: 0.5,
+                              flexShrink: 0,
+                            }}
+                          >
                             <Button
                               size="small"
                               variant="outlined"

@@ -37,6 +37,7 @@ import { getErrorMessage } from "@/utils/dashboardUtils";
 import { UserAvatar } from "@/components/ui/avatar/UserAvatar";
 import { FormSection } from "@/components/ui/form/FormLayout";
 import { INPUT_LIMITS } from "@/utils/inputLimits";
+import { normalizeImageToJpeg } from "@/utils/normalizeImageFile";
 
 type FeedbackState = {
   severity: "success" | "error";
@@ -401,18 +402,26 @@ export function AccountSettingsDialog({
     const file = event.target.files?.[0];
     if (!file || !user) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      setFeedback({
-        severity: "error",
-        message: "Maksymalny rozmiar pliku to 2MB.",
-      });
-      return;
-    }
-
     setFeedback(null);
     setAvatarLoading(true);
     try {
-      const updatedUser = await userService.uploadAvatar(user.publicId, file);
+      const normalizedFile = await normalizeImageToJpeg(
+        file,
+        ["image/jpeg", "image/png"],
+        true,
+      );
+
+      if (normalizedFile.size > 2 * 1024 * 1024) {
+        setFeedback({
+          severity: "error",
+          message: "Maksymalny rozmiar pliku to 2MB.",
+        });
+        return;
+      }
+      const updatedUser = await userService.uploadAvatar(
+        user.publicId,
+        normalizedFile,
+      );
       onUserUpdated(updatedUser);
       requestAchievementNotificationsRefresh();
       setAvatarSnackbar(true);
@@ -521,7 +530,7 @@ export function AccountSettingsDialog({
           >
             <input
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/heic,image/heif"
               hidden
               ref={fileInputRef}
               onChange={handleAvatarUpload}

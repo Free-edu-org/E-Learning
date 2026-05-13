@@ -85,11 +85,13 @@ export function ResetPassword() {
   return (
     <Box
       sx={{
-        minHeight: "100vh",
+        minHeight: "100dvh",
         display: "flex",
-        alignItems: "center",
+        alignItems: { xs: "flex-start", sm: "center" },
         justifyContent: "center",
         bgcolor: theme.palette.background.default,
+        overflowY: "auto",
+        py: { xs: 3, sm: 4 },
         px: 2,
       }}
     >
@@ -98,7 +100,7 @@ export function ResetPassword() {
         sx={{
           width: "100%",
           maxWidth: 480,
-          p: 4,
+          p: { xs: 3, sm: 4 },
           borderRadius: 3,
           border: `1px solid ${cardBorderColor}`,
         }}

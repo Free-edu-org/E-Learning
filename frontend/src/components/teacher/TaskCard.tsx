@@ -40,6 +40,7 @@ import { taskService } from "@/api/taskService";
 import { fetchApiBlob } from "@/api/apiClient";
 import { uiTokens } from "@/theme/uiTokens";
 import { INPUT_LIMITS } from "@/utils/inputLimits";
+import { normalizeImageToJpeg } from "@/utils/normalizeImageFile";
 import { ChooseAnswerBuilder } from "./ChooseAnswerBuilder";
 import { ScatterWordBuilder } from "./ScatterWordBuilder";
 
@@ -330,11 +331,17 @@ const TaskCardFields = memo(function TaskCardFields({
       if (!lessonPublicId || !parsedId) return;
       setIsUploadingImage(true);
       try {
+        const normalizedFile = await normalizeImageToJpeg(file, [
+          "image/jpeg",
+          "image/png",
+          "image/webp",
+          "image/gif",
+        ]);
         await taskService.uploadHintImage(
           lessonPublicId,
           parsedId.type,
           parsedId.taskPublicId,
-          file,
+          normalizedFile,
         );
         const newUrl = `/api/v1/lessons/${lessonPublicId}/tasks/${parsedId.type}/${parsedId.taskPublicId}/hint-image`;
         onChangeById(task.id, { ...task, hintImageUrl: newUrl });
@@ -724,7 +731,7 @@ const TaskCardFields = memo(function TaskCardFields({
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
+                accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif"
                 style={{ display: "none" }}
                 onChange={handleImageFileChange}
               />
