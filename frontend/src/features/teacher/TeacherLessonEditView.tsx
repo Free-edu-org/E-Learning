@@ -45,10 +45,15 @@ import {
   AppDialogFooter,
   AppDialogHeader,
 } from "@/components/ui/dialog/AppDialog";
-import { FormField, FormSection } from "@/components/ui/form/FormLayout";
+import {
+  FormActions,
+  FormField,
+  FormSection,
+} from "@/components/ui/form/FormLayout";
 import { DashboardHeader } from "@/components/ui/panel/DashboardHeader";
 import { DashboardTopBar } from "@/components/ui/panel/DashboardTopBar";
 import {
+  panelDeleteButtonSx,
   panelFooterButtonSx,
   panelSurfaceSx,
 } from "@/components/ui/panel/panelStyles";
@@ -1063,40 +1068,42 @@ export function TeacherLessonEditView() {
             </Typography>
           </AppDialogBody>
           <AppDialogFooter>
-            <Button
-              onClick={() => setLeaveDialogOpen(false)}
-              disabled={saving}
-              sx={{ ...panelFooterButtonSx, color: "text.secondary" }}
-            >
-              Zostań
-            </Button>
-            <Button
-              variant="outlined"
-              color="warning"
-              onClick={() => navigate("/teacher")}
-              disabled={saving}
-              sx={panelFooterButtonSx}
-            >
-              Tak, wychodzę bez zapisu
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={
-                saving ? (
-                  <CircularProgress size={16} color="inherit" />
-                ) : (
-                  <SaveIcon />
-                )
-              }
-              onClick={() => {
-                navigateAfterSaveRef.current = true;
-                void handleSave();
-              }}
-              disabled={saving || tasksLoading}
-              sx={panelFooterButtonSx}
-            >
-              {saving ? "Zapisywanie..." : "Zapisz i wyjdź"}
-            </Button>
+            <FormActions>
+              <Button
+                onClick={() => setLeaveDialogOpen(false)}
+                disabled={saving}
+                sx={{ ...panelFooterButtonSx, color: "text.secondary" }}
+              >
+                Zostań
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<DeleteIcon />}
+                onClick={() => navigate("/teacher")}
+                disabled={saving}
+                sx={panelDeleteButtonSx}
+              >
+                Wyjdź bez zapisu
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={
+                  saving ? (
+                    <CircularProgress size={16} color="inherit" />
+                  ) : (
+                    <SaveIcon />
+                  )
+                }
+                onClick={() => {
+                  navigateAfterSaveRef.current = true;
+                  void handleSave();
+                }}
+                disabled={saving || tasksLoading}
+                sx={panelFooterButtonSx}
+              >
+                {saving ? "Zapisywanie..." : "Zapisz i wyjdź"}
+              </Button>
+            </FormActions>
           </AppDialogFooter>
         </AppDialog>
       </Container>

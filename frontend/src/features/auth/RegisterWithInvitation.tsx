@@ -6,6 +6,8 @@ import {
   Button,
   CircularProgress,
   Grow,
+  IconButton,
+  InputAdornment,
   Paper,
   Stack,
   TextField,
@@ -15,6 +17,8 @@ import { alpha, useTheme } from "@mui/material/styles";
 import {
   HowToRegOutlined as RegisterIcon,
   MenuBook as BookIcon,
+  Visibility,
+  VisibilityOff,
 } from "@mui/icons-material";
 import { Link as RouterLink, useSearchParams } from "react-router-dom";
 import { authService } from "@/api/authService";
@@ -45,6 +49,8 @@ export function RegisterWithInvitation() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isRegistered, setIsRegistered] = useState(false);
@@ -132,18 +138,21 @@ export function RegisterWithInvitation() {
   return (
     <Box
       sx={{
-        minHeight: "100vh",
+        minHeight: "100dvh",
         display: "flex",
-        alignItems: "center",
+        alignItems: { xs: "flex-start", sm: "center" },
         justifyContent: "center",
         bgcolor: theme.palette.background.default,
+        overflowY: "auto",
+        py: { xs: 3, sm: 4 },
+        px: { xs: 2, sm: 3 },
       }}
     >
       <Grow in timeout={500} style={{ transformOrigin: "top center" }}>
         <Paper
           elevation={6}
           sx={{
-            p: 4,
+            p: { xs: 3, sm: 4 },
             width: "100%",
             maxWidth: 460,
             borderRadius: 3,
@@ -246,7 +255,7 @@ export function RegisterWithInvitation() {
                   />
                   <TextField
                     label="Hasło"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     autoComplete="new-password"
                     fullWidth
                     margin="normal"
@@ -255,11 +264,29 @@ export function RegisterWithInvitation() {
                     required
                     disabled={isLoading}
                     inputProps={{ minLength: 8 }}
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            aria-label="toggle password visibility"
+                            onClick={() => setShowPassword(!showPassword)}
+                            edge="end"
+                            size="small"
+                          >
+                            {showPassword ? (
+                              <VisibilityOff sx={{ fontSize: 20 }} />
+                            ) : (
+                              <Visibility sx={{ fontSize: 20 }} />
+                            )}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
                   />
                   <PasswordStrengthIndicator password={password} />
                   <TextField
                     label="Powtórz hasło"
-                    type="password"
+                    type={showConfirmPassword ? "text" : "password"}
                     autoComplete="new-password"
                     fullWidth
                     margin="normal"
@@ -269,6 +296,26 @@ export function RegisterWithInvitation() {
                     disabled={isLoading}
                     error={!!confirmError}
                     helperText={confirmError}
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            aria-label="toggle confirm password visibility"
+                            onClick={() =>
+                              setShowConfirmPassword(!showConfirmPassword)
+                            }
+                            edge="end"
+                            size="small"
+                          >
+                            {showConfirmPassword ? (
+                              <VisibilityOff sx={{ fontSize: 20 }} />
+                            ) : (
+                              <Visibility sx={{ fontSize: 20 }} />
+                            )}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
                   />
                   <Button
                     type="submit"

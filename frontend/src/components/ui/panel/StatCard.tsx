@@ -9,6 +9,7 @@ interface StatCardProps {
   value: string | number;
   subtitle?: string;
   color?: "primary" | "success" | "info" | "warning" | "error";
+  centerText?: boolean;
 }
 
 /**
@@ -21,11 +22,22 @@ export function StatCard({
   value,
   subtitle,
   color = "primary",
+  centerText = false,
 }: StatCardProps) {
   return (
-    <Paper elevation={0} sx={{ ...panelGridCardSx, borderRadius: 2 }}>
+    <Paper elevation={0} sx={{ ...panelGridCardSx, borderRadius: 3.5 }}>
       <Box sx={panelGridCardContentSx}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, mb: 2 }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            flexDirection: centerText ? "column" : "row",
+            justifyContent: centerText ? "center" : "flex-start",
+            gap: 1.25,
+            mb: 2,
+            width: "100%",
+          }}
+        >
           <Box
             sx={{
               width: 36,
@@ -46,7 +58,7 @@ export function StatCard({
             variant="body2"
             color="text.secondary"
             fontWeight={500}
-            sx={{ lineHeight: 1.3 }}
+            sx={{ lineHeight: 1.3, textAlign: centerText ? "center" : "left" }}
           >
             {title}
           </Typography>
@@ -56,9 +68,12 @@ export function StatCard({
           sx={{
             p: 1.75,
             borderRadius: 1.5,
-            bgcolor: (t) => alpha(t.palette[color].main, 0.06),
+            bgcolor: (t) =>
+              t.palette.mode === "light"
+                ? "rgba(255,255,255,0.72)"
+                : "rgba(255,255,255,0.02)",
             border: "1px solid",
-            borderColor: (t) => alpha(t.palette[color].main, 0.12),
+            borderColor: (t) => alpha(t.palette.text.primary, 0.08),
             textAlign: "center",
             mb: 1.5,
           }}

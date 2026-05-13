@@ -1,16 +1,7 @@
-import {
-  Box,
-  Button,
-  Chip,
-  Divider,
-  IconButton,
-  Stack,
-  Typography,
-} from "@mui/material";
+import { Box, Button, Chip, Stack, Typography } from "@mui/material";
 import { alpha, keyframes, useTheme } from "@mui/material/styles";
 import {
   AutoAwesomeOutlined as SparklesIcon,
-  CloseOutlined as CloseIcon,
   EmojiEventsOutlined as AchievementIcon,
 } from "@mui/icons-material";
 import type { StudentAchievement } from "@/api/studentService";
@@ -129,23 +120,6 @@ export function AchievementUnlockDialog({
         icon={<AchievementIcon />}
         title={dialogTitle}
         subtitle={dialogSubtitle}
-        badge={
-          <IconButton
-            size="small"
-            onClick={processing ? undefined : onClose}
-            sx={{
-              color: "text.secondary",
-              bgcolor: mutedSurface,
-              border: "1px solid",
-              borderColor: alpha(theme.palette.divider, 0.5),
-              "&:hover": {
-                bgcolor: mutedSurface,
-              },
-            }}
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        }
       />
 
       <AppDialogBody>
@@ -190,7 +164,7 @@ export function AchievementUnlockDialog({
                   position: "relative",
                   width: 88,
                   height: 88,
-                  borderRadius: 4,
+                  borderRadius: 3.5,
                   display: "grid",
                   placeItems: "center",
                   fontSize: 44,
@@ -264,8 +238,6 @@ export function AchievementUnlockDialog({
               </Box>
             </Stack>
           </Stack>
-
-          <Divider sx={{ borderColor: alpha(theme.palette.divider, 0.5) }} />
 
           <Stack spacing={1.5}>
             {achievement.unlockedAt && (

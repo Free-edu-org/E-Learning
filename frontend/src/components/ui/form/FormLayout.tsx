@@ -53,7 +53,7 @@ export function FormSection({
           bgcolor: (theme) =>
             theme.palette.mode === "light"
               ? "rgba(255, 255, 255, 0.78)"
-              : "rgba(255, 255, 255, 0.03)",
+              : "rgba(255, 255, 255, 0.02)",
           border: "1px solid",
           borderColor: (theme) =>
             theme.palette.mode === "light"

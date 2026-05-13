@@ -102,18 +102,21 @@ export function AccountActivationPage() {
   return (
     <Box
       sx={{
-        minHeight: "100vh",
+        minHeight: "100dvh",
         display: "flex",
-        alignItems: "center",
+        alignItems: { xs: "flex-start", sm: "center" },
         justifyContent: "center",
         bgcolor: theme.palette.background.default,
+        overflowY: "auto",
+        py: { xs: 3, sm: 4 },
+        px: { xs: 2, sm: 3 },
       }}
     >
       <Grow in timeout={500} style={{ transformOrigin: "top center" }}>
         <Paper
           elevation={6}
           sx={{
-            p: 4,
+            p: { xs: 3, sm: 4 },
             width: "100%",
             maxWidth: 460,
             borderRadius: 3,

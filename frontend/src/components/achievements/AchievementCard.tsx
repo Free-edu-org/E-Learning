@@ -32,7 +32,7 @@ export function AchievementCard({ achievement }: AchievementCardProps) {
       sx={{
         height: "100%",
         p: 2.25,
-        borderRadius: 3,
+        borderRadius: 3.5,
         border: "1px solid",
         borderColor: achievement.unlocked
           ? visuals.border
@@ -54,7 +54,7 @@ export function AchievementCard({ achievement }: AchievementCardProps) {
               content: '""',
               position: "absolute",
               inset: 0,
-              borderRadius: 3,
+              borderRadius: 3.5,
               border: "1px solid",
               borderColor: alpha(visuals.accent, 0.45),
               pointerEvents: "none",
@@ -68,7 +68,7 @@ export function AchievementCard({ achievement }: AchievementCardProps) {
             sx={{
               width: 56,
               height: 56,
-              borderRadius: 2.5,
+              borderRadius: 3.5,
               display: "grid",
               placeItems: "center",
               fontSize: 28,

@@ -49,7 +49,7 @@ public class SmtpEmailVerificationMailService implements EmailVerificationMailSe
 	}
 
 	private String buildBody(User user, String verificationToken) {
-		String verificationUrl = frontendBaseUrl + "/verify-email?token=" + verificationToken;
+		String verificationUrl = sanitizeBaseUrl(frontendBaseUrl) + "/verify-email?token=" + verificationToken;
 		String displayName = user.getUsername() == null || user.getUsername().isBlank()
 				? user.getEmail()
 				: user.getUsername();
@@ -57,5 +57,13 @@ public class SmtpEmailVerificationMailService implements EmailVerificationMailSe
 				+ "Kliknij w link ponizej, aby potwierdzic adres email i aktywowac konto:\n\n" + verificationUrl
 				+ "\n\n" + "Link jest jednorazowy i wygasa po " + emailVerificationExpirationHours + " godzinach.\n"
 				+ "Jesli to nie Ty tworzysz konto, zignoruj te wiadomosc.\n\n" + fromName;
+	}
+
+	static String sanitizeBaseUrl(String raw) {
+		if (raw == null || raw.isBlank())
+			return "";
+		String[] parts = raw.split(",");
+		String last = parts[parts.length - 1].trim();
+		return last.endsWith("/") ? last.substring(0, last.length() - 1) : last;
 	}
 }

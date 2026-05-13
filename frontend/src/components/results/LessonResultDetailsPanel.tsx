@@ -8,7 +8,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { alpha } from "@mui/material/styles";
+import { alpha, useTheme } from "@mui/material/styles";
 import {
   CheckCircleOutlined as CorrectIcon,
   CancelOutlined as IncorrectIcon,
@@ -16,6 +16,7 @@ import {
   VisibilityOffOutlined as VisibilityOffIcon,
 } from "@mui/icons-material";
 import type { LessonResultDetailsResponse } from "@/api/studentService";
+import { StatsCard } from "@/components/teacher/StatsCard";
 import { panelSurfaceSx } from "@/components/ui/panel/panelStyles";
 import { formatPercent } from "@/utils/dashboardUtils";
 
@@ -55,6 +56,7 @@ export function LessonResultDetailsPanel({
   performerLabel,
   showTabSwitchInfo = false,
 }: LessonResultDetailsPanelProps) {
+  const theme = useTheme();
   const correctCount = result.tasks.filter((task) => task.isCorrect).length;
   const incorrectCount = result.tasks.length - correctCount;
 
@@ -64,14 +66,14 @@ export function LessonResultDetailsPanel({
         sx={{
           display: "grid",
           gridTemplateColumns: { xs: "1fr", md: "1.4fr 1fr 1fr 1fr" },
-          gap: 2,
+          gap: 1.5,
         }}
       >
         <Box
           sx={{
             ...panelSurfaceSx,
-            p: 3,
-            bgcolor: (theme) => alpha(theme.palette.primary.main, 0.06),
+            borderRadius: 3.5,
+            p: 2.25,
           }}
         >
           <Typography variant="overline" color="text.secondary">
@@ -91,41 +93,26 @@ export function LessonResultDetailsPanel({
           )}
         </Box>
 
-        <Box sx={{ ...panelSurfaceSx, p: 3 }}>
-          <Typography variant="overline" color="text.secondary">
-            Wynik
-          </Typography>
-          <Typography variant="h5" fontWeight={700}>
-            {formatPercent(result.resultPercent)}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {result.score} / {result.maxScore} punktów
-          </Typography>
-        </Box>
+        <StatsCard
+          label="Wynik"
+          value={formatPercent(result.resultPercent)}
+          helperText={`${result.score} / ${result.maxScore} punktów`}
+          highlightColor={theme.palette.primary.main}
+        />
 
-        <Box sx={{ ...panelSurfaceSx, p: 3 }}>
-          <Typography variant="overline" color="text.secondary">
-            Poprawne
-          </Typography>
-          <Typography variant="h5" fontWeight={700} color="success.main">
-            {correctCount}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            zadań
-          </Typography>
-        </Box>
+        <StatsCard
+          label="Poprawne"
+          value={correctCount}
+          helperText="zadań"
+          highlightColor={theme.palette.success.main}
+        />
 
-        <Box sx={{ ...panelSurfaceSx, p: 3 }}>
-          <Typography variant="overline" color="text.secondary">
-            Błędne
-          </Typography>
-          <Typography variant="h5" fontWeight={700} color="error.main">
-            {incorrectCount}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            zadań
-          </Typography>
-        </Box>
+        <StatsCard
+          label="Błędne"
+          value={incorrectCount}
+          helperText="zadań"
+          highlightColor={theme.palette.error.main}
+        />
       </Box>
 
       <Box sx={{ ...panelSurfaceSx, p: 0, overflow: "hidden" }}>
@@ -143,6 +130,7 @@ export function LessonResultDetailsPanel({
           {result.tasks.map((task, index) => {
             const possibleAnswers = splitPipeList(task.possibleAnswers);
             const scatterWords = splitPipeList(task.words);
+            const statusColor = task.isCorrect ? "success.main" : "error.main";
 
             return (
               <Accordion
@@ -157,24 +145,43 @@ export function LessonResultDetailsPanel({
                       task.isCorrect
                         ? theme.palette.success.main
                         : theme.palette.error.main,
-                      0.18,
+                      0.22,
                     ),
-                  boxShadow: "none",
+                  borderLeft: "2px solid",
+                  borderLeftColor: (theme) =>
+                    alpha(
+                      task.isCorrect
+                        ? theme.palette.success.main
+                        : theme.palette.error.main,
+                      0.55,
+                    ),
+                  boxShadow: (theme) =>
+                    `0 6px 16px ${alpha(
+                      task.isCorrect
+                        ? theme.palette.success.main
+                        : theme.palette.error.main,
+                      0.06,
+                    )}`,
                   "&:before": { display: "none" },
                 }}
               >
                 <AccordionSummary
-                  expandIcon={<ExpandMoreIcon />}
+                  expandIcon={
+                    <ExpandMoreIcon
+                      sx={{ color: "text.secondary", opacity: 0.75 }}
+                    />
+                  }
                   sx={{
                     px: 2,
-                    py: 1,
+                    py: 0.75,
+                    minHeight: 56,
                     bgcolor: (theme) =>
-                      alpha(
-                        task.isCorrect
-                          ? theme.palette.success.main
-                          : theme.palette.error.main,
-                        0.05,
-                      ),
+                      theme.palette.mode === "dark"
+                        ? alpha(theme.palette.common.black, 0.14)
+                        : alpha(theme.palette.common.black, 0.02),
+                    "& .MuiAccordionSummary-content": {
+                      my: 0.5,
+                    },
                   }}
                 >
                   <Box
@@ -185,10 +192,18 @@ export function LessonResultDetailsPanel({
                       minWidth: 0,
                     }}
                   >
-                    <Typography variant="subtitle1" fontWeight={700}>
+                    <Typography
+                      variant="subtitle1"
+                      fontWeight={800}
+                      sx={{ fontSize: "1.02rem" }}
+                    >
                       Zadanie {index + 1}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ opacity: 0.85, letterSpacing: "0.01em" }}
+                    >
                       {task.section ? `${task.section} • ` : ""}
                       Rodzaj: {getTaskTypeLabel(task.taskType)}
                     </Typography>
@@ -196,19 +211,47 @@ export function LessonResultDetailsPanel({
                   <Chip
                     icon={task.isCorrect ? <CorrectIcon /> : <IncorrectIcon />}
                     label={task.isCorrect ? "Poprawne" : "Błędne"}
-                    color={task.isCorrect ? "success" : "error"}
                     variant="outlined"
-                    sx={{ ml: "auto", mr: 1 }}
+                    size="small"
+                    sx={{
+                      ml: "auto",
+                      mr: 1,
+                      height: 24,
+                      fontSize: "0.69rem",
+                      fontWeight: 700,
+                      color: statusColor,
+                      borderColor: (theme) =>
+                        alpha(
+                          theme.palette[task.isCorrect ? "success" : "error"]
+                            .main,
+                          0.36,
+                        ),
+                      bgcolor: (theme) =>
+                        alpha(
+                          theme.palette[task.isCorrect ? "success" : "error"]
+                            .main,
+                          0.08,
+                        ),
+                      "& .MuiChip-icon": {
+                        fontSize: 14,
+                        color: "inherit",
+                        mr: 0.25,
+                      },
+                    }}
                   />
                 </AccordionSummary>
 
-                <AccordionDetails sx={{ p: 2.5 }}>
-                  <Typography variant="body1" fontWeight={600} sx={{ mb: 2 }}>
+                <AccordionDetails sx={{ p: 2 }}>
+                  <Typography
+                    variant="body1"
+                    fontWeight={600}
+                    sx={{ mb: 1.25, lineHeight: 1.4 }}
+                  >
                     {task.taskText}
                   </Typography>
 
                   {showTabSwitchInfo && (
-                    <Box sx={{ mb: 2 }}>
+                    <Box sx={{ mb: 1.25 }}>
                       <Chip
                         icon={<VisibilityOffIcon />}
                         label={
@@ -216,26 +259,49 @@ export function LessonResultDetailsPanel({
                             ? `Zmiana zakladki: ${task.tabSwitchCount}`
                             : "Bez zmiany zakladki"
                         }
-                        color={task.tabSwitchCount > 0 ? "warning" : "default"}
                         variant="outlined"
                         size="small"
+                        sx={{
+                          height: 22,
+                          fontSize: "0.68rem",
+                          fontWeight: 600,
+                          color: (theme) =>
+                            task.tabSwitchCount > 0
+                              ? alpha(theme.palette.warning.light, 0.92)
+                              : alpha(theme.palette.text.secondary, 0.95),
+                          bgcolor: (theme) =>
+                            task.tabSwitchCount > 0
+                              ? alpha(theme.palette.warning.main, 0.1)
+                              : theme.palette.mode === "dark"
+                                ? alpha(theme.palette.common.black, 0.22)
+                                : alpha(theme.palette.text.primary, 0.04),
+                          borderColor: (theme) =>
+                            task.tabSwitchCount > 0
+                              ? alpha(theme.palette.warning.main, 0.28)
+                              : alpha(theme.palette.text.primary, 0.16),
+                          "& .MuiChip-icon": {
+                            fontSize: 13,
+                            color: "inherit",
+                            mr: 0.25,
+                          },
+                        }}
                       />
                     </Box>
                   )}
 
                   {task.hint && (
-                    <Alert severity="info" sx={{ mb: 2 }}>
+                    <Alert severity="info" sx={{ mb: 1.25 }}>
                       {task.hint}
                     </Alert>
                   )}
 
                   {possibleAnswers.length > 0 && (
-                    <Box sx={{ mb: 2 }}>
+                    <Box sx={{ mb: 1.25 }}>
                       <Typography
                         variant="caption"
                         color="text.secondary"
                         display="block"
-                        sx={{ mb: 1 }}
+                        sx={{ mb: 0.75 }}
                       >
                         Zestaw odpowiedzi
                       </Typography>
@@ -258,12 +324,12 @@ export function LessonResultDetailsPanel({
                   )}
 
                   {scatterWords.length > 0 && (
-                    <Box sx={{ mb: 2 }}>
+                    <Box sx={{ mb: 1.25 }}>
                       <Typography
                         variant="caption"
                         color="text.secondary"
                         display="block"
-                        sx={{ mb: 1 }}
+                        sx={{ mb: 0.75 }}
                       >
                         Pula wyrazów
                       </Typography>
@@ -289,29 +355,50 @@ export function LessonResultDetailsPanel({
                     sx={{
                       display: "grid",
                       gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
-                      gap: 2,
+                      gap: 1.25,
                     }}
                   >
                     <Box
                       sx={{
-                        p: 2,
+                        p: 1.5,
                         borderRadius: 2,
-                        bgcolor: (theme) =>
+                        border: "1px solid",
+                        borderColor: (theme) =>
                           alpha(
                             task.isCorrect
                               ? theme.palette.success.main
                               : theme.palette.error.main,
-                            0.07,
+                            0.24,
                           ),
+                        borderLeft: "2px solid",
+                        borderLeftColor: (theme) =>
+                          alpha(
+                            task.isCorrect
+                              ? theme.palette.success.main
+                              : theme.palette.error.main,
+                            0.6,
+                          ),
+                        bgcolor: (theme) =>
+                          theme.palette.mode === "dark"
+                            ? alpha(theme.palette.common.black, 0.22)
+                            : alpha(theme.palette.common.black, 0.012),
                       }}
                     >
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ opacity: 0.85 }}
+                      >
                         Odpowiedź ucznia
                       </Typography>
                       <Typography
                         variant="body2"
-                        fontWeight={600}
-                        sx={{ mt: 0.75 }}
+                        fontWeight={700}
+                        sx={{
+                          mt: 0.5,
+                          lineHeight: 1.45,
+                          color: "text.primary",
+                        }}
                       >
                         {task.userAnswer?.trim()
                           ? task.userAnswer
@@ -321,19 +408,35 @@ export function LessonResultDetailsPanel({
 
                     <Box
                       sx={{
-                        p: 2,
+                        p: 1.5,
                         borderRadius: 2,
+                        border: "1px solid",
+                        borderColor: (theme) =>
+                          alpha(theme.palette.primary.main, 0.22),
+                        borderLeft: "2px solid",
+                        borderLeftColor: (theme) =>
+                          alpha(theme.palette.primary.main, 0.52),
                         bgcolor: (theme) =>
-                          alpha(theme.palette.primary.main, 0.06),
+                          theme.palette.mode === "dark"
+                            ? alpha(theme.palette.common.black, 0.18)
+                            : alpha(theme.palette.primary.main, 0.045),
                       }}
                     >
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ opacity: 0.85 }}
+                      >
                         Poprawna odpowiedź
                       </Typography>
                       <Typography
                         variant="body2"
-                        fontWeight={600}
-                        sx={{ mt: 0.75 }}
+                        fontWeight={700}
+                        sx={{
+                          mt: 0.5,
+                          lineHeight: 1.45,
+                          color: "text.primary",
+                        }}
                       >
                         {task.correctAnswer?.trim()
                           ? task.correctAnswer

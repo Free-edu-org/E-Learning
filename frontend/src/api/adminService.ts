@@ -92,6 +92,10 @@ export const adminService = {
       method: "PUT",
       body: JSON.stringify(payload),
     }),
+  deleteAchievement: (code: string) =>
+    fetchApi<void>(`/api/v1/admin/achievements/${code}`, {
+      method: "DELETE",
+    }),
   setAchievementActive: (code: string, active: boolean) =>
     fetchApi<AdminAchievement>(`/api/v1/admin/achievements/${code}/active`, {
       method: "PATCH",

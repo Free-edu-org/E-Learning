@@ -102,6 +102,16 @@ public class AchievementManagementService {
 		})).subscribeOn(Schedulers.boundedElastic());
 	}
 
+	public Mono<Void> deleteAchievement(String code) {
+		return Mono.fromCallable(() -> transactionTemplate.execute(status -> {
+			log.info("Deleting achievement definition. Code: {}", code);
+			Achievement achievement = getRequiredAchievement(code);
+			achievementRepository.delete(achievement);
+			log.info("Achievement definition deleted successfully. Code: {}", code);
+			return (Void) null;
+		})).subscribeOn(Schedulers.boundedElastic()).then();
+	}
+
 	private Achievement getRequiredAchievement(String code) {
 		return achievementRepository.findByCode(code).orElseThrow(() -> {
 			log.warn("Achievement not found. Code: {}", code);

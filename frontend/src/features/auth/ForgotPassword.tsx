@@ -138,16 +138,18 @@ export function ForgotPassword() {
   return (
     <Box
       sx={{
-        minHeight: "100vh",
+        minHeight: "100dvh",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        justifyContent: "center",
+        justifyContent: { xs: "flex-start", md: "center" },
         position: "relative",
         bgcolor: theme.palette.background.default,
         color: theme.palette.text.primary,
-        overflow: "hidden",
+        overflowY: "auto",
+        overflowX: "hidden",
         p: { xs: 2, md: 4 },
+        pt: { xs: 4, md: 4 },
       }}
     >
       {/* Background Decor */}

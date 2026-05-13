@@ -4,6 +4,8 @@ import {
   Autocomplete,
   Box,
   Button,
+  Card,
+  CardContent,
   Chip,
   CircularProgress,
   Container,
@@ -16,7 +18,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
+import { alpha, useTheme, type Theme } from "@mui/material/styles";
 import {
   AddCircleOutlined as AddIcon,
   AttachFileOutlined as AttachIcon,
@@ -24,7 +26,7 @@ import {
   CloseOutlined as RemoveFileIcon,
   DeleteOutline as DeleteIcon,
   EditOutlined as EditLessonIcon,
-  GroupOutlined as GroupIcon,
+  SchoolOutlined as SchoolIcon,
   PersonAddOutlined as PersonAddIcon,
   SaveOutlined as SaveIcon,
 } from "@mui/icons-material";
@@ -63,6 +65,7 @@ import { DashboardTopBar } from "@/components/ui/panel/DashboardTopBar";
 import {
   panelDeleteButtonSx,
   panelFooterButtonSx,
+  panelSurfaceSx,
 } from "@/components/ui/panel/panelStyles";
 import { useAuth } from "@/context/AuthContext";
 import { uiTokens } from "@/theme/uiTokens";
@@ -87,6 +90,18 @@ const emptyLessonDraft: LessonDraft = {
   theme: "",
   groups: [],
   tasks: [],
+};
+
+const deleteHeaderBadgeSx = {
+  borderRadius: 999,
+  fontWeight: 700,
+  px: 0.75,
+  borderColor: (theme: Theme) => alpha(theme.palette.error.main, 0.28),
+  color: "error.main",
+  bgcolor: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.error.main, 0.04)
+      : alpha(theme.palette.error.main, 0.12),
 };
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -910,12 +925,13 @@ export function TeacherDashboard() {
             title="Utwórz lekcję"
             subtitle="Nowa lekcja z zadaniami"
             onClick={() => navigate("/teacher/lessons/new")}
+            sx={{ borderRadius: 3.5 }}
           />
           <ActionButton
             icon={
               <Stack direction="row" spacing={0.5} alignItems="center">
                 <PersonAddIcon sx={{ fontSize: 30 }} />
-                <GroupIcon sx={{ fontSize: 30 }} />
+                <SchoolIcon sx={{ fontSize: 30 }} />
               </Stack>
             }
             title="Zarządzaj uczniami i grupami"
@@ -924,87 +940,104 @@ export function TeacherDashboard() {
           />
         </Box>
 
-        <Typography
-          variant="subtitle1"
-          fontWeight={700}
-          color="primary.main"
-          sx={{ mb: 1.5 }}
-        >
-          Moje lekcje
-        </Typography>
-
-        <LessonToolbar
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          statusFilter={statusFilter}
-          onStatusFilterChange={setStatusFilter}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-          sortMode={sortMode}
-          onSortModeChange={setSortMode}
-          availableGroups={availableGroups}
-          selectedGroups={selectedGroups}
-          onSelectedGroupsChange={setSelectedGroups}
-        />
-
-        {loadingData ? (
-          <Grid container spacing={2}>
-            {[...Array(8)].map((_, i) => (
-              <Grid key={i} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
-                <Skeleton
-                  variant="rounded"
-                  height={220}
-                  sx={{ borderRadius: 3 }}
-                />
-              </Grid>
-            ))}
-          </Grid>
-        ) : displayedLessons.length === 0 ? (
-          <Alert severity="info" sx={{ borderRadius: 2 }}>
-            {lessons.length === 0
-              ? 'Nie masz jeszcze żadnych lekcji. Kliknij "Utwórz lekcję", aby dodać pierwszą.'
-              : "Brak lekcji pasujących do wybranych filtrów."}
-          </Alert>
-        ) : viewMode === "list" ? (
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-            {displayedLessons.map((lesson) => (
-              <LessonCard
-                key={lesson.publicId}
-                lesson={lesson}
-                listView
-                onEdit={(selectedLesson) =>
-                  navigate(`/teacher/lessons/${selectedLesson.publicId}/edit`)
-                }
-                onDelete={openDeleteDialog}
-                onToggleStatus={handleToggleLessonStatus}
-                onResults={(l) =>
-                  navigate(`/teacher/lessons/${l.publicId}/stats`)
-                }
-              />
-            ))}
-          </Box>
-        ) : (
-          <Grid container spacing={2}>
-            {displayedLessons.map((lesson) => (
-              <Grid
-                key={lesson.publicId}
-                size={{ xs: 12, sm: 6, md: 4, lg: 3 }}
+        <Card elevation={0} sx={panelSurfaceSx}>
+          <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+            <Stack spacing={3}>
+              <Stack
+                direction={{ xs: "column", lg: "row" }}
+                spacing={2}
+                justifyContent="space-between"
               >
-                <LessonCard
-                  lesson={lesson}
-                  onEdit={(selectedLesson) =>
-                    navigate(`/teacher/lessons/${selectedLesson.publicId}/edit`)
-                  }
-                  onDelete={openDeleteDialog}
-                  onToggleStatus={handleToggleLessonStatus}
-                  onResults={(l) =>
-                    navigate(`/teacher/lessons/${l.publicId}/stats`)
-                  }
-                />
-              </Grid>
-            ))}
-          </Grid>
-        )}
+                <Stack spacing={1}>
+                  <Typography variant="h6" fontWeight={800}>
+                    Moje lekcje
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Zarządzaj własnymi lekcjami, ich widocznością oraz szybkim
+                    przejściem do edycji i wyników.
+                  </Typography>
+                </Stack>
+              </Stack>
+
+              <LessonToolbar
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                statusFilter={statusFilter}
+                onStatusFilterChange={setStatusFilter}
+                viewMode={viewMode}
+                onViewModeChange={setViewMode}
+                sortMode={sortMode}
+                onSortModeChange={setSortMode}
+                availableGroups={availableGroups}
+                selectedGroups={selectedGroups}
+                onSelectedGroupsChange={setSelectedGroups}
+              />
+
+              {loadingData ? (
+                <Grid container spacing={2}>
+                  {[...Array(8)].map((_, i) => (
+                    <Grid key={i} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
+                      <Skeleton
+                        variant="rounded"
+                        height={220}
+                        sx={{ borderRadius: 3 }}
+                      />
+                    </Grid>
+                  ))}
+                </Grid>
+              ) : displayedLessons.length === 0 ? (
+                <Alert severity="info" sx={{ borderRadius: 2 }}>
+                  {lessons.length === 0
+                    ? 'Nie masz jeszcze żadnych lekcji. Kliknij "Utwórz lekcję", aby dodać pierwszą.'
+                    : "Brak lekcji pasujących do bieżących filtrów."}
+                </Alert>
+              ) : viewMode === "list" ? (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                  {displayedLessons.map((lesson) => (
+                    <LessonCard
+                      key={lesson.publicId}
+                      lesson={lesson}
+                      listView
+                      onEdit={(selectedLesson) =>
+                        navigate(
+                          `/teacher/lessons/${selectedLesson.publicId}/edit`,
+                        )
+                      }
+                      onDelete={openDeleteDialog}
+                      onToggleStatus={handleToggleLessonStatus}
+                      onResults={(l) =>
+                        navigate(`/teacher/lessons/${l.publicId}/stats`)
+                      }
+                    />
+                  ))}
+                </Box>
+              ) : (
+                <Grid container spacing={2}>
+                  {displayedLessons.map((lesson) => (
+                    <Grid
+                      key={lesson.publicId}
+                      size={{ xs: 12, sm: 6, md: 4, lg: 3 }}
+                    >
+                      <LessonCard
+                        lesson={lesson}
+                        onEdit={(selectedLesson) =>
+                          navigate(
+                            `/teacher/lessons/${selectedLesson.publicId}/edit`,
+                          )
+                        }
+                        onDelete={openDeleteDialog}
+                        onToggleStatus={handleToggleLessonStatus}
+                        onResults={(l) =>
+                          navigate(`/teacher/lessons/${l.publicId}/stats`)
+                        }
+                      />
+                    </Grid>
+                  ))}
+                </Grid>
+              )}
+            </Stack>
+          </CardContent>
+        </Card>
         <AppDialog
           open={createDialogOpen}
           onClose={closeCreateLessonDialog}
@@ -1469,18 +1502,41 @@ export function TeacherDashboard() {
           open={deleteDialogOpen}
           onClose={closeDeleteDialog}
           onExited={resetDeleteDialogState}
-          maxWidth="xs"
+          maxWidth="sm"
+          paperSx={{
+            width: {
+              xs: "calc(100% - 28px)",
+              sm: 520,
+            },
+          }}
         >
           <AppDialogHeader
-            icon={<DeleteIcon sx={{ color: "error.main" }} />}
+            icon={<DeleteIcon sx={{ color: "common.white" }} />}
+            iconContainerSx={{
+              width: 50,
+              height: 50,
+              borderRadius: 3,
+              backgroundImage:
+                "linear-gradient(135deg, rgba(239,68,68,0.94) 0%, rgba(220,38,38,0.9) 100%)",
+              boxShadow: (theme) =>
+                `0 14px 28px ${alpha(theme.palette.error.main, 0.22)}, inset 0 1px 0 ${alpha(theme.palette.common.white, 0.24)}`,
+              "&::after": {
+                background: (theme) =>
+                  `radial-gradient(circle, ${alpha(theme.palette.error.main, 0.18)} 0%, transparent 72%)`,
+              },
+              "& .MuiSvgIcon-root": {
+                fontSize: 24,
+              },
+            }}
             title="Usuń lekcję"
-            subtitle="Ta operacja jest nieodwracalna i natychmiast usuwa wskazaną lekcję."
+            subtitle="Ta operacja jest nieodwracalna."
             badge={
               <Chip
                 label="Ostrzeżenie"
                 size="small"
                 color="error"
-                sx={{ fontWeight: 700 }}
+                variant="outlined"
+                sx={deleteHeaderBadgeSx}
               />
             }
           />
@@ -1491,9 +1547,34 @@ export function TeacherDashboard() {
               </AppDialogStatus>
             )}
             <FormSection>
-              <Typography variant="body1" fontWeight={700} sx={{ mb: 0.5 }}>
-                {deletingLesson?.title}
-              </Typography>
+              <Stack spacing={1}>
+                <Typography variant="body2" sx={{ overflowWrap: "anywhere" }}>
+                  <Box component="span" fontWeight={700} color="text.primary">
+                    Tytuł:
+                  </Box>{" "}
+                  {deletingLesson?.title ?? "—"}
+                </Typography>
+                <Typography variant="body2" sx={{ overflowWrap: "anywhere" }}>
+                  <Box component="span" fontWeight={700} color="text.primary">
+                    Opis:
+                  </Box>{" "}
+                  {deletingLesson?.theme ?? "—"}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ overflowWrap: "anywhere" }}
+                >
+                  <Box component="span" fontWeight={700} color="text.primary">
+                    Grupy:
+                  </Box>{" "}
+                  {deletingLesson?.groups?.length
+                    ? deletingLesson.groups
+                        .map((group) => group.name)
+                        .join(", ")
+                    : "Brak przypisanych grup"}
+                </Typography>
+              </Stack>
             </FormSection>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
               Usunięcie lekcji skasuje również wszystkie jej zadania i postępy
@@ -1503,12 +1584,7 @@ export function TeacherDashboard() {
           <AppDialogFooter>
             <FormActions>
               <Button
-                onClick={closeDeleteDialog}
-                sx={{ ...panelFooterButtonSx, color: "text.secondary" }}
-              >
-                Anuluj
-              </Button>
-              <Button
+                variant="contained"
                 color="error"
                 startIcon={<DeleteIcon />}
                 onClick={submitDeleteLesson}
