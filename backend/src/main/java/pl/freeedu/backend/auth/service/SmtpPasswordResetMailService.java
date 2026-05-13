@@ -49,7 +49,7 @@ public class SmtpPasswordResetMailService implements PasswordResetMailService {
 	}
 
 	private String buildResetUrl(String resetToken) {
-		return frontendBaseUrl + "/reset-password?token=" + resetToken;
+		return sanitizeBaseUrl(frontendBaseUrl) + "/reset-password?token=" + resetToken;
 	}
 
 	private String buildBody(User user, String resetUrl) {
@@ -57,5 +57,13 @@ public class SmtpPasswordResetMailService implements PasswordResetMailService {
 				+ "Kliknij w link ponizej, aby ustawic nowe haslo:\n\n" + resetUrl + "\n\n"
 				+ "Link wygasa po 30 minutach.\n" + "Jesli to nie Ty prosiles o reset, zignoruj te wiadomosc.\n\n"
 				+ fromName;
+	}
+
+	static String sanitizeBaseUrl(String raw) {
+		if (raw == null || raw.isBlank())
+			return "";
+		String[] parts = raw.split(",");
+		String last = parts[parts.length - 1].trim();
+		return last.endsWith("/") ? last.substring(0, last.length() - 1) : last;
 	}
 }

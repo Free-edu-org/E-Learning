@@ -38,7 +38,7 @@ public class SmtpAccountInvitationMailService implements AccountInvitationMailSe
 			return;
 		}
 
-		String activationUrl = frontendBaseUrl + "/activate?token=" + inviteToken;
+		String activationUrl = sanitizeBaseUrl(frontendBaseUrl) + "/activate?token=" + inviteToken;
 
 		SimpleMailMessage message = new SimpleMailMessage();
 		message.setTo(toEmail);
@@ -54,5 +54,13 @@ public class SmtpAccountInvitationMailService implements AccountInvitationMailSe
 				+ "Kliknij w link ponizej, aby dokonczyc tworzenie konta:\n\n" + activationUrl + "\n\n"
 				+ "Link jest jednorazowy i wygasa po " + invitationExpirationHours + " godzinach.\n"
 				+ "Jesli nie spodziewales sie tego zaproszenia, mozesz zignorowac ta wiadomosc.\n\n" + fromName;
+	}
+
+	static String sanitizeBaseUrl(String raw) {
+		if (raw == null || raw.isBlank())
+			return "";
+		String[] parts = raw.split(",");
+		String last = parts[parts.length - 1].trim();
+		return last.endsWith("/") ? last.substring(0, last.length() - 1) : last;
 	}
 }
