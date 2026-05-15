@@ -30,7 +30,6 @@ import { SectionRow, SectionOverlay } from "./SectionRow";
 import { TaskTypeSelector } from "./TaskTypeSelector";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface SectionGroup {
@@ -112,14 +111,14 @@ export function TaskEditor({
   /** sectionId of the collapsed section a task is currently hovering over */
   const [overSectionId, setOverSectionId] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    new Set(),
+    () => new Set(groupTasks(tasks).map((g) => g.sectionId)),
   );
 
   // Ref keeps handlers free of stale closures — always reads latest tasks.
-  // Written during render so every handler invocation sees the current tasks,
-  // even if multiple dragover events fire before the next render completes.
   const tasksRef = useRef(tasks);
-  tasksRef.current = tasks;
+  useEffect(() => {
+    tasksRef.current = tasks;
+  });
 
   // Snapshot at drag-start so onDragCancel can restore the original state
   const clonedTasksRef = useRef<LessonTaskDraft[] | null>(null);
@@ -157,18 +156,6 @@ export function TaskEditor({
     if (!hasSections) return tasks.map((t) => t.id);
     return groups.map((g) => g.sectionId);
   }, [hasSections, tasks, groups]);
-
-  // Auto-expand all sections once when task data first arrives (e.g. lesson edit view).
-  // Before the state-lifting refactor, SectionRow managed its own `expanded` state and
-  // defaulted to `true`. Now TaskEditor owns it, but always initialised to empty Set,
-  // leaving sections collapsed and tasks un-draggable until the user clicks each header.
-  const autoExpandDoneRef = useRef(false);
-  useEffect(() => {
-    if (!autoExpandDoneRef.current && groups.length > 0) {
-      autoExpandDoneRef.current = true;
-      setExpandedSections(new Set(groups.map((g) => g.sectionId)));
-    }
-  }, [groups]);
 
   // ── Collision detection ──────────────────────────────────────────────────────
   // When dragging a section, restrict candidates to section IDs only.
