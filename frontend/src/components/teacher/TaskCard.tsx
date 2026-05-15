@@ -181,7 +181,8 @@ function TaskCardHeader({
         fontWeight={600}
         sx={{ flex: 1, minWidth: 0, mx: 1, overflowWrap: "anywhere" }}
       >
-        {task.task || `Zadanie ${index + 1}`}
+        {(task.type === "speak" ? task.correctAnswer : task.task) ||
+          `Zadanie ${index + 1}`}
       </Typography>
 
       {!isDragOverlay && (

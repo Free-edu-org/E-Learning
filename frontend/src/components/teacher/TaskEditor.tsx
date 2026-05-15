@@ -14,7 +14,6 @@ import {
   type DragOverEvent,
   type DragStartEvent,
   type CollisionDetection,
-  type Modifier,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -31,25 +30,6 @@ import { SectionRow, SectionOverlay } from "./SectionRow";
 import { TaskTypeSelector } from "./TaskTypeSelector";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-// ─── Modifiers ────────────────────────────────────────────────────────────────
-
-// Centers overlay on cursor at drag start regardless of where the element was clicked.
-// X stays fixed at that grab point (no horizontal drift); Y tracks cursor vertically.
-const centeredOnCursor: Modifier = ({
-  activatorCoordinates,
-  draggingNodeRect,
-  transform,
-}) => {
-  if (!activatorCoordinates || !draggingNodeRect) return transform;
-  return {
-    ...transform,
-    x: activatorCoordinates.x - (draggingNodeRect.left + draggingNodeRect.width / 2),
-    y:
-      transform.y +
-      activatorCoordinates.y -
-      (draggingNodeRect.top + draggingNodeRect.height / 2),
-  };
-};
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -609,7 +589,7 @@ export function TaskEditor({
 
           <DragOverlay
             dropAnimation={null}
-            modifiers={[centeredOnCursor]}
+            modifiers={[restrictToVerticalAxis]}
           >
             {activeId &&
               activeType === "section" &&
