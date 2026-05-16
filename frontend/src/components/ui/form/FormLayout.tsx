@@ -52,14 +52,13 @@ export function FormSection({
           borderRadius: uiTokens.radius.section,
           bgcolor: (theme) =>
             theme.palette.mode === "light"
-              ? "rgba(255, 255, 255, 0.78)"
-              : "rgba(255, 255, 255, 0.02)",
+              ? "rgba(255, 255, 255, 0.92)"
+              : "rgba(255, 255, 255, 0.04)",
           border: "1px solid",
           borderColor: (theme) =>
             theme.palette.mode === "light"
               ? "rgba(148, 163, 184, 0.14)"
               : "rgba(255, 255, 255, 0.06)",
-          backdropFilter: "blur(14px)",
           boxShadow: (theme) =>
             theme.palette.mode === "light"
               ? "0 16px 32px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255,255,255,0.6)"

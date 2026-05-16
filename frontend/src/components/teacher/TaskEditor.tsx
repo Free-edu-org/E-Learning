@@ -21,7 +21,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { restrictToVerticalAxis, snapCenterToCursor } from "@dnd-kit/modifiers";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import type { TaskType } from "@/api/taskService";
 import { uiTokens } from "@/theme/uiTokens";
 import { TaskCard, TaskCardOverlay } from "./TaskCard";
@@ -111,11 +111,10 @@ export function TaskEditor({
   /** sectionId of the collapsed section a task is currently hovering over */
   const [overSectionId, setOverSectionId] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    new Set(),
+    () => new Set(groupTasks(tasks).map((g) => g.sectionId)),
   );
 
   // Ref keeps handlers free of stale closures — always reads latest tasks.
-  // Updated in an effect (not during render) to satisfy the no-ref-write-in-render rule.
   const tasksRef = useRef(tasks);
   useEffect(() => {
     tasksRef.current = tasks;
@@ -577,7 +576,7 @@ export function TaskEditor({
 
           <DragOverlay
             dropAnimation={null}
-            modifiers={[snapCenterToCursor, restrictToVerticalAxis]}
+            modifiers={[restrictToVerticalAxis]}
           >
             {activeId &&
               activeType === "section" &&
