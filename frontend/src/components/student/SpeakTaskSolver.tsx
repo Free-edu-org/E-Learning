@@ -306,6 +306,7 @@ export function SpeakTaskSolver({
           const correct = wordResult?.correct ?? false;
           const actual = wordResult?.actual ?? "";
           const missed = heard && !correct && !actual;
+          const showHeardWord = false;
 
           const wordColor = !heard
             ? "text.primary"
@@ -347,7 +348,7 @@ export function SpeakTaskSolver({
               >
                 {text}
               </Typography>
-              {false && heard && !correct && (
+              {showHeardWord && heard && !correct && (
                 <Typography
                   variant="caption"
                   sx={{
