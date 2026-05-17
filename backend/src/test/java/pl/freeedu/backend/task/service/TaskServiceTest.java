@@ -524,6 +524,118 @@ class TaskServiceTest {
 	}
 
 	@Test
+	void shouldAcceptSpeakTranscriptionWithLeadingInsertion() {
+		assertSpeakTranscription("My name is Dominik", "coś My name is Dominik", 1.0, true,
+				List.of(word("my", "my", true), word("name", "name", true), word("is", "is", true),
+						word("dominik", "dominik", true)));
+	}
+
+	@Test
+	void shouldAcceptSpeakTranscriptionWithTrailingInsertion() {
+		assertSpeakTranscription("My name is Dominik", "My name is Dominik coś", 1.0, true,
+				List.of(word("my", "my", true), word("name", "name", true), word("is", "is", true),
+						word("dominik", "dominik", true)));
+	}
+
+	@Test
+	void shouldLowerSpeakScoreForDeletion() {
+		assertSpeakTranscription("My name is Dominik", "My name Dominik", 0.75, false, List.of(word("my", "my", true),
+				word("name", "name", true), word("is", "", false), word("dominik", "dominik", true)));
+	}
+
+	@Test
+	void shouldLowerSpeakScoreForSubstitution() {
+		assertSpeakTranscription("My name is Dominik", "My surname is Dominik", 0.75, false,
+				List.of(word("my", "my", true), word("name", "surname", false), word("is", "is", true),
+						word("dominik", "dominik", true)));
+	}
+
+	@Test
+	void shouldHandleInsertionsAndDeletionWithoutBreakingAlignment() {
+		assertSpeakTranscription("My name is Dominik", "coś My name Dominik coś", 0.75, false,
+				List.of(word("my", "my", true), word("name", "name", true), word("is", "", false),
+						word("dominik", "dominik", true)));
+	}
+
+	@Test
+	void shouldNotAcceptSpeakTranscriptionWithDifferentWordOrder() {
+		Integer lessonId = 1;
+		String taskPublicId = "task-10";
+		Lesson lesson = Lesson.builder().id(lessonId).isActive(true).build();
+		SpeakTask task = SpeakTask.builder().id(10).publicId(taskPublicId).lessonId(lessonId)
+				.expectedText("My name is Dominik").build();
+		FilePart audio = mock(FilePart.class);
+
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(1));
+		when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
+		when(userInGroupRepository.hasAccessToLesson(1, lessonId)).thenReturn(true);
+		when(speakTaskRepository.findByPublicId(taskPublicId)).thenReturn(Optional.of(task));
+		when(sttClient.transcribe(audio))
+				.thenReturn(Mono.just(new SttTranscriptionResponse("Dominik is my name", "en", 1.0)));
+
+		StepVerifier.create(taskService.transcribeSpeakTask(lessonId, taskPublicId, Mono.just(audio)))
+				.assertNext(resp -> {
+					assertFalse(resp.isCorrect());
+					assertEquals(0.5, resp.getScore(), 0.0001);
+					assertEquals(4, resp.getWords().size());
+				}).verifyComplete();
+	}
+
+	@Test
+	void shouldReturnLowScoreForUnrelatedSpeakTranscription() {
+		assertSpeakTranscription("My name is Dominik", "random words only", 0.0, false,
+				List.of(word("my", "random", false), word("name", "words", false), word("is", "only", false),
+						word("dominik", "", false)));
+	}
+
+	@Test
+	void shouldAcceptKnownNameVariantForSentence() {
+		assertSpeakTranscription("My name is Dominik", "My name is Dominic", 1.0, true, List.of(word("my", "my", true),
+				word("name", "name", true), word("is", "is", true), word("dominik", "dominic", true)));
+	}
+
+	@Test
+	void shouldAcceptKnownNameVariantForSingleWord() {
+		assertSpeakTranscription("Dominik", "Dominic", 1.0, true, List.of(word("dominik", "dominic", true)));
+	}
+
+	@Test
+	void shouldNormalizeContractionsAndKnownNameVariant() {
+		assertSpeakTranscription("I'm Dominik", "I am Dominic", 1.0, true,
+				List.of(word("i", "i", true), word("am", "am", true), word("dominik", "dominic", true)));
+	}
+
+	@Test
+	void shouldIgnoreFillersBeforeSentence() {
+		assertSpeakTranscription("My name is Dominik", "um My name is Dominic", 1.0, true,
+				List.of(word("my", "my", true), word("name", "name", true), word("is", "is", true),
+						word("dominik", "dominic", true)));
+	}
+
+	@Test
+	void shouldNotUseFuzzyMatchForShortWordsIsAndIt() {
+		assertSpeakTranscription("is", "it", 0.0, false, List.of(word("is", "it", false)));
+	}
+
+	@Test
+	void shouldNotUseFuzzyMatchForShortWordsMyAndMe() {
+		assertSpeakTranscription("my", "me", 0.0, false, List.of(word("my", "me", false)));
+	}
+
+	@Test
+	void shouldNotTreatSimilarWrongWordAsFullSentenceMatch() {
+		assertSpeakTranscription("My name is Dominik", "My game is Dominic", 0.75, false,
+				List.of(word("my", "my", true), word("name", "game", false), word("is", "is", true),
+						word("dominik", "dominic", true)));
+	}
+
+	@Test
+	void shouldNotTreatDifferentWordAsFullMatchWhenOnlyOneLetterDiffers() {
+		assertSpeakTranscription("I like cats", "I like caps", 0.6666666667, false,
+				List.of(word("i", "i", true), word("like", "like", true), word("cats", "caps", false)));
+	}
+
+	@Test
 	void shouldReturnErrorWhenAudioMissingInTranscribe() {
 		// given
 		Integer lessonId = 1;
@@ -594,6 +706,40 @@ class TaskServiceTest {
 		verify(studentProgressHistoryRepository).save(any());
 		verify(pointsService).addPointsForLessonResult(userLesson.getId(), userId, 4, "TASK_CORRECT", userId);
 		verify(applicationEventPublisher).publishEvent(any(StudentStatsChangedEvent.class));
+	}
+
+	private void assertSpeakTranscription(String expectedText, String transcription, double expectedScore,
+			boolean expectedCorrect, List<SpeakWordResultDto> expectedWords) {
+		Integer lessonId = 1;
+		String taskPublicId = "task-10";
+		Lesson lesson = Lesson.builder().id(lessonId).isActive(true).build();
+		SpeakTask task = SpeakTask.builder().id(10).publicId(taskPublicId).lessonId(lessonId).expectedText(expectedText)
+				.build();
+		FilePart audio = mock(FilePart.class);
+
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(1));
+		when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
+		when(userInGroupRepository.hasAccessToLesson(1, lessonId)).thenReturn(true);
+		when(speakTaskRepository.findByPublicId(taskPublicId)).thenReturn(Optional.of(task));
+		when(sttClient.transcribe(audio)).thenReturn(Mono.just(new SttTranscriptionResponse(transcription, "en", 1.0)));
+
+		StepVerifier.create(taskService.transcribeSpeakTask(lessonId, taskPublicId, Mono.just(audio)))
+				.assertNext(resp -> {
+					assertEquals(expectedCorrect, resp.isCorrect());
+					assertEquals(expectedScore, resp.getScore(), 0.0001);
+					assertEquals(expectedWords.size(), resp.getWords().size());
+					for (int index = 0; index < expectedWords.size(); index++) {
+						SpeakWordResultDto actualWord = resp.getWords().get(index);
+						SpeakWordResultDto expectedWord = expectedWords.get(index);
+						assertEquals(expectedWord.getExpected(), actualWord.getExpected());
+						assertEquals(expectedWord.getActual(), actualWord.getActual());
+						assertEquals(expectedWord.isCorrect(), actualWord.isCorrect());
+					}
+				}).verifyComplete();
+	}
+
+	private SpeakWordResultDto word(String expected, String actual, boolean correct) {
+		return SpeakWordResultDto.builder().expected(expected).actual(actual).correct(correct).build();
 	}
 
 	@Test
