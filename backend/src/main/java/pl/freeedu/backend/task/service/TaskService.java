@@ -1,5 +1,6 @@
 package pl.freeedu.backend.task.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,6 +24,9 @@ import pl.freeedu.backend.usergroup.repository.UserInGroupRepository;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.text.Normalizer;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.util.*;
@@ -31,6 +35,12 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class TaskService {
+
+	private static final String STT_NORMALIZATION_RESOURCE = "/stt/stt-normalization.json";
+	private static final SttNormalizationConfig STT_NORMALIZATION_CONFIG = loadSttNormalizationConfig();
+	private static final Set<String> STT_FILLER_WORDS = STT_NORMALIZATION_CONFIG.fillerWords();
+	private static final Map<String, String> STT_CONTRACTIONS = STT_NORMALIZATION_CONFIG.contractions();
+	private static final Map<String, Set<String>> STT_WORD_VARIANTS = STT_NORMALIZATION_CONFIG.wordVariants();
 
 	private final ChooseTaskRepository chooseTaskRepository;
 	private final WriteTaskRepository writeTaskRepository;
@@ -50,6 +60,20 @@ public class TaskService {
 	private final TransactionTemplate transactionTemplate;
 	private final ApplicationEventPublisher applicationEventPublisher;
 	private final double sttMinScore;
+
+	private static SttNormalizationConfig loadSttNormalizationConfig() {
+		ObjectMapper objectMapper = new ObjectMapper();
+		try (InputStream inputStream = TaskService.class.getResourceAsStream(STT_NORMALIZATION_RESOURCE)) {
+			if (inputStream == null) {
+				throw new IllegalStateException("Missing STT normalization resource: " + STT_NORMALIZATION_RESOURCE);
+			}
+			RawSttNormalizationConfig rawConfig = objectMapper.readValue(inputStream, RawSttNormalizationConfig.class);
+			return rawConfig.toConfig();
+		} catch (IOException e) {
+			throw new IllegalStateException("Failed to load STT normalization resource: " + STT_NORMALIZATION_RESOURCE,
+					e);
+		}
+	}
 
 	public TaskService(ChooseTaskRepository chooseTaskRepository, WriteTaskRepository writeTaskRepository,
 			ScatterTaskRepository scatterTaskRepository, SpeakTaskRepository speakTaskRepository,
@@ -647,26 +671,273 @@ public class TaskService {
 		return (double) correctWords / wordResults.size();
 	}
 
+	private boolean isWordMatch(String expectedWord, String actualWord) {
+		String normalizedExpected = normalizeSpeechWord(expectedWord);
+		String normalizedActual = normalizeSpeechWord(actualWord);
+		if (normalizedExpected.isEmpty() || normalizedActual.isEmpty()) {
+			return false;
+		}
+		if (normalizedExpected.equals(normalizedActual)) {
+			return true;
+		}
+
+		Set<String> expectedVariants = STT_WORD_VARIANTS.get(normalizedExpected);
+		if (expectedVariants != null && expectedVariants.contains(normalizedActual)) {
+			return true;
+		}
+
+		Set<String> actualVariants = STT_WORD_VARIANTS.get(normalizedActual);
+		if (actualVariants != null && actualVariants.contains(normalizedExpected)) {
+			return true;
+		}
+
+		return isSafeFuzzyWordMatch(normalizedExpected, normalizedActual);
+	}
+
 	private String normalizeSpeechText(String value) {
 		if (value == null) {
 			return "";
 		}
-		return value.toLowerCase(Locale.ROOT).replaceAll("[^\\p{L}\\p{N}\\s]", " ").replaceAll("\\s+", " ").trim();
+
+		String normalized = value.toLowerCase(Locale.ROOT);
+		normalized = normalized.replaceAll("\\[[^\\]]*\\]", " ");
+		normalized = normalized.replaceAll("\\(([^)]+?)\\)", " ");
+		normalized = normalized.replaceAll("\\s+'", "'");
+		for (Map.Entry<String, String> entry : STT_CONTRACTIONS.entrySet()) {
+			normalized = normalized.replaceAll("\\b" + java.util.regex.Pattern.quote(entry.getKey()) + "\\b",
+					entry.getValue());
+		}
+		normalized = removeDiacritics(normalized);
+		normalized = normalized.replaceAll("[^\\p{L}\\p{N}\\s]", " ");
+		normalized = normalized.replaceAll("\\s+", " ").trim();
+		if (normalized.isEmpty()) {
+			return "";
+		}
+
+		return Arrays.stream(normalized.split(" ")).filter(word -> !word.isBlank())
+				.filter(word -> !STT_FILLER_WORDS.contains(word)).collect(Collectors.joining(" "));
 	}
 
 	private List<SpeakWordResultDto> buildSpeakWordResults(String actual, String expected) {
 		List<String> actualWords = splitNormalizedWords(actual);
 		List<String> expectedWords = splitNormalizedWords(expected);
-		List<SpeakWordResultDto> results = new ArrayList<>();
+		if (expectedWords.isEmpty()) {
+			return Collections.emptyList();
+		}
 
-		for (int i = 0; i < expectedWords.size(); i++) {
+		int expectedCount = expectedWords.size();
+		int actualCount = actualWords.size();
+		int[][] dp = new int[expectedCount + 1][actualCount + 1];
+
+		for (int i = expectedCount - 1; i >= 0; i--) {
+			for (int j = actualCount - 1; j >= 0; j--) {
+				if (isWordMatch(expectedWords.get(i), actualWords.get(j))) {
+					dp[i][j] = 1 + dp[i + 1][j + 1];
+					continue;
+				}
+				dp[i][j] = Math.max(dp[i + 1][j + 1], Math.max(dp[i + 1][j], dp[i][j + 1]));
+			}
+		}
+
+		List<SpeakWordResultDto> results = new ArrayList<>(expectedCount);
+		int i = 0;
+		int j = 0;
+
+		while (i < expectedCount) {
 			String expectedWord = expectedWords.get(i);
-			String actualWord = i < actualWords.size() ? actualWords.get(i) : "";
-			results.add(SpeakWordResultDto.builder().expected(expectedWord).actual(actualWord)
-					.correct(expectedWord.equals(actualWord)).build());
+			if (j >= actualCount) {
+				results.add(buildSpeakWordResult(expectedWord, "", false));
+				i++;
+				continue;
+			}
+
+			String actualWord = actualWords.get(j);
+			if (isWordMatch(expectedWord, actualWord)) {
+				results.add(buildSpeakWordResult(expectedWord, actualWord, true));
+				i++;
+				j++;
+				continue;
+			}
+
+			int insertionScore = dp[i][j + 1];
+			int substitutionScore = dp[i + 1][j + 1];
+			int deletionScore = dp[i + 1][j];
+
+			if (insertionScore > substitutionScore && insertionScore >= deletionScore) {
+				j++;
+				continue;
+			}
+
+			if (substitutionScore >= deletionScore) {
+				results.add(buildSpeakWordResult(expectedWord, actualWord, false));
+				i++;
+				j++;
+				continue;
+			}
+
+			results.add(buildSpeakWordResult(expectedWord, "", false));
+			i++;
 		}
 
 		return results;
+	}
+
+	private SpeakWordResultDto buildSpeakWordResult(String expectedWord, String actualWord, boolean correct) {
+		return SpeakWordResultDto.builder().expected(expectedWord).actual(actualWord).correct(correct).build();
+	}
+
+	private String normalizeSpeechWord(String value) {
+		String normalized = normalizeSpeechText(value);
+		if (normalized.isEmpty()) {
+			return "";
+		}
+		int firstSpace = normalized.indexOf(' ');
+		return firstSpace >= 0 ? normalized.substring(0, firstSpace) : normalized;
+	}
+
+	private boolean isSafeFuzzyWordMatch(String expectedWord, String actualWord) {
+		int minLength = Math.min(expectedWord.length(), actualWord.length());
+		if (minLength <= 5) {
+			return false;
+		}
+		if (expectedWord.charAt(0) != actualWord.charAt(0)) {
+			return false;
+		}
+
+		boolean sameLastCharacter = expectedWord.charAt(expectedWord.length() - 1) == actualWord
+				.charAt(actualWord.length() - 1);
+		if (Math.max(expectedWord.length(), actualWord.length()) >= 6) {
+			int distance = levenshteinDistance(expectedWord, actualWord, 2);
+			if (distance <= 1) {
+				return sameLastCharacter || sharedPrefixLength(expectedWord, actualWord) >= minLength - 1;
+			}
+			return distance == 2 && sameLastCharacter && hasHighSimilarity(expectedWord, actualWord);
+		}
+
+		return false;
+	}
+
+	private boolean hasHighSimilarity(String expectedWord, String actualWord) {
+		int maxLength = Math.max(expectedWord.length(), actualWord.length());
+		if (maxLength == 0) {
+			return false;
+		}
+		return 1.0 - ((double) levenshteinDistance(expectedWord, actualWord, Integer.MAX_VALUE) / maxLength) >= 0.8;
+	}
+
+	private int levenshteinDistance(String left, String right, int maxDistance) {
+		int leftLength = left.length();
+		int rightLength = right.length();
+		if (Math.abs(leftLength - rightLength) > maxDistance) {
+			return maxDistance + 1;
+		}
+
+		int[] previous = new int[rightLength + 1];
+		int[] current = new int[rightLength + 1];
+		for (int j = 0; j <= rightLength; j++) {
+			previous[j] = j;
+		}
+
+		for (int i = 1; i <= leftLength; i++) {
+			current[0] = i;
+			int rowMin = current[0];
+			for (int j = 1; j <= rightLength; j++) {
+				int substitutionCost = left.charAt(i - 1) == right.charAt(j - 1) ? 0 : 1;
+				current[j] = Math.min(Math.min(current[j - 1] + 1, previous[j] + 1),
+						previous[j - 1] + substitutionCost);
+				rowMin = Math.min(rowMin, current[j]);
+			}
+			if (rowMin > maxDistance) {
+				return maxDistance + 1;
+			}
+			int[] temp = previous;
+			previous = current;
+			current = temp;
+		}
+
+		return previous[rightLength];
+	}
+
+	private int sharedPrefixLength(String left, String right) {
+		int prefixLength = 0;
+		int limit = Math.min(left.length(), right.length());
+		while (prefixLength < limit && left.charAt(prefixLength) == right.charAt(prefixLength)) {
+			prefixLength++;
+		}
+		return prefixLength;
+	}
+
+	private String removeDiacritics(String value) {
+		String normalized = Normalizer.normalize(value, Normalizer.Form.NFKD);
+		StringBuilder builder = new StringBuilder(normalized.length());
+		for (int i = 0; i < normalized.length(); i++) {
+			char current = normalized.charAt(i);
+			if (current == 'ł') {
+				builder.append('l');
+				continue;
+			}
+			if (current == 'Ł') {
+				builder.append('L');
+				continue;
+			}
+			if (Character.getType(current) != Character.NON_SPACING_MARK) {
+				builder.append(current);
+			}
+		}
+		return builder.toString();
+	}
+
+	private record SttNormalizationConfig(Set<String> fillerWords, Map<String, String> contractions,
+			Map<String, Set<String>> wordVariants) {
+	}
+
+	private static final class RawSttNormalizationConfig {
+
+		private List<String> fillerWords;
+		private Map<String, String> contractions;
+		private Map<String, List<String>> wordVariants;
+
+		public List<String> getFillerWords() {
+			return fillerWords;
+		}
+
+		public void setFillerWords(List<String> fillerWords) {
+			this.fillerWords = fillerWords;
+		}
+
+		public Map<String, String> getContractions() {
+			return contractions;
+		}
+
+		public void setContractions(Map<String, String> contractions) {
+			this.contractions = contractions;
+		}
+
+		public Map<String, List<String>> getWordVariants() {
+			return wordVariants;
+		}
+
+		public void setWordVariants(Map<String, List<String>> wordVariants) {
+			this.wordVariants = wordVariants;
+		}
+
+		private SttNormalizationConfig toConfig() {
+			Set<String> normalizedFillerWords = fillerWords == null
+					? Set.of()
+					: Collections.unmodifiableSet(new LinkedHashSet<>(fillerWords));
+			Map<String, String> normalizedContractions = contractions == null
+					? Map.of()
+					: Collections.unmodifiableMap(new LinkedHashMap<>(contractions));
+			Map<String, Set<String>> normalizedWordVariants = new LinkedHashMap<>();
+			if (wordVariants != null) {
+				for (Map.Entry<String, List<String>> entry : wordVariants.entrySet()) {
+					normalizedWordVariants.put(entry.getKey(),
+							Collections.unmodifiableSet(new LinkedHashSet<>(entry.getValue())));
+				}
+			}
+			return new SttNormalizationConfig(normalizedFillerWords, normalizedContractions,
+					Collections.unmodifiableMap(normalizedWordVariants));
+		}
 	}
 
 	private List<String> splitNormalizedWords(String value) {
