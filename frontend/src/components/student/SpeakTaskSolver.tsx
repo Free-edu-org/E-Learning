@@ -330,7 +330,6 @@ export function SpeakTaskSolver({
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                gap: "2px",
               }}
             >
               <Typography
@@ -348,7 +347,7 @@ export function SpeakTaskSolver({
               >
                 {text}
               </Typography>
-              {heard && !correct && (
+              {false && heard && !correct && (
                 <Typography
                   variant="caption"
                   sx={{
