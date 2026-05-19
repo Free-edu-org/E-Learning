@@ -63,7 +63,9 @@ export interface SpeakTaskResponse extends Omit<TaskResponse, "task"> {
 }
 
 export interface SpeakTranscriptionResponse {
+  attemptId: string;
   text: string;
+  rawText: string;
   expectedText: string;
   correct: boolean;
   score: number;

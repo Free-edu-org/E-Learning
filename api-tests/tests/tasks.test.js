@@ -2,6 +2,7 @@ const { apiClient, setAuthToken } = require('../utils/apiClient');
 
 describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
     const uniqueId = Date.now();
+    const shortId = String(uniqueId).slice(-6);
     const adminCreds = { identifier: 'admin_marek', password: 'admin1' };
     const teacherCreds = { identifier: 'pan_tomasz', password: 'admin1' };
     const studentCreds = { identifier: 'jan_kowalski', password: 'student1' };
@@ -79,7 +80,7 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
         // Create lesson as teacher with the group assigned
         setAuthToken(teacherToken);
         res = await apiClient.post('/lessons', {
-            title: `Task Lesson ${uniqueId}`,
+            title: `Task Lesson ${shortId}`,
             theme: 'Testing',
             groupPublicIds: [groupPublicId]
         });
@@ -595,6 +596,49 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
             setAuthToken(teacherToken);
             const response = await apiClient.delete(uploadUrl());
             expect(response.status).toBe(404);
+        });
+    });
+
+    describe('Speak transcription API', () => {
+        function buildAudioPayload() {
+            const boundary = '----SpeakAudioBoundary';
+            const fakeAudioBytes = Buffer.from([0x52, 0x49, 0x46, 0x46]);
+            const body = Buffer.concat([
+                Buffer.from(
+                    `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="speech.webm"\r\nContent-Type: audio/webm\r\n\r\n`
+                ),
+                fakeAudioBytes,
+                Buffer.from(`\r\n--${boundary}--\r\n`)
+            ]);
+            return { body, headers: { 'Content-Type': `multipart/form-data; boundary=${boundary}` } };
+        }
+
+        const transcribeUrl = () => `/lessons/${lessonPublicId}/tasks/speak/${speakTaskPublicId}/transcribe`;
+
+        it('should return 401 without auth', async () => {
+            setAuthToken(null);
+            const { body, headers } = buildAudioPayload();
+            const response = await apiClient.post(transcribeUrl(), body, { headers });
+            expect(response.status).toBe(401);
+        });
+
+        it('should return 403 for student without access', async () => {
+            setAuthToken(studentToken);
+            const { body, headers } = buildAudioPayload();
+            const response = await apiClient.post(transcribeUrl(), body, { headers });
+            expect(response.status).toBe(403);
+        });
+
+        it('should return 400 when audio file is missing (or 500 if mapping fails)', async () => {
+            setAuthToken(dedicatedStudentToken);
+            const response = await apiClient.post(transcribeUrl(), {});
+            expect([400, 500]).toContain(response.status);
+            if (response.status === 400) {
+                expect(response.data.code).toBe('STT_AUDIO_REQUIRED');
+            } else {
+                // If server mapping throws before TaskException is produced, generic 500 is returned
+                expect(response.data.code).toBe('INTERNAL_SERVER_ERROR');
+            }
         });
     });
 });

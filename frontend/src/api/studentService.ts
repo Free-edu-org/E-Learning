@@ -68,6 +68,7 @@ export interface SubmitAnswerItem {
   taskPublicId: string;
   taskType: "choose" | "write" | "scatter" | "speak";
   answer: string;
+  attemptId?: string;
 }
 
 export interface SubmitAnswersRequest {
