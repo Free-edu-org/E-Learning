@@ -8,7 +8,6 @@ from app.main import app, evaluate_transcription
 
 
 class EvaluationLogicTest(unittest.TestCase):
-
     def test_should_match_prefixed_sentence_with_known_variant(self):
         result = evaluate_transcription(
             "cos My name is Dominic", "My name is Dominik", 0.85, "en", 1.8
@@ -51,7 +50,6 @@ class EvaluationLogicTest(unittest.TestCase):
 
 
 class EvaluateEndpointTest(unittest.TestCase):
-
     def setUp(self):
         self.client = TestClient(app)
 

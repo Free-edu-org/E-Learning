@@ -41,7 +41,9 @@ class EvaluationResponse(BaseModel):
     duration: Optional[float] = None
 
 
-def load_stt_normalization_rules() -> tuple[set[str], dict[str, str], dict[str, set[str]]]:
+def load_stt_normalization_rules() -> tuple[
+    set[str], dict[str, str], dict[str, set[str]]
+]:
     with STT_NORMALIZATION_PATH.open(encoding="utf-8") as file:
         raw_rules = json.load(file)
 
@@ -88,9 +90,7 @@ def normalize_text(value: Optional[str]) -> str:
         return ""
 
     words = [
-        word
-        for word in normalized.split(" ")
-        if word and word not in STT_FILLER_WORDS
+        word for word in normalized.split(" ") if word and word not in STT_FILLER_WORDS
     ]
     return " ".join(words)
 
@@ -157,11 +157,14 @@ def is_safe_fuzzy_word_match(expected_word: str, actual_word: str) -> bool:
     if max(len(expected_word), len(actual_word)) >= 6:
         distance = levenshtein_distance(expected_word, actual_word, 2)
         if distance <= 1:
-            return same_last_character or shared_prefix_length(
-                expected_word, actual_word
-            ) >= min_length - 1
-        return distance == 2 and same_last_character and has_high_similarity(
-            expected_word, actual_word
+            return (
+                same_last_character
+                or shared_prefix_length(expected_word, actual_word) >= min_length - 1
+            )
+        return (
+            distance == 2
+            and same_last_character
+            and has_high_similarity(expected_word, actual_word)
         )
 
     return False
@@ -221,7 +224,9 @@ def build_word_results(
         actual_word = actual_words[j]
         if is_word_match(expected_word, actual_word):
             results.append(
-                SpeakWordResult(expected=expected_word, actual=actual_word, correct=True)
+                SpeakWordResult(
+                    expected=expected_word, actual=actual_word, correct=True
+                )
             )
             i += 1
             j += 1
@@ -245,7 +250,9 @@ def build_word_results(
             j += 1
             continue
 
-        results.append(SpeakWordResult(expected=expected_word, actual="", correct=False))
+        results.append(
+            SpeakWordResult(expected=expected_word, actual="", correct=False)
+        )
         i += 1
 
     return results
