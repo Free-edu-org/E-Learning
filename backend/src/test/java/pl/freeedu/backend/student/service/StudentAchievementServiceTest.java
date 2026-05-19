@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -51,17 +52,18 @@ class StudentAchievementServiceTest {
 	}
 
 	@Test
-	void shouldReturnLockedAchievementWithoutCreatingUnlockInReadOnlyGet() {
-		// given
+	void shouldReturnLockedAchievementWhenCurrentStatsDoNotMeetRule() {
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(7));
+		when(studentGamificationStatsService.buildStats(7)).thenReturn(StudentGamificationStats.builder()
+				.completedLessonsCount(0).currentPoints(0).avatarChanged(false).build());
 		when(achievementRepository.findByActiveTrueOrderBySortOrderAscIdAsc()).thenReturn(
 				List.of(activeAchievement(1, "FIRST_LESSON", "Pierwsza lekcja", AchievementType.LESSONS_COMPLETED, 1)));
-		when(userAchievementRepository.findByUserId(7)).thenReturn(List.of());
+		when(userAchievementRepository.findByUserId(7)).thenReturn(List.of(), List.of());
+		when(achievementRuleEvaluator.isUnlocked(any(Achievement.class), any(StudentGamificationStats.class)))
+				.thenReturn(false);
 
-		// when
 		Mono<List<StudentAchievementResponse>> result = studentAchievementService.getAchievementsForCurrentStudent();
 
-		// then
 		StepVerifier.create(result).assertNext(responses -> {
 			assertEquals(1, responses.size());
 			assertFalse(responses.get(0).isUnlocked());
@@ -69,24 +71,52 @@ class StudentAchievementServiceTest {
 			assertFalse(responses.get(0).isNewlyUnlocked());
 		}).verifyComplete();
 		verify(userAchievementRepository, never()).save(any(UserAchievement.class));
-		verify(studentGamificationStatsService, never()).buildStats(any());
-		verify(achievementRuleEvaluator, never()).isUnlocked(any(), any());
+		verify(studentGamificationStatsService).buildStats(7);
+		verify(achievementRuleEvaluator).isUnlocked(any(), any());
+	}
+
+	@Test
+	void shouldBackfillUnlockOnGetWhenAchievementWasAddedAfterUnderlyingAction() {
+		LocalDateTime unlockedAt = LocalDateTime.of(2026, 5, 19, 10, 15, 0);
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(7));
+		when(studentGamificationStatsService.buildStats(7)).thenReturn(StudentGamificationStats.builder()
+				.completedLessonsCount(0).currentPoints(0).avatarChanged(true).build());
+		when(achievementRepository.findByActiveTrueOrderBySortOrderAscIdAsc()).thenReturn(List
+				.of(activeAchievement(1, "AVATAR_DYNAMIC", "Nowy avatar admin", AchievementType.AVATAR_CHANGED, null)));
+		when(userAchievementRepository.findByUserId(7)).thenReturn(List.of(),
+				List.of(UserAchievement.builder().userId(7).achievementId(1).createdAt(unlockedAt).build()));
+		when(achievementRuleEvaluator.isUnlocked(any(Achievement.class), any(StudentGamificationStats.class)))
+				.thenReturn(true);
+		when(userAchievementRepository.save(any(UserAchievement.class))).thenAnswer(
+				invocation -> UserAchievement.builder().userId(7).achievementId(1).createdAt(unlockedAt).build());
+
+		Mono<List<StudentAchievementResponse>> result = studentAchievementService.getAchievementsForCurrentStudent();
+
+		StepVerifier.create(result).assertNext(responses -> {
+			assertEquals(1, responses.size());
+			assertTrue(responses.get(0).isUnlocked());
+			assertEquals(unlockedAt, responses.get(0).getUnlockedAt());
+			assertTrue(responses.get(0).isNewlyUnlocked());
+		}).verifyComplete();
+		verify(userAchievementRepository).save(any(UserAchievement.class));
 	}
 
 	@Test
 	void shouldReturnNewlyUnlockedTrueWhenUnlockedAchievementHasNoSeenTimestamp() {
-		// given
 		LocalDateTime unlockedAt = LocalDateTime.of(2026, 5, 6, 12, 30, 0);
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(7));
+		when(studentGamificationStatsService.buildStats(7)).thenReturn(StudentGamificationStats.builder()
+				.completedLessonsCount(0).currentPoints(0).avatarChanged(false).build());
 		when(achievementRepository.findByActiveTrueOrderBySortOrderAscIdAsc()).thenReturn(
 				List.of(activeAchievement(1, "FIRST_LESSON", "Pierwsza lekcja", AchievementType.LESSONS_COMPLETED, 1)));
 		when(userAchievementRepository.findByUserId(7)).thenReturn(
+				List.of(UserAchievement.builder().userId(7).achievementId(1).createdAt(unlockedAt).build()),
 				List.of(UserAchievement.builder().userId(7).achievementId(1).createdAt(unlockedAt).build()));
+		when(achievementRuleEvaluator.isUnlocked(any(Achievement.class), any(StudentGamificationStats.class)))
+				.thenReturn(false);
 
-		// when
 		Mono<List<StudentAchievementResponse>> result = studentAchievementService.getAchievementsForCurrentStudent();
 
-		// then
 		StepVerifier.create(result).assertNext(responses -> {
 			assertTrue(responses.get(0).isUnlocked());
 			assertEquals(unlockedAt, responses.get(0).getUnlockedAt());
@@ -96,19 +126,23 @@ class StudentAchievementServiceTest {
 
 	@Test
 	void shouldReturnNewlyUnlockedFalseWhenSeenTimestampExists() {
-		// given
 		LocalDateTime unlockedAt = LocalDateTime.of(2026, 5, 6, 12, 30, 0);
 		LocalDateTime seenAt = LocalDateTime.of(2026, 5, 6, 13, 0, 0);
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(7));
+		when(studentGamificationStatsService.buildStats(7)).thenReturn(StudentGamificationStats.builder()
+				.completedLessonsCount(0).currentPoints(0).avatarChanged(false).build());
 		when(achievementRepository.findByActiveTrueOrderBySortOrderAscIdAsc()).thenReturn(
 				List.of(activeAchievement(1, "FIRST_LESSON", "Pierwsza lekcja", AchievementType.LESSONS_COMPLETED, 1)));
-		when(userAchievementRepository.findByUserId(7)).thenReturn(List.of(UserAchievement.builder().userId(7)
-				.achievementId(1).createdAt(unlockedAt).notificationSeenAt(seenAt).build()));
+		when(userAchievementRepository.findByUserId(7)).thenReturn(
+				List.of(UserAchievement.builder().userId(7).achievementId(1).createdAt(unlockedAt)
+						.notificationSeenAt(seenAt).build()),
+				List.of(UserAchievement.builder().userId(7).achievementId(1).createdAt(unlockedAt)
+						.notificationSeenAt(seenAt).build()));
+		when(achievementRuleEvaluator.isUnlocked(any(Achievement.class), any(StudentGamificationStats.class)))
+				.thenReturn(false);
 
-		// when
 		Mono<List<StudentAchievementResponse>> result = studentAchievementService.getAchievementsForCurrentStudent();
 
-		// then
 		StepVerifier.create(result).assertNext(responses -> {
 			assertTrue(responses.get(0).isUnlocked());
 			assertEquals(unlockedAt, responses.get(0).getUnlockedAt());
@@ -118,7 +152,6 @@ class StudentAchievementServiceTest {
 
 	@Test
 	void shouldSaveNewUnlockWhenAchievementBecomesUnlocked() {
-		// given
 		when(studentGamificationStatsService.buildStats(7)).thenReturn(StudentGamificationStats.builder()
 				.completedLessonsCount(1).currentPoints(0).avatarChanged(false).build());
 		when(achievementRepository.findByActiveTrueOrderBySortOrderAscIdAsc()).thenReturn(
@@ -127,16 +160,13 @@ class StudentAchievementServiceTest {
 		when(achievementRuleEvaluator.isUnlocked(any(Achievement.class), any(StudentGamificationStats.class)))
 				.thenReturn(true);
 
-		// when
 		studentAchievementService.checkAndUnlockAchievements(7);
 
-		// then
 		verify(userAchievementRepository).save(any(UserAchievement.class));
 	}
 
 	@Test
 	void shouldNotCreateDuplicateUnlockWhenAlreadyUnlocked() {
-		// given
 		when(studentGamificationStatsService.buildStats(7)).thenReturn(StudentGamificationStats.builder()
 				.completedLessonsCount(1).currentPoints(0).avatarChanged(false).build());
 		when(achievementRepository.findByActiveTrueOrderBySortOrderAscIdAsc()).thenReturn(
@@ -146,16 +176,13 @@ class StudentAchievementServiceTest {
 		when(achievementRuleEvaluator.isUnlocked(any(Achievement.class), any(StudentGamificationStats.class)))
 				.thenReturn(true);
 
-		// when
 		studentAchievementService.checkAndUnlockAchievements(7);
 
-		// then
 		verify(userAchievementRepository, never()).save(any(UserAchievement.class));
 	}
 
 	@Test
 	void shouldIgnoreDuplicateKeyDuringUnlockPersistence() {
-		// given
 		when(studentGamificationStatsService.buildStats(7)).thenReturn(StudentGamificationStats.builder()
 				.completedLessonsCount(1).currentPoints(0).avatarChanged(false).build());
 		when(achievementRepository.findByActiveTrueOrderBySortOrderAscIdAsc()).thenReturn(
@@ -166,27 +193,54 @@ class StudentAchievementServiceTest {
 		when(userAchievementRepository.save(any(UserAchievement.class)))
 				.thenThrow(new DataIntegrityViolationException("duplicate"));
 
-		// when
 		studentAchievementService.checkAndUnlockAchievements(7);
 
-		// then
 		verify(userAchievementRepository).save(any(UserAchievement.class));
 	}
 
 	@Test
-	void shouldKeepPreviouslyUnlockedPointsAchievementAfterCurrentPointsDrop() {
-		// given
+	void shouldNotPropagateFailureFromSafeAchievementCheck() {
+		when(studentGamificationStatsService.buildStats(7)).thenThrow(new RuntimeException("boom"));
+
+		assertDoesNotThrow(
+				() -> studentAchievementService.checkAndUnlockAchievementsSafely(7, "achievement read model refresh"));
+	}
+
+	@Test
+	void shouldStillReturnReadModelWhenSafeBackfillFails() {
 		LocalDateTime unlockedAt = LocalDateTime.of(2026, 5, 6, 12, 30, 0);
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(7));
+		when(studentGamificationStatsService.buildStats(7)).thenThrow(new RuntimeException("boom"));
 		when(achievementRepository.findByActiveTrueOrderBySortOrderAscIdAsc())
-				.thenReturn(List.of(activeAchievement(1, "TEN_POINTS", "10 punktów", AchievementType.POINTS, 10)));
+				.thenReturn(List.of(activeAchievement(1, "TEN_POINTS", "10 punktow", AchievementType.POINTS, 10)));
 		when(userAchievementRepository.findByUserId(7)).thenReturn(
 				List.of(UserAchievement.builder().userId(7).achievementId(1).createdAt(unlockedAt).build()));
 
-		// when
 		Mono<List<StudentAchievementResponse>> result = studentAchievementService.getAchievementsForCurrentStudent();
 
-		// then
+		StepVerifier.create(result).assertNext(responses -> {
+			assertEquals(1, responses.size());
+			assertTrue(responses.get(0).isUnlocked());
+			assertEquals(unlockedAt, responses.get(0).getUnlockedAt());
+		}).verifyComplete();
+	}
+
+	@Test
+	void shouldKeepPreviouslyUnlockedPointsAchievementAfterCurrentPointsDrop() {
+		LocalDateTime unlockedAt = LocalDateTime.of(2026, 5, 6, 12, 30, 0);
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(7));
+		when(studentGamificationStatsService.buildStats(7)).thenReturn(StudentGamificationStats.builder()
+				.completedLessonsCount(0).currentPoints(1).avatarChanged(false).build());
+		when(achievementRepository.findByActiveTrueOrderBySortOrderAscIdAsc())
+				.thenReturn(List.of(activeAchievement(1, "TEN_POINTS", "10 punktow", AchievementType.POINTS, 10)));
+		when(userAchievementRepository.findByUserId(7)).thenReturn(
+				List.of(UserAchievement.builder().userId(7).achievementId(1).createdAt(unlockedAt).build()),
+				List.of(UserAchievement.builder().userId(7).achievementId(1).createdAt(unlockedAt).build()));
+		when(achievementRuleEvaluator.isUnlocked(any(Achievement.class), any(StudentGamificationStats.class)))
+				.thenReturn(false);
+
+		Mono<List<StudentAchievementResponse>> result = studentAchievementService.getAchievementsForCurrentStudent();
+
 		StepVerifier.create(result).assertNext(responses -> {
 			assertEquals(1, responses.size());
 			assertTrue(responses.get(0).isUnlocked());

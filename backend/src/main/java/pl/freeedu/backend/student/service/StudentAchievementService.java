@@ -3,8 +3,6 @@ package pl.freeedu.backend.student.service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 import pl.freeedu.backend.achievement.model.Achievement;
 import pl.freeedu.backend.achievement.model.UserAchievement;
 import pl.freeedu.backend.achievement.repository.AchievementRepository;
@@ -45,6 +43,11 @@ public class StudentAchievementService {
 	public Mono<List<StudentAchievementResponse>> getAchievementsForCurrentStudent() {
 		return securityService.getCurrentUserId().flatMap(userId -> Mono.fromCallable(() -> {
 			log.info("Fetching achievements for current student ID: {}", userId);
+			// Keep the read model self-healing in case an unlock event was missed or
+			// an achievement definition was added after the underlying user action.
+			int newUnlocks = checkAndUnlockAchievementsSafely(userId, "achievement read model refresh");
+			log.info("Achievement read-model backfill completed for student ID: {}. Newly persisted unlocks: {}",
+					userId, newUnlocks);
 			return buildAchievementReadModelForUser(userId);
 		}).subscribeOn(Schedulers.boundedElastic()));
 	}
@@ -56,19 +59,30 @@ public class StudentAchievementService {
 		}).subscribeOn(Schedulers.boundedElastic()));
 	}
 
-	@Transactional(propagation = Propagation.REQUIRES_NEW)
-	public void checkAndUnlockAchievements(Integer userId) {
+	public int checkAndUnlockAchievements(Integer userId) {
 		log.info("Checking and unlocking achievements for student ID: {}", userId);
 		StudentGamificationStats stats = studentGamificationStatsService.buildStats(userId);
 		List<Achievement> achievements = achievementRepository.findByActiveTrueOrderBySortOrderAscIdAsc();
 		Set<Integer> alreadyUnlockedAchievementIds = userAchievementRepository.findByUserId(userId).stream()
 				.map(UserAchievement::getAchievementId).collect(Collectors.toSet());
+		int newUnlocks = 0;
 
 		for (Achievement achievement : achievements) {
 			boolean unlocked = achievementRuleEvaluator.isUnlocked(achievement, stats);
 			if (unlocked) {
-				persistUnlockIfNeeded(userId, achievement, alreadyUnlockedAchievementIds);
+				newUnlocks += persistUnlockIfNeeded(userId, achievement, alreadyUnlockedAchievementIds);
 			}
+		}
+
+		return newUnlocks;
+	}
+
+	public int checkAndUnlockAchievementsSafely(Integer userId, String trigger) {
+		try {
+			return checkAndUnlockAchievements(userId);
+		} catch (Exception ex) {
+			log.error("Achievement unlock check failed after {}. User ID: {}", trigger, userId, ex);
+			return 0;
 		}
 	}
 
@@ -91,10 +105,10 @@ public class StudentAchievementService {
 		return responses;
 	}
 
-	private void persistUnlockIfNeeded(Integer userId, Achievement achievement,
+	private int persistUnlockIfNeeded(Integer userId, Achievement achievement,
 			Set<Integer> alreadyUnlockedAchievementIds) {
 		if (alreadyUnlockedAchievementIds.contains(achievement.getId())) {
-			return;
+			return 0;
 		}
 
 		try {
@@ -102,9 +116,11 @@ public class StudentAchievementService {
 			userAchievementRepository
 					.save(UserAchievement.builder().userId(userId).achievementId(achievement.getId()).build());
 			alreadyUnlockedAchievementIds.add(achievement.getId());
+			return 1;
 		} catch (DataIntegrityViolationException ex) {
 			log.warn("Achievement {} already unlocked concurrently for student ID: {}", achievement.getCode(), userId);
 			alreadyUnlockedAchievementIds.add(achievement.getId());
+			return 0;
 		}
 	}
 }

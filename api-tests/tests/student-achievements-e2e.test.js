@@ -29,6 +29,7 @@ describe('Student achievements E2E (ledger + events + notifications)', () => {
 	let adminAchievementCode;
 	let adminAchievementTitle;
 	let adminAchievementId;
+	let adminAvatarAchievementCode;
 
 	async function queryOne(sql, params = []) {
 		const [rows] = await pool.execute(sql, params);
@@ -233,6 +234,12 @@ describe('Student achievements E2E (ledger + events + notifications)', () => {
 				await apiClient.patch(`/admin/achievements/${adminAchievementCode}/active`, { active: false });
 				await pool.execute('DELETE FROM user_get_achievement WHERE achievement_id = (SELECT id FROM achievements WHERE code = ?)', [adminAchievementCode]);
 				await pool.execute('DELETE FROM achievements WHERE code = ?', [adminAchievementCode]);
+			}
+			if (adminAvatarAchievementCode) {
+				setAuthToken(adminToken);
+				await apiClient.patch(`/admin/achievements/${adminAvatarAchievementCode}/active`, { active: false });
+				await pool.execute('DELETE FROM user_get_achievement WHERE achievement_id = (SELECT id FROM achievements WHERE code = ?)', [adminAvatarAchievementCode]);
+				await pool.execute('DELETE FROM achievements WHERE code = ?', [adminAvatarAchievementCode]);
 			}
 
 			setAuthToken(teacherToken);
@@ -443,6 +450,47 @@ describe('Student achievements E2E (ledger + events + notifications)', () => {
 		response = await getAchievements();
 		adminAchievement = findAchievementByTitle(response.data, adminAchievementTitle);
 		expect(adminAchievement.newlyUnlocked).toBe(false);
+	});
+
+	it('should backfill an admin-created AVATAR_CHANGED achievement when the student already has an avatar', async () => {
+		const avatarAchievementCode = `E2E_AVATAR_DYNAMIC_${uniqueId}`;
+		const avatarAchievementTitle = `E2E Avatar Dynamic ${uniqueId}`;
+		adminAvatarAchievementCode = avatarAchievementCode;
+
+		setAuthToken(studentToken);
+		let response = await apiClient.put(`/users/${studentPublicId}/avatar/preset`, {
+			presetName: 'avatar_3'
+		});
+		expect(response.status).toBe(200);
+
+		setAuthToken(adminToken);
+		response = await apiClient.post('/admin/achievements', {
+			code: avatarAchievementCode,
+			title: avatarAchievementTitle,
+			description: 'Unlock for students who already changed their avatar',
+			icon: 'face',
+			color: 'primary',
+			type: 'AVATAR_CHANGED',
+			threshold: null,
+			active: true,
+			sortOrder: 9600
+		});
+		expect(response.status).toBe(201);
+
+		const achievementRow = await queryOne('SELECT id FROM achievements WHERE code = ? LIMIT 1', [avatarAchievementCode]);
+		const avatarDynamicAchievementId = achievementRow.id;
+
+		setAuthToken(studentToken);
+		response = await getAchievements();
+		const avatarDynamicAchievement = findAchievementByTitle(response.data, avatarAchievementTitle);
+		expect(avatarDynamicAchievement).toBeDefined();
+		expect(avatarDynamicAchievement.unlocked).toBe(true);
+		expect(avatarDynamicAchievement.unlockedAt).toBeTruthy();
+		expect(avatarDynamicAchievement.newlyUnlocked).toBe(true);
+		expect(await getUnlockCount(avatarDynamicAchievementId)).toBe(1);
+
+		response = await markNotificationsSeen();
+		expect(response.data.markedCount).toBeGreaterThanOrEqual(1);
 	});
 
 	it('should hide a deactivated achievement from the student without deleting the persisted unlock', async () => {
