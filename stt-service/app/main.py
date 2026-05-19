@@ -89,6 +89,18 @@ def strip_bracketed_content(value: str, opening: str, closing: str) -> str:
     return "".join(result)
 
 
+def remove_space_before_apostrophe(value: str) -> str:
+    result: list[str] = []
+
+    for char in value:
+        if char == "'" and result:
+            while result and result[-1].isspace():
+                result.pop()
+        result.append(char)
+
+    return "".join(result)
+
+
 def normalize_text(value: Optional[str]) -> str:
     if value is None:
         return ""
@@ -96,7 +108,7 @@ def normalize_text(value: Optional[str]) -> str:
     normalized = value.lower()
     normalized = strip_bracketed_content(normalized, "[", "]")
     normalized = strip_bracketed_content(normalized, "(", ")")
-    normalized = re.sub(r"\s+'", "'", normalized)
+    normalized = remove_space_before_apostrophe(normalized)
     for contraction, expansion in STT_CONTRACTIONS.items():
         normalized = re.sub(rf"\b{re.escape(contraction)}\b", expansion, normalized)
 
