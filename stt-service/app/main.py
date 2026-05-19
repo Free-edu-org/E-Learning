@@ -68,13 +68,34 @@ def null_to_empty(value: Optional[str]) -> str:
     return value or ""
 
 
+def strip_bracketed_content(value: str, opening: str, closing: str) -> str:
+    result: list[str] = []
+    depth = 0
+
+    for char in value:
+        if char == opening:
+            if depth == 0:
+                result.append(" ")
+            depth += 1
+            continue
+
+        if char == closing and depth > 0:
+            depth -= 1
+            continue
+
+        if depth == 0:
+            result.append(char)
+
+    return "".join(result)
+
+
 def normalize_text(value: Optional[str]) -> str:
     if value is None:
         return ""
 
     normalized = value.lower()
-    normalized = re.sub(r"\[[^\]]*\]", " ", normalized)
-    normalized = re.sub(r"\([^)]*\)", " ", normalized)
+    normalized = strip_bracketed_content(normalized, "[", "]")
+    normalized = strip_bracketed_content(normalized, "(", ")")
     normalized = re.sub(r"\s+'", "'", normalized)
     for contraction, expansion in STT_CONTRACTIONS.items():
         normalized = re.sub(rf"\b{re.escape(contraction)}\b", expansion, normalized)
