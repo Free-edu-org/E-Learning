@@ -419,7 +419,8 @@ public class TaskService {
 				}
 
 				UserAnswer ua = UserAnswer.builder().taskId(taskId).taskType(dbTaskType).userId(userId)
-						.lessonId(lessonId).answer(item.getAnswer()).isCorrect(correct).build();
+						.lessonId(lessonId).answer(item.getAnswer()).isCorrect(correct).originalIsCorrect(correct)
+						.manuallyReviewed(false).reviewedBy(null).reviewedAt(null).build();
 				userAnswerRepository.save(ua);
 
 				details.add(AnswerResultDto.builder().taskPublicId(item.getTaskPublicId()).taskType(item.getTaskType())

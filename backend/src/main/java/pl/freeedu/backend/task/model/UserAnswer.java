@@ -35,6 +35,18 @@ public class UserAnswer {
 	@Column(name = "is_correct", nullable = false)
 	private Boolean isCorrect;
 
+	@Column(name = "original_is_correct")
+	private Boolean originalIsCorrect;
+
+	@Column(name = "manually_reviewed", nullable = false)
+	private Boolean manuallyReviewed;
+
+	@Column(name = "reviewed_by")
+	private Integer reviewedBy;
+
+	@Column(name = "reviewed_at")
+	private LocalDateTime reviewedAt;
+
 	@Column(name = "created_at", insertable = false, updatable = false)
 	private LocalDateTime createdAt;
 }

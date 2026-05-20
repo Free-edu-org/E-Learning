@@ -41,3 +41,13 @@ ALTER TABLE student_progress_history
     ADD UNIQUE KEY uk_student_progress_history_user_lesson_date (user_id, lesson_id, progress_date),
     ADD KEY idx_student_progress_history_user_lesson_id (user_id, lesson_id),
     ADD CONSTRAINT fk_student_progress_history_lesson FOREIGN KEY (lesson_id) REFERENCES lessons (id) ON DELETE CASCADE;
+
+ALTER TABLE user_answers
+    ADD COLUMN original_is_correct TINYINT(1) NULL AFTER is_correct,
+    ADD COLUMN manually_reviewed TINYINT(1) NOT NULL DEFAULT 0 AFTER original_is_correct,
+    ADD COLUMN reviewed_by INT NULL AFTER manually_reviewed,
+    ADD COLUMN reviewed_at TIMESTAMP NULL DEFAULT NULL AFTER reviewed_by;
+
+UPDATE user_answers
+SET original_is_correct = is_correct
+WHERE original_is_correct IS NULL;

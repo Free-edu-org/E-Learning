@@ -178,7 +178,24 @@ public class LessonResultDetailsService {
 			return LessonResultTaskDetailDto.builder().taskPublicId(publicId).taskType(taskType).section(section)
 					.taskText(taskText).hint(hint).userAnswer(mappedUserAnswer).correctAnswer(mappedCorrectAnswer)
 					.isCorrect(answer != null ? Boolean.TRUE.equals(answer.getIsCorrect()) : Boolean.FALSE)
-					.possibleAnswers(possibleAnswers).words(words).tabSwitchCount(tabSwitchCount).build();
+					.originalIsCorrect(answer != null ? answer.getOriginalIsCorrect() : null)
+					.manuallyReviewed(
+							answer != null ? Boolean.TRUE.equals(answer.getManuallyReviewed()) : Boolean.FALSE)
+					.reviewStatus(resolveReviewStatus(answer)).possibleAnswers(possibleAnswers).words(words)
+					.tabSwitchCount(tabSwitchCount).build();
+		}
+
+		private String resolveReviewStatus(UserAnswer answer) {
+			if (answer == null || !Boolean.TRUE.equals(answer.getManuallyReviewed())) {
+				return "AUTO";
+			}
+			if (answer.getOriginalIsCorrect() == null || answer.getIsCorrect() == null
+					|| answer.getOriginalIsCorrect().equals(answer.getIsCorrect())) {
+				return "MANUAL_CONFIRMED";
+			}
+			return Boolean.TRUE.equals(answer.getIsCorrect())
+					? "MANUAL_CORRECTED_TO_CORRECT"
+					: "MANUAL_CORRECTED_TO_INCORRECT";
 		}
 
 		private String mapChooseAnswer(String answer, String possibleAnswers) {

@@ -10,6 +10,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import pl.freeedu.backend.lesson.dto.LessonResponse;
 import pl.freeedu.backend.lesson.service.LessonPublicIdLookupService;
 import pl.freeedu.backend.teacher.dto.LessonStatsResponse;
+import pl.freeedu.backend.teacher.dto.TaskAnswerManualReviewRequest;
 import pl.freeedu.backend.teacher.dto.TeacherCreateStudentRequest;
 import pl.freeedu.backend.teacher.dto.TeacherStatsResponse;
 import pl.freeedu.backend.teacher.dto.TeacherStudentResponse;
@@ -97,6 +99,24 @@ public class TeacherDashboardController {
 						.fromCallable(() -> lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId))
 						.subscribeOn(Schedulers.boundedElastic())
 						.flatMap(lessonId -> teacherService.getLessonResultDetails(lessonId, studentId)));
+	}
+
+	@Operation(summary = "Manually override the correctness of a student's task answer")
+	@ApiResponses(value = {
+			@ApiResponse(responseCode = "200", description = "Detailed lesson result updated successfully"),
+			@ApiResponse(responseCode = "400", description = "Bad Request"),
+			@ApiResponse(responseCode = "403", description = "Forbidden - requires lesson ownership"),
+			@ApiResponse(responseCode = "404", description = "Lesson, task answer or lesson result not found")})
+	@PatchMapping("/lessons/{lessonPublicId}/students/{studentPublicId}/tasks/{taskPublicId}/review")
+	@PreAuthorize("hasRole('TEACHER')")
+	@ResponseStatus(HttpStatus.OK)
+	public Mono<LessonResultDetailsResponse> reviewTaskAnswer(@PathVariable String lessonPublicId,
+			@PathVariable String studentPublicId, @PathVariable String taskPublicId,
+			@Valid @RequestBody Mono<TaskAnswerManualReviewRequest> request) {
+		return userPublicIdLookupService.getInternalId(studentPublicId).flatMap(studentId -> Mono
+				.fromCallable(() -> lessonPublicIdLookupService.getRequiredInternalId(lessonPublicId))
+				.subscribeOn(Schedulers.boundedElastic())
+				.flatMap(lessonId -> teacherService.reviewTaskAnswer(lessonId, studentId, taskPublicId, request)));
 	}
 
 	@Operation(summary = "Get statistics for a specific student")
