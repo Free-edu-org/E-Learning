@@ -27,6 +27,7 @@ import pl.freeedu.backend.teacher.dto.LessonStatsResponse;
 import pl.freeedu.backend.teacher.dto.LessonStatsStudentResult;
 import pl.freeedu.backend.teacher.dto.TeacherStudentStatsResponse;
 import pl.freeedu.backend.lesson.exception.LessonException;
+import pl.freeedu.backend.student.model.StudentProgressHistory;
 import pl.freeedu.backend.student.repository.StudentProgressHistoryRepository;
 import pl.freeedu.backend.task.repository.UserAnswerRepository;
 import java.util.LinkedHashMap;
@@ -261,8 +262,11 @@ public class TeacherService {
 
 			List<TeacherStudentStatsResponse.ProgressPoint> progressHistory = studentProgressHistoryRepository
 					.findByUserIdOrderByProgressDateAsc(studentId).stream()
-					.map(e -> TeacherStudentStatsResponse.ProgressPoint.builder().date(e.getProgressDate().toString())
-							.progress(Math.round(e.getAvgScore())).build())
+					.collect(Collectors.groupingBy(StudentProgressHistory::getProgressDate,
+							Collectors.averagingDouble(StudentProgressHistory::getAvgScore)))
+					.entrySet().stream().sorted(Map.Entry.comparingByKey())
+					.map(entry -> TeacherStudentStatsResponse.ProgressPoint.builder().date(entry.getKey().toString())
+							.progress(Math.round(entry.getValue())).build())
 					.toList();
 
 			java.util.Map<String, TeacherStudentStatsResponse.SkillStat> skillMap = new LinkedHashMap<>();

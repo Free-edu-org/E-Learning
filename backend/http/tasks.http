@@ -150,6 +150,8 @@ Authorization: Bearer {{auth_token}}
 }
 
 ### Reset user progress (ADMIN or lesson owner TEACHER)
+# Resets only the selected lesson result and removes only that lesson's contribution
+# from student progress history.
 POST http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/users/{{user_public_id}}/reset
 Authorization: Bearer {{auth_token}}
 

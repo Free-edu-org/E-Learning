@@ -7,6 +7,8 @@ GET http://localhost:8080/api/v1/student/lessons
 Authorization: Bearer {{student_token}}
 
 ### Get Student progress history (Requires STUDENT)
+# Progress is returned as one point per day.
+# If a student completes multiple lessons on the same day, backend returns the daily average.
 GET http://localhost:8080/api/v1/student/progress
 Authorization: Bearer {{student_token}}
 
