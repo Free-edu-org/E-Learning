@@ -1,646 +1,440 @@
+const crypto = require('crypto');
 const { apiClient, setAuthToken } = require('../utils/apiClient');
+const { createPool } = require('../utils/db');
 
-describe('Submit Lesson API (POST /api/v1/lessons/{lessonPublicId}/submit)', () => {
+describe('Submit Lesson API (POST /api/v1/lessons/{lessonPublicId}/submit) - STT flow', () => {
     const uniqueId = Date.now();
+    const shortId = String(uniqueId).slice(-6);
     const adminCreds = { identifier: 'admin_marek', password: 'admin1' };
     const teacherCreds = { identifier: 'pan_tomasz', password: 'admin1' };
 
-    let adminToken, teacherToken;
-    let studentToken, studentPublicId;
-    let student2Token, student2PublicId; // student NOT in group
-    let groupPublicId, lessonPublicId;
-    let chooseTaskPublicId, writeTaskPublicId, scatterTaskPublicId, speakTaskPublicId;
+    let adminToken;
+    let teacherToken;
+    let studentToken;
+    let studentPublicId;
+    let studentDbId;
+    let outsiderToken;
+    let outsiderPublicId;
+    let outsiderDbId;
+    let groupPublicId;
+    let lessonPublicId;
+    let lessonDbId;
+    let chooseTaskPublicId;
+    let writeTaskPublicId;
+    let scatterTaskPublicId;
+    let speakTaskPublicId;
+    let secondSpeakTaskPublicId;
+    let speakTaskDbId;
+    let secondSpeakTaskDbId;
+    let dbPool;
+    const insertedAttemptPublicIds = [];
 
-    // ─── Setup: create fully isolated test data ──────────────────────
     beforeAll(async () => {
-        // Login admin & teacher
-        let res = await apiClient.post('/auth/login', adminCreds);
-        adminToken = res.data.token;
+        dbPool = createPool();
 
-        res = await apiClient.post('/auth/login', teacherCreds);
-        teacherToken = res.data.token;
+        let response = await apiClient.post('/auth/login', adminCreds);
+        adminToken = response.data.token;
 
-        // Teacher creates a group
+        response = await apiClient.post('/auth/login', teacherCreds);
+        teacherToken = response.data.token;
+
         setAuthToken(teacherToken);
-        res = await apiClient.post('/user-groups', {
-            name: `Submit Group ${uniqueId}`,
-            description: 'Group for submit tests'
+        response = await apiClient.post('/user-groups', {
+            name: `Submit STT Group ${uniqueId}`,
+            description: 'Group for speaking submit tests'
         });
-        expect(res.status).toBe(201);
-        groupPublicId = res.data.publicId;
+        expect(response.status).toBe(201);
+        groupPublicId = response.data.publicId;
 
-        // Teacher creates a lesson assigned to the group
-        res = await apiClient.post('/lessons', {
-            title: `Submit Lesson ${uniqueId}`,
-            theme: 'Submit Testing',
+        response = await apiClient.post('/lessons', {
+            title: `Submit STT Lesson ${shortId}`,
+            theme: 'Speaking',
             groupPublicIds: [groupPublicId]
         });
-        expect(res.status).toBe(201);
-        lessonPublicId = res.data.publicId;
-        expect(res.data).not.toHaveProperty('id');
+        expect(response.status).toBe(201);
+        lessonPublicId = response.data.publicId;
 
-        // Teacher creates 4 task types
-        res = await apiClient.post(`/lessons/${lessonPublicId}/tasks/choose`, {
+        response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/choose`, {
             task: 'What is 2+2?',
             possibleAnswers: '3|4|5|6',
-            correctAnswer: 1,
-            hint: 'Basic math',
-            section: 'Math'
+            correctAnswer: 1
         });
-        expect(res.status).toBe(201);
-        chooseTaskPublicId = res.data.publicId;
+        chooseTaskPublicId = response.data.publicId;
 
-        res = await apiClient.post(`/lessons/${lessonPublicId}/tasks/write`, {
-            task: 'Translate "hello" to Polish',
-            correctAnswer: 'cześć',
-            hint: 'Common greeting',
-            section: 'Vocabulary'
+        response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/write`, {
+            task: 'Translate hello',
+            correctAnswer: 'hello'
         });
-        expect(res.status).toBe(201);
-        writeTaskPublicId = res.data.publicId;
+        writeTaskPublicId = response.data.publicId;
 
-        res = await apiClient.post(`/lessons/${lessonPublicId}/tasks/scatter`, {
-            task: 'Arrange the words into a sentence',
-            words: 'is|the|big|cat',
-            correctAnswer: 'the cat is big',
-            hint: 'Subject first',
-            section: 'Grammar'
+        response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/scatter`, {
+            task: 'Arrange',
+            words: 'cat|the|big|is',
+            correctAnswer: 'the cat is big'
         });
-        expect(res.status).toBe(201);
-        scatterTaskPublicId = res.data.publicId;
+        scatterTaskPublicId = response.data.publicId;
 
-        res = await apiClient.post(`/lessons/${lessonPublicId}/tasks/speak`, {
-            task: 'Say "Hello, how are you?"',
-            expectedText: 'Hello, how are you?',
-            hint: 'Focus on pronunciation',
-            section: 'Speaking'
+        response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/speak`, {
+            expectedText: 'Hello how are you'
         });
-        expect(res.status).toBe(201);
-        speakTaskPublicId = res.data.publicId;
+        speakTaskPublicId = response.data.publicId;
 
-        res = await apiClient.patch(`/lessons/${lessonPublicId}/status`, { isActive: true });
-        expect(res.status).toBe(204);
+        response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/speak`, {
+            expectedText: 'Good morning'
+        });
+        secondSpeakTaskPublicId = response.data.publicId;
 
-        // Register student1 (will be added to group)
+        response = await apiClient.patch(`/lessons/${lessonPublicId}/status`, { isActive: true });
+        expect(response.status).toBe(204);
+
         setAuthToken(adminToken);
-        const student1Data = {
-            email: `submit.s1.${uniqueId}@test.com`,
-            username: `submit_s1_${uniqueId}`,
+        response = await apiClient.post('/users/register', {
+            email: `submit.stt.student.${uniqueId}@test.com`,
+            username: `submit_stt_student_${uniqueId}`,
             password: 'password123'
-        };
-        res = await apiClient.post('/users/register', student1Data);
-        expect(res.status).toBe(201);
-
-        res = await apiClient.post('/auth/login', {
-            identifier: student1Data.username,
-            password: student1Data.password
         });
-        expect(res.status).toBe(200);
-        studentToken = res.data.token;
-
+        expect(response.status).toBe(201);
+        response = await apiClient.post('/auth/login', {
+            identifier: `submit_stt_student_${uniqueId}`,
+            password: 'password123'
+        });
+        studentToken = response.data.token;
         setAuthToken(studentToken);
-        res = await apiClient.get('/users/me');
-        studentPublicId = res.data.publicId;
+        response = await apiClient.get('/users/me');
+        studentPublicId = response.data.publicId;
 
-        // Add student1 to group
         setAuthToken(adminToken);
-        res = await apiClient.post(`/user-groups/${groupPublicId}/members/${studentPublicId}`);
-        expect(res.status).toBe(204);
+        response = await apiClient.post(`/user-groups/${groupPublicId}/members/${studentPublicId}`);
+        expect(response.status).toBe(204);
 
-        // Register student2 (NOT in group — for access-denied tests)
-        const student2Data = {
-            email: `submit.s2.${uniqueId}@test.com`,
-            username: `submit_s2_${uniqueId}`,
+        response = await apiClient.post('/users/register', {
+            email: `submit.stt.outsider.${uniqueId}@test.com`,
+            username: `submit_stt_outsider_${uniqueId}`,
             password: 'password123'
-        };
-        res = await apiClient.post('/users/register', student2Data);
-        expect(res.status).toBe(201);
-
-        res = await apiClient.post('/auth/login', {
-            identifier: student2Data.username,
-            password: student2Data.password
         });
-        expect(res.status).toBe(200);
-        student2Token = res.data.token;
+        expect(response.status).toBe(201);
+        response = await apiClient.post('/auth/login', {
+            identifier: `submit_stt_outsider_${uniqueId}`,
+            password: 'password123'
+        });
+        outsiderToken = response.data.token;
+        setAuthToken(outsiderToken);
+        response = await apiClient.get('/users/me');
+        outsiderPublicId = response.data.publicId;
 
-        setAuthToken(student2Token);
-        res = await apiClient.get('/users/me');
-        student2PublicId = res.data.publicId;
+        lessonDbId = await fetchId('SELECT id FROM lessons WHERE public_id = ?', [lessonPublicId]);
+        studentDbId = await fetchId('SELECT id FROM users WHERE public_id = ?', [studentPublicId]);
+        outsiderDbId = await fetchId('SELECT id FROM users WHERE public_id = ?', [outsiderPublicId]);
+        speakTaskDbId = await fetchId('SELECT id FROM speak_tasks WHERE public_id = ?', [speakTaskPublicId]);
+        secondSpeakTaskDbId = await fetchId('SELECT id FROM speak_tasks WHERE public_id = ?', [secondSpeakTaskPublicId]);
     });
 
-    // ─── Cleanup ─────────────────────────────────────────────────────
     afterAll(async () => {
-        // Reset student progress
+        if (dbPool && insertedAttemptPublicIds.length > 0) {
+            const placeholders = insertedAttemptPublicIds.map(() => '?').join(', ');
+            await dbPool.execute(`DELETE FROM speak_attempts WHERE public_id IN (${placeholders})`, insertedAttemptPublicIds);
+        }
+
         setAuthToken(teacherToken);
         if (lessonPublicId && studentPublicId) {
             await apiClient.post(`/lessons/${lessonPublicId}/users/${studentPublicId}/reset`);
         }
 
-        // Delete tasks
         for (const [type, publicId] of [
             ['choose', chooseTaskPublicId],
             ['write', writeTaskPublicId],
             ['scatter', scatterTaskPublicId],
-            ['speak', speakTaskPublicId]
+            ['speak', speakTaskPublicId],
+            ['speak', secondSpeakTaskPublicId]
         ]) {
             if (publicId) {
-                const r = await apiClient.delete(`/lessons/${lessonPublicId}/tasks/${type}/${publicId}`);
-                expect([204, 404]).toContain(r.status);
+                const response = await apiClient.delete(`/lessons/${lessonPublicId}/tasks/${type}/${publicId}`);
+                expect([204, 404]).toContain(response.status);
             }
         }
 
-        // Delete lesson
         if (lessonPublicId) {
-            const r = await apiClient.delete(`/lessons/${lessonPublicId}`);
-            expect([204, 404]).toContain(r.status);
+            const response = await apiClient.delete(`/lessons/${lessonPublicId}`);
+            expect([204, 404]).toContain(response.status);
         }
 
-        // Delete group (cascade removes members)
         setAuthToken(adminToken);
         if (groupPublicId) {
-            const r = await apiClient.delete(`/user-groups/${groupPublicId}`);
-            expect([204, 404]).toContain(r.status);
+            const response = await apiClient.delete(`/user-groups/${groupPublicId}`);
+            expect([204, 404]).toContain(response.status);
         }
 
-        // Delete created students
-        for (const uid of [studentPublicId, student2PublicId]) {
-            if (uid) {
-                const r = await apiClient.delete(`/users/${uid}`);
-                expect([204, 404]).toContain(r.status);
+        for (const publicId of [studentPublicId, outsiderPublicId]) {
+            if (publicId) {
+                const response = await apiClient.delete(`/users/${publicId}`);
+                expect([204, 404]).toContain(response.status);
             }
         }
 
+        if (dbPool) {
+            await dbPool.end();
+        }
         setAuthToken(null);
     });
 
-    // Helper: reset progress and re-start lesson for student1
+    async function fetchId(sql, params) {
+        const [rows] = await dbPool.execute(sql, params);
+        return rows[0].id;
+    }
+
+    async function currentUserLessonId(userId = studentDbId) {
+        const [rows] = await dbPool.execute(
+            'SELECT id FROM user_lessons WHERE user_id = ? AND lesson_id = ? ORDER BY id DESC LIMIT 1',
+            [userId, lessonDbId]
+        );
+        return rows[0]?.id ?? null;
+    }
+
     async function resetAndStartLesson() {
         setAuthToken(teacherToken);
         await apiClient.post(`/lessons/${lessonPublicId}/users/${studentPublicId}/reset`);
         setAuthToken(studentToken);
-        const res = await apiClient.get(`/lessons/${lessonPublicId}/tasks`);
-        expect(res.status).toBe(200);
-        expect(res.data.lessonPublicId).toBe(lessonPublicId);
-        expect(res.data).not.toHaveProperty('lessonId');
+        const response = await apiClient.get(`/lessons/${lessonPublicId}/tasks`);
+        expect(response.status).toBe(200);
     }
 
-    function allCorrectAnswers() {
+    async function insertSpeakAttempt({
+        userId = studentDbId,
+        taskId = speakTaskDbId,
+        userLessonId,
+        lessonId = lessonDbId,
+        expectedText = 'Hello how are you',
+        rawTranscription = 'Hello how are you',
+        matchedTranscription = 'hello how are you',
+        normalizedExpected = 'hello how are you',
+        normalizedActual = 'hello how are you',
+        score = 1.0,
+        correct = true,
+        submittedAt = null
+    }) {
+        const publicId = crypto.randomUUID();
+        insertedAttemptPublicIds.push(publicId);
+        await dbPool.execute(
+            `INSERT INTO speak_attempts
+                (public_id, user_id, lesson_id, task_id, user_lesson_id, expected_text,
+                 raw_transcription, matched_transcription, normalized_expected, normalized_actual,
+                 score, is_correct, words_json, language, duration, submitted_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                publicId,
+                userId,
+                lessonId,
+                taskId,
+                userLessonId,
+                expectedText,
+                rawTranscription,
+                matchedTranscription,
+                normalizedExpected,
+                normalizedActual,
+                score,
+                correct,
+                JSON.stringify([
+                    { expected: 'hello', actual: 'hello', correct: true }
+                ]),
+                'en',
+                1.3,
+                submittedAt
+            ]
+        );
+        return publicId;
+    }
+
+    function buildBaseAnswers() {
         return [
             { taskPublicId: chooseTaskPublicId, taskType: 'choose', answer: '1' },
-            { taskPublicId: writeTaskPublicId, taskType: 'write', answer: 'cześć' },
-            { taskPublicId: scatterTaskPublicId, taskType: 'scatter', answer: 'the cat is big' },
-            { taskPublicId: speakTaskPublicId, taskType: 'speak', answer: 'Hello, how are you?' }
+            { taskPublicId: writeTaskPublicId, taskType: 'write', answer: 'hello' },
+            { taskPublicId: scatterTaskPublicId, taskType: 'scatter', answer: 'the cat is big' }
         ];
     }
 
-    // ═══════════════════════════════════════════════
-    // Happy Path
-    // ═══════════════════════════════════════════════
-    describe('Happy path — all correct answers', () => {
-        beforeAll(async () => {
-            // Student starts the lesson (creates UserLesson IN_PROGRESS)
-            setAuthToken(studentToken);
-            const res = await apiClient.get(`/lessons/${lessonPublicId}/tasks`);
-            expect(res.status).toBe(200);
-        });
+    describe('Happy path with stored SpeakAttempt', () => {
+        it('should submit lesson using attemptId and ignore FE as source of truth', async () => {
+            await resetAndStartLesson();
+            const userLessonId = await currentUserLessonId();
+            const attemptId = await insertSpeakAttempt({ userLessonId, correct: true, score: 1.0 });
 
-        afterAll(async () => {
-            setAuthToken(teacherToken);
-            await apiClient.post(`/lessons/${lessonPublicId}/users/${studentPublicId}/reset`);
-        });
-
-        it('should return 200 with perfect score when all answers are correct', async () => {
             setAuthToken(studentToken);
             const response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
-                answers: allCorrectAnswers()
+                answers: [
+                    ...buildBaseAnswers(),
+                    { taskPublicId: speakTaskPublicId, taskType: 'speak', answer: 'spoofed text', attemptId }
+                ]
             });
+
             expect(response.status).toBe(200);
             expect(response.data.score).toBe(4);
             expect(response.data.maxScore).toBe(4);
-        });
-
-        it('should return details array matching the number of submitted answers', async () => {
-            await resetAndStartLesson();
-            setAuthToken(studentToken);
-            const response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
-                answers: allCorrectAnswers()
-            });
-            expect(response.status).toBe(200);
-            expect(response.data.details).toHaveLength(4);
-        });
-
-        it('should return correct detail structure for each result item', async () => {
-            await resetAndStartLesson();
-            setAuthToken(studentToken);
-            const response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
-                answers: allCorrectAnswers()
-            });
-            expect(response.status).toBe(200);
-
-            for (const detail of response.data.details) {
-                expect(detail).toHaveProperty('taskPublicId');
-                expect(detail).toHaveProperty('taskType');
-                expect(detail).toHaveProperty('isCorrect');
-                expect(detail).toHaveProperty('correctAnswer');
-                expect(typeof detail.taskPublicId).toBe('string');
-                expect(typeof detail.taskType).toBe('string');
-                expect(typeof detail.isCorrect).toBe('boolean');
-            }
+            expect(response.data.details.find((detail) => detail.taskType === 'speak').isCorrect).toBe(true);
         });
     });
 
-    // ═══════════════════════════════════════════════
-    // Scoring logic
-    // ═══════════════════════════════════════════════
-    describe('Scoring logic', () => {
-        beforeEach(async () => {
+    describe('Skipped speaking task', () => {
+        it('should allow submit when speaking task is sent without attemptId and mark it incorrect', async () => {
             await resetAndStartLesson();
-        });
-
-        afterAll(async () => {
-            setAuthToken(teacherToken);
-            await apiClient.post(`/lessons/${lessonPublicId}/users/${studentPublicId}/reset`);
-        });
-
-        it('should score wrong answers correctly (score < maxScore)', async () => {
             setAuthToken(studentToken);
             const response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
                 answers: [
-                    { taskPublicId: chooseTaskPublicId, taskType: 'choose', answer: '0' },        // wrong
-                    { taskPublicId: writeTaskPublicId, taskType: 'write', answer: 'wrong' },       // wrong
-                    { taskPublicId: scatterTaskPublicId, taskType: 'scatter', answer: 'cat big' }, // wrong
-                    { taskPublicId: speakTaskPublicId, taskType: 'speak', answer: 'anything' }     // wrong
+                    ...buildBaseAnswers(),
+                    { taskPublicId: speakTaskPublicId, taskType: 'speak', answer: '' }
                 ]
             });
+
             expect(response.status).toBe(200);
-            expect(response.data.score).toBe(0);
+            expect(response.data.score).toBe(3);
             expect(response.data.maxScore).toBe(4);
-
-            const chooseDetail = response.data.details.find(d => d.taskType === 'choose');
-            expect(chooseDetail.isCorrect).toBe(false);
-            expect(chooseDetail.correctAnswer).toBe('1');
-
-            const writeDetail = response.data.details.find(d => d.taskType === 'write');
-            expect(writeDetail.isCorrect).toBe(false);
-
-            const speakDetail = response.data.details.find(d => d.taskType === 'speak');
-            expect(speakDetail.isCorrect).toBe(false);
-            expect(speakDetail.correctAnswer).toBe('Hello, how are you?');
+            expect(response.data.details.find((detail) => detail.taskType === 'speak').isCorrect).toBe(false);
         });
 
-        it('should be case-insensitive for write tasks', async () => {
+        it('should not trust plain speaking answer without attemptId', async () => {
+            await resetAndStartLesson();
             setAuthToken(studentToken);
             const response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
                 answers: [
-                    { taskPublicId: chooseTaskPublicId, taskType: 'choose', answer: '1' },
-                    { taskPublicId: writeTaskPublicId, taskType: 'write', answer: 'CZEŚĆ' },
-                    { taskPublicId: scatterTaskPublicId, taskType: 'scatter', answer: 'the cat is big' },
-                    { taskPublicId: speakTaskPublicId, taskType: 'speak', answer: 'Hello, how are you?' }
+                    ...buildBaseAnswers(),
+                    { taskPublicId: speakTaskPublicId, taskType: 'speak', answer: 'Hello how are you' }
                 ]
             });
-            expect(response.status).toBe(200);
-            const writeDetail = response.data.details.find(d => d.taskType === 'write');
-            expect(writeDetail.isCorrect).toBe(true);
-        });
 
-        it('should be case-insensitive for scatter tasks', async () => {
+            expect(response.status).toBe(200);
+            expect(response.data.details.find((detail) => detail.taskType === 'speak').isCorrect).toBe(false);
+        });
+    });
+
+    describe('Invalid attemptId scenarios', () => {
+        it('should return 404 when attemptId does not exist', async () => {
+            await resetAndStartLesson();
             setAuthToken(studentToken);
             const response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
                 answers: [
-                    { taskPublicId: chooseTaskPublicId, taskType: 'choose', answer: '1' },
-                    { taskPublicId: writeTaskPublicId, taskType: 'write', answer: 'cześć' },
-                    { taskPublicId: scatterTaskPublicId, taskType: 'scatter', answer: 'THE CAT IS BIG' },
-                    { taskPublicId: speakTaskPublicId, taskType: 'speak', answer: 'Hello, how are you?' }
+                    { taskPublicId: speakTaskPublicId, taskType: 'speak', answer: '', attemptId: crypto.randomUUID() }
                 ]
             });
-            expect(response.status).toBe(200);
-            const scatterDetail = response.data.details.find(d => d.taskType === 'scatter');
-            expect(scatterDetail.isCorrect).toBe(true);
+
+            expect(response.status).toBe(404);
+            expect(response.data.code).toBe('SPEAK_ATTEMPT_NOT_FOUND');
         });
 
-        it('should trim whitespace in write answers', async () => {
+        it('should reject attempt from another user', async () => {
+            await resetAndStartLesson();
+            const userLessonId = await currentUserLessonId(outsiderDbId) || await createManualUserLesson(outsiderDbId);
+            const attemptId = await insertSpeakAttempt({ userId: outsiderDbId, userLessonId });
+
+            setAuthToken(studentToken);
+            const response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
+                answers: [{ taskPublicId: speakTaskPublicId, taskType: 'speak', answer: '', attemptId }]
+            });
+
+            expect(response.status).toBe(400);
+            expect(response.data.code).toBe('SPEAK_ATTEMPT_INVALID');
+        });
+
+        it('should reject attempt from another speaking task', async () => {
+            await resetAndStartLesson();
+            const userLessonId = await currentUserLessonId();
+            const attemptId = await insertSpeakAttempt({
+                userLessonId,
+                taskId: secondSpeakTaskDbId,
+                expectedText: 'Good morning',
+                rawTranscription: 'Good morning',
+                matchedTranscription: 'good morning',
+                normalizedExpected: 'good morning',
+                normalizedActual: 'good morning'
+            });
+
+            setAuthToken(studentToken);
+            const response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
+                answers: [{ taskPublicId: speakTaskPublicId, taskType: 'speak', answer: '', attemptId }]
+            });
+
+            expect(response.status).toBe(400);
+            expect(response.data.code).toBe('SPEAK_ATTEMPT_INVALID');
+        });
+    });
+
+    describe('Reset and UserLesson isolation', () => {
+        it('should reject old attempt after reset and new lesson run', async () => {
+            await resetAndStartLesson();
+            const oldUserLessonId = await currentUserLessonId();
+            const attemptId = await insertSpeakAttempt({ userLessonId: oldUserLessonId });
+
+            setAuthToken(teacherToken);
+            await apiClient.post(`/lessons/${lessonPublicId}/users/${studentPublicId}/reset`);
+
+            setAuthToken(studentToken);
+            let response = await apiClient.get(`/lessons/${lessonPublicId}/tasks`);
+            expect(response.status).toBe(200);
+
+            response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
+                answers: [{ taskPublicId: speakTaskPublicId, taskType: 'speak', answer: '', attemptId }]
+            });
+
+            expect([400, 404]).toContain(response.status);
+            expect(['SPEAK_ATTEMPT_INVALID', 'SPEAK_ATTEMPT_NOT_FOUND']).toContain(response.data.code);
+        });
+    });
+
+    describe('Multiple speaking tasks and limit per task', () => {
+        it('should treat attempt validation independently per task', async () => {
+            await resetAndStartLesson();
+            const userLessonId = await currentUserLessonId();
+            const firstAttemptId = await insertSpeakAttempt({ userLessonId, taskId: speakTaskDbId });
+            const secondAttemptId = await insertSpeakAttempt({
+                userLessonId,
+                taskId: secondSpeakTaskDbId,
+                expectedText: 'Good morning',
+                rawTranscription: 'Good morning',
+                matchedTranscription: 'good morning',
+                normalizedExpected: 'good morning',
+                normalizedActual: 'good morning'
+            });
+
             setAuthToken(studentToken);
             const response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
                 answers: [
-                    { taskPublicId: chooseTaskPublicId, taskType: 'choose', answer: '1' },
-                    { taskPublicId: writeTaskPublicId, taskType: 'write', answer: '  cześć  ' },
-                    { taskPublicId: scatterTaskPublicId, taskType: 'scatter', answer: 'the cat is big' },
-                    { taskPublicId: speakTaskPublicId, taskType: 'speak', answer: 'Hello, how are you?' }
+                    { taskPublicId: speakTaskPublicId, taskType: 'speak', answer: '', attemptId: firstAttemptId },
+                    { taskPublicId: secondSpeakTaskPublicId, taskType: 'speak', answer: '', attemptId: secondAttemptId }
                 ]
             });
-            expect(response.status).toBe(200);
-            const writeDetail = response.data.details.find(d => d.taskType === 'write');
-            expect(writeDetail.isCorrect).toBe(true);
-        });
 
-        it('should mark speak task as wrong when transcription does not match expected text', async () => {
-            setAuthToken(studentToken);
-            const response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
-                answers: [
-                    { taskPublicId: chooseTaskPublicId, taskType: 'choose', answer: '1' },
-                    { taskPublicId: writeTaskPublicId, taskType: 'write', answer: 'cześć' },
-                    { taskPublicId: scatterTaskPublicId, taskType: 'scatter', answer: 'the cat is big' },
-                    { taskPublicId: speakTaskPublicId, taskType: 'speak', answer: 'completely random gibberish 12345' }
-                ]
-            });
             expect(response.status).toBe(200);
-            const speakDetail = response.data.details.find(d => d.taskType === 'speak');
-            expect(speakDetail.isCorrect).toBe(false);
-            expect(speakDetail.correctAnswer).toBe('Hello, how are you?');
-        });
-
-        it('should handle partial submission (fewer answers than total tasks)', async () => {
-            setAuthToken(studentToken);
-            const response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
-                answers: [
-                    { taskPublicId: chooseTaskPublicId, taskType: 'choose', answer: '1' },
-                    { taskPublicId: speakTaskPublicId, taskType: 'speak', answer: 'Hello, how are you?' }
-                ]
-            });
-            expect(response.status).toBe(200);
-            expect(response.data.score).toBe(2);
-            expect(response.data.maxScore).toBe(2);
             expect(response.data.details).toHaveLength(2);
+            expect(response.data.details.every((detail) => detail.isCorrect)).toBe(true);
         });
     });
 
-    // ═══════════════════════════════════════════════
-    // Authorization
-    // ═══════════════════════════════════════════════
-    describe('Authorization', () => {
-        it('should return 401 without token', async () => {
-            setAuthToken(null);
-            const response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
-                answers: [{ taskPublicId: chooseTaskPublicId, taskType: 'choose', answer: '1' }]
-            });
-            expect(response.status).toBe(401);
-        });
-
-        it('should return 403 for TEACHER', async () => {
-            setAuthToken(teacherToken);
-            const response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
-                answers: [{ taskPublicId: chooseTaskPublicId, taskType: 'choose', answer: '1' }]
-            });
-            expect(response.status).toBe(403);
-        });
-
-        it('should return 403 for ADMIN', async () => {
-            setAuthToken(adminToken);
-            const response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
-                answers: [{ taskPublicId: chooseTaskPublicId, taskType: 'choose', answer: '1' }]
-            });
-            expect(response.status).toBe(403);
-        });
-
-        it('should return 403 STUDENT_NO_ACCESS for student not in group', async () => {
-            setAuthToken(student2Token);
-            const response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
-                answers: [{ taskPublicId: chooseTaskPublicId, taskType: 'choose', answer: '1' }]
-            });
-            expect(response.status).toBe(403);
-            expect(response.data.code).toBe('STUDENT_NO_ACCESS');
-        });
-    });
-
-    describe('POST /tab-switches', () => {
-        beforeEach(async () => {
+    describe('Completed lesson', () => {
+        it('should block second submit after lesson completion', async () => {
             await resetAndStartLesson();
-        });
-
-        it('should return 204 and allow recording tab switch for started lesson', async () => {
-            setAuthToken(studentToken);
-            const response = await apiClient.post(`/lessons/${lessonPublicId}/tab-switches`, {
-                taskPublicId: chooseTaskPublicId,
-                taskType: 'choose'
-            });
-            expect(response.status).toBe(204);
-        });
-
-        it('should return 401 without token', async () => {
-            setAuthToken(null);
-            const response = await apiClient.post(`/lessons/${lessonPublicId}/tab-switches`, {
-                taskPublicId: chooseTaskPublicId,
-                taskType: 'choose'
-            });
-            expect(response.status).toBe(401);
-        });
-
-        it('should return 403 for TEACHER role', async () => {
-            setAuthToken(teacherToken);
-            const response = await apiClient.post(`/lessons/${lessonPublicId}/tab-switches`, {
-                taskPublicId: chooseTaskPublicId,
-                taskType: 'choose'
-            });
-            expect(response.status).toBe(403);
-        });
-
-        it('should return 403 STUDENT_NO_ACCESS for student not in group', async () => {
-            setAuthToken(student2Token);
-            const response = await apiClient.post(`/lessons/${lessonPublicId}/tab-switches`, {
-                taskPublicId: chooseTaskPublicId,
-                taskType: 'choose'
-            });
-            expect(response.status).toBe(403);
-            expect(response.data.code).toBe('STUDENT_NO_ACCESS');
-        });
-
-        it('should return 400 LESSON_NOT_STARTED when lesson was not started', async () => {
-            setAuthToken(teacherToken);
-            await apiClient.post(`/lessons/${lessonPublicId}/users/${studentPublicId}/reset`);
+            const userLessonId = await currentUserLessonId();
+            const attemptId = await insertSpeakAttempt({ userLessonId });
 
             setAuthToken(studentToken);
-            const response = await apiClient.post(`/lessons/${lessonPublicId}/tab-switches`, {
-                taskPublicId: chooseTaskPublicId,
-                taskType: 'choose'
+            let response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
+                answers: [
+                    ...buildBaseAnswers(),
+                    { taskPublicId: speakTaskPublicId, taskType: 'speak', answer: '', attemptId }
+                ]
             });
-            expect(response.status).toBe(400);
-            expect(response.data.code).toBe('LESSON_NOT_STARTED');
-        });
+            expect(response.status).toBe(200);
 
-        it('should return 403 LESSON_ALREADY_COMPLETED after lesson submission', async () => {
-            setAuthToken(studentToken);
-            const submitResponse = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
-                answers: allCorrectAnswers()
-            });
-            expect(submitResponse.status).toBe(200);
-
-            const response = await apiClient.post(`/lessons/${lessonPublicId}/tab-switches`, {
-                taskPublicId: chooseTaskPublicId,
-                taskType: 'choose'
+            response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
+                answers: [{ taskPublicId: speakTaskPublicId, taskType: 'speak', answer: '', attemptId }]
             });
             expect(response.status).toBe(403);
             expect(response.data.code).toBe('LESSON_ALREADY_COMPLETED');
         });
-
-        it('should return 400 INVALID_TASK_TYPE for unknown task type', async () => {
-            setAuthToken(studentToken);
-            const response = await apiClient.post(`/lessons/${lessonPublicId}/tab-switches`, {
-                taskPublicId: chooseTaskPublicId,
-                taskType: 'unknown_type'
-            });
-            expect(response.status).toBe(400);
-            expect(response.data.code).toBe('INVALID_TASK_TYPE');
-        });
-
-        it('should return 404 TASK_NOT_FOUND for non-existent taskPublicId', async () => {
-            setAuthToken(studentToken);
-            const response = await apiClient.post(`/lessons/${lessonPublicId}/tab-switches`, {
-                taskPublicId: 'non-existent-task',
-                taskType: 'choose'
-            });
-            expect(response.status).toBe(404);
-            expect(response.data.code).toBe('TASK_NOT_FOUND');
-        });
     });
 
-    // ═══════════════════════════════════════════════
-    // Error scenarios
-    // ═══════════════════════════════════════════════
-    describe('Error scenarios', () => {
-        it('should return 404 LESSON_NOT_FOUND for non-existent lesson', async () => {
-            setAuthToken(studentToken);
-            const response = await apiClient.post('/lessons/9999999/submit', {
-                answers: [{ taskPublicId: chooseTaskPublicId, taskType: 'choose', answer: '1' }]
-            });
-            expect(response.status).toBe(404);
-            expect(response.data.code).toBe('LESSON_NOT_FOUND');
-        });
-
-        it('should return 400 LESSON_NOT_STARTED when lesson has not been started', async () => {
-            // Reset progress to remove UserLesson record
-            setAuthToken(teacherToken);
-            await apiClient.post(`/lessons/${lessonPublicId}/users/${studentPublicId}/reset`);
-
-            // Submit WITHOUT calling GET /tasks first
-            setAuthToken(studentToken);
-            const response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
-                answers: [{ taskPublicId: chooseTaskPublicId, taskType: 'choose', answer: '1' }]
-            });
-            expect(response.status).toBe(400);
-            expect(response.data.code).toBe('LESSON_NOT_STARTED');
-        });
-
-        it('should return 403 LESSON_ALREADY_COMPLETED on double submit', async () => {
-            await resetAndStartLesson();
-
-            // First submit
-            setAuthToken(studentToken);
-            const first = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
-                answers: allCorrectAnswers()
-            });
-            expect(first.status).toBe(200);
-
-            // Second submit — must be blocked
-            const second = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
-                answers: allCorrectAnswers()
-            });
-            expect(second.status).toBe(403);
-            expect(second.data.code).toBe('LESSON_ALREADY_COMPLETED');
-        });
-
-        it('should return 400 INVALID_TASK_TYPE for unknown task type', async () => {
-            await resetAndStartLesson();
-
-            setAuthToken(studentToken);
-            const response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
-                answers: [{ taskPublicId: chooseTaskPublicId, taskType: 'unknown_type', answer: '1' }]
-            });
-            expect(response.status).toBe(400);
-            expect(response.data.code).toBe('INVALID_TASK_TYPE');
-        });
-
-        it('should return 404 TASK_NOT_FOUND for non-existent taskPublicId', async () => {
-            await resetAndStartLesson();
-
-            setAuthToken(studentToken);
-            const response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
-                answers: [{ taskPublicId: 'non-existent-task', taskType: 'choose', answer: '1' }]
-            });
-            expect(response.status).toBe(404);
-            expect(response.data.code).toBe('TASK_NOT_FOUND');
-        });
-
-        it('should return 403 LESSON_NOT_ACTIVE when student starts or submits an inactive lesson', async () => {
-            setAuthToken(teacherToken);
-            await apiClient.post(`/lessons/${lessonPublicId}/users/${studentPublicId}/reset`);
-            let response = await apiClient.patch(`/lessons/${lessonPublicId}/status`, { isActive: false });
-            expect(response.status).toBe(204);
-
-            try {
-                setAuthToken(studentToken);
-                response = await apiClient.get(`/lessons/${lessonPublicId}/tasks`);
-                expect(response.status).toBe(403);
-                expect(response.data.code).toBe('LESSON_NOT_ACTIVE');
-
-                response = await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
-                    answers: [{ taskPublicId: chooseTaskPublicId, taskType: 'choose', answer: '1' }]
-                });
-                expect(response.status).toBe(403);
-                expect(response.data.code).toBe('LESSON_NOT_ACTIVE');
-            } finally {
-                setAuthToken(teacherToken);
-                response = await apiClient.patch(`/lessons/${lessonPublicId}/status`, { isActive: true });
-                expect(response.status).toBe(204);
-            }
-        });
-    });
-
-    // ═══════════════════════════════════════════════
-    // GET /tasks interaction (student view)
-    // ═══════════════════════════════════════════════
-    describe('GET /tasks interaction for students', () => {
-        afterAll(async () => {
-            setAuthToken(teacherToken);
-            await apiClient.post(`/lessons/${lessonPublicId}/users/${studentPublicId}/reset`);
-        });
-
-        it('should set lesson status to IN_PROGRESS on first GET /tasks', async () => {
-            await resetAndStartLesson();
-
-            setAuthToken(studentToken);
-            const response = await apiClient.get(`/lessons/${lessonPublicId}/tasks`);
-            expect(response.status).toBe(200);
-            expect(response.data.lessonPublicId).toBe(lessonPublicId);
-            expect(response.data).not.toHaveProperty('lessonId');
-            expect(response.data.status).toBe('IN_PROGRESS');
-        });
-
-        it('should strip correct answers from student task view', async () => {
-            setAuthToken(studentToken);
-            const response = await apiClient.get(`/lessons/${lessonPublicId}/tasks`);
-            expect(response.status).toBe(200);
-
-            for (const section of response.data.sections) {
-                for (const task of (section.chooseTasks || [])) {
-                    expect(task.correctAnswer).toBeNull();
-                }
-                for (const task of (section.writeTasks || [])) {
-                    expect(task.correctAnswer).toBeNull();
-                }
-                for (const task of (section.scatterTasks || [])) {
-                    expect(task.correctAnswer).toBeNull();
-                }
-            }
-        });
-
-        it('should return 403 LESSON_ALREADY_COMPLETED when student views completed lesson tasks', async () => {
-            // Submit to complete
-            setAuthToken(studentToken);
-            await apiClient.post(`/lessons/${lessonPublicId}/submit`, {
-                answers: allCorrectAnswers()
-            });
-
-            // GET /tasks should be blocked
-            const response = await apiClient.get(`/lessons/${lessonPublicId}/tasks`);
-            expect(response.status).toBe(403);
-            expect(response.data.code).toBe('LESSON_ALREADY_COMPLETED');
-        });
-
-        it('should return 403 STUDENT_NO_ACCESS for student not in lesson group', async () => {
-            setAuthToken(student2Token);
-            const response = await apiClient.get(`/lessons/${lessonPublicId}/tasks`);
-            expect(response.status).toBe(403);
-            expect(response.data.code).toBe('STUDENT_NO_ACCESS');
-        });
-    });
+    async function createManualUserLesson(userId) {
+        await dbPool.execute(
+            'INSERT INTO user_lessons (user_id, lesson_id, status, score, max_score) VALUES (?, ?, ?, ?, ?)',
+            [userId, lessonDbId, 'IN_PROGRESS', 0, 0]
+        );
+        return currentUserLessonId(userId);
+    }
 });

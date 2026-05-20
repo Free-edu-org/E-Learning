@@ -2084,7 +2084,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 - **Method**: `POST`
 - **Content-Type**: `multipart/form-data`
 - **Authorization**: `STUDENT` only
-- **Description**: Uploads a recorded audio answer, validates student access to the lesson, sends the file to the local STT service, and compares the transcription with `expectedText`.
+- **Description**: Uploads a recorded audio answer, validates student access to the lesson, sends the file with `expectedText` to the local STT service, saves immutable `SpeakAttempt` linked to the current `UserLesson`, and returns the evaluated result to the frontend.
 
 **Request Parts:**
 - `file`: audio file, for example `audio/webm` from browser `MediaRecorder`.
@@ -2092,7 +2092,9 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 **Success (200 OK):**
 ```json
 {
-  "text": "Hello how are you",
+  "attemptId": "99999999-9999-9999-9999-999999999999",
+  "text": "hello how are you",
+  "rawText": "um hello how are you",
   "expectedText": "Hello, how are you?",
   "correct": true,
   "score": 1.0,
@@ -2105,13 +2107,19 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 }
 ```
 
-`score` is the fraction of expected words matched in the correct position after normalization, in range `0.0-1.0`.
+Notes:
+- `text` is `matchedTranscription` returned by `stt-service`.
+- `rawText` is the raw transcription returned by `stt-service`.
+- `attemptId` must be used later during lesson submit if the speaking result should be counted.
 
 **Known Errors:**
 - `STT_AUDIO_REQUIRED` (400): Audio file is missing or empty.
 - `LESSON_NOT_FOUND` (404), `TASK_NOT_FOUND` (404)
 - `LESSON_NOT_ACTIVE` (403), `STUDENT_NO_ACCESS` (403)
-- `STT_SERVICE_UNAVAILABLE` (503): Local STT service is not reachable or failed to transcribe.
+- `LESSON_ALREADY_COMPLETED` (403), `LESSON_NOT_STARTED` (400)
+- `SPEAK_ATTEMPT_LIMIT_EXCEEDED` (429): Too many unused attempts for the current `UserLesson + task`.
+- `STT_SERVICE_UNAVAILABLE` (503): Local STT service is not reachable, timed out, or returned an invalid payload.
+- `STT_RECOGNITION_FAILED` (502): STT service returned an empty or unusable transcription.
 
 ---
 
@@ -2127,7 +2135,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
   "answers": [
     { "taskPublicId": "66666666-6666-6666-6666-666666666666", "taskType": "choose", "answer": "1" },
     { "taskPublicId": "66666666-6666-6666-6666-666666666666", "taskType": "write", "answer": "went" },
-    { "taskPublicId": "66666666-6666-6666-6666-666666666666", "taskType": "speak", "answer": "Hello how are you" }
+    { "taskPublicId": "66666666-6666-6666-6666-666666666666", "taskType": "speak", "answer": "", "attemptId": "99999999-9999-9999-9999-999999999999" }
   ]
 }
 ```
@@ -2147,7 +2155,9 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 **Grading logic:**
 - `choose`: exact string match on correctAnswer index
 - `write` / `scatter`: case-insensitive, trimmed comparison
-- `speak`: normalized answer is split into words and compared position-by-position with `expectedText`; `score` equals `correctWords / expectedWords`, and the answer is accepted when this score is at least `application.stt.min-score` (default `0.85`)
+- `speak`: backend never re-runs STT scoring locally. If `attemptId` is present, backend validates ownership, lesson, task and current `UserLesson`, then uses stored `SpeakAttempt.correct`.
+- `speak`: if a speaking task is omitted or sent without `attemptId`, the task is treated as unanswered / incorrect and does not block the whole lesson submit.
+- `speak`: backend does not trust plain `answer` text for correctness without a valid `attemptId`.
 
 **Known Errors:**
 - `LESSON_NOT_FOUND` (404 Not Found)
@@ -2156,6 +2166,8 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 - `LESSON_ALREADY_COMPLETED` (403 Forbidden): Lesson already submitted.
 - `STUDENT_NO_ACCESS` (403 Forbidden): Student's group does not have access.
 - `TASK_NOT_FOUND` (404 Not Found): At least one referenced task does not exist or does not belong to the lesson from the path.
+- `SPEAK_ATTEMPT_NOT_FOUND` (404 Not Found): Submitted `attemptId` does not exist.
+- `SPEAK_ATTEMPT_INVALID` (400 Bad Request): Submitted `attemptId` belongs to another user, task, lesson or `UserLesson`.
 - `INVALID_TASK_TYPE` (400 Bad Request): Unknown task type in answers.
 - `UNAUTHORIZED` (401), `FORBIDDEN` (403)
 

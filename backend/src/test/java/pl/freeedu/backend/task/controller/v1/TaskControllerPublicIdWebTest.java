@@ -17,7 +17,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
@@ -26,6 +28,7 @@ import pl.freeedu.backend.lesson.service.LessonPublicIdLookupService;
 import pl.freeedu.backend.security.service.SecurityService;
 import pl.freeedu.backend.support.ControllerTestSecurityConfig;
 import pl.freeedu.backend.task.dto.LessonTasksResponse;
+import pl.freeedu.backend.task.dto.SpeakTranscriptionResponse;
 import pl.freeedu.backend.task.dto.SubmitResponse;
 import pl.freeedu.backend.task.dto.TaskSectionDto;
 import pl.freeedu.backend.task.exception.TaskErrorCode;
@@ -111,6 +114,56 @@ class TaskControllerPublicIdWebTest {
 		result.expectStatus().isNoContent();
 		verify(lessonPublicIdLookupService).getRequiredInternalId("lesson-public-id");
 		verify(taskService).recordTabSwitch(eq(9), any());
+	}
+
+	@Test
+	void shouldTranscribeSpeakTaskByPublicIdWhenStudentHasAccess() {
+		// given
+		when(lessonPublicIdLookupService.getRequiredInternalId("lesson-public-id")).thenReturn(9);
+		when(taskService.transcribeSpeakTask(eq(9), eq("task-public-id"), any()))
+				.thenReturn(Mono.just(SpeakTranscriptionResponse.builder().attemptId("attempt-public-id")
+						.text("matched transcription").rawText("raw transcription").expectedText("Expected sentence")
+						.correct(true).score(1.0).words(List.of()).build()));
+		MultipartBodyBuilder bodyBuilder = new MultipartBodyBuilder();
+		bodyBuilder.part("file", new ByteArrayResource("audio".getBytes()) {
+			@Override
+			public String getFilename() {
+				return "speech.webm";
+			}
+		}).contentType(MediaType.valueOf("audio/webm"));
+
+		// when
+		WebTestClient.ResponseSpec result = webTestClient.mutateWith(mockUser("student").roles("STUDENT")).post()
+				.uri("/api/v1/lessons/lesson-public-id/tasks/speak/task-public-id/transcribe")
+				.contentType(MediaType.MULTIPART_FORM_DATA).bodyValue(bodyBuilder.build()).exchange();
+
+		// then
+		result.expectStatus().isOk().expectBody().jsonPath("$.attemptId").isEqualTo("attempt-public-id")
+				.jsonPath("$.text").isEqualTo("matched transcription").jsonPath("$.rawText")
+				.isEqualTo("raw transcription").jsonPath("$.expectedText").isEqualTo("Expected sentence")
+				.jsonPath("$.correct").isEqualTo(true).jsonPath("$.score").isEqualTo(1.0);
+		verify(lessonPublicIdLookupService).getRequiredInternalId("lesson-public-id");
+		verify(taskService).transcribeSpeakTask(eq(9), eq("task-public-id"), any());
+	}
+
+	@Test
+	void shouldRequireStudentRoleForSpeakTranscription() {
+		MultipartBodyBuilder bodyBuilder = new MultipartBodyBuilder();
+		bodyBuilder.part("file", new ByteArrayResource("audio".getBytes()) {
+			@Override
+			public String getFilename() {
+				return "speech.webm";
+			}
+		}).contentType(MediaType.valueOf("audio/webm"));
+
+		// when
+		WebTestClient.ResponseSpec result = webTestClient.mutateWith(mockUser("teacher").roles("TEACHER")).post()
+				.uri("/api/v1/lessons/lesson-public-id/tasks/speak/task-public-id/transcribe")
+				.contentType(MediaType.MULTIPART_FORM_DATA).bodyValue(bodyBuilder.build()).exchange();
+
+		// then
+		result.expectStatus().isForbidden();
+		verify(taskService, never()).transcribeSpeakTask(any(), any(), any());
 	}
 
 	@Test

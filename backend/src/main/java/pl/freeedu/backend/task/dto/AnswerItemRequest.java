@@ -20,4 +20,6 @@ public class AnswerItemRequest {
 
 	@NotBlank(message = "Answer is required")
 	private String answer;
+
+	private String attemptId;
 }

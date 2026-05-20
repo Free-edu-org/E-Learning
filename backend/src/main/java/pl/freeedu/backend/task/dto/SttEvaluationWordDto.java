@@ -1,15 +1,17 @@
 package pl.freeedu.backend.task.dto;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class SttTranscriptionResponse {
+public class SttEvaluationWordDto {
 
-	private String text;
-	private String language;
-	private Double duration;
+	private String expected;
+	private String actual;
+	private boolean correct;
 }
