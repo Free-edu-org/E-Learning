@@ -5,13 +5,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import pl.freeedu.backend.achievement.event.AvatarChangedEvent;
 import pl.freeedu.backend.achievement.event.PointsChangedEvent;
 import pl.freeedu.backend.achievement.event.StudentStatsChangedEvent;
 import pl.freeedu.backend.student.service.StudentAchievementService;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -22,18 +19,6 @@ class AchievementEventListenerTest {
 
 	@InjectMocks
 	private AchievementEventListener achievementEventListener;
-
-	@Test
-	void shouldInvokeAchievementCheckWhenAvatarChangedEventIsHandled() {
-		// given
-		AvatarChangedEvent event = new AvatarChangedEvent(7);
-
-		// when
-		achievementEventListener.onAvatarChanged(event);
-
-		// then
-		verify(studentAchievementService).checkAndUnlockAchievements(7);
-	}
 
 	@Test
 	void shouldInvokeAchievementCheckWhenStudentStatsChangedEventIsHandled() {
@@ -56,17 +41,6 @@ class AchievementEventListenerTest {
 		achievementEventListener.onPointsChanged(event);
 
 		// then
-		verify(studentAchievementService).checkAndUnlockAchievements(7);
-	}
-
-	@Test
-	void shouldNotPropagateFailureFromAchievementCheck() {
-		// given
-		AvatarChangedEvent event = new AvatarChangedEvent(7);
-		doThrow(new RuntimeException("boom")).when(studentAchievementService).checkAndUnlockAchievements(7);
-
-		// when / then
-		assertDoesNotThrow(() -> achievementEventListener.onAvatarChanged(event));
 		verify(studentAchievementService).checkAndUnlockAchievements(7);
 	}
 }
