@@ -1792,6 +1792,7 @@ Warstwa BFF dla uczniow.
 ### 7.6. Get Personal Progress History
 - **URL**: `/api/v1/student/progress`
 - **Method**: `GET`
+- **Aggregation note**: Backend zapisuje wpisy historii postępu per `student + lesson + date`, a odpowiedź endpointu agreguje wszystkie lekcje z tego samego dnia do jednej wartości `progress` liczonej jako średnia procentowych wyników z ukończonych tego dnia lekcji.
 - **Description**: Zwraca historyczny średni wynik lekcji aktualnego ucznia. Snapshot jest aktualizowany przy ukończeniu lekcji. Wymaga `STUDENT`.
 
 **Success (200 OK):**
@@ -1812,6 +1813,10 @@ Warstwa BFF dla uczniow.
 **Known Errors:**
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
 - `FORBIDDEN` (403 Forbidden): Token role does not permit access.
+
+**Behavior Notes:**
+- Reset wyniku konkretnej lekcji usuwa tylko wkład tej lekcji z historii postępu ucznia.
+- Jeśli uczeń ukończy kilka lekcji tego samego dnia, endpoint nadal zwróci jedną kropkę dla tej daty.
 
 ---
 ## 8. Tasks (`/api/v1/lessons/{lessonPublicId}/tasks`)

@@ -526,6 +526,155 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
             });
         });
 
+        it('should remove only the reset lesson contribution from same-day progress history', async () => {
+            const isolatedId = Date.now();
+            let localGroupPublicId;
+            let localStudentPublicId;
+            let localStudentToken;
+            let firstLessonPublicId;
+            let firstTaskPublicId;
+            let secondLessonPublicId;
+            let secondTaskPublicId;
+
+            try {
+                setAuthToken(teacherToken);
+                let response = await apiClient.post('/user-groups', {
+                    name: `Progress Reset Group ${isolatedId}`,
+                    description: 'Isolated group for progress reset aggregation test'
+                });
+                expect(response.status).toBe(201);
+                localGroupPublicId = response.data.publicId;
+
+                setAuthToken(adminToken);
+                response = await apiClient.post('/users/register', {
+                    email: `progress.reset.${isolatedId}@test.com`,
+                    username: `progress_reset_${isolatedId}`,
+                    password: 'password123'
+                });
+                expect(response.status).toBe(201);
+
+                response = await apiClient.post('/auth/login', {
+                    identifier: `progress_reset_${isolatedId}`,
+                    password: 'password123'
+                });
+                expect(response.status).toBe(200);
+                localStudentToken = response.data.token;
+
+                setAuthToken(localStudentToken);
+                response = await apiClient.get('/users/me');
+                expect(response.status).toBe(200);
+                localStudentPublicId = response.data.publicId;
+
+                setAuthToken(adminToken);
+                response = await apiClient.post(`/user-groups/${localGroupPublicId}/members/${localStudentPublicId}`);
+                expect(response.status).toBe(204);
+
+                setAuthToken(teacherToken);
+                response = await apiClient.post('/lessons', {
+                    title: `ProgResetA${isolatedId}`,
+                    theme: 'Progress reset test',
+                    groupPublicIds: [localGroupPublicId]
+                });
+                expect(response.status).toBe(201);
+                firstLessonPublicId = response.data.publicId;
+
+                response = await apiClient.post(`/lessons/${firstLessonPublicId}/tasks/choose`, {
+                    task: 'Progress reset lesson A task',
+                    possibleAnswers: 'wrong|correct',
+                    correctAnswer: 1
+                });
+                expect(response.status).toBe(201);
+                firstTaskPublicId = response.data.publicId;
+
+                response = await apiClient.post('/lessons', {
+                    title: `ProgResetB${isolatedId}`,
+                    theme: 'Progress reset test',
+                    groupPublicIds: [localGroupPublicId]
+                });
+                expect(response.status).toBe(201);
+                secondLessonPublicId = response.data.publicId;
+
+                response = await apiClient.post(`/lessons/${secondLessonPublicId}/tasks/choose`, {
+                    task: 'Progress reset lesson B task',
+                    possibleAnswers: 'correct|wrong',
+                    correctAnswer: 0
+                });
+                expect(response.status).toBe(201);
+                secondTaskPublicId = response.data.publicId;
+
+                response = await apiClient.patch(`/lessons/${firstLessonPublicId}/status`, {isActive: true});
+                expect(response.status).toBe(204);
+                response = await apiClient.patch(`/lessons/${secondLessonPublicId}/status`, {isActive: true});
+                expect(response.status).toBe(204);
+
+                setAuthToken(localStudentToken);
+                response = await apiClient.get(`/lessons/${firstLessonPublicId}/tasks`);
+                expect(response.status).toBe(200);
+                const firstChooseTask = response.data.sections.flatMap((section) => section.chooseTasks ?? [])[0];
+                expect(firstChooseTask).toBeDefined();
+
+                response = await apiClient.post(`/lessons/${firstLessonPublicId}/submit`, {
+                    answers: [
+                        { taskPublicId: firstChooseTask.publicId, taskType: 'choose', answer: '1' }
+                    ]
+                });
+                expect(response.status).toBe(200);
+
+                response = await apiClient.get(`/lessons/${secondLessonPublicId}/tasks`);
+                expect(response.status).toBe(200);
+                const secondChooseTask = response.data.sections.flatMap((section) => section.chooseTasks ?? [])[0];
+                expect(secondChooseTask).toBeDefined();
+
+                response = await apiClient.post(`/lessons/${secondLessonPublicId}/submit`, {
+                    answers: [
+                        { taskPublicId: secondChooseTask.publicId, taskType: 'choose', answer: '1' }
+                    ]
+                });
+                expect(response.status).toBe(200);
+
+                response = await apiClient.get('/student/progress');
+                expect(response.status).toBe(200);
+                expect(response.data).toHaveLength(1);
+                expect(response.data[0].progress).toBe(50);
+
+                setAuthToken(teacherToken);
+                response = await apiClient.post(`/lessons/${secondLessonPublicId}/users/${localStudentPublicId}/reset`);
+                expect(response.status).toBe(204);
+
+                setAuthToken(localStudentToken);
+                response = await apiClient.get('/student/progress');
+                expect(response.status).toBe(200);
+                expect(response.data).toHaveLength(1);
+                expect(response.data[0].progress).toBe(100);
+            } finally {
+                setAuthToken(teacherToken);
+
+                for (const [lessonPublicId, taskPublicId] of [
+                    [firstLessonPublicId, firstTaskPublicId],
+                    [secondLessonPublicId, secondTaskPublicId]
+                ]) {
+                    if (lessonPublicId && taskPublicId) {
+                        const deleteTaskResponse = await apiClient.delete(`/lessons/${lessonPublicId}/tasks/choose/${taskPublicId}`);
+                        expect([204, 404]).toContain(deleteTaskResponse.status);
+                    }
+                    if (lessonPublicId) {
+                        const deleteLessonResponse = await apiClient.delete(`/lessons/${lessonPublicId}`);
+                        expect([204, 404]).toContain(deleteLessonResponse.status);
+                    }
+                }
+
+                setAuthToken(adminToken);
+                if (localGroupPublicId) {
+                    const deleteGroupResponse = await apiClient.delete(`/user-groups/${localGroupPublicId}`);
+                    expect([204, 404]).toContain(deleteGroupResponse.status);
+                }
+                if (localStudentPublicId) {
+                    const deleteUserResponse = await apiClient.delete(`/users/${localStudentPublicId}`);
+                    expect([204, 404]).toContain(deleteUserResponse.status);
+                }
+            }
+        });
+
         it('should deny TEACHER (403)', async () => {
             setAuthToken(teacherToken);
             const response = await apiClient.get('/student/progress');

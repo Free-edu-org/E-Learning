@@ -619,8 +619,6 @@ class TaskServiceTest {
 		when(speakTaskRepository.findByPublicId("tp4"))
 				.thenReturn(Optional.of(SpeakTask.builder().id(4).lessonId(lessonId).expectedText("expected").build()));
 		when(speakAttemptRepository.findByPublicId("attempt-4")).thenReturn(Optional.of(attempt));
-		when(userLessonRepository.findAveragePercentByUserIdAndStatus(userId, UserLessonStatus.COMPLETED))
-				.thenReturn(100.0);
 
 		// when
 		Mono<SubmitResponse> result = taskService.submitLesson(lessonId, Mono.just(request));
@@ -826,6 +824,7 @@ class TaskServiceTest {
 		verify(speakAttemptRepository).deleteByUserLessonId(44);
 		verify(pointsService).rollbackPointsForLessonResult(44, studentId, null);
 		verify(userLessonRepository).deleteByUserIdAndLessonId(studentId, lessonId);
+		verify(studentProgressHistoryRepository).deleteByUserIdAndLessonId(studentId, lessonId);
 	}
 
 	@Test

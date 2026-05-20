@@ -406,7 +406,7 @@ describe('Student achievements E2E (ledger + events + notifications)', () => {
 			icon: 'bolt',
 			color: 'success',
 			type: 'POINTS',
-			threshold: 1,
+			threshold: 2,
 			active: true,
 			sortOrder: 9500
 		});
