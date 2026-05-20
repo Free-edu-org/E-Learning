@@ -504,7 +504,6 @@ public class TaskService {
 				});
 				userLessonRepository.deleteByUserIdAndLessonId(userId, lessonId);
 				studentProgressHistoryRepository.deleteByUserIdAndLessonId(userId, lessonId);
-				applicationEventPublisher.publishEvent(new StudentStatsChangedEvent(userId, "lesson-reset"));
 				return null;
 			});
 			return (Void) null;
