@@ -825,6 +825,7 @@ class TaskServiceTest {
 		verify(pointsService).rollbackPointsForLessonResult(44, studentId, null);
 		verify(userLessonRepository).deleteByUserIdAndLessonId(studentId, lessonId);
 		verify(studentProgressHistoryRepository).deleteByUserIdAndLessonId(studentId, lessonId);
+		verify(applicationEventPublisher).publishEvent(any(StudentStatsChangedEvent.class));
 	}
 
 	@Test

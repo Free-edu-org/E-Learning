@@ -1006,6 +1006,9 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
       "userAnswer": "go",
       "correctAnswer": "goes",
       "isCorrect": false,
+      "originalIsCorrect": false,
+      "manuallyReviewed": true,
+      "reviewStatus": "MANUAL_CORRECTED_TO_CORRECT",
       "possibleAnswers": "go|goes|going",
       "words": null,
       "tabSwitchCount": 2
@@ -1013,6 +1016,44 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
   ]
 }
 ```
+
+**Task review fields:**
+- `originalIsCorrect`: pierwotna automatyczna ocena odpowiedzi przed ręczną korektą nauczyciela.
+- `manuallyReviewed`: `true`, jeśli nauczyciel ręcznie zatwierdził albo odrzucił odpowiedź.
+- `reviewStatus`: jedno z `AUTO`, `MANUAL_CONFIRMED`, `MANUAL_CORRECTED_TO_CORRECT`, `MANUAL_CORRECTED_TO_INCORRECT`.
+
+**Known Errors:**
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access or teacher is not the lesson owner.
+- `LESSON_NOT_FOUND` (404 Not Found): Lesson does not exist.
+- `LESSON_RESULT_NOT_FOUND` (404 Not Found): Student has no completed result for this lesson.
+- `STUDENT_NO_ACCESS` (403 Forbidden): Student is not assigned to this lesson.
+
+---
+
+### 5.3.2. Manually Review Selected Student Task Answer
+- **URL**: `/api/v1/teacher/lessons/{lessonPublicId}/students/{userPublicId}/tasks/{taskPublicId}/review`
+- **Method**: `PATCH`
+- **Description**: Pozwala nauczycielowi-ownerowi lekcji ręcznie oznaczyć odpowiedź ucznia jako poprawną albo błędną. Endpoint aktualizuje status odpowiedzi, wynik lekcji, punkty ucznia oraz historię postępu dla dnia ukończenia tej lekcji.
+- **Authorization**: `TEACHER`
+
+**Request Body (JSON):**
+```json
+{
+  "isCorrect": true
+}
+```
+
+**Success (200 OK):** Response ma ten sam shape jak `GET /api/v1/teacher/lessons/{lessonPublicId}/students/{userPublicId}/result`.
+
+**Known Errors:**
+- `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
+- `FORBIDDEN` (403 Forbidden): Token role does not permit access or teacher is not the lesson owner.
+- `LESSON_NOT_FOUND` (404 Not Found): Lesson does not exist.
+- `LESSON_RESULT_NOT_FOUND` (404 Not Found): Student has no completed result for this lesson.
+- `TASK_NOT_FOUND` (404 Not Found): Task publicId does not exist.
+- `TASK_ANSWER_NOT_FOUND` (404 Not Found): Student has no stored answer for the selected task.
+- `STUDENT_NO_ACCESS` (403 Forbidden): Student is not assigned to this lesson.
 
 | Field | Type | Description |
 |-------|------|-------------|

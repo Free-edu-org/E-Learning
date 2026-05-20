@@ -116,6 +116,10 @@ export interface TeacherStudentStatsResponse {
   skillStats: SkillStat[];
 }
 
+export interface TaskAnswerManualReviewRequest {
+  isCorrect: boolean;
+}
+
 export const lessonService = {
   getLessons: () => fetchApi<Lesson[]>("/api/v1/lessons"),
   getTeacherLessons: () => fetchApi<Lesson[]>("/api/v1/teacher/lessons"),
@@ -162,6 +166,19 @@ export const lessonService = {
   getLessonResultDetails: (lessonPublicId: string, studentPublicId: string) =>
     fetchApi<LessonResultDetailsResponse>(
       `/api/v1/teacher/lessons/${lessonPublicId}/students/${studentPublicId}/result`,
+    ),
+  reviewTaskAnswer: (
+    lessonPublicId: string,
+    studentPublicId: string,
+    taskPublicId: string,
+    payload: TaskAnswerManualReviewRequest,
+  ) =>
+    fetchApi<LessonResultDetailsResponse>(
+      `/api/v1/teacher/lessons/${lessonPublicId}/students/${studentPublicId}/tasks/${taskPublicId}/review`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      },
     ),
   getStudentStats: (studentPublicId: string) =>
     fetchApi<TeacherStudentStatsResponse>(

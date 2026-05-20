@@ -1,6 +1,7 @@
 package pl.freeedu.backend.student.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -18,6 +19,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import pl.freeedu.backend.achievement.event.PointsChangedEvent;
 import pl.freeedu.backend.student.model.StudentPoint;
 import pl.freeedu.backend.student.repository.StudentPointRepository;
+import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
 class PointServiceTest {
@@ -126,5 +128,58 @@ class PointServiceTest {
 
 		// then
 		verify(applicationEventPublisher, never()).publishEvent(any());
+	}
+
+	@Test
+	void shouldCreateReviewAdjustmentWhenManualReviewChangesLessonPoints() {
+		// given
+		when(studentPointRepository.sumDeltaByLessonResultId(11)).thenReturn(0);
+		when(studentPointRepository.findByLessonResultIdAndReason(11, PointService.LESSON_REVIEW_ADJUSTMENT_REASON))
+				.thenReturn(Optional.empty());
+		when(studentPointRepository.sumDeltaByUserId(7)).thenReturn(5);
+
+		// when
+		pointService.reconcilePointsForLessonResult(11, 7, 3, 10);
+
+		// then
+		ArgumentCaptor<StudentPoint> pointCaptor = ArgumentCaptor.forClass(StudentPoint.class);
+		verify(studentPointRepository).save(pointCaptor.capture());
+		assertEquals(11, pointCaptor.getValue().getLessonResultId());
+		assertEquals(7, pointCaptor.getValue().getUserId());
+		assertEquals(10, pointCaptor.getValue().getCreatedBy());
+		assertEquals(PointService.LESSON_REVIEW_ADJUSTMENT_REASON, pointCaptor.getValue().getReason());
+		assertEquals(3, pointCaptor.getValue().getDelta());
+
+		ArgumentCaptor<PointsChangedEvent> eventCaptor = ArgumentCaptor.forClass(PointsChangedEvent.class);
+		verify(applicationEventPublisher).publishEvent(eventCaptor.capture());
+		assertEquals(3, eventCaptor.getValue().delta());
+		assertEquals(PointService.LESSON_REVIEW_ADJUSTMENT_REASON, eventCaptor.getValue().reason());
+	}
+
+	@Test
+	void shouldAccumulateReviewAdjustmentWithoutPointDriftAcrossMultipleManualFlips() {
+		// given
+		StudentPoint adjustment = StudentPoint.builder().userId(7).lessonResultId(11)
+				.reason(PointService.LESSON_REVIEW_ADJUSTMENT_REASON).createdBy(10).delta(1).build();
+		when(studentPointRepository.sumDeltaByLessonResultId(11)).thenReturn(1, 0);
+		when(studentPointRepository.findByLessonResultIdAndReason(11, PointService.LESSON_REVIEW_ADJUSTMENT_REASON))
+				.thenReturn(Optional.of(adjustment));
+		when(studentPointRepository.sumDeltaByUserId(7)).thenReturn(9, 8);
+
+		// when
+		pointService.reconcilePointsForLessonResult(11, 7, 0, 10);
+		pointService.reconcilePointsForLessonResult(11, 7, 1, 10);
+
+		// then
+		ArgumentCaptor<StudentPoint> pointCaptor = ArgumentCaptor.forClass(StudentPoint.class);
+		verify(studentPointRepository, org.mockito.Mockito.times(2)).save(pointCaptor.capture());
+		assertSame(adjustment, pointCaptor.getAllValues().get(0));
+		assertSame(adjustment, pointCaptor.getAllValues().get(1));
+		assertEquals(1, adjustment.getDelta());
+
+		ArgumentCaptor<PointsChangedEvent> eventCaptor = ArgumentCaptor.forClass(PointsChangedEvent.class);
+		verify(applicationEventPublisher, org.mockito.Mockito.times(2)).publishEvent(eventCaptor.capture());
+		assertEquals(-1, eventCaptor.getAllValues().get(0).delta());
+		assertEquals(1, eventCaptor.getAllValues().get(1).delta());
 	}
 }
