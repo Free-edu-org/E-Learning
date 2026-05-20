@@ -333,10 +333,16 @@ export function LessonSolver() {
     taskPublicId: string,
     taskType: SubmitAnswerItem["taskType"],
     answer: string,
+    attemptId?: string,
   ) => {
     setAnswers((prev) => ({
       ...prev,
-      [answerKey(taskType, taskPublicId)]: { taskPublicId, taskType, answer },
+      [answerKey(taskType, taskPublicId)]: {
+        taskPublicId,
+        taskType,
+        answer,
+        ...(attemptId ? { attemptId } : {}),
+      },
     }));
   };
 
@@ -351,8 +357,13 @@ export function LessonSolver() {
         current.result === null || result.score >= current.result.score
           ? result
           : current.result;
-      // Keep answer in sync with the best transcription text
-      handleAnswer(taskPublicId, "speak", bestResult.text);
+      // Keep answer in sync with the best transcription text and immutable attempt id.
+      handleAnswer(
+        taskPublicId,
+        "speak",
+        bestResult.text,
+        bestResult.attemptId,
+      );
       return {
         ...prev,
         [key]: {

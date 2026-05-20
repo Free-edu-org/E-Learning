@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.transaction.support.TransactionCallback;
@@ -27,6 +28,7 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -44,6 +46,8 @@ class TaskServiceTest {
 	private ScatterTaskRepository scatterTaskRepository;
 	@Mock
 	private SpeakTaskRepository speakTaskRepository;
+	@Mock
+	private SpeakAttemptRepository speakAttemptRepository;
 	@Mock
 	private UserAnswerRepository userAnswerRepository;
 	@Mock
@@ -72,14 +76,16 @@ class TaskServiceTest {
 	private ApplicationEventPublisher applicationEventPublisher;
 
 	private TaskService taskService;
+	private SimpleMeterRegistry meterRegistry;
 
 	@BeforeEach
 	void setUp() {
+		meterRegistry = new SimpleMeterRegistry();
 		taskService = new TaskService(chooseTaskRepository, writeTaskRepository, scatterTaskRepository,
-				speakTaskRepository, userAnswerRepository, userLessonRepository, lessonRepository, securityService,
-				userInGroupRepository, sttClient, taskPublicIdLookupService, taskHintImageService,
-				studentProgressHistoryRepository, userTaskAttentionEventRepository, pointsService, transactionTemplate,
-				applicationEventPublisher, 0.85);
+				speakTaskRepository, speakAttemptRepository, userAnswerRepository, userLessonRepository,
+				lessonRepository, securityService, userInGroupRepository, sttClient, taskPublicIdLookupService,
+				taskHintImageService, studentProgressHistoryRepository, userTaskAttentionEventRepository, pointsService,
+				transactionTemplate, applicationEventPublisher, meterRegistry, 0.85);
 		lenient().when(transactionTemplate.execute(any())).thenAnswer(invocation -> {
 			TransactionCallback<?> callback = invocation.getArgument(0);
 			return callback.doInTransaction(null);
@@ -464,20 +470,34 @@ class TaskServiceTest {
 
 	// Transcribe Speak Task tests
 	@Test
-	void shouldTranscribeSpeakTask() {
+	void shouldTranscribeSpeakTaskAndSaveAttempt() {
 		// given
 		Integer lessonId = 1;
 		String taskPublicId = "task-10";
 		Lesson lesson = Lesson.builder().id(lessonId).isActive(true).build();
 		SpeakTask task = SpeakTask.builder().id(10).publicId(taskPublicId).lessonId(lessonId).expectedText("Hello")
 				.build();
+		UserLesson userLesson = UserLesson.builder().id(77).userId(1).lessonId(lessonId)
+				.status(UserLessonStatus.IN_PROGRESS).build();
 		FilePart audio = mock(FilePart.class);
+		SpeakAttempt savedAttempt = SpeakAttempt.builder().id(33).publicId("attempt-1").userId(1).lessonId(lessonId)
+				.taskId(task.getId()).userLesson(userLesson).expectedText("Hello there")
+				.rawTranscription("um Hello there").matchedTranscription("hello there")
+				.normalizedExpected("hello there").normalizedActual("hello there").score(1.0).correct(true)
+				.wordsJson("[]").language("en").duration(1.0).build();
 
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(1));
 		when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
 		when(userInGroupRepository.hasAccessToLesson(1, lessonId)).thenReturn(true);
+		when(userLessonRepository.findByUserIdAndLessonId(1, lessonId)).thenReturn(Optional.of(userLesson));
 		when(speakTaskRepository.findByPublicId(taskPublicId)).thenReturn(Optional.of(task));
-		when(sttClient.transcribe(audio)).thenReturn(Mono.just(new SttTranscriptionResponse("Hello", "en", 1.0)));
+		when(sttClient.evaluate(audio, "Hello", 0.85, null)).thenReturn(Mono.just(SttEvaluationResponse.builder()
+				.rawTranscription("um Hello there").matchedTranscription("hello there")
+				.normalizedExpected("hello there").normalizedActual("hello there").score(1.0).correct(true)
+				.words(List.of(SttEvaluationWordDto.builder().expected("hello").actual("hello").correct(true).build(),
+						SttEvaluationWordDto.builder().expected("there").actual("there").correct(true).build()))
+				.language("en").duration(1.0).build()));
+		when(speakAttemptRepository.save(any())).thenReturn(savedAttempt);
 
 		// when
 		Mono<SpeakTranscriptionResponse> result = taskService.transcribeSpeakTask(lessonId, taskPublicId,
@@ -485,154 +505,54 @@ class TaskServiceTest {
 
 		// then
 		StepVerifier.create(result).assertNext(resp -> {
+			assertEquals("attempt-1", resp.getAttemptId());
 			assertTrue(resp.isCorrect());
-			assertEquals("Hello", resp.getText());
+			assertEquals("hello there", resp.getText());
+			assertEquals("um Hello there", resp.getRawText());
 			assertEquals(1.0, resp.getScore());
-			assertEquals(1, resp.getWords().size());
+			assertEquals(2, resp.getWords().size());
 			assertTrue(resp.getWords().get(0).isCorrect());
 		}).verifyComplete();
+		verify(speakAttemptRepository).save(any(SpeakAttempt.class));
+		assertEquals(1.0, meterRegistry.get("freeedu.stt.evaluate.requests").counter().count());
+		assertEquals(1.0, meterRegistry.get("freeedu.stt.evaluate.success").counter().count());
+		assertEquals(1.0, meterRegistry.get("freeedu.stt.evaluate.correct").counter().count());
+		assertEquals(1L, meterRegistry.get("freeedu.stt.evaluate.duration").timer().count());
 	}
 
 	@Test
-	void shouldReturnZeroSpeakScoreWhenNoWordsMatch() {
-		// given
-		Integer lessonId = 1;
-		String taskPublicId = "task-10";
-		Lesson lesson = Lesson.builder().id(lessonId).isActive(true).build();
-		SpeakTask task = SpeakTask.builder().id(10).publicId(taskPublicId).lessonId(lessonId)
-				.expectedText("My favorite color is green").build();
-		FilePart audio = mock(FilePart.class);
-
-		when(securityService.getCurrentUserId()).thenReturn(Mono.just(1));
-		when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
-		when(userInGroupRepository.hasAccessToLesson(1, lessonId)).thenReturn(true);
-		when(speakTaskRepository.findByPublicId(taskPublicId)).thenReturn(Optional.of(task));
-		when(sttClient.transcribe(audio))
-				.thenReturn(Mono.just(new SttTranscriptionResponse("1, 2, 3, 4, 3, 4, 3, 4, 3, 4.", "en", 1.0)));
-
-		// when
-		Mono<SpeakTranscriptionResponse> result = taskService.transcribeSpeakTask(lessonId, taskPublicId,
-				Mono.just(audio));
-
-		// then
-		StepVerifier.create(result).assertNext(resp -> {
-			assertFalse(resp.isCorrect());
-			assertEquals(0.0, resp.getScore());
-			assertEquals(5, resp.getWords().size());
-			assertTrue(resp.getWords().stream().noneMatch(SpeakWordResultDto::isCorrect));
-		}).verifyComplete();
-	}
-
-	@Test
-	void shouldAcceptSpeakTranscriptionWithLeadingInsertion() {
-		assertSpeakTranscription("My name is Dominik", "coś My name is Dominik", 1.0, true,
-				List.of(word("my", "my", true), word("name", "name", true), word("is", "is", true),
-						word("dominik", "dominik", true)));
-	}
-
-	@Test
-	void shouldAcceptSpeakTranscriptionWithTrailingInsertion() {
-		assertSpeakTranscription("My name is Dominik", "My name is Dominik coś", 1.0, true,
-				List.of(word("my", "my", true), word("name", "name", true), word("is", "is", true),
-						word("dominik", "dominik", true)));
-	}
-
-	@Test
-	void shouldLowerSpeakScoreForDeletion() {
-		assertSpeakTranscription("My name is Dominik", "My name Dominik", 0.75, false, List.of(word("my", "my", true),
-				word("name", "name", true), word("is", "", false), word("dominik", "dominik", true)));
-	}
-
-	@Test
-	void shouldLowerSpeakScoreForSubstitution() {
-		assertSpeakTranscription("My name is Dominik", "My surname is Dominik", 0.75, false,
-				List.of(word("my", "my", true), word("name", "surname", false), word("is", "is", true),
-						word("dominik", "dominik", true)));
-	}
-
-	@Test
-	void shouldHandleInsertionsAndDeletionWithoutBreakingAlignment() {
-		assertSpeakTranscription("My name is Dominik", "coś My name Dominik coś", 0.75, false,
-				List.of(word("my", "my", true), word("name", "name", true), word("is", "", false),
-						word("dominik", "dominik", true)));
-	}
-
-	@Test
-	void shouldNotAcceptSpeakTranscriptionWithDifferentWordOrder() {
+	void shouldReturnMatchedAndRawTextFromEvaluationResponse() {
 		Integer lessonId = 1;
 		String taskPublicId = "task-10";
 		Lesson lesson = Lesson.builder().id(lessonId).isActive(true).build();
 		SpeakTask task = SpeakTask.builder().id(10).publicId(taskPublicId).lessonId(lessonId)
 				.expectedText("My name is Dominik").build();
+		UserLesson userLesson = UserLesson.builder().id(78).userId(1).lessonId(lessonId)
+				.status(UserLessonStatus.IN_PROGRESS).build();
 		FilePart audio = mock(FilePart.class);
+		SpeakAttempt savedAttempt = SpeakAttempt.builder().id(33).publicId("attempt-2").userId(1).lessonId(lessonId)
+				.taskId(task.getId()).userLesson(userLesson).expectedText(task.getExpectedText())
+				.rawTranscription("um My name is Dominic").matchedTranscription("my name is dominic")
+				.normalizedExpected("my name is dominik").normalizedActual("my name is dominic").score(1.0)
+				.correct(true).wordsJson("[]").language("en").duration(1.2).build();
 
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(1));
 		when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
 		when(userInGroupRepository.hasAccessToLesson(1, lessonId)).thenReturn(true);
+		when(userLessonRepository.findByUserIdAndLessonId(1, lessonId)).thenReturn(Optional.of(userLesson));
 		when(speakTaskRepository.findByPublicId(taskPublicId)).thenReturn(Optional.of(task));
-		when(sttClient.transcribe(audio))
-				.thenReturn(Mono.just(new SttTranscriptionResponse("Dominik is my name", "en", 1.0)));
+		when(sttClient.evaluate(audio, task.getExpectedText(), 0.85, null)).thenReturn(Mono.just(SttEvaluationResponse
+				.builder().rawTranscription("um My name is Dominic").matchedTranscription("my name is dominic")
+				.normalizedExpected("my name is dominik").normalizedActual("my name is dominic").score(1.0)
+				.correct(true).words(List.of()).language("en").duration(1.2).build()));
+		when(speakAttemptRepository.save(any())).thenReturn(savedAttempt);
 
 		StepVerifier.create(taskService.transcribeSpeakTask(lessonId, taskPublicId, Mono.just(audio)))
 				.assertNext(resp -> {
-					assertFalse(resp.isCorrect());
-					assertEquals(0.5, resp.getScore(), 0.0001);
-					assertEquals(4, resp.getWords().size());
+					assertEquals("my name is dominic", resp.getText());
+					assertEquals("um My name is Dominic", resp.getRawText());
+					assertEquals("attempt-2", resp.getAttemptId());
 				}).verifyComplete();
-	}
-
-	@Test
-	void shouldReturnLowScoreForUnrelatedSpeakTranscription() {
-		assertSpeakTranscription("My name is Dominik", "random words only", 0.0, false,
-				List.of(word("my", "random", false), word("name", "words", false), word("is", "only", false),
-						word("dominik", "", false)));
-	}
-
-	@Test
-	void shouldAcceptKnownNameVariantForSentence() {
-		assertSpeakTranscription("My name is Dominik", "My name is Dominic", 1.0, true, List.of(word("my", "my", true),
-				word("name", "name", true), word("is", "is", true), word("dominik", "dominic", true)));
-	}
-
-	@Test
-	void shouldAcceptKnownNameVariantForSingleWord() {
-		assertSpeakTranscription("Dominik", "Dominic", 1.0, true, List.of(word("dominik", "dominic", true)));
-	}
-
-	@Test
-	void shouldNormalizeContractionsAndKnownNameVariant() {
-		assertSpeakTranscription("I'm Dominik", "I am Dominic", 1.0, true,
-				List.of(word("i", "i", true), word("am", "am", true), word("dominik", "dominic", true)));
-	}
-
-	@Test
-	void shouldIgnoreFillersBeforeSentence() {
-		assertSpeakTranscription("My name is Dominik", "um My name is Dominic", 1.0, true,
-				List.of(word("my", "my", true), word("name", "name", true), word("is", "is", true),
-						word("dominik", "dominic", true)));
-	}
-
-	@Test
-	void shouldNotUseFuzzyMatchForShortWordsIsAndIt() {
-		assertSpeakTranscription("is", "it", 0.0, false, List.of(word("is", "it", false)));
-	}
-
-	@Test
-	void shouldNotUseFuzzyMatchForShortWordsMyAndMe() {
-		assertSpeakTranscription("my", "me", 0.0, false, List.of(word("my", "me", false)));
-	}
-
-	@Test
-	void shouldNotTreatSimilarWrongWordAsFullSentenceMatch() {
-		assertSpeakTranscription("My name is Dominik", "My game is Dominic", 0.75, false,
-				List.of(word("my", "my", true), word("name", "game", false), word("is", "is", true),
-						word("dominik", "dominic", true)));
-	}
-
-	@Test
-	void shouldNotTreatDifferentWordAsFullMatchWhenOnlyOneLetterDiffers() {
-		assertSpeakTranscription("I like cats", "I like caps", 0.6666666667, false,
-				List.of(word("i", "i", true), word("like", "like", true), word("cats", "caps", false)));
 	}
 
 	@Test
@@ -642,10 +562,13 @@ class TaskServiceTest {
 		String taskPublicId = "task-10";
 		Lesson lesson = Lesson.builder().id(lessonId).isActive(true).build();
 		SpeakTask task = SpeakTask.builder().id(10).publicId(taskPublicId).lessonId(lessonId).build();
+		UserLesson userLesson = UserLesson.builder().id(79).userId(1).lessonId(lessonId)
+				.status(UserLessonStatus.IN_PROGRESS).build();
 
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(1));
 		when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
 		when(userInGroupRepository.hasAccessToLesson(1, lessonId)).thenReturn(true);
+		when(userLessonRepository.findByUserIdAndLessonId(1, lessonId)).thenReturn(Optional.of(userLesson));
 		when(speakTaskRepository.findByPublicId(taskPublicId)).thenReturn(Optional.of(task));
 
 		// when
@@ -667,11 +590,15 @@ class TaskServiceTest {
 				.status(UserLessonStatus.IN_PROGRESS).build();
 
 		SubmitRequest request = SubmitRequest.builder()
-				.answers(List.of(new AnswerItemRequest("tp1", "choose", "1"),
-						new AnswerItemRequest("tp2", "write", "correct"),
-						new AnswerItemRequest("tp3", "scatter", "word1 word2"),
-						new AnswerItemRequest("tp4", "speak", "expected")))
+				.answers(List.of(AnswerItemRequest.builder().taskPublicId("tp1").taskType("choose").answer("1").build(),
+						AnswerItemRequest.builder().taskPublicId("tp2").taskType("write").answer("correct").build(),
+						AnswerItemRequest.builder().taskPublicId("tp3").taskType("scatter").answer("word1 word2")
+								.build(),
+						AnswerItemRequest.builder().taskPublicId("tp4").taskType("speak").answer("")
+								.attemptId("attempt-4").build()))
 				.build();
+		SpeakAttempt attempt = SpeakAttempt.builder().publicId("attempt-4").userId(userId).lessonId(lessonId).taskId(4)
+				.userLesson(userLesson).matchedTranscription("matched expected").correct(true).score(1.0).build();
 
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(userId));
 		when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
@@ -691,6 +618,7 @@ class TaskServiceTest {
 				Optional.of(ScatterTask.builder().id(3).lessonId(lessonId).correctAnswer("word1 word2").build()));
 		when(speakTaskRepository.findByPublicId("tp4"))
 				.thenReturn(Optional.of(SpeakTask.builder().id(4).lessonId(lessonId).expectedText("expected").build()));
+		when(speakAttemptRepository.findByPublicId("attempt-4")).thenReturn(Optional.of(attempt));
 
 		// when
 		Mono<SubmitResponse> result = taskService.submitLesson(lessonId, Mono.just(request));
@@ -701,43 +629,120 @@ class TaskServiceTest {
 			assertEquals(4, resp.getMaxScore());
 			assertEquals(UserLessonStatus.COMPLETED, userLesson.getStatus());
 		}).verifyComplete();
+		assertNotNull(attempt.getSubmittedAt());
 		verify(studentProgressHistoryRepository).save(any());
+		verify(speakAttemptRepository).save(argThat(saved -> saved.getSubmittedAt() != null));
 		verify(pointsService).addPointsForLessonResult(userLesson.getId(), userId, 4, "TASK_CORRECT", userId);
 		verify(applicationEventPublisher).publishEvent(any(StudentStatsChangedEvent.class));
 	}
 
-	private void assertSpeakTranscription(String expectedText, String transcription, double expectedScore,
-			boolean expectedCorrect, List<SpeakWordResultDto> expectedWords) {
+	@Test
+	void shouldTreatSpeakingTaskWithoutAttemptIdAsIncorrect() {
 		Integer lessonId = 1;
-		String taskPublicId = "task-10";
+		Integer userId = 10;
 		Lesson lesson = Lesson.builder().id(lessonId).isActive(true).build();
-		SpeakTask task = SpeakTask.builder().id(10).publicId(taskPublicId).lessonId(lessonId).expectedText(expectedText)
+		UserLesson userLesson = UserLesson.builder().userId(userId).lessonId(lessonId)
+				.status(UserLessonStatus.IN_PROGRESS).build();
+		SubmitRequest request = SubmitRequest.builder()
+				.answers(List.of(AnswerItemRequest.builder().taskPublicId("tp4").taskType("speak").answer("").build()))
 				.build();
-		FilePart audio = mock(FilePart.class);
 
-		when(securityService.getCurrentUserId()).thenReturn(Mono.just(1));
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(userId));
 		when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
-		when(userInGroupRepository.hasAccessToLesson(1, lessonId)).thenReturn(true);
-		when(speakTaskRepository.findByPublicId(taskPublicId)).thenReturn(Optional.of(task));
-		when(sttClient.transcribe(audio)).thenReturn(Mono.just(new SttTranscriptionResponse(transcription, "en", 1.0)));
+		when(userInGroupRepository.hasAccessToLesson(userId, lessonId)).thenReturn(true);
+		when(userLessonRepository.findByUserIdAndLessonId(userId, lessonId)).thenReturn(Optional.of(userLesson));
+		when(taskPublicIdLookupService.getInternalId("tp4", "speak")).thenReturn(4);
+		when(speakTaskRepository.findByPublicId("tp4"))
+				.thenReturn(Optional.of(SpeakTask.builder().id(4).lessonId(lessonId).expectedText("expected").build()));
 
-		StepVerifier.create(taskService.transcribeSpeakTask(lessonId, taskPublicId, Mono.just(audio)))
-				.assertNext(resp -> {
-					assertEquals(expectedCorrect, resp.isCorrect());
-					assertEquals(expectedScore, resp.getScore(), 0.0001);
-					assertEquals(expectedWords.size(), resp.getWords().size());
-					for (int index = 0; index < expectedWords.size(); index++) {
-						SpeakWordResultDto actualWord = resp.getWords().get(index);
-						SpeakWordResultDto expectedWord = expectedWords.get(index);
-						assertEquals(expectedWord.getExpected(), actualWord.getExpected());
-						assertEquals(expectedWord.getActual(), actualWord.getActual());
-						assertEquals(expectedWord.isCorrect(), actualWord.isCorrect());
-					}
-				}).verifyComplete();
+		StepVerifier.create(taskService.submitLesson(lessonId, Mono.just(request))).assertNext(response -> {
+			assertEquals(0, response.getScore());
+			assertEquals(1, response.getMaxScore());
+			assertFalse(response.getDetails().get(0).getIsCorrect());
+		}).verifyComplete();
+		verify(speakAttemptRepository, never()).findByPublicId(any());
 	}
 
-	private SpeakWordResultDto word(String expected, String actual, boolean correct) {
-		return SpeakWordResultDto.builder().expected(expected).actual(actual).correct(correct).build();
+	@Test
+	void shouldNotTrustSpeakingAnswerWithoutAttemptId() {
+		Integer lessonId = 1;
+		Integer userId = 10;
+		Lesson lesson = Lesson.builder().id(lessonId).isActive(true).build();
+		UserLesson userLesson = UserLesson.builder().userId(userId).lessonId(lessonId)
+				.status(UserLessonStatus.IN_PROGRESS).build();
+		SubmitRequest request = SubmitRequest.builder().answers(List.of(
+				AnswerItemRequest.builder().taskPublicId("tp4").taskType("speak").answer("Definitely correct").build()))
+				.build();
+
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(userId));
+		when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
+		when(userInGroupRepository.hasAccessToLesson(userId, lessonId)).thenReturn(true);
+		when(userLessonRepository.findByUserIdAndLessonId(userId, lessonId)).thenReturn(Optional.of(userLesson));
+		when(taskPublicIdLookupService.getInternalId("tp4", "speak")).thenReturn(4);
+		when(speakTaskRepository.findByPublicId("tp4"))
+				.thenReturn(Optional.of(SpeakTask.builder().id(4).lessonId(lessonId).expectedText("expected").build()));
+
+		StepVerifier.create(taskService.submitLesson(lessonId, Mono.just(request))).assertNext(response -> {
+			assertEquals(0, response.getScore());
+			assertEquals(1, response.getMaxScore());
+			assertFalse(response.getDetails().get(0).getIsCorrect());
+			assertEquals("expected", response.getDetails().get(0).getCorrectAnswer());
+		}).verifyComplete();
+		verify(speakAttemptRepository, never()).findByPublicId(any());
+	}
+
+	@Test
+	void shouldRejectSpeakAttemptFromDifferentUser() {
+		Integer lessonId = 1;
+		Integer userId = 10;
+		Lesson lesson = Lesson.builder().id(lessonId).isActive(true).build();
+		UserLesson userLesson = UserLesson.builder().userId(userId).lessonId(lessonId)
+				.status(UserLessonStatus.IN_PROGRESS).build();
+		SubmitRequest request = SubmitRequest.builder().answers(List.of(AnswerItemRequest.builder().taskPublicId("tp4")
+				.taskType("speak").answer("").attemptId("attempt-4").build())).build();
+
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(userId));
+		when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
+		when(userInGroupRepository.hasAccessToLesson(userId, lessonId)).thenReturn(true);
+		when(userLessonRepository.findByUserIdAndLessonId(userId, lessonId)).thenReturn(Optional.of(userLesson));
+		when(taskPublicIdLookupService.getInternalId("tp4", "speak")).thenReturn(4);
+		when(speakTaskRepository.findByPublicId("tp4"))
+				.thenReturn(Optional.of(SpeakTask.builder().id(4).lessonId(lessonId).expectedText("expected").build()));
+		when(speakAttemptRepository.findByPublicId("attempt-4")).thenReturn(
+				Optional.of(SpeakAttempt.builder().publicId("attempt-4").userId(99).lessonId(lessonId).taskId(4)
+						.userLesson(userLesson).matchedTranscription("matched").correct(true).score(1.0).build()));
+
+		StepVerifier.create(taskService.submitLesson(lessonId, Mono.just(request))).expectErrorSatisfies(error -> {
+			assertEquals(TaskErrorCode.SPEAK_ATTEMPT_INVALID, ((TaskException) error).getErrorCode());
+		}).verify();
+	}
+
+	@Test
+	void shouldRejectSpeakAttemptFromDifferentUserLesson() {
+		Integer lessonId = 1;
+		Integer userId = 10;
+		Lesson lesson = Lesson.builder().id(lessonId).isActive(true).build();
+		UserLesson userLesson = UserLesson.builder().userId(userId).lessonId(lessonId)
+				.status(UserLessonStatus.IN_PROGRESS).build();
+		SubmitRequest request = SubmitRequest.builder().answers(List.of(AnswerItemRequest.builder().taskPublicId("tp4")
+				.taskType("speak").answer("").attemptId("attempt-4").build())).build();
+
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(userId));
+		when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
+		when(userInGroupRepository.hasAccessToLesson(userId, lessonId)).thenReturn(true);
+		when(userLessonRepository.findByUserIdAndLessonId(userId, lessonId)).thenReturn(Optional.of(userLesson));
+		when(taskPublicIdLookupService.getInternalId("tp4", "speak")).thenReturn(4);
+		when(speakTaskRepository.findByPublicId("tp4"))
+				.thenReturn(Optional.of(SpeakTask.builder().id(4).lessonId(lessonId).expectedText("expected").build()));
+		UserLesson previousUserLesson = UserLesson.builder().id(999).userId(userId).lessonId(lessonId)
+				.status(UserLessonStatus.IN_PROGRESS).build();
+		when(speakAttemptRepository.findByPublicId("attempt-4")).thenReturn(Optional.of(SpeakAttempt.builder()
+				.publicId("attempt-4").userId(userId).lessonId(lessonId).taskId(4).userLesson(previousUserLesson)
+				.matchedTranscription("matched").correct(true).score(1.0).build()));
+
+		StepVerifier.create(taskService.submitLesson(lessonId, Mono.just(request))).expectErrorSatisfies(error -> {
+			assertEquals(TaskErrorCode.SPEAK_ATTEMPT_INVALID, ((TaskException) error).getErrorCode());
+		}).verify();
 	}
 
 	@Test
@@ -779,7 +784,9 @@ class TaskServiceTest {
 		Integer userId = 10;
 		Lesson lesson = Lesson.builder().id(lessonId).isActive(true).build();
 		UserLesson userLesson = UserLesson.builder().status(UserLessonStatus.IN_PROGRESS).build();
-		SubmitRequest request = SubmitRequest.builder().answers(List.of(new AnswerItemRequest("tp1", "invalid", "ans")))
+		SubmitRequest request = SubmitRequest.builder()
+				.answers(List
+						.of(AnswerItemRequest.builder().taskPublicId("tp1").taskType("invalid").answer("ans").build()))
 				.build();
 
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(userId));
@@ -814,9 +821,124 @@ class TaskServiceTest {
 		StepVerifier.create(result).verifyComplete();
 		verify(userAnswerRepository).deleteByUserIdAndLessonId(studentId, lessonId);
 		verify(userTaskAttentionEventRepository).deleteByUserIdAndLessonId(studentId, lessonId);
+		verify(speakAttemptRepository).deleteByUserLessonId(44);
 		verify(pointsService).rollbackPointsForLessonResult(44, studentId, null);
 		verify(userLessonRepository).deleteByUserIdAndLessonId(studentId, lessonId);
 		verify(studentProgressHistoryRepository).deleteByUserIdAndLessonId(studentId, lessonId);
+	}
+
+	@Test
+	void shouldAssignSpeakAttemptToConcreteUserLesson() {
+		Integer lessonId = 1;
+		String taskPublicId = "task-10";
+		Lesson lesson = Lesson.builder().id(lessonId).publicId("lesson-1").isActive(true).build();
+		SpeakTask task = SpeakTask.builder().id(10).publicId(taskPublicId).lessonId(lessonId).expectedText("Hello")
+				.build();
+		UserLesson userLesson = UserLesson.builder().id(501).userId(1).lessonId(lessonId)
+				.status(UserLessonStatus.IN_PROGRESS).build();
+		FilePart audio = mock(FilePart.class);
+
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(1));
+		when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
+		when(userInGroupRepository.hasAccessToLesson(1, lessonId)).thenReturn(true);
+		when(userLessonRepository.findByUserIdAndLessonId(1, lessonId)).thenReturn(Optional.of(userLesson));
+		when(speakTaskRepository.findByPublicId(taskPublicId)).thenReturn(Optional.of(task));
+		when(sttClient.evaluate(audio, "Hello", 0.85, null))
+				.thenReturn(Mono.just(SttEvaluationResponse.builder().rawTranscription("Hello")
+						.matchedTranscription("hello").normalizedExpected("hello").normalizedActual("hello").score(1.0)
+						.correct(true).words(List.of()).language("en").duration(0.9).build()));
+		when(speakAttemptRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+		StepVerifier.create(taskService.transcribeSpeakTask(lessonId, taskPublicId, Mono.just(audio)))
+				.expectNextCount(1).verifyComplete();
+
+		verify(speakAttemptRepository).save(
+				argThat(saved -> saved.getUserLesson() != null && Objects.equals(saved.getUserLesson().getId(), 501)));
+	}
+
+	@Test
+	void shouldRejectEvaluateWhenUnusedAttemptLimitExceeded() {
+		Integer lessonId = 1;
+		String taskPublicId = "task-10";
+		Lesson lesson = Lesson.builder().id(lessonId).isActive(true).build();
+		SpeakTask task = SpeakTask.builder().id(10).publicId(taskPublicId).lessonId(lessonId).expectedText("Hello")
+				.build();
+		UserLesson userLesson = UserLesson.builder().id(601).userId(1).lessonId(lessonId)
+				.status(UserLessonStatus.IN_PROGRESS).build();
+		FilePart audio = mock(FilePart.class);
+
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(1));
+		when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
+		when(userInGroupRepository.hasAccessToLesson(1, lessonId)).thenReturn(true);
+		when(userLessonRepository.findByUserIdAndLessonId(1, lessonId)).thenReturn(Optional.of(userLesson));
+		when(speakTaskRepository.findByPublicId(taskPublicId)).thenReturn(Optional.of(task));
+		when(speakAttemptRepository.countByUserLessonIdAndTaskIdAndSubmittedAtIsNull(601, 10)).thenReturn(5L);
+
+		StepVerifier.create(taskService.transcribeSpeakTask(lessonId, taskPublicId, Mono.just(audio)))
+				.expectErrorSatisfies(error -> {
+					assertEquals(TaskErrorCode.SPEAK_ATTEMPT_LIMIT_EXCEEDED, ((TaskException) error).getErrorCode());
+				}).verify();
+		verifyNoInteractions(sttClient);
+	}
+
+	@Test
+	void shouldNotSaveSpeakAttemptWhenSttEvaluationFails() {
+		Integer lessonId = 1;
+		String taskPublicId = "task-10";
+		Lesson lesson = Lesson.builder().id(lessonId).isActive(true).build();
+		SpeakTask task = SpeakTask.builder().id(10).publicId(taskPublicId).lessonId(lessonId).expectedText("Hello")
+				.build();
+		UserLesson userLesson = UserLesson.builder().id(602).userId(1).lessonId(lessonId)
+				.status(UserLessonStatus.IN_PROGRESS).build();
+		FilePart audio = mock(FilePart.class);
+
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(1));
+		when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
+		when(userInGroupRepository.hasAccessToLesson(1, lessonId)).thenReturn(true);
+		when(userLessonRepository.findByUserIdAndLessonId(1, lessonId)).thenReturn(Optional.of(userLesson));
+		when(speakTaskRepository.findByPublicId(taskPublicId)).thenReturn(Optional.of(task));
+		when(speakAttemptRepository.countByUserLessonIdAndTaskIdAndSubmittedAtIsNull(602, 10)).thenReturn(0L);
+		when(sttClient.evaluate(audio, "Hello", 0.85, null))
+				.thenReturn(Mono.error(new TaskException(TaskErrorCode.STT_SERVICE_UNAVAILABLE)));
+
+		StepVerifier.create(taskService.transcribeSpeakTask(lessonId, taskPublicId, Mono.just(audio)))
+				.expectErrorSatisfies(error -> {
+					assertEquals(TaskErrorCode.STT_SERVICE_UNAVAILABLE, ((TaskException) error).getErrorCode());
+				}).verify();
+
+		verify(speakAttemptRepository, never()).save(any());
+		assertEquals(1.0, meterRegistry.get("freeedu.stt.evaluate.requests").counter().count());
+		assertEquals(1.0, meterRegistry.get("freeedu.stt.evaluate.errors").counter().count());
+		assertEquals(1.0, meterRegistry.get("freeedu.stt.evaluate.service_unavailable").counter().count());
+		assertEquals(1L, meterRegistry.get("freeedu.stt.evaluate.duration").timer().count());
+	}
+
+	@Test
+	void shouldRejectSpeakingSubmitFromPreviousLessonRun() {
+		Integer lessonId = 1;
+		Integer userId = 10;
+		Lesson lesson = Lesson.builder().id(lessonId).isActive(true).build();
+		UserLesson currentUserLesson = UserLesson.builder().id(700).userId(userId).lessonId(lessonId)
+				.status(UserLessonStatus.IN_PROGRESS).build();
+		UserLesson previousUserLesson = UserLesson.builder().id(699).userId(userId).lessonId(lessonId)
+				.status(UserLessonStatus.IN_PROGRESS).build();
+		SubmitRequest request = SubmitRequest.builder().answers(List.of(AnswerItemRequest.builder().taskPublicId("tp4")
+				.taskType("speak").answer("").attemptId("attempt-old").build())).build();
+
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(userId));
+		when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
+		when(userInGroupRepository.hasAccessToLesson(userId, lessonId)).thenReturn(true);
+		when(userLessonRepository.findByUserIdAndLessonId(userId, lessonId)).thenReturn(Optional.of(currentUserLesson));
+		when(taskPublicIdLookupService.getInternalId("tp4", "speak")).thenReturn(4);
+		when(speakTaskRepository.findByPublicId("tp4"))
+				.thenReturn(Optional.of(SpeakTask.builder().id(4).lessonId(lessonId).expectedText("expected").build()));
+		when(speakAttemptRepository.findByPublicId("attempt-old")).thenReturn(Optional.of(SpeakAttempt.builder()
+				.publicId("attempt-old").userId(userId).lessonId(lessonId).taskId(4).userLesson(previousUserLesson)
+				.matchedTranscription("matched").correct(true).score(1.0).build()));
+
+		StepVerifier.create(taskService.submitLesson(lessonId, Mono.just(request))).expectErrorSatisfies(error -> {
+			assertEquals(TaskErrorCode.SPEAK_ATTEMPT_INVALID, ((TaskException) error).getErrorCode());
+		}).verify();
 	}
 
 	@Test

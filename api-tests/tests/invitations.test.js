@@ -154,7 +154,7 @@ describe('Group Invitations API', () => {
     // ─── REGISTER WITH INVITATION ─────────────────────────────────────
 
     describe('POST /api/v1/invitations/register', () => {
-        it('should register student via invitation and return JWT (201)', async () => {
+        it('should register student via invitation and require email verification (201)', async () => {
             setAuthToken(null);
             const email = `invite_student_${uniqueId}@test.com`;
             const username = `invite_student_${uniqueId}`;
@@ -166,13 +166,11 @@ describe('Group Invitations API', () => {
                 password: 'StrongPass123'
             });
             expect(res.status).toBe(201);
-            expect(res.data.token).toBeTruthy();
-            expect(res.data.role).toBe('STUDENT');
+            // Backend returns MessageResponse asking for email verification instead of auto-login
+            expect(res.data).toHaveProperty('message');
+            expect(res.data.message).toBe('Email verification required.');
 
-            // Track for cleanup
-            setAuthToken(res.data.token);
-            const me = await apiClient.get('/users/me');
-            createdUserPublicIds.push(me.data.publicId);
+            // We rely on cleanup-test-data.js to remove invite_student_%@test.com users
         });
 
         it('should reject duplicate email (409)', async () => {
