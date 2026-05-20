@@ -1,12 +1,5 @@
 {
-  "fillerWords": [
-    "um",
-    "uh",
-    "hmm",
-    "mm",
-    "mhm",
-    "mmm"
-  ],
+  "fillerWords": ["um", "uh", "hmm", "mm", "mhm", "mmm"],
   "contractions": {
     "i'm": "i am",
     "you're": "you are",
@@ -24,13 +17,7 @@
     "i'll": "i will"
   },
   "wordVariants": {
-    "dominik": [
-      "dominik",
-      "dominic"
-    ],
-    "dominic": [
-      "dominik",
-      "dominic"
-    ]
+    "dominik": ["dominik", "dominic"],
+    "dominic": ["dominik", "dominic"]
   }
 }

@@ -73,6 +73,12 @@ const USER_PREDICATES = [
     "username LIKE 'teacher_hijack_%'"
 ];
 
+// Invite registration test users
+USER_PREDICATES.unshift(
+    "email LIKE 'invite_student_%@test.com'",
+    "username LIKE 'invite_student_%'"
+);
+
 const GROUP_PREDICATES = [
     "name LIKE 'Achievement E2E Group %'",
     "name LIKE 'Task Group %'",
@@ -173,6 +179,10 @@ async function main() {
         const groupIds = await selectIds(pool, 'user_groups', 'id', GROUP_PREDICATES);
         const userIds = await selectIds(pool, 'users', 'id', USER_PREDICATES);
         const achievementIds = await selectIds(pool, 'achievements', 'id', ACHIEVEMENT_PREDICATES);
+        const userLessonIds = [
+            ...await selectIds(pool, 'user_lessons', 'id', userIds.length ? [`user_id IN (${userIds.join(', ')})`] : ['1 = 0']),
+            ...await selectIds(pool, 'user_lessons', 'id', lessonIds.length ? [`lesson_id IN (${lessonIds.join(', ')})`] : ['1 = 0'])
+        ];
 
         const [attachmentRows] = lessonIds.length
             ? await pool.query(
@@ -185,6 +195,9 @@ async function main() {
         const storedFileNames = attachmentRows.map((row) => row.stored_file_name);
 
         const deletedResetArtifactsCount = await deleteByIds(pool, 'password_reset_tokens', 'user_id', userIds);
+        const deletedSpeakAttemptsCount = await deleteByIds(pool, 'speak_attempts', 'user_id', userIds)
+            + await deleteByIds(pool, 'speak_attempts', 'lesson_id', lessonIds)
+            + await deleteByIds(pool, 'speak_attempts', 'user_lesson_id', userLessonIds);
         const deletedUserAnswersCount = await deleteByIds(pool, 'user_answers', 'user_id', userIds)
             + await deleteByIds(pool, 'user_answers', 'lesson_id', lessonIds);
         const deletedUserLessonsCount = await deleteByIds(pool, 'user_lessons', 'user_id', userIds)
@@ -222,6 +235,7 @@ async function main() {
             deletedAchievementLinksCount,
             deletedAchievementsCount,
             deletedResetArtifactsCount,
+            deletedSpeakAttemptsCount,
             deletedFilesCount: storedFileNames.length
         }, null, 2));
     } finally {
