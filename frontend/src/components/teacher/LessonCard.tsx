@@ -19,6 +19,7 @@ import {
   GroupsOutlined as GroupsIcon,
 } from "@mui/icons-material";
 import type { Lesson } from "@/api/lessonService";
+import { LessonLabelColorDot } from "@/components/lesson/LessonLabelColorDot";
 import {
   panelCardFooterSx,
   panelFooterButtonsSx,
@@ -326,14 +327,17 @@ export function LessonCard({
 
         <Stack direction="row" spacing={1.25} alignItems="center">
           <Box sx={{ minWidth: 0 }}>
-            <Typography
-              variant="body2"
-              fontWeight={700}
-              color="primary.main"
-              sx={{ overflowWrap: "anywhere" }}
-            >
-              {lesson.title}
-            </Typography>
+            <Stack direction="row" spacing={0.75} alignItems="center">
+              <LessonLabelColorDot color={lesson.labelColor} />
+              <Typography
+                variant="body2"
+                fontWeight={700}
+                color="primary.main"
+                sx={{ overflowWrap: "anywhere", minWidth: 0 }}
+              >
+                {lesson.title}
+              </Typography>
+            </Stack>
             <Typography
               variant="caption"
               color="text.secondary"
@@ -442,13 +446,20 @@ export function LessonCard({
               alignItems="flex-start"
             >
               <Box sx={{ minWidth: 0 }}>
-                <Typography
-                  variant="subtitle1"
-                  fontWeight={800}
-                  sx={{ lineHeight: 1.3, overflowWrap: "anywhere" }}
-                >
-                  {lesson.title}
-                </Typography>
+                <Stack direction="row" spacing={0.8} alignItems="center">
+                  <LessonLabelColorDot color={lesson.labelColor} size={11} />
+                  <Typography
+                    variant="subtitle1"
+                    fontWeight={800}
+                    sx={{
+                      lineHeight: 1.3,
+                      overflowWrap: "anywhere",
+                      minWidth: 0,
+                    }}
+                  >
+                    {lesson.title}
+                  </Typography>
+                </Stack>
                 <Typography
                   variant="body2"
                   color="text.secondary"

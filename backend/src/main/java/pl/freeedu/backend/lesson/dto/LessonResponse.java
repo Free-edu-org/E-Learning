@@ -17,6 +17,7 @@ public class LessonResponse {
 	private String publicId;
 	private String title;
 	private String theme;
+	private String labelColor;
 	private Boolean isActive;
 	private String teacherPublicId;
 	private String teacherName;

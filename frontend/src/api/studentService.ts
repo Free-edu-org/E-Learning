@@ -1,4 +1,5 @@
 import { fetchApi } from "./apiClient";
+import type { LessonLabelColor } from "@/constants/lessonLabelColors";
 
 export interface StudentStats {
   totalLessons: number;
@@ -51,6 +52,7 @@ export interface StudentLesson {
   publicId: string;
   title: string;
   theme: string;
+  labelColor?: LessonLabelColor | null;
   isActive: boolean;
   teacherPublicId: string;
   teacherName: string;

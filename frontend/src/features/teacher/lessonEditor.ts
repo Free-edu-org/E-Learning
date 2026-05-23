@@ -2,6 +2,7 @@ import { ApiError } from "@/api/apiClient";
 import { taskService, type LessonTasksResponse } from "@/api/taskService";
 import type { Group } from "@/api/lessonService";
 import type { LessonTaskDraft } from "@/components/teacher/TaskCard";
+import type { LessonLabelColor } from "@/constants/lessonLabelColors";
 import { getApiErrorMessage } from "@/utils/dashboardUtils";
 import { INPUT_LIMITS } from "@/utils/inputLimits";
 
@@ -13,6 +14,7 @@ export interface DialogFeedbackState {
 export interface LessonDraft {
   title: string;
   theme: string;
+  labelColor: LessonLabelColor | null;
   groups: Group[];
   tasks: LessonTaskDraft[];
 }
@@ -20,6 +22,7 @@ export interface LessonDraft {
 export const emptyLessonDraft: LessonDraft = {
   title: "",
   theme: "",
+  labelColor: null,
   groups: [],
   tasks: [],
 };
@@ -31,6 +34,7 @@ export function getLessonEditorErrorMessage(error: unknown, fallback: string) {
     return getApiErrorMessage(error, fallback, {
       title: "Tytuł lekcji",
       theme: "Temat lekcji",
+      labelColor: "Kolor lekcji",
     });
   }
 

@@ -16,7 +16,9 @@ public enum LessonErrorCode implements ErrorCode {
 											"Maximum number of attachments (5) reached for this lesson.",
 											HttpStatus.BAD_REQUEST), LESSON_CANNOT_BE_ACTIVATED_WITHOUT_TASKS(
 													"Lesson must contain at least one task before activation.",
-													HttpStatus.BAD_REQUEST);
+													HttpStatus.BAD_REQUEST), LESSON_INVALID_LABEL_COLOR(
+															"Invalid lesson label color. Allowed values: gray, red, orange, yellow, green, blue, purple.",
+															HttpStatus.BAD_REQUEST);
 
 	private final String defaultMessage;
 	private final HttpStatus status;

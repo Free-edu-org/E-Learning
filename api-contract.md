@@ -670,6 +670,7 @@ Poniżej znajdziesz opis endpointów do zarządzania lekcjami. Ścieżka bazowa:
     "publicId": "33333333-3333-3333-3333-333333333333",
     "title": "Present Simple - lesson 1",
     "theme": "Grammar",
+    "labelColor": "blue",
     "isActive": true,
     "teacherPublicId": "22222222-2222-2222-2222-222222222222",
     "teacherName": "pan_tomasz",
@@ -685,6 +686,7 @@ Poniżej znajdziesz opis endpointów do zarządzania lekcjami. Ścieżka bazowa:
 | `publicId` | String               | Public ID lekcji |
 | `title` | String                | Tytuł lekcji |
 | `theme` | String                | Temat kategorii lekcji |
+| `labelColor` | String or null        | Opcjonalny kolor organizacyjny lekcji: `gray`, `red`, `orange`, `yellow`, `green`, `blue`, `purple`. |
 | `isActive` | Boolean               | Czy lekcja jest aktywna |
 | `teacherPublicId` | String               | Public ID nauczyciela, który utworzył lekcję |
 | `teacherName` | String                | Username nauczyciela |
@@ -710,6 +712,7 @@ Poniżej znajdziesz opis endpointów do zarządzania lekcjami. Ścieżka bazowa:
 {
   "title": "Present Simple - lesson 1",
   "theme": "Grammar",
+  "labelColor": "blue",
   "groupPublicIds": ["11111111-1111-1111-1111-111111111111", "22222222-2222-2222-2222-222222222222"]
 }
 ```
@@ -719,6 +722,7 @@ Zwraca utworzoną reprezentację `LessonResponse` (jak w sekcji 4.1).
 
 **Known Errors:**
 - `VALIDATION_FAILED` (400 Bad Request): Brak wymaganych pól (`title`, `theme`), tytuł dłuższy niż 30 znaków lub złe typy.
+- `LESSON_INVALID_LABEL_COLOR` (400 Bad Request): `labelColor` ma wartość spoza dozwolonej listy (`gray`, `red`, `orange`, `yellow`, `green`, `blue`, `purple`).
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
 - `FORBIDDEN` (403 Forbidden): Token role does not permit creation.
 
@@ -727,7 +731,7 @@ Zwraca utworzoną reprezentację `LessonResponse` (jak w sekcji 4.1).
 ### 4.3. Update lesson data
 - **URL**: `/api/v1/lessons/{lessonPublicId}`
 - **Method**: `PUT`
-- **Description**: Aktualizuje pola lekcji (title, theme, description, group assignment). Wymaga uprawnień nauczyciela. `title` może mieć maksymalnie 30 znaków.
+- **Description**: Aktualizuje pola lekcji (title, theme, labelColor, description, group assignment). Wymaga uprawnień nauczyciela. `title` może mieć maksymalnie 30 znaków.
 - **Authorization**: `ADMIN` lub właściciel lekcji (`TEACHER`)
 
 **Request Body (JSON):**
@@ -738,6 +742,7 @@ Zwraca zaktualizowaną reprezentację `LessonResponse`.
 
 **Known Errors:**
 - `VALIDATION_FAILED` (400 Bad Request): Złe dane wejściowe, w tym tytuł dłuższy niż 30 znaków.
+- `LESSON_INVALID_LABEL_COLOR` (400 Bad Request): `labelColor` ma wartość spoza dozwolonej listy.
 - `LESSON_NOT_FOUND` (404 Not Found): Nie znaleziono lekcji.
 - `UNAUTHORIZED` (401 Unauthorized)
 - `FORBIDDEN` (403 Forbidden)
@@ -870,6 +875,7 @@ Zwraca zaktualizowaną reprezentację `LessonResponse`.
   "publicId": "33333333-3333-3333-3333-333333333333",
   "title": "Present Simple - lesson 1",
   "theme": "Grammar",
+  "labelColor": "blue",
   "isActive": true,
   "teacherPublicId": "22222222-2222-2222-2222-222222222222",
   "teacherName": "pan_tomasz",
@@ -1644,6 +1650,7 @@ Warstwa BFF dla uczniow.
     "publicId": "33333333-3333-3333-3333-333333333333",
     "title": "Present Simple - lesson 1",
     "theme": "Grammar",
+    "labelColor": "blue",
     "isActive": true,
     "teacherPublicId": "22222222-2222-2222-2222-222222222222",
     "teacherName": "pan_tomasz",
@@ -1674,6 +1681,7 @@ Warstwa BFF dla uczniow.
 | `publicId` | String | Public ID lekcji. |
 | `title` | String | Tytuł lekcji. |
 | `theme` | String | Temat lekcji. |
+| `labelColor` | String or null | Opcjonalny kolor organizacyjny lekcji: `gray`, `red`, `orange`, `yellow`, `green`, `blue`, `purple`. |
 | `isActive` | Boolean | Flaga aktywności lekcji. Endpoint ukrywa tylko lekcje nieaktywne, które nie zostały jeszcze ukończone przez ucznia. |
 | `teacherPublicId` | String | Public ID nauczyciela prowadzącego. |
 | `teacherName` | String | Username nauczyciela prowadzącego. |

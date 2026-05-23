@@ -1,5 +1,6 @@
 import { fetchApi, fetchApiBlob } from "./apiClient";
 import type { LessonResultDetailsResponse } from "./studentService";
+import type { LessonLabelColor } from "@/constants/lessonLabelColors";
 
 export interface Group {
   publicId: string;
@@ -22,6 +23,7 @@ export interface Lesson {
   publicId: string;
   title: string;
   theme: string;
+  labelColor?: LessonLabelColor | null;
   isActive: boolean;
   teacherPublicId?: string;
   teacherName?: string;
@@ -83,6 +85,7 @@ export interface UpdateTeacherStudentRequest {
 export interface CreateLessonRequest {
   title: string;
   theme: string;
+  labelColor?: LessonLabelColor | null;
   groupPublicIds?: string[];
 }
 
