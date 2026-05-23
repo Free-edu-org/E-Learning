@@ -1,16 +1,20 @@
 package pl.freeedu.backend.teacher.service;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 import lombok.extern.slf4j.Slf4j;
+import pl.freeedu.backend.achievement.event.StudentStatsChangedEvent;
 import pl.freeedu.backend.lesson.dto.LessonAttachmentResponse;
 import pl.freeedu.backend.lesson.dto.LessonResponse;
 import pl.freeedu.backend.lesson.mapper.LessonMapper;
 import pl.freeedu.backend.lesson.repository.LessonRepository;
 import pl.freeedu.backend.lesson.repository.GroupHasLessonRepository;
 import pl.freeedu.backend.security.service.SecurityService;
+import pl.freeedu.backend.student.service.PointService;
 import pl.freeedu.backend.teacher.dto.TeacherStatsResponse;
 import pl.freeedu.backend.teacher.dto.TeacherStudentResponse;
+import pl.freeedu.backend.teacher.dto.TaskAnswerManualReviewRequest;
 import pl.freeedu.backend.teacher.repository.TeacherStatsRepository;
 import pl.freeedu.backend.user.model.Role;
 import pl.freeedu.backend.user.repository.UserRepository;
@@ -27,8 +31,14 @@ import pl.freeedu.backend.teacher.dto.LessonStatsResponse;
 import pl.freeedu.backend.teacher.dto.LessonStatsStudentResult;
 import pl.freeedu.backend.teacher.dto.TeacherStudentStatsResponse;
 import pl.freeedu.backend.lesson.exception.LessonException;
+import pl.freeedu.backend.student.model.StudentProgressHistory;
 import pl.freeedu.backend.student.repository.StudentProgressHistoryRepository;
+import pl.freeedu.backend.task.model.UserAnswer;
+import pl.freeedu.backend.task.model.UserLesson;
 import pl.freeedu.backend.task.repository.UserAnswerRepository;
+import pl.freeedu.backend.task.repository.UserLessonRepository;
+import pl.freeedu.backend.task.service.TaskPublicIdLookupService;
+import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import pl.freeedu.backend.lesson.exception.LessonErrorCode;
 import pl.freeedu.backend.task.dto.LessonResultDetailsResponse;
@@ -70,6 +80,10 @@ public class TeacherService {
 	private final UserGroupPublicIdLookupService userGroupPublicIdLookupService;
 	private final StudentProgressHistoryRepository studentProgressHistoryRepository;
 	private final UserAnswerRepository userAnswerRepository;
+	private final UserLessonRepository userLessonRepository;
+	private final TaskPublicIdLookupService taskPublicIdLookupService;
+	private final PointService pointService;
+	private final ApplicationEventPublisher applicationEventPublisher;
 
 	private final AccountActivationService accountActivationService;
 
@@ -81,7 +95,9 @@ public class TeacherService {
 			LessonAttachmentService lessonAttachmentService,
 			UserGroupPublicIdLookupService userGroupPublicIdLookupService,
 			StudentProgressHistoryRepository studentProgressHistoryRepository,
-			UserAnswerRepository userAnswerRepository, AccountActivationService accountActivationService) {
+			UserAnswerRepository userAnswerRepository, UserLessonRepository userLessonRepository,
+			TaskPublicIdLookupService taskPublicIdLookupService, PointService pointService,
+			ApplicationEventPublisher applicationEventPublisher, AccountActivationService accountActivationService) {
 		this.teacherStatsRepository = teacherStatsRepository;
 		this.lessonRepository = lessonRepository;
 		this.groupHasLessonRepository = groupHasLessonRepository;
@@ -97,6 +113,10 @@ public class TeacherService {
 		this.userGroupPublicIdLookupService = userGroupPublicIdLookupService;
 		this.studentProgressHistoryRepository = studentProgressHistoryRepository;
 		this.userAnswerRepository = userAnswerRepository;
+		this.userLessonRepository = userLessonRepository;
+		this.taskPublicIdLookupService = taskPublicIdLookupService;
+		this.pointService = pointService;
+		this.applicationEventPublisher = applicationEventPublisher;
 		this.accountActivationService = accountActivationService;
 	}
 
@@ -175,6 +195,60 @@ public class TeacherService {
 			return studentId;
 		}).subscribeOn(Schedulers.boundedElastic())).flatMap(
 				validStudentId -> lessonResultDetailsService.getCompletedLessonResult(lessonId, validStudentId));
+	}
+
+	public Mono<LessonResultDetailsResponse> reviewTaskAnswer(Integer lessonId, Integer studentId, String taskPublicId,
+			Mono<TaskAnswerManualReviewRequest> requestMono) {
+		return requestMono.flatMap(request -> securityService.getCurrentUserId()
+				.flatMap(teacherId -> Mono.fromCallable(() -> transactionTemplate.execute(status -> {
+					pl.freeedu.backend.lesson.model.Lesson lesson = lessonRepository.findById(lessonId)
+							.orElseThrow(() -> new LessonException(LessonErrorCode.LESSON_NOT_FOUND));
+					if (!lesson.getTeacher().getId().equals(teacherId)) {
+						throw new LessonException(LessonErrorCode.NOT_LESSON_OWNER);
+					}
+					if (!userInGroupRepository.hasAccessToLesson(studentId, lessonId)) {
+						throw new TaskException(TaskErrorCode.STUDENT_NO_ACCESS);
+					}
+
+					UserLesson userLesson = userLessonRepository.findByUserIdAndLessonId(studentId, lessonId)
+							.filter(savedLesson -> savedLesson
+									.getStatus() == pl.freeedu.backend.task.model.UserLessonStatus.COMPLETED)
+							.orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_RESULT_NOT_FOUND));
+
+					String taskType = resolveTaskType(taskPublicId);
+					String dbTaskType = resolveDbTaskType(taskType);
+					Integer taskId = taskPublicIdLookupService.getInternalId(taskPublicId, taskType);
+
+					UserAnswer answer = userAnswerRepository
+							.findByUserIdAndLessonIdAndTaskIdAndTaskType(studentId, lessonId, taskId, dbTaskType)
+							.orElseThrow(() -> new TaskException(TaskErrorCode.TASK_ANSWER_NOT_FOUND));
+
+					if (answer.getOriginalIsCorrect() == null) {
+						answer.setOriginalIsCorrect(answer.getIsCorrect());
+					}
+					answer.setIsCorrect(request.getIsCorrect());
+					answer.setManuallyReviewed(true);
+					answer.setReviewedBy(teacherId);
+					answer.setReviewedAt(java.time.LocalDateTime.now());
+					userAnswerRepository.save(answer);
+
+					int recalculatedScore = userAnswerRepository.findByUserIdAndLessonId(studentId, lessonId).stream()
+							.mapToInt(savedAnswer -> Boolean.TRUE.equals(savedAnswer.getIsCorrect()) ? 1 : 0).sum();
+					userLesson.setScore(recalculatedScore);
+					userLessonRepository.save(userLesson);
+
+					pointService.reconcilePointsForLessonResult(userLesson.getId(), studentId, recalculatedScore,
+							teacherId);
+					updateProgressHistorySnapshot(studentId, lessonId, userLesson, recalculatedScore);
+					applicationEventPublisher
+							.publishEvent(new StudentStatsChangedEvent(studentId, "lesson-answer-reviewed"));
+
+					log.info(
+							"Teacher manually reviewed task answer. Lesson ID: {}, Student ID: {}, Task publicId: {}, Teacher ID: {}, isCorrect: {}",
+							lessonId, studentId, taskPublicId, teacherId, request.getIsCorrect());
+					return Boolean.TRUE;
+				})).subscribeOn(Schedulers.boundedElastic()))
+				.flatMap(ignored -> lessonResultDetailsService.getCompletedLessonResult(lessonId, studentId)));
 	}
 
 	public Mono<TeacherStudentResponse> createStudent(Mono<TeacherCreateStudentRequest> requestMono) {
@@ -261,8 +335,11 @@ public class TeacherService {
 
 			List<TeacherStudentStatsResponse.ProgressPoint> progressHistory = studentProgressHistoryRepository
 					.findByUserIdOrderByProgressDateAsc(studentId).stream()
-					.map(e -> TeacherStudentStatsResponse.ProgressPoint.builder().date(e.getProgressDate().toString())
-							.progress(Math.round(e.getAvgScore())).build())
+					.collect(Collectors.groupingBy(StudentProgressHistory::getProgressDate,
+							Collectors.averagingDouble(StudentProgressHistory::getAvgScore)))
+					.entrySet().stream().sorted(Map.Entry.comparingByKey())
+					.map(entry -> TeacherStudentStatsResponse.ProgressPoint.builder().date(entry.getKey().toString())
+							.progress(Math.round(entry.getValue())).build())
 					.toList();
 
 			java.util.Map<String, TeacherStudentStatsResponse.SkillStat> skillMap = new LinkedHashMap<>();
@@ -352,5 +429,46 @@ public class TeacherService {
 						throw ex;
 					}
 				})).subscribeOn(Schedulers.boundedElastic())));
+	}
+
+	private void updateProgressHistorySnapshot(Integer studentId, Integer lessonId, UserLesson userLesson,
+			int recalculatedScore) {
+		if (userLesson.getMaxScore() == null || userLesson.getMaxScore() <= 0 || userLesson.getFinishedAt() == null) {
+			return;
+		}
+		LocalDate progressDate = userLesson.getFinishedAt().toLocalDate();
+		StudentProgressHistory snapshot = studentProgressHistoryRepository
+				.findByUserIdAndLessonIdAndProgressDate(studentId, lessonId, progressDate)
+				.orElseGet(() -> StudentProgressHistory.builder().userId(studentId).lessonId(lessonId)
+						.progressDate(progressDate).build());
+		double lessonPercent = (recalculatedScore * 100.0) / userLesson.getMaxScore();
+		snapshot.setLessonId(lessonId);
+		snapshot.setAvgScore(Math.round(lessonPercent * 10.0) / 10.0);
+		studentProgressHistoryRepository.save(snapshot);
+	}
+
+	private String resolveTaskType(String taskPublicId) {
+		String[] supportedTypes = {"choose", "write", "scatter", "speak"};
+		for (String taskType : supportedTypes) {
+			try {
+				taskPublicIdLookupService.getInternalId(taskPublicId, taskType);
+				return taskType;
+			} catch (TaskException ex) {
+				if (ex.getErrorCode() != TaskErrorCode.TASK_NOT_FOUND) {
+					throw ex;
+				}
+			}
+		}
+		throw new TaskException(TaskErrorCode.TASK_NOT_FOUND);
+	}
+
+	private String resolveDbTaskType(String taskType) {
+		return switch (taskType) {
+			case "choose" -> "choose_tasks";
+			case "write" -> "write_tasks";
+			case "scatter" -> "scatter_tasks";
+			case "speak" -> "speak_tasks";
+			default -> throw new TaskException(TaskErrorCode.INVALID_TASK_TYPE);
+		};
 	}
 }

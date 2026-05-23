@@ -419,7 +419,8 @@ public class TaskService {
 				}
 
 				UserAnswer ua = UserAnswer.builder().taskId(taskId).taskType(dbTaskType).userId(userId)
-						.lessonId(lessonId).answer(item.getAnswer()).isCorrect(correct).build();
+						.lessonId(lessonId).answer(item.getAnswer()).isCorrect(correct).originalIsCorrect(correct)
+						.manuallyReviewed(false).reviewedBy(null).reviewedAt(null).build();
 				userAnswerRepository.save(ua);
 
 				details.add(AnswerResultDto.builder().taskPublicId(item.getTaskPublicId()).taskType(item.getTaskType())
@@ -431,7 +432,7 @@ public class TaskService {
 			userLesson.setStatus(UserLessonStatus.COMPLETED);
 			userLesson.setFinishedAt(LocalDateTime.now());
 			userLessonRepository.save(userLesson);
-			saveProgressHistorySnapshot(userId);
+			saveProgressHistorySnapshot(userId, lessonId, score, maxScore);
 			pointsService.addPointsForLessonResult(userLesson.getId(), userId, score, "TASK_CORRECT", userId);
 			applicationEventPublisher.publishEvent(new StudentStatsChangedEvent(userId, "lesson-submitted"));
 
@@ -502,6 +503,7 @@ public class TaskService {
 					pointsService.rollbackPointsForLessonResult(ul.getId(), userId, null);
 				});
 				userLessonRepository.deleteByUserIdAndLessonId(userId, lessonId);
+				studentProgressHistoryRepository.deleteByUserIdAndLessonId(userId, lessonId);
 				return null;
 			});
 			return (Void) null;
@@ -530,17 +532,16 @@ public class TaskService {
 		}
 	}
 
-	private void saveProgressHistorySnapshot(Integer userId) {
-		double averageScore = Optional
-				.ofNullable(
-						userLessonRepository.findAveragePercentByUserIdAndStatus(userId, UserLessonStatus.COMPLETED))
-				.orElse(0.0);
+	private void saveProgressHistorySnapshot(Integer userId, Integer lessonId, int score, int maxScore) {
+		double lessonPercent = maxScore > 0 ? (score * 100.0) / maxScore : 0.0;
 		LocalDate progressDate = LocalDate.now();
 
 		StudentProgressHistory snapshot = studentProgressHistoryRepository
-				.findByUserIdAndProgressDate(userId, progressDate)
-				.orElseGet(() -> StudentProgressHistory.builder().userId(userId).progressDate(progressDate).build());
-		snapshot.setAvgScore(roundToOneDecimal(averageScore));
+				.findByUserIdAndLessonIdAndProgressDate(userId, lessonId, progressDate)
+				.orElseGet(() -> StudentProgressHistory.builder().userId(userId).lessonId(lessonId)
+						.progressDate(progressDate).build());
+		snapshot.setLessonId(lessonId);
+		snapshot.setAvgScore(roundToOneDecimal(lessonPercent));
 		studentProgressHistoryRepository.save(snapshot);
 	}
 

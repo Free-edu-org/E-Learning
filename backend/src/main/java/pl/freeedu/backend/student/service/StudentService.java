@@ -20,6 +20,7 @@ import pl.freeedu.backend.student.dto.StudentLessonResponse;
 import pl.freeedu.backend.student.dto.StudentProgressHistoryResponse;
 import pl.freeedu.backend.student.dto.StudentSkillStatsResponse;
 import pl.freeedu.backend.student.dto.StudentStatsResponse;
+import pl.freeedu.backend.student.model.StudentProgressHistory;
 import pl.freeedu.backend.student.repository.StudentProgressHistoryRepository;
 import pl.freeedu.backend.task.dto.LessonResultDetailsResponse;
 import pl.freeedu.backend.task.exception.TaskErrorCode;
@@ -80,12 +81,20 @@ public class StudentService {
 	}
 
 	public Flux<StudentProgressHistoryResponse> getProgress() {
-		return securityService.getCurrentUserId().flatMapMany(userId -> Mono
-				.fromCallable(() -> studentProgressHistoryRepository.findByUserIdOrderByProgressDateAsc(userId).stream()
-						.map(entry -> StudentProgressHistoryResponse.builder().date(entry.getProgressDate().toString())
-								.progress(roundToWhole(entry.getAvgScore())).build())
-						.toList())
-				.subscribeOn(Schedulers.boundedElastic()).flatMapMany(Flux::fromIterable));
+		return securityService.getCurrentUserId()
+				.flatMapMany(userId -> Mono
+						.fromCallable(() -> aggregateProgressHistory(
+								studentProgressHistoryRepository.findByUserIdOrderByProgressDateAsc(userId)))
+						.subscribeOn(Schedulers.boundedElastic()).flatMapMany(Flux::fromIterable));
+	}
+
+	private List<StudentProgressHistoryResponse> aggregateProgressHistory(List<StudentProgressHistory> entries) {
+		return entries.stream()
+				.collect(Collectors.groupingBy(StudentProgressHistory::getProgressDate,
+						Collectors.averagingDouble(StudentProgressHistory::getAvgScore)))
+				.entrySet().stream().sorted(Map.Entry.comparingByKey()).map(entry -> StudentProgressHistoryResponse
+						.builder().date(entry.getKey().toString()).progress(roundToWhole(entry.getValue())).build())
+				.toList();
 	}
 
 	public Flux<StudentSkillStatsResponse> getSkillStats() {

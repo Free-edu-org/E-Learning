@@ -19,6 +19,9 @@ public class LessonResultTaskDetailDto {
 	private String userAnswer;
 	private String correctAnswer;
 	private Boolean isCorrect;
+	private Boolean originalIsCorrect;
+	private Boolean manuallyReviewed;
+	private String reviewStatus;
 	private String possibleAnswers;
 	private String words;
 	private Integer tabSwitchCount;

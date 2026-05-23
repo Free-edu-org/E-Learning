@@ -14,5 +14,8 @@ public interface StudentProgressHistoryRepository extends JpaRepository<StudentP
 
 	List<StudentProgressHistory> findByUserIdOrderByProgressDateAsc(Integer userId);
 
-	Optional<StudentProgressHistory> findByUserIdAndProgressDate(Integer userId, LocalDate progressDate);
+	Optional<StudentProgressHistory> findByUserIdAndLessonIdAndProgressDate(Integer userId, Integer lessonId,
+			LocalDate progressDate);
+
+	void deleteByUserIdAndLessonId(Integer userId, Integer lessonId);
 }

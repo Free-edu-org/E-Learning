@@ -101,10 +101,12 @@ class StudentServiceTest {
 		// given
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
 		when(studentProgressHistoryRepository.findByUserIdOrderByProgressDateAsc(10)).thenReturn(List.of(
-				StudentProgressHistory.builder().userId(10).progressDate(LocalDate.parse("2026-04-09")).avgScore(50.0)
-						.build(),
-				StudentProgressHistory.builder().userId(10).progressDate(LocalDate.parse("2026-04-10")).avgScore(66.6)
-						.build()));
+				StudentProgressHistory.builder().userId(10).lessonId(101).progressDate(LocalDate.parse("2026-04-09"))
+						.avgScore(50.0).build(),
+				StudentProgressHistory.builder().userId(10).lessonId(102).progressDate(LocalDate.parse("2026-04-10"))
+						.avgScore(66.6).build(),
+				StudentProgressHistory.builder().userId(10).lessonId(103).progressDate(LocalDate.parse("2026-04-10"))
+						.avgScore(99.4).build()));
 
 		// when
 		Flux<StudentProgressHistoryResponse> result = studentService.getProgress();
@@ -115,7 +117,7 @@ class StudentServiceTest {
 			assertEquals(50.0, resp.getProgress());
 		}).assertNext(resp -> {
 			assertEquals("2026-04-10", resp.getDate());
-			assertEquals(67.0, resp.getProgress());
+			assertEquals(83.0, resp.getProgress());
 		}).verifyComplete();
 	}
 

@@ -5,9 +5,13 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import pl.freeedu.backend.student.model.StudentPoint;
 
+import java.util.Optional;
+
 public interface StudentPointRepository extends JpaRepository<StudentPoint, Integer> {
 
 	boolean existsByLessonResultIdAndReason(Integer lessonResultId, String reason);
+
+	Optional<StudentPoint> findByLessonResultIdAndReason(Integer lessonResultId, String reason);
 
 	@Query("select coalesce(sum(sp.delta),0) from StudentPoint sp where sp.userId = :userId")
 	Integer sumDeltaByUserId(@Param("userId") Integer userId);

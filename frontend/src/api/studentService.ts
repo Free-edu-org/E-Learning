@@ -104,6 +104,13 @@ export interface LessonResultTaskDetail {
   userAnswer: string | null;
   correctAnswer: string | null;
   isCorrect: boolean;
+  originalIsCorrect: boolean | null;
+  manuallyReviewed: boolean;
+  reviewStatus:
+    | "AUTO"
+    | "MANUAL_CONFIRMED"
+    | "MANUAL_CORRECTED_TO_CORRECT"
+    | "MANUAL_CORRECTED_TO_INCORRECT";
   possibleAnswers: string | null;
   words: string | null;
   tabSwitchCount: number;
