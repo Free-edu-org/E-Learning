@@ -33,11 +33,16 @@ function shouldDispatchMaintenanceError(
   response: Response,
   problem: ProblemDetail,
 ): boolean {
+  const problemCode = problem.code?.toUpperCase();
+
+  if (problemCode === "STT_SERVICE_UNAVAILABLE") {
+    return false;
+  }
+
   if ([502, 503, 504].includes(response.status)) {
     return true;
   }
 
-  const problemCode = problem.code?.toUpperCase();
   return (
     problemCode === "SERVICE_UNAVAILABLE" ||
     problemCode === "SYSTEM_UNAVAILABLE"
