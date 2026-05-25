@@ -20,12 +20,14 @@ import { INPUT_LIMITS } from "@/utils/inputLimits";
 interface ChooseAnswerBuilderProps {
   possibleAnswers: string;
   correctAnswer: string;
+  correctAnswers?: string;
   onChange: (possibleAnswers: string, correctAnswer: string) => void;
 }
 
 export function ChooseAnswerBuilder({
   possibleAnswers,
   correctAnswer,
+  correctAnswers,
   onChange,
 }: ChooseAnswerBuilderProps) {
   const [inputValue, setInputValue] = useState("");
@@ -34,6 +36,12 @@ export function ChooseAnswerBuilder({
     ? possibleAnswers.split("|").filter(Boolean)
     : [];
   const correctIndex = correctAnswer !== "" ? Number(correctAnswer) : -1;
+  const selectedIndexes = new Set(
+    (correctAnswers || correctAnswer)
+      .split("|")
+      .map((value) => Number(value))
+      .filter((value) => Number.isInteger(value)),
+  );
 
   const addAnswer = () => {
     const trimmed = inputValue.trim().slice(0, INPUT_LIMITS.taskChoiceAnswer);
@@ -46,16 +54,33 @@ export function ChooseAnswerBuilder({
   const removeAnswer = (index: number) => {
     const updated = answers.filter((_, i) => i !== index);
     let newCorrect = correctIndex;
+    const updatedSelectedIndexes = new Set<number>();
+    selectedIndexes.forEach((selectedIndex) => {
+      if (selectedIndex === index) return;
+      updatedSelectedIndexes.add(
+        selectedIndex > index ? selectedIndex - 1 : selectedIndex,
+      );
+    });
     if (index === correctIndex) {
-      newCorrect = -1;
+      newCorrect = updatedSelectedIndexes.values().next().value ?? -1;
     } else if (index < correctIndex) {
       newCorrect = correctIndex - 1;
     }
-    onChange(updated.join("|"), newCorrect >= 0 ? String(newCorrect) : "");
+    onChange(
+      updated.join("|"),
+      [...updatedSelectedIndexes].join("|") ||
+        (newCorrect >= 0 ? String(newCorrect) : ""),
+    );
   };
 
   const setCorrect = (index: number) => {
-    onChange(possibleAnswers, String(index));
+    const updated = new Set(selectedIndexes);
+    if (updated.has(index)) {
+      updated.delete(index);
+    } else {
+      updated.add(index);
+    }
+    onChange(possibleAnswers, [...updated].sort((a, b) => a - b).join("|"));
   };
 
   return (
@@ -70,7 +95,7 @@ export function ChooseAnswerBuilder({
             <Tooltip
               key={index}
               title={
-                index === correctIndex
+                selectedIndexes.has(index)
                   ? "Poprawna odpowiedź"
                   : "Kliknij aby oznaczyć jako poprawną"
               }
@@ -79,7 +104,7 @@ export function ChooseAnswerBuilder({
             >
               <Chip
                 icon={
-                  index === correctIndex ? (
+                  selectedIndexes.has(index) ? (
                     <CorrectIcon sx={{ fontSize: 18 }} />
                   ) : (
                     <UncheckedIcon sx={{ fontSize: 18 }} />
@@ -94,22 +119,22 @@ export function ChooseAnswerBuilder({
                   transition: "all 0.2s ease",
                   border: "1.5px solid",
                   borderColor: (theme) =>
-                    index === correctIndex
+                    selectedIndexes.has(index)
                       ? theme.palette.success.main
                       : alpha(theme.palette.divider, 0.4),
                   bgcolor: (theme) =>
-                    index === correctIndex
+                    selectedIndexes.has(index)
                       ? alpha(theme.palette.success.main, 0.1)
                       : "transparent",
                   "& .MuiChip-icon": {
                     color: (theme) =>
-                      index === correctIndex
+                      selectedIndexes.has(index)
                         ? theme.palette.success.main
                         : theme.palette.text.disabled,
                   },
                   "&:hover": {
                     borderColor: (theme) =>
-                      index === correctIndex
+                      selectedIndexes.has(index)
                         ? theme.palette.success.main
                         : theme.palette.primary.main,
                   },
@@ -162,7 +187,7 @@ export function ChooseAnswerBuilder({
         </IconButton>
       </Stack>
 
-      {answers.length > 0 && correctIndex < 0 && (
+      {answers.length > 0 && selectedIndexes.size === 0 && (
         <Typography variant="caption" color="warning.main">
           Kliknij na odpowiedź, aby oznaczyć ją jako poprawną.
         </Typography>

@@ -51,3 +51,54 @@ ALTER TABLE user_answers
 UPDATE user_answers
 SET original_is_correct = is_correct
 WHERE original_is_correct IS NULL;
+
+ALTER TABLE lessons
+    ADD COLUMN label_color VARCHAR(20) NULL AFTER theme;
+
+ALTER TABLE choose_tasks
+    ADD COLUMN correct_answers TEXT NULL AFTER correct_answer;
+
+UPDATE choose_tasks
+SET correct_answers = CONCAT('[', correct_answer, ']');
+
+ALTER TABLE choose_tasks
+    DROP COLUMN correct_answer;
+
+ALTER TABLE choose_tasks
+    MODIFY correct_answers TEXT NOT NULL;
+
+ALTER TABLE write_tasks
+    ADD COLUMN correct_answers TEXT NULL AFTER correct_answer;
+
+UPDATE write_tasks
+SET correct_answers = JSON_ARRAY(correct_answer);
+
+ALTER TABLE write_tasks
+    DROP COLUMN correct_answer;
+
+ALTER TABLE write_tasks
+    MODIFY correct_answers TEXT NOT NULL;
+
+ALTER TABLE scatter_tasks
+    ADD COLUMN correct_answers TEXT NULL AFTER correct_answer;
+
+UPDATE scatter_tasks
+SET correct_answers = JSON_ARRAY(correct_answer);
+
+ALTER TABLE scatter_tasks
+    DROP COLUMN correct_answer;
+
+ALTER TABLE scatter_tasks
+    MODIFY correct_answers TEXT NOT NULL;
+
+ALTER TABLE speak_tasks
+    ADD COLUMN expected_texts TEXT NULL AFTER expected_text;
+
+UPDATE speak_tasks
+SET expected_texts = JSON_ARRAY(expected_text);
+
+ALTER TABLE speak_tasks
+    DROP COLUMN expected_text;
+
+ALTER TABLE speak_tasks
+    MODIFY expected_texts TEXT NOT NULL;

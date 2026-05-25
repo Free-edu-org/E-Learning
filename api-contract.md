@@ -1010,7 +1010,7 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
       "taskText": "Choose the correct answer",
       "hint": "Look at the subject.",
       "userAnswer": "go",
-      "correctAnswer": "goes",
+      "correctAnswers": ["goes"],
       "isCorrect": false,
       "originalIsCorrect": false,
       "manuallyReviewed": true,
@@ -1078,7 +1078,7 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
 | `tasks[].taskText` | String | Treść zadania. |
 | `tasks[].hint` | String or null | Podpowiedź zapisana dla zadania. |
 | `tasks[].userAnswer` | String or null | Zapisana odpowiedź ucznia. Dla `choose` zwracana jest wartość tekstowa, nie indeks. |
-| `tasks[].correctAnswer` | String or null | Poprawna odpowiedź. |
+| `tasks[].correctAnswers` | List of String or null | Lista poprawnych odpowiedzi. |
 | `tasks[].isCorrect` | Boolean | Status poprawności odpowiedzi. |
 | `tasks[].possibleAnswers` | String or null | Lista możliwych odpowiedzi rozdzielona `|` dla `choose`. |
 | `tasks[].words` | String or null | Lista słów rozdzielona `|` dla `scatter`. |
@@ -1682,7 +1682,7 @@ Warstwa BFF dla uczniow.
 ### 7.2. Get Student Lessons
 - **URL**: `/api/v1/student/lessons`
 - **Method**: `GET`
-- **Description**: Zwraca aktywne lekcje przypisane do aktualnego ucznia przez jego grupę oraz lekcje ukończone przez ucznia, nawet jeśli nauczyciel je później dezaktywuje. Wymaga `STUDENT`.
+- **Description**: Zwraca aktywne lekcje przypisane do aktualnego ucznia przez jego grupę oraz lekcje ukończone przez ucznia, nawet jeśli nauczyciel je później dezaktywuje. Nie zwraca `labelColor`, ponieważ kolor lekcji nauczyciela i prywatny kolor ucznia nie są współdzielone. Wymaga `STUDENT`.
 
 **Success (200 OK):**
 ```json
@@ -1722,7 +1722,7 @@ Warstwa BFF dla uczniow.
 | `publicId` | String | Public ID lekcji. |
 | `title` | String | Tytuł lekcji. |
 | `theme` | String | Temat lekcji. |
-| `labelColor` | String or null | Opcjonalny kolor organizacyjny lekcji: `gray`, `red`, `orange`, `yellow`, `green`, `blue`, `purple`. |
+
 | `isActive` | Boolean | Flaga aktywności lekcji. Endpoint ukrywa tylko lekcje nieaktywne, które nie zostały jeszcze ukończone przez ucznia. |
 | `teacherPublicId` | String | Public ID nauczyciela prowadzącego. |
 | `teacherName` | String | Username nauczyciela prowadzącego. |
@@ -1892,7 +1892,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
           "lessonPublicId": "44444444-4444-4444-4444-444444444444",
           "task": "Choose the correct answer",
           "possibleAnswers": "a|b|c|d",
-          "correctAnswer": null,
+          "correctAnswers": null,
           "hint": "Think about grammar",
           "section": "Vocabulary",
           "createdAt": "2026-03-21T10:00:00"
@@ -1907,8 +1907,8 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 ```
 
 **Notes:**
-- For `STUDENT`: `correctAnswer` fields are `null` (stripped). `status` is `IN_PROGRESS` or triggers auto-start.
-- For `TEACHER`/`ADMIN`: `correctAnswer` fields are visible. `status` is `null`.
+- For `STUDENT`: `correctAnswers` fields are `null` (stripped). `status` is `IN_PROGRESS` or triggers auto-start.
+- For `TEACHER`/`ADMIN`: `correctAnswers` fields are visible. `status` is `null`.
 
 **Known Errors:**
 - `LESSON_NOT_FOUND` (404 Not Found): Lesson does not exist.
@@ -1930,7 +1930,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 {
   "task": "Choose the correct answer",
   "possibleAnswers": "option1|option2|option3",
-  "correctAnswer": 1,
+  "correctAnswers": [1, 2],
   "hint": "Think about grammar",
   "section": "Vocabulary"
 }
@@ -1940,13 +1940,14 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 ```json
 {
   "publicId": "33333333-3333-3333-3333-333333333333", "lessonPublicId": "44444444-4444-4444-4444-444444444444", "task": "...", "possibleAnswers": "...",
-  "correctAnswer": 1, "hint": "...", "section": "...", "createdAt": "..."
+  "correctAnswers": [1, 2], "hint": "...", "section": "...", "createdAt": "..."
 }
 ```
 
 **Known Errors:**
 - `LESSON_NOT_FOUND` (404 Not Found)
-- `VALIDATION_FAILED` (400 Bad Request): Missing required fields (`task`, `possibleAnswers`, `correctAnswer`)
+- `VALIDATION_FAILED` (400 Bad Request): Missing required fields (`task`, `possibleAnswers`)
+- `INVALID_TASK_ANSWERS` (400 Bad Request): Missing, duplicate or out-of-range `correctAnswers`
 - `UNAUTHORIZED` (401), `FORBIDDEN` (403)
 
 ---
@@ -1987,6 +1988,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 {
   "task": "Write the past tense of 'go'",
   "correctAnswer": "went",
+  "correctAnswers": ["went", "has gone"],
   "hint": "Irregular verb",
   "section": "Grammar"
 }
@@ -1996,12 +1998,12 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 ```json
 {
   "publicId": "33333333-3333-3333-3333-333333333333", "lessonPublicId": "44444444-4444-4444-4444-444444444444", "task": "...", "correctAnswer": "...",
-  "hint": "...", "section": "...", "createdAt": "..."
+  "correctAnswers": ["...", "..."], "hint": "...", "section": "...", "createdAt": "..."
 }
 ```
 
 **Known Errors:**
-- `LESSON_NOT_FOUND` (404), `VALIDATION_FAILED` (400), `UNAUTHORIZED` (401), `FORBIDDEN` (403)
+- `LESSON_NOT_FOUND` (404), `VALIDATION_FAILED` (400), `INVALID_TASK_ANSWERS` (400), `UNAUTHORIZED` (401), `FORBIDDEN` (403)
 
 ---
 
@@ -2040,6 +2042,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
   "task": "Arrange the words",
   "words": "is|cat|the|big",
   "correctAnswer": "the cat is big",
+  "correctAnswers": ["the cat is big", "the big cat is"],
   "hint": "Subject verb adjective",
   "section": "Grammar"
 }
@@ -2049,12 +2052,12 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 ```json
 {
   "publicId": "33333333-3333-3333-3333-333333333333", "lessonPublicId": "44444444-4444-4444-4444-444444444444", "task": "...", "words": "...", "correctAnswer": "...",
-  "hint": "...", "section": "...", "createdAt": "..."
+  "correctAnswers": ["...", "..."], "hint": "...", "section": "...", "createdAt": "..."
 }
 ```
 
 **Known Errors:**
-- `LESSON_NOT_FOUND` (404), `VALIDATION_FAILED` (400), `UNAUTHORIZED` (401), `FORBIDDEN` (403)
+- `LESSON_NOT_FOUND` (404), `VALIDATION_FAILED` (400), `INVALID_TASK_ANSWERS` (400), `UNAUTHORIZED` (401), `FORBIDDEN` (403)
 
 ---
 
@@ -2099,13 +2102,13 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 **Success (201 Created):**
 ```json
 {
-  "publicId": "33333333-3333-3333-3333-333333333333", "lessonPublicId": "44444444-4444-4444-4444-444444444444", "expectedText": "...", "hint": "...",
+  "publicId": "33333333-3333-3333-3333-333333333333", "lessonPublicId": "44444444-4444-4444-4444-444444444444", "expectedText": "...", "expectedTexts": ["..."], "hint": "...",
   "section": "...", "createdAt": "..."
 }
 ```
 
 **Known Errors:**
-- `LESSON_NOT_FOUND` (404), `VALIDATION_FAILED` (400), `UNAUTHORIZED` (401), `FORBIDDEN` (403)
+- `LESSON_NOT_FOUND` (404), `VALIDATION_FAILED` (400), `INVALID_TASK_ANSWERS` (400), `UNAUTHORIZED` (401), `FORBIDDEN` (403)
 
 ---
 
@@ -2138,7 +2141,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 - **Method**: `POST`
 - **Content-Type**: `multipart/form-data`
 - **Authorization**: `STUDENT` only
-- **Description**: Uploads a recorded audio answer, validates student access to the lesson, sends the file with `expectedText` to the local STT service, saves immutable `SpeakAttempt` linked to the current `UserLesson`, and returns the evaluated result to the frontend.
+- **Description**: Uploads a recorded audio answer, validates student access to the lesson, sends the file with the configured `expectedText` to the local STT service, saves immutable `SpeakAttempt` linked to the current `UserLesson`, and returns the evaluated result to the frontend.
 
 **Request Parts:**
 - `file`: audio file, for example `audio/webm` from browser `MediaRecorder`.
@@ -2201,14 +2204,14 @@ Notes:
   "maxScore": 3,
   "details": [
     { "taskPublicId": "66666666-6666-6666-6666-666666666666", "taskType": "choose", "isCorrect": true, "correctAnswer": "1" },
-    { "taskPublicId": "66666666-6666-6666-6666-666666666666", "taskType": "write", "isCorrect": true, "correctAnswer": "went" }
+    { "taskPublicId": "66666666-6666-6666-6666-666666666666", "taskType": "write", "isCorrect": true, "correctAnswer": "went", "correctAnswers": ["went", "has gone"] }
   ]
 }
 ```
 
 **Grading logic:**
-- `choose`: exact string match on correctAnswer index
-- `write` / `scatter`: case-insensitive, trimmed comparison
+- `choose`: exact string match against any configured `correctAnswers` index. Legacy `correctAnswer` is treated as the first accepted answer.
+- `write` / `scatter`: case-insensitive, trimmed comparison against any configured `correctAnswers`. Legacy `correctAnswer` is treated as the first accepted answer.
 - `speak`: backend never re-runs STT scoring locally. If `attemptId` is present, backend validates ownership, lesson, task and current `UserLesson`, then uses stored `SpeakAttempt.correct`.
 - `speak`: if a speaking task is omitted or sent without `attemptId`, the task is treated as unanswered / incorrect and does not block the whole lesson submit.
 - `speak`: backend does not trust plain `answer` text for correctness without a valid `attemptId`.

@@ -1,6 +1,4 @@
 import { fetchApi } from "./apiClient";
-import type { LessonLabelColor } from "@/constants/lessonLabelColors";
-
 export interface StudentStats {
   totalLessons: number;
   completedLessons: number;
@@ -52,7 +50,6 @@ export interface StudentLesson {
   publicId: string;
   title: string;
   theme: string;
-  labelColor?: LessonLabelColor | null;
   isActive: boolean;
   teacherPublicId: string;
   teacherName: string;
@@ -82,6 +79,7 @@ export interface SubmitAnswerDetail {
   taskType: string;
   isCorrect: boolean;
   correctAnswer: string;
+  correctAnswers?: string[];
 }
 
 export interface SubmitAnswersResponse {
@@ -103,6 +101,7 @@ export interface LessonResultTaskDetail {
   hint: string | null;
   userAnswer: string | null;
   correctAnswer: string | null;
+  correctAnswers?: string[] | null;
   isCorrect: boolean;
   originalIsCorrect: boolean | null;
   manuallyReviewed: boolean;

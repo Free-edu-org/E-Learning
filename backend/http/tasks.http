@@ -3,7 +3,6 @@ GET http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/tasks
 Authorization: Bearer {{auth_token}}
 
 ### Create choose task (ADMIN or lesson owner TEACHER)
-POST http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/tasks/choose
 Content-Type: application/json
 Authorization: Bearer {{auth_token}}
 
@@ -11,6 +10,7 @@ Authorization: Bearer {{auth_token}}
   "task": "What is 2+2?",
   "possibleAnswers": "3|4|5|6",
   "correctAnswer": 1,
+  "correctAnswers": [1],
   "hint": "Basic math",
   "section": "Math"
 }
@@ -24,6 +24,7 @@ Authorization: Bearer {{auth_token}}
   "task": "What is 3+3?",
   "possibleAnswers": "5|6|7|8",
   "correctAnswer": 1,
+  "correctAnswers": [1, 2],
   "hint": "Updated",
   "section": "Math"
 }
@@ -40,6 +41,7 @@ Authorization: Bearer {{auth_token}}
 {
   "task": "Write the past tense of 'go'",
   "correctAnswer": "went",
+  "correctAnswers": ["went", "has gone"],
   "hint": "Irregular verb",
   "section": "Grammar"
 }
@@ -52,6 +54,7 @@ Authorization: Bearer {{auth_token}}
 {
   "task": "Write the past tense of 'run'",
   "correctAnswer": "ran",
+  "correctAnswers": ["ran", "did run"],
   "hint": "Also irregular",
   "section": "Grammar"
 }
@@ -69,6 +72,7 @@ Authorization: Bearer {{auth_token}}
   "task": "Arrange the words",
   "words": "is|cat|the|big",
   "correctAnswer": "the cat is big",
+  "correctAnswers": ["the cat is big"],
   "hint": "Subject first",
   "section": "Grammar"
 }
@@ -82,6 +86,7 @@ Authorization: Bearer {{auth_token}}
   "task": "Arrange updated",
   "words": "is|dog|the|small",
   "correctAnswer": "the dog is small",
+  "correctAnswers": ["the dog is small"],
   "hint": "Subject first"
 }
 

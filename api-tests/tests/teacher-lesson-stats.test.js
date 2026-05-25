@@ -44,7 +44,7 @@ describe('Teacher Lesson Stats API (GET /api/v1/teacher/lessons/{lessonPublicId}
         res = await apiClient.post(`/lessons/${isolatedLessonPublicId}/tasks/choose`, {
             task: 'What is 1+1?',
             possibleAnswers: '1|2|3|4',
-            correctAnswer: 1,
+            correctAnswers: [1],
             hint: 'Basic math',
             section: 'Math'
         });

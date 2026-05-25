@@ -38,7 +38,7 @@ class LessonPublicApiContractTest {
 		assertTrue(lessonResponseFields.contains("publicId"));
 		assertTrue(lessonResponseFields.contains("labelColor"));
 		assertTrue(studentLessonResponseFields.contains("publicId"));
-		assertTrue(studentLessonResponseFields.contains("labelColor"));
+		assertFalse(studentLessonResponseFields.contains("labelColor"));
 		assertTrue(lessonTasksResponseFields.contains("lessonPublicId"));
 		assertTrue(lessonResultDetailsResponseFields.contains("lessonPublicId"));
 		assertTrue(chooseTaskResponseFields.contains("lessonPublicId"));

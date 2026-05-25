@@ -28,8 +28,8 @@ public class WriteTask {
 	@Column(nullable = false, columnDefinition = "TEXT")
 	private String task;
 
-	@Column(name = "correct_answer", nullable = false, columnDefinition = "TEXT")
-	private String correctAnswer;
+	@Column(name = "correct_answers", nullable = false, columnDefinition = "TEXT")
+	private String correctAnswers;
 
 	@Column(columnDefinition = "TEXT")
 	private String hint;

@@ -43,6 +43,7 @@ import { INPUT_LIMITS } from "@/utils/inputLimits";
 import { normalizeImageToJpeg } from "@/utils/normalizeImageFile";
 import { ChooseAnswerBuilder } from "./ChooseAnswerBuilder";
 import { ScatterWordBuilder } from "./ScatterWordBuilder";
+import { TextAnswerBuilder } from "./TextAnswerBuilder";
 
 export interface LessonTaskDraft {
   id: string;
@@ -50,6 +51,7 @@ export interface LessonTaskDraft {
   task?: string;
   possibleAnswers: string;
   correctAnswer: string;
+  correctAnswers?: string;
   words: string;
   hint: string;
   section: string;
@@ -407,7 +409,24 @@ const TaskCardFields = memo(function TaskCardFields({
         ...task,
         possibleAnswers: pa,
         correctAnswer: ca,
+        correctAnswers: ca,
       }),
+    [task, onChangeById],
+  );
+
+  const handleTextAnswersChange = useCallback(
+    (value: string) => {
+      const firstAnswer =
+        value
+          .split("\n")
+          .map((answer) => answer.trim())
+          .filter(Boolean)[0] ?? "";
+      onChangeById(task.id, {
+        ...task,
+        correctAnswer: firstAnswer,
+        correctAnswers: value,
+      });
+    },
     [task, onChangeById],
   );
 
@@ -442,6 +461,7 @@ const TaskCardFields = memo(function TaskCardFields({
           <ChooseAnswerBuilder
             possibleAnswers={task.possibleAnswers}
             correctAnswer={task.correctAnswer}
+            correctAnswers={task.correctAnswers}
             onChange={handleChooseChange}
           />
         )}
@@ -452,54 +472,34 @@ const TaskCardFields = memo(function TaskCardFields({
               words={task.words}
               onChange={handleWordsChange}
             />
-            <TextField
+            <TextAnswerBuilder
               label="Poprawna kolejność (pełne zdanie)"
-              value={task.correctAnswer}
-              onChange={(e) =>
-                updateField(
-                  "correctAnswer",
-                  e.target.value.slice(0, INPUT_LIMITS.taskAnswerText),
-                )
-              }
-              inputProps={{ maxLength: INPUT_LIMITS.taskAnswerText }}
-              helperText={`${task.correctAnswer.length}/${INPUT_LIMITS.taskAnswerText}`}
-              fullWidth
-              placeholder="Wpisz poprawną kolejność wyrazów"
+              answers={task.correctAnswers || task.correctAnswer}
+              placeholder="Wpisz odpowiedź i dodaj..."
+              emptyMessage="Dodaj co najmniej jedną poprawną kolejność."
+              onChange={handleTextAnswersChange}
             />
           </>
         )}
 
         {task.type === "write" && (
-          <TextField
+          <TextAnswerBuilder
             label="Poprawna odpowiedź"
-            value={task.correctAnswer}
-            onChange={(e) =>
-              updateField(
-                "correctAnswer",
-                e.target.value.slice(0, INPUT_LIMITS.taskAnswerText),
-              )
-            }
-            inputProps={{ maxLength: INPUT_LIMITS.taskAnswerText }}
-            helperText={`${task.correctAnswer.length}/${INPUT_LIMITS.taskAnswerText}`}
-            fullWidth
-            placeholder="Wpisz oczekiwaną odpowiedź..."
+            answers={task.correctAnswers || task.correctAnswer}
+            placeholder="Wpisz odpowiedź i dodaj..."
+            emptyMessage="Dodaj co najmniej jedną poprawną odpowiedź."
+            onChange={handleTextAnswersChange}
           />
         )}
 
         {task.type === "speak" && (
-          <TextField
+          <TextAnswerBuilder
             label="Tekst do rozpoznania"
-            value={task.correctAnswer}
-            onChange={(e) =>
-              updateField(
-                "correctAnswer",
-                e.target.value.slice(0, INPUT_LIMITS.taskAnswerText),
-              )
-            }
-            inputProps={{ maxLength: INPUT_LIMITS.taskAnswerText }}
-            fullWidth
-            placeholder="Wpisz tekst do rozpoznania przez system"
-            helperText={`${task.correctAnswer.length}/${INPUT_LIMITS.taskAnswerText} • Uczeń nagra ten tekst, a STT porówna transkrypcję z tą wartością.`}
+            answers={task.correctAnswers || task.correctAnswer}
+            placeholder="Wpisz tekst..."
+            emptyMessage="Dodaj tekst do rozpoznania."
+            maxAnswers={1}
+            onChange={handleTextAnswersChange}
           />
         )}
 

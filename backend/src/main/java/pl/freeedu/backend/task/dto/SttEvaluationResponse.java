@@ -15,6 +15,7 @@ public class SttEvaluationResponse {
 
 	private String rawTranscription;
 	private String matchedTranscription;
+	private String expectedText;
 	private String normalizedExpected;
 	private String normalizedActual;
 	private double score;

@@ -49,6 +49,7 @@ function createEmptyTaskDraft(type: TaskType = "write"): LessonTaskDraft {
     type,
     possibleAnswers: "",
     correctAnswer: "",
+    correctAnswers: "",
     words: "",
     hint: "",
     section: "",

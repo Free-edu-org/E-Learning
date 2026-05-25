@@ -45,6 +45,22 @@ export function getLessonEditorErrorMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
+function parseTextCorrectAnswers(task: LessonTaskDraft): string[] {
+  const source = task.correctAnswers || task.correctAnswer;
+  return source
+    .split("\n")
+    .map((answer) => answer.trim())
+    .filter(Boolean);
+}
+
+function parseChooseCorrectAnswers(task: LessonTaskDraft): number[] {
+  const source = task.correctAnswers || task.correctAnswer;
+  return source
+    .split("|")
+    .map((answer) => Number(answer.trim()))
+    .filter((answer) => Number.isInteger(answer));
+}
+
 export function getTaskValidationError(
   task: LessonTaskDraft,
   index: number,
@@ -82,27 +98,29 @@ export function getTaskValidationError(
       return `${position}: pojedyncza odpowiedź może mieć maksymalnie ${INPUT_LIMITS.taskChoiceAnswer} znaków.`;
     }
 
-    const trimmedCorrect = task.correctAnswer.trim();
-    if (trimmedCorrect === "") {
+    const correctAnswers = parseChooseCorrectAnswers(task);
+    if (correctAnswers.length === 0) {
       return `${position}: Zaznacz poprawną odpowiedź.`;
     }
 
-    const correctIndex = Number(trimmedCorrect);
-    if (!Number.isInteger(correctIndex)) {
-      return `${position}: indeks poprawnej odpowiedzi musi być liczbą całkowitą.`;
-    }
-
-    if (correctIndex < 0 || correctIndex >= answers.length) {
-      return `${position}: indeks poprawnej odpowiedzi musi wskazywać jedną z dostępnych odpowiedzi (od 0 do ${Math.max(answers.length - 1, 0)}).`;
+    if (
+      correctAnswers.some((answer) => answer < 0 || answer >= answers.length)
+    ) {
+      return `${position}: poprawne odpowiedzi muszą wskazywać dostępne odpowiedzi (od 0 do ${Math.max(answers.length - 1, 0)}).`;
     }
   }
 
   if (task.type === "write") {
-    if (!task.correctAnswer.trim()) {
+    const correctAnswers = parseTextCorrectAnswers(task);
+    if (correctAnswers.length === 0) {
       return `${position}: poprawna odpowiedź jest wymagana.`;
     }
 
-    if (task.correctAnswer.trim().length > INPUT_LIMITS.taskAnswerText) {
+    if (
+      correctAnswers.some(
+        (answer) => answer.length > INPUT_LIMITS.taskAnswerText,
+      )
+    ) {
       return `${position}: poprawna odpowiedź może mieć maksymalnie ${INPUT_LIMITS.taskAnswerText} znaków.`;
     }
   }
@@ -125,21 +143,35 @@ export function getTaskValidationError(
       return `${position}: pojedyncze słowo może mieć maksymalnie ${INPUT_LIMITS.taskScatterWord} znaków.`;
     }
 
-    if (!task.correctAnswer.trim()) {
+    const correctAnswers = parseTextCorrectAnswers(task);
+    if (correctAnswers.length === 0) {
       return `${position}: poprawna odpowiedź jest wymagana.`;
     }
 
-    if (task.correctAnswer.trim().length > INPUT_LIMITS.taskAnswerText) {
+    if (
+      correctAnswers.some(
+        (answer) => answer.length > INPUT_LIMITS.taskAnswerText,
+      )
+    ) {
       return `${position}: poprawna odpowiedź może mieć maksymalnie ${INPUT_LIMITS.taskAnswerText} znaków.`;
     }
   }
 
   if (task.type === "speak") {
-    if (!task.correctAnswer.trim()) {
+    const correctAnswers = parseTextCorrectAnswers(task);
+    if (correctAnswers.length === 0) {
       return `${position}: tekst do rozpoznania jest wymagany.`;
     }
 
-    if (task.correctAnswer.trim().length > INPUT_LIMITS.taskAnswerText) {
+    if (correctAnswers.length > 1) {
+      return `${position}: zadanie mówione może mieć tylko jeden tekst do rozpoznania.`;
+    }
+
+    if (
+      correctAnswers.some(
+        (answer) => answer.length > INPUT_LIMITS.taskAnswerText,
+      )
+    ) {
       return `${position}: tekst do rozpoznania może mieć maksymalnie ${INPUT_LIMITS.taskAnswerText} znaków.`;
     }
   }
@@ -163,36 +195,43 @@ export async function createLessonTask(
   const section = task.section.trim() || undefined;
 
   if (task.type === "choose") {
+    const correctAnswers = parseChooseCorrectAnswers(task);
     return taskService.createChooseTask(lessonPublicId, {
       task: (task.task ?? "").trim(),
       possibleAnswers: task.possibleAnswers.trim(),
-      correctAnswer: Number(task.correctAnswer.trim()),
+      correctAnswer: correctAnswers[0],
+      correctAnswers,
       hint,
       section,
     });
   }
 
   if (task.type === "write") {
+    const correctAnswers = parseTextCorrectAnswers(task);
     return taskService.createWriteTask(lessonPublicId, {
       task: (task.task ?? "").trim(),
-      correctAnswer: task.correctAnswer.trim(),
+      correctAnswer: correctAnswers[0],
+      correctAnswers,
       hint,
       section,
     });
   }
 
   if (task.type === "scatter") {
+    const correctAnswers = parseTextCorrectAnswers(task);
     return taskService.createScatterTask(lessonPublicId, {
       task: (task.task ?? "").trim(),
       words: task.words.trim(),
-      correctAnswer: task.correctAnswer.trim(),
+      correctAnswer: correctAnswers[0],
+      correctAnswers,
       hint,
       section,
     });
   }
 
+  const expectedTexts = parseTextCorrectAnswers(task);
   return taskService.createSpeakTask(lessonPublicId, {
-    expectedText: task.correctAnswer.trim(),
+    expectedText: expectedTexts[0],
     hint,
     section,
   });
@@ -207,36 +246,43 @@ export async function updateLessonTask(
   const section = task.section.trim() || undefined;
 
   if (task.type === "choose") {
+    const correctAnswers = parseChooseCorrectAnswers(task);
     return taskService.updateChooseTask(lessonPublicId, taskPublicId, {
       task: (task.task ?? "").trim(),
       possibleAnswers: task.possibleAnswers.trim(),
-      correctAnswer: Number(task.correctAnswer.trim()),
+      correctAnswer: correctAnswers[0],
+      correctAnswers,
       hint,
       section,
     });
   }
 
   if (task.type === "write") {
+    const correctAnswers = parseTextCorrectAnswers(task);
     return taskService.updateWriteTask(lessonPublicId, taskPublicId, {
       task: (task.task ?? "").trim(),
-      correctAnswer: task.correctAnswer.trim(),
+      correctAnswer: correctAnswers[0],
+      correctAnswers,
       hint,
       section,
     });
   }
 
   if (task.type === "scatter") {
+    const correctAnswers = parseTextCorrectAnswers(task);
     return taskService.updateScatterTask(lessonPublicId, taskPublicId, {
       task: (task.task ?? "").trim(),
       words: task.words.trim(),
-      correctAnswer: task.correctAnswer.trim(),
+      correctAnswer: correctAnswers[0],
+      correctAnswers,
       hint,
       section,
     });
   }
 
+  const expectedTexts = parseTextCorrectAnswers(task);
   return taskService.updateSpeakTask(lessonPublicId, taskPublicId, {
-    expectedText: task.correctAnswer.trim(),
+    expectedText: expectedTexts[0],
     hint,
     section,
   });
@@ -258,6 +304,9 @@ export function tasksResponseToDrafts(
         possibleAnswers: task.possibleAnswers,
         correctAnswer:
           task.correctAnswer != null ? String(task.correctAnswer) : "",
+        correctAnswers: (task.correctAnswers ?? [task.correctAnswer])
+          .filter((answer) => answer != null)
+          .join("|"),
         words: "",
         hint: task.hint ?? "",
         section: sectionName,
@@ -272,6 +321,9 @@ export function tasksResponseToDrafts(
         task: task.task,
         possibleAnswers: "",
         correctAnswer: task.correctAnswer ?? "",
+        correctAnswers: (task.correctAnswers ?? [task.correctAnswer])
+          .filter((answer) => answer != null)
+          .join("\n"),
         words: "",
         hint: task.hint ?? "",
         section: sectionName,
@@ -286,6 +338,9 @@ export function tasksResponseToDrafts(
         task: task.task,
         possibleAnswers: "",
         correctAnswer: task.correctAnswer ?? "",
+        correctAnswers: (task.correctAnswers ?? [task.correctAnswer])
+          .filter((answer) => answer != null)
+          .join("\n"),
         words: task.words,
         hint: task.hint ?? "",
         section: sectionName,
@@ -294,11 +349,13 @@ export function tasksResponseToDrafts(
     }
 
     for (const task of section.speakTasks) {
+      const expectedText = task.expectedText ?? task.expectedTexts?.[0] ?? "";
       drafts.push({
         id: `backendTask:speak:${task.publicId}`,
         type: "speak",
         possibleAnswers: "",
-        correctAnswer: task.expectedText,
+        correctAnswer: expectedText,
+        correctAnswers: expectedText,
         words: "",
         hint: task.hint ?? "",
         section: sectionName,

@@ -21,6 +21,7 @@ import {
 import type { LessonResultDetailsResponse } from "@/api/studentService";
 import { StatsCard } from "@/components/teacher/StatsCard";
 import { panelSurfaceSx } from "@/components/ui/panel/panelStyles";
+import { getAcceptedAnswers } from "@/utils/answerDisplay";
 import { formatPercent } from "@/utils/dashboardUtils";
 
 interface LessonResultDetailsPanelProps {
@@ -138,6 +139,10 @@ export function LessonResultDetailsPanel({
             const statusColor = task.isCorrect ? "success.main" : "error.main";
             const actionColor = task.isCorrect ? "error" : "success";
             const isReviewing = reviewingTaskPublicId === task.taskPublicId;
+            const acceptedAnswers = getAcceptedAnswers(
+              task.correctAnswers,
+              task.correctAnswer,
+            );
             const reviewLabel =
               task.reviewStatus === "MANUAL_CORRECTED_TO_CORRECT"
                 ? "Ręcznie poprawione na poprawne"
@@ -475,21 +480,49 @@ export function LessonResultDetailsPanel({
                         color="text.secondary"
                         sx={{ opacity: 0.85 }}
                       >
-                        Poprawna odpowiedź
+                        Poprawne odpowiedzi
                       </Typography>
-                      <Typography
-                        variant="body2"
-                        fontWeight={700}
-                        sx={{
-                          mt: 0.5,
-                          lineHeight: 1.45,
-                          color: "text.primary",
-                        }}
-                      >
-                        {task.correctAnswer?.trim()
-                          ? task.correctAnswer
-                          : "Brak zapisanej poprawnej odpowiedzi"}
-                      </Typography>
+                      {acceptedAnswers.length > 0 ? (
+                        <Stack
+                          direction="row"
+                          spacing={0.75}
+                          useFlexGap
+                          flexWrap="wrap"
+                          sx={{ mt: 0.75 }}
+                        >
+                          {acceptedAnswers.map((answer, answerIndex) => (
+                            <Chip
+                              key={`${answer}-${answerIndex}`}
+                              label={answer}
+                              size="small"
+                              sx={{
+                                height: "auto",
+                                minHeight: 24,
+                                borderRadius: 1.5,
+                                fontWeight: 700,
+                                "& .MuiChip-label": {
+                                  display: "block",
+                                  whiteSpace: "normal",
+                                  overflowWrap: "anywhere",
+                                  py: 0.35,
+                                },
+                              }}
+                            />
+                          ))}
+                        </Stack>
+                      ) : (
+                        <Typography
+                          variant="body2"
+                          fontWeight={700}
+                          sx={{
+                            mt: 0.5,
+                            lineHeight: 1.45,
+                            color: "text.primary",
+                          }}
+                        >
+                          Brak zapisanej poprawnej odpowiedzi
+                        </Typography>
+                      )}
                     </Box>
                   </Box>
 

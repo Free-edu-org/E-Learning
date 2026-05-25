@@ -78,7 +78,7 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
         res = await apiClient.post(`/lessons/${attachmentLessonPublicId}/tasks/choose`, {
             task: 'Attachment setup task',
             possibleAnswers: 'skip|ok',
-            correctAnswer: 1
+            correctAnswers: [1]
         });
         expect(res.status).toBe(201);
         attachmentLessonTaskPublicId = res.data.publicId;
@@ -237,7 +237,7 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
         res = await apiClient.post(`/lessons/${sharedLessonPublicId}/tasks/choose`, {
             task: 'Shared lesson setup task',
             possibleAnswers: 'a|b',
-            correctAnswer: 0
+            correctAnswers: [0]
         });
         expect(res.status).toBe(201);
         sharedLessonTaskPublicId = res.data.publicId;
@@ -245,7 +245,7 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
         res = await apiClient.post(`/lessons/${inactiveSharedLessonPublicId}/tasks/choose`, {
             task: 'Inactive lesson setup task',
             possibleAnswers: 'a|b',
-            correctAnswer: 0
+            correctAnswers: [0]
         });
         expect(res.status).toBe(201);
         inactiveSharedLessonTaskPublicId = res.data.publicId;
@@ -298,7 +298,7 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
         res = await apiClient.post(`/lessons/${progressLessonPublicId}/tasks/choose`, {
             task: 'Progress history setup task',
             possibleAnswers: 'a|b',
-            correctAnswer: 0
+            correctAnswers: [0]
         });
         expect(res.status).toBe(201);
         progressLessonTaskPublicId = res.data.publicId;
@@ -581,7 +581,7 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
                 response = await apiClient.post(`/lessons/${firstLessonPublicId}/tasks/choose`, {
                     task: 'Progress reset lesson A task',
                     possibleAnswers: 'wrong|correct',
-                    correctAnswer: 1
+                    correctAnswers: [1]
                 });
                 expect(response.status).toBe(201);
                 firstTaskPublicId = response.data.publicId;
@@ -597,7 +597,7 @@ describe('Student Dashboard API (/api/v1/student/*)', () => {
                 response = await apiClient.post(`/lessons/${secondLessonPublicId}/tasks/choose`, {
                     task: 'Progress reset lesson B task',
                     possibleAnswers: 'correct|wrong',
-                    correctAnswer: 0
+                    correctAnswers: [0]
                 });
                 expect(response.status).toBe(201);
                 secondTaskPublicId = response.data.publicId;

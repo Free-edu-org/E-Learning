@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -15,7 +16,7 @@ public class SpeakTaskResponse {
 
 	private String publicId;
 	private String lessonPublicId;
-	private String expectedText;
+	private List<String> expectedTexts;
 	private String hint;
 	private String hintImageUrl;
 	private String section;

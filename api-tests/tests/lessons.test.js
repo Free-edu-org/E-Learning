@@ -260,7 +260,7 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
             const taskResponse = await apiClient.post(`/lessons/${createdLessonPublicId}/tasks/choose`, {
                 task: `Activate ${uniqueId}?`,
                 possibleAnswers: 'no|yes',
-                correctAnswer: 1
+                correctAnswers: [1]
             });
             expect(taskResponse.status).toBe(201);
             expect(taskResponse.data.publicId).toBeTruthy();

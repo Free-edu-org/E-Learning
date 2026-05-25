@@ -7,6 +7,7 @@ import {
 import { useState } from "react";
 import type { ScatterTaskResponse } from "@/api/taskService";
 import type { SubmitAnswerDetail } from "@/api/studentService";
+import { formatAcceptedAnswers } from "@/utils/answerDisplay";
 import {
   taskCardSx,
   taskHeaderSx,
@@ -236,7 +237,13 @@ export function ScatterTaskSolver({
           </Stack>
           {!result.isCorrect && (
             <Typography variant="body2" sx={{ mt: 0.5 }}>
-              Prawidłowa odpowiedź: <strong>{result.correctAnswer}</strong>
+              Prawidłowe odpowiedzi:{" "}
+              <strong>
+                {formatAcceptedAnswers(
+                  result.correctAnswers,
+                  result.correctAnswer,
+                )}
+              </strong>
             </Typography>
           )}
         </Box>

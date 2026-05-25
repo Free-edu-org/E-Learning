@@ -31,8 +31,8 @@ public class ChooseTask {
 	@Column(name = "possible_answers", nullable = false, columnDefinition = "TEXT")
 	private String possibleAnswers;
 
-	@Column(name = "correct_answer", nullable = false)
-	private Integer correctAnswer;
+	@Column(name = "correct_answers", nullable = false, columnDefinition = "TEXT")
+	private String correctAnswers;
 
 	@Column(columnDefinition = "TEXT")
 	private String hint;
