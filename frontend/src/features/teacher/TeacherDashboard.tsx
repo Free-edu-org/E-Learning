@@ -42,6 +42,8 @@ import { ActionButton } from "@/components/teacher/ActionButton";
 import { LessonCard } from "@/components/teacher/LessonCard";
 import {
   LessonToolbar,
+  NO_LABEL_COLOR_FILTER,
+  type LessonLabelColorFilter,
   type SortMode,
   type StatusFilter,
   type ViewMode,
@@ -353,7 +355,7 @@ export function TeacherDashboard() {
   const [sortMode, setSortMode] = useState<SortMode>("date_desc");
   const [selectedGroups, setSelectedGroups] = useState<Group[]>([]);
   const [selectedLabelColors, setSelectedLabelColors] = useState<
-    LessonLabelColor[]
+    LessonLabelColorFilter[]
   >([]);
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -850,7 +852,10 @@ export function TeacherDashboard() {
       const selectedColors = new Set(selectedLabelColors);
       result = result.filter(
         (lesson) =>
-          lesson.labelColor != null && selectedColors.has(lesson.labelColor),
+          (lesson.labelColor != null &&
+            selectedColors.has(lesson.labelColor)) ||
+          (lesson.labelColor == null &&
+            selectedColors.has(NO_LABEL_COLOR_FILTER)),
       );
     }
 

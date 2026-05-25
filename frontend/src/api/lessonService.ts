@@ -54,6 +54,8 @@ export interface TeacherStudentResponse {
 export interface LessonStatsStudentResult {
   userPublicId: string;
   username: string;
+  groupPublicId: string | null;
+  groupName: string | null;
   avatarUrl?: string | null;
   completedAt: string | null;
   score: number;

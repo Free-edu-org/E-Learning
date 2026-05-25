@@ -255,6 +255,58 @@ export const panelToolbarSx: SxProps<Theme> = {
     theme.palette.mode === "light"
       ? "0 6px 16px rgba(15, 23, 42, 0.04)"
       : "0 4px 10px rgba(0, 0, 0, 0.18)",
+  "&& .MuiAutocomplete-root .MuiOutlinedInput-root, && .MuiOutlinedInput-root, && .MuiAutocomplete-inputRoot, && .MuiInputBase-root":
+    {
+      borderRadius: 2,
+      minHeight: 40,
+      bgcolor: (theme: Theme) =>
+        theme.palette.mode === "light"
+          ? alpha(theme.palette.common.white, 0.98)
+          : "#151a2c",
+      border: "1px solid",
+      borderColor: (theme: Theme) =>
+        theme.palette.mode === "light"
+          ? alpha(theme.palette.text.primary, 0.06)
+          : alpha(theme.palette.common.white, 0.06),
+      boxShadow: (theme: Theme) =>
+        theme.palette.mode === "light"
+          ? "0 2px 8px rgba(15, 23, 42, 0.035)"
+          : "inset 0 1px 0 rgba(255,255,255,0.02)",
+      transition:
+        "border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease",
+      "&:hover": {
+        borderColor: (theme: Theme) =>
+          theme.palette.mode === "light"
+            ? alpha(theme.palette.primary.main, 0.14)
+            : alpha(theme.palette.common.white, 0.1),
+        bgcolor: (theme: Theme) =>
+          theme.palette.mode === "light"
+            ? theme.palette.common.white
+            : "#171d2f",
+      },
+      "&.Mui-focused": {
+        borderColor: (theme: Theme) =>
+          theme.palette.mode === "light"
+            ? alpha(theme.palette.primary.main, 0.22)
+            : alpha(theme.palette.primary.light, 0.2),
+        boxShadow: (theme: Theme) =>
+          theme.palette.mode === "light"
+            ? `0 0 0 3px ${alpha(theme.palette.primary.main, 0.08)}`
+            : `0 0 0 3px ${alpha(theme.palette.primary.light, 0.08)}`,
+      },
+    },
+  "& .MuiAutocomplete-tag": {
+    margin: "2px",
+    height: 20,
+    fontSize: "0.7rem",
+  },
+  "& .MuiInputBase-input::placeholder": {
+    opacity: 1,
+    color: (theme: Theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.text.secondary, 0.8)
+        : alpha(theme.palette.common.white, 0.38),
+  },
 };
 
 export const panelSurfaceSx: SxProps<Theme> = {
