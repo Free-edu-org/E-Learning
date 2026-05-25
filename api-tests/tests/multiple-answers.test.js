@@ -38,7 +38,6 @@ describe('Multiple Correct Answers (EL-152)', () => {
         res = await apiClient.post(`/lessons/${lessonPublicId}/tasks/choose`, {
             task: 'Capital of France?',
             possibleAnswers: 'London|Paris|Berlin|Madrid',
-            correctAnswer: 1,
             correctAnswers: [1, 3]
         });
         expect(res.status).toBe(201);
@@ -48,7 +47,6 @@ describe('Multiple Correct Answers (EL-152)', () => {
         // write: correctAnswers ['hello', 'good morning']
         res = await apiClient.post(`/lessons/${lessonPublicId}/tasks/write`, {
             task: 'Translate "bonjour"',
-            correctAnswer: 'hello',
             correctAnswers: ['hello', 'good morning']
         });
         expect(res.status).toBe(201);
@@ -59,7 +57,6 @@ describe('Multiple Correct Answers (EL-152)', () => {
         res = await apiClient.post(`/lessons/${lessonPublicId}/tasks/scatter`, {
             task: 'Arrange the words',
             words: 'cat|the|big|is',
-            correctAnswer: 'the cat is big',
             correctAnswers: ['the cat is big', 'the big cat is']
         });
         expect(res.status).toBe(201);
@@ -132,7 +129,6 @@ describe('Multiple Correct Answers (EL-152)', () => {
                 .flatMap(s => s.chooseTasks || [])
                 .find(t => t.publicId === chooseTaskId);
             expect(task).toBeDefined();
-            expect(task.correctAnswer).toBe(1);
             expect(task.correctAnswers).toEqual([1, 3]);
         });
 
@@ -143,7 +139,6 @@ describe('Multiple Correct Answers (EL-152)', () => {
                 .flatMap(s => s.writeTasks || [])
                 .find(t => t.publicId === writeTaskId);
             expect(task).toBeDefined();
-            expect(task.correctAnswer).toBe('hello');
             expect(task.correctAnswers).toEqual(['hello', 'good morning']);
         });
 
@@ -154,7 +149,6 @@ describe('Multiple Correct Answers (EL-152)', () => {
                 .flatMap(s => s.scatterTasks || [])
                 .find(t => t.publicId === scatterTaskId);
             expect(task).toBeDefined();
-            expect(task.correctAnswer).toBe('the cat is big');
             expect(task.correctAnswers).toEqual(['the cat is big', 'the big cat is']);
         });
 
@@ -163,7 +157,6 @@ describe('Multiple Correct Answers (EL-152)', () => {
             const res = await apiClient.put(`/lessons/${lessonPublicId}/tasks/choose/${chooseTaskId}`, {
                 task: 'Capital of France?',
                 possibleAnswers: 'London|Paris|Berlin|Madrid',
-                correctAnswer: 1,
                 correctAnswers: [1, 3]
             });
             expect(res.status).toBe(200);
@@ -175,10 +168,9 @@ describe('Multiple Correct Answers (EL-152)', () => {
             const res = await apiClient.post(`/lessons/${lessonPublicId}/tasks/choose`, {
                 task: 'Single answer choose',
                 possibleAnswers: 'a|b|c',
-                correctAnswer: 0
+                correctAnswers: [0]
             });
             expect(res.status).toBe(201);
-            expect(res.data.correctAnswer).toBe(0);
             expect(res.data.correctAnswers).toEqual([0]);
             createdTasks.push({ type: 'choose', publicId: res.data.publicId });
         });
@@ -187,10 +179,9 @@ describe('Multiple Correct Answers (EL-152)', () => {
             setAuthToken(teacherToken);
             const res = await apiClient.post(`/lessons/${lessonPublicId}/tasks/write`, {
                 task: 'Single answer write',
-                correctAnswer: 'solo'
+                correctAnswers: ['solo']
             });
             expect(res.status).toBe(201);
-            expect(res.data.correctAnswer).toBe('solo');
             expect(res.data.correctAnswers).toEqual(['solo']);
             createdTasks.push({ type: 'write', publicId: res.data.publicId });
         });
@@ -200,47 +191,40 @@ describe('Multiple Correct Answers (EL-152)', () => {
             const res = await apiClient.post(`/lessons/${lessonPublicId}/tasks/scatter`, {
                 task: 'Single answer scatter',
                 words: 'a|b',
-                correctAnswer: 'a b'
+                correctAnswers: ['a b']
             });
             expect(res.status).toBe(201);
-            expect(res.data.correctAnswer).toBe('a b');
             expect(res.data.correctAnswers).toEqual(['a b']);
             createdTasks.push({ type: 'scatter', publicId: res.data.publicId });
         });
 
-        it('duplicate indices in correctAnswers are deduplicated', async () => {
+        it('returns 400 INVALID_TASK_ANSWERS for duplicate indices in correctAnswers', async () => {
             setAuthToken(teacherToken);
             const res = await apiClient.post(`/lessons/${lessonPublicId}/tasks/choose`, {
                 task: 'Dedup choose test',
                 possibleAnswers: 'x|y|z',
-                correctAnswer: 0,
                 correctAnswers: [0, 1, 0, 1]
             });
-            expect(res.status).toBe(201);
-            expect(res.data.correctAnswers).toEqual([0, 1]);
-            createdTasks.push({ type: 'choose', publicId: res.data.publicId });
+            expect(res.status).toBe(400);
+            expect(res.data.code).toBe('INVALID_TASK_ANSWERS');
         });
 
-        it('duplicate text answers are deduplicated case-insensitively', async () => {
+        it('returns 400 INVALID_TASK_ANSWERS for duplicate text answers (case-insensitive)', async () => {
             setAuthToken(teacherToken);
             const res = await apiClient.post(`/lessons/${lessonPublicId}/tasks/write`, {
                 task: 'Dedup write test',
-                correctAnswer: 'hello',
-                correctAnswers: ['hello', 'HELLO', 'Hello', 'world']
+                correctAnswers: ['hello', 'HELLO', 'world']
             });
-            expect(res.status).toBe(201);
-            // 'hello'/'HELLO'/'Hello' collapse to one, 'world' stays → 2 answers
-            expect(res.data.correctAnswers).toHaveLength(2);
-            createdTasks.push({ type: 'write', publicId: res.data.publicId });
+            expect(res.status).toBe(400);
+            expect(res.data.code).toBe('INVALID_TASK_ANSWERS');
         });
 
         it('speak task creates with single expectedTexts list', async () => {
             setAuthToken(teacherToken);
             const res = await apiClient.post(`/lessons/${lessonPublicId}/tasks/speak`, {
-                expectedText: 'Good morning'
+                expectedTexts: ['Good morning']
             });
             expect(res.status).toBe(201);
-            expect(res.data.expectedText).toBe('Good morning');
             expect(res.data.expectedTexts).toEqual(['Good morning']);
             createdTasks.push({ type: 'speak', publicId: res.data.publicId });
         });
@@ -255,7 +239,6 @@ describe('Multiple Correct Answers (EL-152)', () => {
             const res = await apiClient.post(`/lessons/${lessonPublicId}/tasks/choose`, {
                 task: 'Bad index test',
                 possibleAnswers: 'a|b|c',
-                correctAnswer: 0,
                 correctAnswers: [0, 99]
             });
             expect(res.status).toBe(400);
@@ -266,7 +249,6 @@ describe('Multiple Correct Answers (EL-152)', () => {
             setAuthToken(teacherToken);
             const res = await apiClient.post(`/lessons/${lessonPublicId}/tasks/write`, {
                 task: 'Empty answer test',
-                correctAnswer: 'valid',
                 correctAnswers: ['valid', '']
             });
             expect(res.status).toBe(400);
@@ -277,7 +259,6 @@ describe('Multiple Correct Answers (EL-152)', () => {
             setAuthToken(teacherToken);
             const res = await apiClient.post(`/lessons/${lessonPublicId}/tasks/write`, {
                 task: 'Long answer test',
-                correctAnswer: 'normal',
                 correctAnswers: ['normal', 'a'.repeat(301)]
             });
             expect(res.status).toBe(400);
@@ -287,7 +268,6 @@ describe('Multiple Correct Answers (EL-152)', () => {
         it('returns 400 INVALID_TASK_ANSWERS for speak task with multiple expectedTexts', async () => {
             setAuthToken(teacherToken);
             const res = await apiClient.post(`/lessons/${lessonPublicId}/tasks/speak`, {
-                expectedText: 'Hello',
                 expectedTexts: ['Hello', 'Hi']
             });
             expect(res.status).toBe(400);

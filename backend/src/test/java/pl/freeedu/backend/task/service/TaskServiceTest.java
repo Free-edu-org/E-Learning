@@ -104,7 +104,7 @@ class TaskServiceTest {
 		when(userInGroupRepository.hasAccessToLesson(student.getId(), lessonId)).thenReturn(true);
 		when(userLessonRepository.findByUserIdAndLessonId(student.getId(), lessonId)).thenReturn(Optional.empty());
 
-		ChooseTask chooseTask = ChooseTask.builder().id(1).lessonId(lessonId).correctAnswer(1).build();
+		ChooseTask chooseTask = ChooseTask.builder().id(1).lessonId(lessonId).correctAnswers("[1]").build();
 		when(chooseTaskRepository.findByLessonId(lessonId)).thenReturn(List.of(chooseTask));
 		when(writeTaskRepository.findByLessonId(lessonId)).thenReturn(List.of());
 		when(scatterTaskRepository.findByLessonId(lessonId)).thenReturn(List.of());
@@ -117,7 +117,7 @@ class TaskServiceTest {
 		StepVerifier.create(result).assertNext(resp -> {
 			assertEquals("lesson-1", resp.getLessonPublicId());
 			assertEquals("IN_PROGRESS", resp.getStatus());
-			assertNull(resp.getSections().get(0).getChooseTasks().get(0).getCorrectAnswer()); // stripped for student
+			assertNull(resp.getSections().get(0).getChooseTasks().get(0).getCorrectAnswers()); // stripped for student
 			verify(userLessonRepository).save(any());
 		}).verifyComplete();
 	}
@@ -233,7 +233,7 @@ class TaskServiceTest {
 		when(securityService.getCurrentUser()).thenReturn(Mono.just(teacher));
 		when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
 
-		ChooseTask chooseTask = ChooseTask.builder().id(1).publicId("task-1").lessonId(lessonId).correctAnswer(1)
+		ChooseTask chooseTask = ChooseTask.builder().id(1).publicId("task-1").lessonId(lessonId).correctAnswers("[1]")
 				.build();
 		when(chooseTaskRepository.findByLessonId(lessonId)).thenReturn(List.of(chooseTask));
 		when(writeTaskRepository.findByLessonId(lessonId)).thenReturn(List.of());
@@ -245,7 +245,7 @@ class TaskServiceTest {
 
 		// then
 		StepVerifier.create(result).assertNext(resp -> {
-			assertEquals(1, resp.getSections().get(0).getChooseTasks().get(0).getCorrectAnswer()); // visible for
+			assertEquals(1, resp.getSections().get(0).getChooseTasks().get(0).getCorrectAnswers().get(0)); // visible for
 																									// teacher
 		}).verifyComplete();
 	}
@@ -254,7 +254,7 @@ class TaskServiceTest {
 	void shouldCreateChooseTask() {
 		// given
 		Integer lessonId = 1;
-		ChooseTaskRequest request = ChooseTaskRequest.builder().task("T").possibleAnswers("A|B").correctAnswer(1)
+		ChooseTaskRequest request = ChooseTaskRequest.builder().task("T").possibleAnswers("A|B").correctAnswers(List.of(1))
 				.build();
 		Lesson lesson = Lesson.builder().id(1).publicId("lesson-1").build();
 
@@ -281,10 +281,10 @@ class TaskServiceTest {
 		// given
 		Integer lessonId = 1;
 		String taskPublicId = "task-10";
-		ChooseTaskRequest request = ChooseTaskRequest.builder().task("New").possibleAnswers("A|B").correctAnswer(0)
+		ChooseTaskRequest request = ChooseTaskRequest.builder().task("New").possibleAnswers("A|B").correctAnswers(List.of(0))
 				.build();
 		ChooseTask task = ChooseTask.builder().id(10).publicId(taskPublicId).lessonId(lessonId).possibleAnswers("A|B")
-				.correctAnswer(1).build();
+				.correctAnswers("[1]").build();
 
 		when(chooseTaskRepository.findByPublicId(taskPublicId)).thenReturn(Optional.of(task));
 		when(lessonRepository.findById(lessonId))
@@ -379,7 +379,7 @@ class TaskServiceTest {
 		Integer lessonId = 1;
 		CustomUserDetails teacher = new CustomUserDetails(10, "teacher", "pass", Role.TEACHER);
 		Lesson lesson = Lesson.builder().id(lessonId).publicId("lesson-abc").build();
-		ChooseTask task = ChooseTask.builder().id(1).publicId("task-xyz").lessonId(lessonId).correctAnswer(2)
+		ChooseTask task = ChooseTask.builder().id(1).publicId("task-xyz").lessonId(lessonId).correctAnswers("[2]")
 				.hintImageFileName("hint.jpg").build();
 
 		when(securityService.getCurrentUser()).thenReturn(Mono.just(teacher));
@@ -405,7 +405,7 @@ class TaskServiceTest {
 		Integer lessonId = 1;
 		CustomUserDetails teacher = new CustomUserDetails(10, "teacher", "pass", Role.TEACHER);
 		Lesson lesson = Lesson.builder().id(lessonId).publicId("lesson-abc").build();
-		ChooseTask task = ChooseTask.builder().id(1).publicId("task-xyz").lessonId(lessonId).correctAnswer(2).build();
+		ChooseTask task = ChooseTask.builder().id(1).publicId("task-xyz").lessonId(lessonId).correctAnswers("[2]").build();
 
 		when(securityService.getCurrentUser()).thenReturn(Mono.just(teacher));
 		when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
@@ -435,7 +435,7 @@ class TaskServiceTest {
 
 		// when
 		Mono<WriteTaskResponse> result = taskService.createWriteTask(1,
-				Mono.just(WriteTaskRequest.builder().task("W").correctAnswer("Answer").build()));
+				Mono.just(WriteTaskRequest.builder().task("W").correctAnswers(List.of("Answer")).build()));
 
 		// then
 		StepVerifier.create(result).assertNext(r -> assertEquals("W", r.getTask())).verifyComplete();
@@ -450,7 +450,7 @@ class TaskServiceTest {
 
 		// when
 		Mono<ScatterTaskResponse> result = taskService.createScatterTask(1,
-				Mono.just(ScatterTaskRequest.builder().task("S").words("A|B").correctAnswer("A B").build()));
+				Mono.just(ScatterTaskRequest.builder().task("S").words("A|B").correctAnswers(List.of("A B")).build()));
 
 		// then
 		StepVerifier.create(result).assertNext(r -> assertEquals("S", r.getTask())).verifyComplete();
@@ -465,11 +465,11 @@ class TaskServiceTest {
 
 		// when
 		Mono<SpeakTaskResponse> result = taskService.createSpeakTask(1,
-				Mono.just(SpeakTaskRequest.builder().expectedText("Hello world").build()));
+				Mono.just(SpeakTaskRequest.builder().expectedTexts(List.of("Hello world")).build()));
 
 		// then
 		StepVerifier.create(result).assertNext(r -> {
-			assertEquals("Hello world", r.getExpectedText());
+			assertEquals("Hello world", r.getExpectedTexts().get(0));
 			assertEquals(List.of("Hello world"), r.getExpectedTexts());
 		}).verifyComplete();
 	}
@@ -482,7 +482,7 @@ class TaskServiceTest {
 
 		// when
 		Mono<SpeakTaskResponse> result = taskService.createSpeakTask(1, Mono.just(SpeakTaskRequest.builder()
-				.expectedText("Hello world").expectedTexts(List.of("Hello world", "Hi world")).build()));
+				.expectedTexts(List.of("Hello world", "Hi world")).build()));
 
 		// then
 		StepVerifier.create(result).expectErrorSatisfies(error -> {
@@ -498,7 +498,7 @@ class TaskServiceTest {
 		Integer lessonId = 1;
 		String taskPublicId = "task-10";
 		Lesson lesson = Lesson.builder().id(lessonId).isActive(true).build();
-		SpeakTask task = SpeakTask.builder().id(10).publicId(taskPublicId).lessonId(lessonId).expectedText("Hello")
+		SpeakTask task = SpeakTask.builder().id(10).publicId(taskPublicId).lessonId(lessonId).expectedTexts("[\"Hello\"]")
 				.build();
 		UserLesson userLesson = UserLesson.builder().id(77).userId(1).lessonId(lessonId)
 				.status(UserLessonStatus.IN_PROGRESS).build();
@@ -549,12 +549,12 @@ class TaskServiceTest {
 		String taskPublicId = "task-10";
 		Lesson lesson = Lesson.builder().id(lessonId).isActive(true).build();
 		SpeakTask task = SpeakTask.builder().id(10).publicId(taskPublicId).lessonId(lessonId)
-				.expectedText("My name is Dominik").build();
+				.expectedTexts("[\"My name is Dominik\"]").build();
 		UserLesson userLesson = UserLesson.builder().id(78).userId(1).lessonId(lessonId)
 				.status(UserLessonStatus.IN_PROGRESS).build();
 		FilePart audio = mock(FilePart.class);
 		SpeakAttempt savedAttempt = SpeakAttempt.builder().id(33).publicId("attempt-2").userId(1).lessonId(lessonId)
-				.taskId(task.getId()).userLesson(userLesson).expectedText(task.getExpectedText())
+				.taskId(task.getId()).userLesson(userLesson).expectedText("My name is Dominik")
 				.rawTranscription("um My name is Dominic").matchedTranscription("my name is dominic")
 				.normalizedExpected("my name is dominik").normalizedActual("my name is dominic").score(1.0)
 				.correct(true).wordsJson("[]").language("en").duration(1.2).build();
@@ -564,7 +564,7 @@ class TaskServiceTest {
 		when(userInGroupRepository.hasAccessToLesson(1, lessonId)).thenReturn(true);
 		when(userLessonRepository.findByUserIdAndLessonId(1, lessonId)).thenReturn(Optional.of(userLesson));
 		when(speakTaskRepository.findByPublicId(taskPublicId)).thenReturn(Optional.of(task));
-		when(sttClient.evaluate(audio, task.getExpectedText(), 0.85, null)).thenReturn(Mono.just(SttEvaluationResponse
+		when(sttClient.evaluate(audio, "My name is Dominik", 0.85, null)).thenReturn(Mono.just(SttEvaluationResponse
 				.builder().rawTranscription("um My name is Dominic").matchedTranscription("my name is dominic")
 				.normalizedExpected("my name is dominik").normalizedActual("my name is dominic").score(1.0)
 				.correct(true).words(List.of()).language("en").duration(1.2).build()));
@@ -634,13 +634,13 @@ class TaskServiceTest {
 		when(taskPublicIdLookupService.getInternalId("tp4", "speak")).thenReturn(4);
 
 		when(chooseTaskRepository.findByPublicId("tp1"))
-				.thenReturn(Optional.of(ChooseTask.builder().id(1).lessonId(lessonId).correctAnswer(1).build()));
+				.thenReturn(Optional.of(ChooseTask.builder().id(1).lessonId(lessonId).correctAnswers("[1]").build()));
 		when(writeTaskRepository.findByPublicId("tp2"))
-				.thenReturn(Optional.of(WriteTask.builder().id(2).lessonId(lessonId).correctAnswer("correct").build()));
+				.thenReturn(Optional.of(WriteTask.builder().id(2).lessonId(lessonId).correctAnswers("[\"correct\"]").build()));
 		when(scatterTaskRepository.findByPublicId("tp3")).thenReturn(
-				Optional.of(ScatterTask.builder().id(3).lessonId(lessonId).correctAnswer("word1 word2").build()));
+				Optional.of(ScatterTask.builder().id(3).lessonId(lessonId).correctAnswers("[\"word1 word2\"]").build()));
 		when(speakTaskRepository.findByPublicId("tp4"))
-				.thenReturn(Optional.of(SpeakTask.builder().id(4).lessonId(lessonId).expectedText("expected").build()));
+				.thenReturn(Optional.of(SpeakTask.builder().id(4).lessonId(lessonId).expectedTexts("[\"expected\"]").build()));
 		when(speakAttemptRepository.findByPublicId("attempt-4")).thenReturn(Optional.of(attempt));
 
 		// when
@@ -681,11 +681,11 @@ class TaskServiceTest {
 		when(taskPublicIdLookupService.getInternalId("tp2", "write")).thenReturn(2);
 		when(taskPublicIdLookupService.getInternalId("tp3", "scatter")).thenReturn(3);
 		when(chooseTaskRepository.findByPublicId("tp1")).thenReturn(Optional
-				.of(ChooseTask.builder().id(1).lessonId(lessonId).correctAnswer(0).correctAnswers("[0,2]").build()));
+				.of(ChooseTask.builder().id(1).lessonId(lessonId).correctAnswers("[0,2]").build()));
 		when(writeTaskRepository.findByPublicId("tp2")).thenReturn(Optional.of(WriteTask.builder().id(2)
-				.lessonId(lessonId).correctAnswer("hello").correctAnswers("[\"hello\",\"hi\"]").build()));
+				.lessonId(lessonId).correctAnswers("[\"hello\",\"hi\"]").build()));
 		when(scatterTaskRepository.findByPublicId("tp3"))
-				.thenReturn(Optional.of(ScatterTask.builder().id(3).lessonId(lessonId).correctAnswer("I am there")
+				.thenReturn(Optional.of(ScatterTask.builder().id(3).lessonId(lessonId)
 						.correctAnswers("[\"I am there\",\"I am here\"]").build()));
 
 		// when
@@ -718,7 +718,7 @@ class TaskServiceTest {
 		when(userLessonRepository.findByUserIdAndLessonId(userId, lessonId)).thenReturn(Optional.of(userLesson));
 		when(taskPublicIdLookupService.getInternalId("tp4", "speak")).thenReturn(4);
 		when(speakTaskRepository.findByPublicId("tp4"))
-				.thenReturn(Optional.of(SpeakTask.builder().id(4).lessonId(lessonId).expectedText("expected").build()));
+				.thenReturn(Optional.of(SpeakTask.builder().id(4).lessonId(lessonId).expectedTexts("[\"expected\"]").build()));
 
 		StepVerifier.create(taskService.submitLesson(lessonId, Mono.just(request))).assertNext(response -> {
 			assertEquals(0, response.getScore());
@@ -745,13 +745,13 @@ class TaskServiceTest {
 		when(userLessonRepository.findByUserIdAndLessonId(userId, lessonId)).thenReturn(Optional.of(userLesson));
 		when(taskPublicIdLookupService.getInternalId("tp4", "speak")).thenReturn(4);
 		when(speakTaskRepository.findByPublicId("tp4"))
-				.thenReturn(Optional.of(SpeakTask.builder().id(4).lessonId(lessonId).expectedText("expected").build()));
+				.thenReturn(Optional.of(SpeakTask.builder().id(4).lessonId(lessonId).expectedTexts("[\"expected\"]").build()));
 
 		StepVerifier.create(taskService.submitLesson(lessonId, Mono.just(request))).assertNext(response -> {
 			assertEquals(0, response.getScore());
 			assertEquals(1, response.getMaxScore());
 			assertFalse(response.getDetails().get(0).getIsCorrect());
-			assertEquals("expected", response.getDetails().get(0).getCorrectAnswer());
+			assertEquals("expected", response.getDetails().get(0).getCorrectAnswers().get(0));
 		}).verifyComplete();
 		verify(speakAttemptRepository, never()).findByPublicId(any());
 	}
@@ -772,7 +772,7 @@ class TaskServiceTest {
 		when(userLessonRepository.findByUserIdAndLessonId(userId, lessonId)).thenReturn(Optional.of(userLesson));
 		when(taskPublicIdLookupService.getInternalId("tp4", "speak")).thenReturn(4);
 		when(speakTaskRepository.findByPublicId("tp4"))
-				.thenReturn(Optional.of(SpeakTask.builder().id(4).lessonId(lessonId).expectedText("expected").build()));
+				.thenReturn(Optional.of(SpeakTask.builder().id(4).lessonId(lessonId).expectedTexts("[\"expected\"]").build()));
 		when(speakAttemptRepository.findByPublicId("attempt-4")).thenReturn(
 				Optional.of(SpeakAttempt.builder().publicId("attempt-4").userId(99).lessonId(lessonId).taskId(4)
 						.userLesson(userLesson).matchedTranscription("matched").correct(true).score(1.0).build()));
@@ -798,7 +798,7 @@ class TaskServiceTest {
 		when(userLessonRepository.findByUserIdAndLessonId(userId, lessonId)).thenReturn(Optional.of(userLesson));
 		when(taskPublicIdLookupService.getInternalId("tp4", "speak")).thenReturn(4);
 		when(speakTaskRepository.findByPublicId("tp4"))
-				.thenReturn(Optional.of(SpeakTask.builder().id(4).lessonId(lessonId).expectedText("expected").build()));
+				.thenReturn(Optional.of(SpeakTask.builder().id(4).lessonId(lessonId).expectedTexts("[\"expected\"]").build()));
 		UserLesson previousUserLesson = UserLesson.builder().id(999).userId(userId).lessonId(lessonId)
 				.status(UserLessonStatus.IN_PROGRESS).build();
 		when(speakAttemptRepository.findByPublicId("attempt-4")).thenReturn(Optional.of(SpeakAttempt.builder()
@@ -897,7 +897,7 @@ class TaskServiceTest {
 		Integer lessonId = 1;
 		String taskPublicId = "task-10";
 		Lesson lesson = Lesson.builder().id(lessonId).publicId("lesson-1").isActive(true).build();
-		SpeakTask task = SpeakTask.builder().id(10).publicId(taskPublicId).lessonId(lessonId).expectedText("Hello")
+		SpeakTask task = SpeakTask.builder().id(10).publicId(taskPublicId).lessonId(lessonId).expectedTexts("[\"Hello\"]")
 				.build();
 		UserLesson userLesson = UserLesson.builder().id(501).userId(1).lessonId(lessonId)
 				.status(UserLessonStatus.IN_PROGRESS).build();
@@ -926,7 +926,7 @@ class TaskServiceTest {
 		Integer lessonId = 1;
 		String taskPublicId = "task-10";
 		Lesson lesson = Lesson.builder().id(lessonId).isActive(true).build();
-		SpeakTask task = SpeakTask.builder().id(10).publicId(taskPublicId).lessonId(lessonId).expectedText("Hello")
+		SpeakTask task = SpeakTask.builder().id(10).publicId(taskPublicId).lessonId(lessonId).expectedTexts("[\"Hello\"]")
 				.build();
 		UserLesson userLesson = UserLesson.builder().id(601).userId(1).lessonId(lessonId)
 				.status(UserLessonStatus.IN_PROGRESS).build();
@@ -951,7 +951,7 @@ class TaskServiceTest {
 		Integer lessonId = 1;
 		String taskPublicId = "task-10";
 		Lesson lesson = Lesson.builder().id(lessonId).isActive(true).build();
-		SpeakTask task = SpeakTask.builder().id(10).publicId(taskPublicId).lessonId(lessonId).expectedText("Hello")
+		SpeakTask task = SpeakTask.builder().id(10).publicId(taskPublicId).lessonId(lessonId).expectedTexts("[\"Hello\"]")
 				.build();
 		UserLesson userLesson = UserLesson.builder().id(602).userId(1).lessonId(lessonId)
 				.status(UserLessonStatus.IN_PROGRESS).build();
@@ -996,7 +996,7 @@ class TaskServiceTest {
 		when(userLessonRepository.findByUserIdAndLessonId(userId, lessonId)).thenReturn(Optional.of(currentUserLesson));
 		when(taskPublicIdLookupService.getInternalId("tp4", "speak")).thenReturn(4);
 		when(speakTaskRepository.findByPublicId("tp4"))
-				.thenReturn(Optional.of(SpeakTask.builder().id(4).lessonId(lessonId).expectedText("expected").build()));
+				.thenReturn(Optional.of(SpeakTask.builder().id(4).lessonId(lessonId).expectedTexts("[\"expected\"]").build()));
 		when(speakAttemptRepository.findByPublicId("attempt-old")).thenReturn(Optional.of(SpeakAttempt.builder()
 				.publicId("attempt-old").userId(userId).lessonId(lessonId).taskId(4).userLesson(previousUserLesson)
 				.matchedTranscription("matched").correct(true).score(1.0).build()));

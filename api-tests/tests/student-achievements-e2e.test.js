@@ -54,7 +54,7 @@ describe('Student achievements E2E (ledger + events + notifications)', () => {
 		const response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/choose`, {
 			task: label,
 			possibleAnswers: 'correct|wrong',
-			correctAnswer: 0,
+			correctAnswers: [0],
 			hint: 'Pick the first answer',
 			section: 'E2E'
 		});

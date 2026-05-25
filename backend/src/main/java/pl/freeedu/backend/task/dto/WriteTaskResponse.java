@@ -17,7 +17,6 @@ public class WriteTaskResponse {
 	private String publicId;
 	private String lessonPublicId;
 	private String task;
-	private String correctAnswer;
 	private List<String> correctAnswers;
 	private String hint;
 	private String hintImageUrl;

@@ -19,7 +19,6 @@ public class LessonResultTaskDetailDto {
 	private String taskText;
 	private String hint;
 	private String userAnswer;
-	private String correctAnswer;
 	private List<String> correctAnswers;
 	private Boolean isCorrect;
 	private Boolean originalIsCorrect;

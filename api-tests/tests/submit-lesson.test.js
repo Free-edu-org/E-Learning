@@ -57,14 +57,12 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonPublicId}/submit) - STT
         response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/choose`, {
             task: 'What is 2+2?',
             possibleAnswers: '3|4|5|6',
-            correctAnswer: 1,
             correctAnswers: [1, 3]
         });
         chooseTaskPublicId = response.data.publicId;
 
         response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/write`, {
             task: 'Translate hello',
-            correctAnswer: 'hello',
             correctAnswers: ['hello', 'hi']
         });
         writeTaskPublicId = response.data.publicId;
@@ -72,18 +70,17 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonPublicId}/submit) - STT
         response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/scatter`, {
             task: 'Arrange',
             words: 'cat|the|big|is',
-            correctAnswer: 'the cat is big',
             correctAnswers: ['the cat is big', 'the big cat is']
         });
         scatterTaskPublicId = response.data.publicId;
 
         response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/speak`, {
-            expectedText: 'Hello how are you'
+            expectedTexts: ['Hello how are you']
         });
         speakTaskPublicId = response.data.publicId;
 
         response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/speak`, {
-            expectedText: 'Good morning'
+            expectedTexts: ['Good morning']
         });
         secondSpeakTaskPublicId = response.data.publicId;
 

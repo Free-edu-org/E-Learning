@@ -21,9 +21,6 @@ public class ScatterTaskRequest {
 	@Size(max = 600, message = "Words must be at most 600 characters long")
 	private String words;
 
-	@Size(max = 300, message = "Correct answer must be at most 300 characters long")
-	private String correctAnswer;
-
 	private java.util.List<String> correctAnswers;
 
 	@Size(max = 200, message = "Hint must be at most 200 characters long")

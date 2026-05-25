@@ -16,7 +16,6 @@ public class SpeakTaskResponse {
 
 	private String publicId;
 	private String lessonPublicId;
-	private String expectedText;
 	private List<String> expectedTexts;
 	private String hint;
 	private String hintImageUrl;

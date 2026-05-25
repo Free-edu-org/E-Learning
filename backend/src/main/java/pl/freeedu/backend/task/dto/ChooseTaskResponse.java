@@ -18,7 +18,6 @@ public class ChooseTaskResponse {
 	private String lessonPublicId;
 	private String task;
 	private String possibleAnswers;
-	private Integer correctAnswer;
 	private List<Integer> correctAnswers;
 	private String hint;
 	private String hintImageUrl;

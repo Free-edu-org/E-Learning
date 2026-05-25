@@ -17,9 +17,6 @@ public class WriteTaskRequest {
 	@Size(max = 300, message = "Task must be at most 300 characters long")
 	private String task;
 
-	@Size(max = 300, message = "Correct answer must be at most 300 characters long")
-	private String correctAnswer;
-
 	private java.util.List<String> correctAnswers;
 
 	@Size(max = 200, message = "Hint must be at most 200 characters long")

@@ -18,7 +18,6 @@ public class ScatterTaskResponse {
 	private String lessonPublicId;
 	private String task;
 	private String words;
-	private String correctAnswer;
 	private List<String> correctAnswers;
 	private String hint;
 	private String hintImageUrl;

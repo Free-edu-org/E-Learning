@@ -134,7 +134,6 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
             const response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/choose`, {
                 task: 'What is 2+2?',
                 possibleAnswers: '3|4|5|6',
-                correctAnswer: 1,
                 correctAnswers: [1, 2],
                 hint: 'Basic math',
                 section: 'Math'
@@ -146,7 +145,6 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
             expect(response.data).not.toHaveProperty('id');
             expect(response.data.task).toBe('What is 2+2?');
             expect(response.data.possibleAnswers).toBe('3|4|5|6');
-            expect(response.data.correctAnswer).toBe(1);
             expect(response.data.correctAnswers).toEqual([1, 2]);
             chooseTaskPublicId = response.data.publicId;
             createdTasks.push({ type: 'choose', publicId: response.data.publicId });
@@ -157,7 +155,6 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
             const response = await apiClient.put(`/lessons/${lessonPublicId}/tasks/choose/${chooseTaskPublicId}`, {
                 task: 'What is 3+3?',
                 possibleAnswers: '5|6|7|8',
-                correctAnswer: 1,
                 correctAnswers: [1],
                 hint: 'Updated hint',
                 section: 'Math'
@@ -172,7 +169,7 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
             const response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/choose`, {
                 task: '',
                 possibleAnswers: 'a|b',
-                correctAnswer: 0
+                correctAnswers: [0]
             });
             expect(response.status).toBe(400);
             expect(response.data.code).toBe('VALIDATION_FAILED');
@@ -183,7 +180,7 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
             const response = await apiClient.put(`/lessons/${lessonPublicId}/tasks/choose/non-existent-task`, {
                 task: 'test',
                 possibleAnswers: 'a|b',
-                correctAnswer: 0
+                correctAnswers: [0]
             });
             expect(response.status).toBe(404);
             expect(response.data.code).toBe('TASK_NOT_FOUND');
@@ -194,7 +191,7 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
             const response = await apiClient.post(`/lessons/non-existent-lesson/tasks/choose`, {
                 task: 'test',
                 possibleAnswers: 'a|b',
-                correctAnswer: 0
+                correctAnswers: [0]
             });
             expect(response.status).toBe(403);
         });
@@ -204,7 +201,7 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
             const response = await apiClient.post(`/lessons/non-existent-lesson/tasks/choose`, {
                 task: 'test',
                 possibleAnswers: 'a|b',
-                correctAnswer: 0
+                correctAnswers: [0]
             });
             expect(response.status).toBe(404);
             expect(response.data.code).toBe('LESSON_NOT_FOUND');
@@ -216,7 +213,7 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
             let res = await apiClient.post(`/lessons/${lessonPublicId}/tasks/choose`, {
                 task: 'Deletable task',
                 possibleAnswers: 'a|b',
-                correctAnswer: 0
+                correctAnswers: [0]
             });
             const deletablePublicId = res.data.publicId;
 
@@ -240,7 +237,6 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
             setAuthToken(teacherToken);
             const response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/write`, {
                 task: 'Write the past tense of go',
-                correctAnswer: 'went',
                 correctAnswers: ['went', 'has gone'],
                 hint: 'Irregular verb',
                 section: 'Grammar'
@@ -250,7 +246,6 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
             expect(response.data.lessonPublicId).toBe(lessonPublicId);
             expect(response.data).not.toHaveProperty('lessonId');
             expect(response.data.task).toBe('Write the past tense of go');
-            expect(response.data.correctAnswer).toBe('went');
             expect(response.data.correctAnswers).toEqual(['went', 'has gone']);
             writeTaskPublicId = response.data.publicId;
             createdTasks.push({ type: 'write', publicId: response.data.publicId });
@@ -260,19 +255,17 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
             setAuthToken(teacherToken);
             const response = await apiClient.put(`/lessons/${lessonPublicId}/tasks/write/${writeTaskPublicId}`, {
                 task: 'Write the past tense of run',
-                correctAnswer: 'ran',
                 correctAnswers: ['ran', 'did run'],
                 hint: 'Also irregular'
             });
             expect(response.status).toBe(200);
-            expect(response.data.correctAnswer).toBe('ran');
         });
 
         it('should return 400 INVALID_TASK_ANSWERS for missing correctAnswer', async () => {
             setAuthToken(teacherToken);
             const response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/write`, {
                 task: 'test',
-                correctAnswer: ''
+                correctAnswers: ['']
             });
             expect(response.status).toBe(400);
             expect(response.data.code).toBe('INVALID_TASK_ANSWERS');
@@ -288,7 +281,6 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
             const response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/scatter`, {
                 task: 'Arrange the words',
                 words: 'is|cat|the|big',
-                correctAnswer: 'the cat is big',
                 correctAnswers: ['the cat is big', 'the big cat is'],
                 hint: 'Subject first'
             });
@@ -296,7 +288,6 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
             expect(response.data.lessonPublicId).toBe(lessonPublicId);
             expect(response.data).not.toHaveProperty('lessonId');
             expect(response.data.words).toBe('is|cat|the|big');
-            expect(response.data.correctAnswer).toBe('the cat is big');
             expect(response.data.correctAnswers).toEqual(['the cat is big', 'the big cat is']);
             scatterTaskPublicId = response.data.publicId;
             createdTasks.push({ type: 'scatter', publicId: response.data.publicId });
@@ -307,11 +298,9 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
             const response = await apiClient.put(`/lessons/${lessonPublicId}/tasks/scatter/${scatterTaskPublicId}`, {
                 task: 'Arrange updated',
                 words: 'is|dog|the|small',
-                correctAnswer: 'the dog is small',
                 correctAnswers: ['the dog is small']
             });
             expect(response.status).toBe(200);
-            expect(response.data.correctAnswer).toBe('the dog is small');
         });
 
         it('should return 400 for missing words field', async () => {
@@ -319,7 +308,7 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
             const response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/scatter`, {
                 task: 'test',
                 words: '',
-                correctAnswer: 'test'
+                correctAnswers: ['test']
             });
             expect(response.status).toBe(400);
             expect(response.data.code).toBe('VALIDATION_FAILED');
@@ -333,14 +322,13 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
         it('should create a speak task (201)', async () => {
             setAuthToken(teacherToken);
             const response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/speak`, {
-                expectedText: 'Hello',
+                expectedTexts: ['Hello'],
                 hint: 'Greeting'
             });
             expect(response.status).toBe(201);
             expect(response.data.lessonPublicId).toBe(lessonPublicId);
             expect(response.data).not.toHaveProperty('lessonId');
             expect(response.data).not.toHaveProperty('task');
-            expect(response.data.expectedText).toBe('Hello');
             expect(response.data.expectedTexts).toEqual(['Hello']);
             speakTaskPublicId = response.data.publicId;
             createdTasks.push({ type: 'speak', publicId: response.data.publicId });
@@ -349,18 +337,16 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
         it('should update a speak task (200)', async () => {
             setAuthToken(teacherToken);
             const response = await apiClient.put(`/lessons/${lessonPublicId}/tasks/speak/${speakTaskPublicId}`, {
-                expectedText: 'Goodbye',
+                expectedTexts: ['Goodbye'],
                 hint: 'Farewell'
             });
             expect(response.status).toBe(200);
-            expect(response.data.expectedText).toBe('Goodbye');
             expect(response.data.expectedTexts).toEqual(['Goodbye']);
         });
 
         it('should return 400 INVALID_TASK_ANSWERS for multiple speak texts', async () => {
             setAuthToken(teacherToken);
             const response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/speak`, {
-                expectedText: 'Hello',
                 expectedTexts: ['Hello', 'Hi']
             });
 
@@ -371,7 +357,7 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
         it('should return 400 INVALID_TASK_ANSWERS for empty speak task', async () => {
             setAuthToken(teacherToken);
             const response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/speak`, {
-                expectedText: ''
+                expectedTexts: ['']
             });
             expect(response.status).toBe(400);
             expect(response.data.code).toBe('INVALID_TASK_ANSWERS');
@@ -400,8 +386,8 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
             const hasChooseTasks = sections.some(s => s.chooseTasks && s.chooseTasks.length > 0);
             if (hasChooseTasks) {
                 const section = sections.find(s => s.chooseTasks && s.chooseTasks.length > 0);
-                expect(section.chooseTasks[0].correctAnswer).toBeDefined();
-                expect(section.chooseTasks[0].correctAnswer).not.toBeNull();
+                expect(section.chooseTasks[0].correctAnswers).toBeDefined();
+                expect(section.chooseTasks[0].correctAnswers).not.toBeNull();
             }
         });
 
@@ -436,7 +422,7 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
             const response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/choose`, {
                 task: 'test',
                 possibleAnswers: 'a|b',
-                correctAnswer: 0
+                correctAnswers: [0]
             });
             expect(response.status).toBe(401);
         });
@@ -446,7 +432,7 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
             const response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/choose`, {
                 task: 'test',
                 possibleAnswers: 'a|b',
-                correctAnswer: 0
+                correctAnswers: [0]
             });
             expect(response.status).toBe(403);
         });
@@ -455,7 +441,7 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
             setAuthToken(secondTeacherToken);
             const response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/write`, {
                 task: 'Hijack task',
-                correctAnswer: 'nope'
+                correctAnswers: ['nope']
             });
             expect(response.status).toBe(403);
         });
@@ -465,7 +451,7 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
             const response = await apiClient.put(`/lessons/${lessonPublicId}/tasks/choose/${chooseTaskPublicId}`, {
                 task: 'Tampered',
                 possibleAnswers: 'a|b',
-                correctAnswer: 0
+                correctAnswers: [0]
             });
             expect(response.status).toBe(403);
         });
@@ -480,7 +466,7 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
             setAuthToken(adminToken);
             const response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/write`, {
                 task: 'Admin created task',
-                correctAnswer: 'admin'
+                correctAnswers: ['admin']
             });
             expect(response.status).toBe(201);
             expect(response.data.task).toBe('Admin created task');

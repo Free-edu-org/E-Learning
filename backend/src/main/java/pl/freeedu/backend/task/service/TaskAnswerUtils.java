@@ -22,17 +22,14 @@ final class TaskAnswerUtils {
 	private TaskAnswerUtils() {
 	}
 
-	static List<Integer> normalizeChooseAnswers(Integer legacyAnswer, List<Integer> requestedAnswers,
-			String possibleAnswers) {
-		List<Integer> answers = requestedAnswers != null && !requestedAnswers.isEmpty()
-				? requestedAnswers
-				: legacyAnswer != null ? List.of(legacyAnswer) : List.of();
+	static List<Integer> normalizeChooseAnswers(List<Integer> answers, String possibleAnswers) {
+		List<Integer> source = answers != null ? answers : List.of();
 		int optionCount = possibleAnswers == null
 				? 0
 				: (int) List.of(possibleAnswers.split("\\|")).stream().map(String::trim)
 						.filter(value -> !value.isEmpty()).count();
 		Set<Integer> distinct = new LinkedHashSet<>();
-		for (Integer answer : answers) {
+		for (Integer answer : source) {
 			if (answer == null || answer < 0 || answer >= optionCount || !distinct.add(answer)) {
 				throw new TaskException(TaskErrorCode.INVALID_TASK_ANSWERS);
 			}
@@ -43,10 +40,8 @@ final class TaskAnswerUtils {
 		return List.copyOf(distinct);
 	}
 
-	static List<String> normalizeTextAnswers(String legacyAnswer, List<String> requestedAnswers) {
-		List<String> source = requestedAnswers != null && !requestedAnswers.isEmpty()
-				? requestedAnswers
-				: legacyAnswer != null ? List.of(legacyAnswer) : List.of();
+	static List<String> normalizeTextAnswers(List<String> answers) {
+		List<String> source = answers != null ? answers : List.of();
 		List<String> normalized = new ArrayList<>();
 		Set<String> distinct = new LinkedHashSet<>();
 		for (String answer : source) {
@@ -66,8 +61,8 @@ final class TaskAnswerUtils {
 		return List.copyOf(normalized);
 	}
 
-	static List<String> normalizeSingleTextAnswer(String legacyAnswer, List<String> requestedAnswers) {
-		List<String> normalized = normalizeTextAnswers(legacyAnswer, requestedAnswers);
+	static List<String> normalizeSingleTextAnswer(List<String> answers) {
+		List<String> normalized = normalizeTextAnswers(answers);
 		if (normalized.size() > 1) {
 			throw new TaskException(TaskErrorCode.INVALID_TASK_ANSWERS);
 		}
@@ -90,10 +85,7 @@ final class TaskAnswerUtils {
 		}
 	}
 
-	static List<String> deserializeStringAnswers(String serializedAnswers, String fallbackAnswer) {
-		if (serializedAnswers == null || serializedAnswers.isBlank()) {
-			return fallbackAnswer == null || fallbackAnswer.isBlank() ? List.of() : List.of(fallbackAnswer);
-		}
+	static List<String> deserializeStringAnswers(String serializedAnswers) {
 		try {
 			return OBJECT_MAPPER.readValue(serializedAnswers, STRING_LIST_TYPE);
 		} catch (Exception exception) {
@@ -101,10 +93,7 @@ final class TaskAnswerUtils {
 		}
 	}
 
-	static List<Integer> deserializeIntegerAnswers(String serializedAnswers, Integer fallbackAnswer) {
-		if (serializedAnswers == null || serializedAnswers.isBlank()) {
-			return fallbackAnswer == null ? List.of() : List.of(fallbackAnswer);
-		}
+	static List<Integer> deserializeIntegerAnswers(String serializedAnswers) {
 		try {
 			return OBJECT_MAPPER.readValue(serializedAnswers, INTEGER_LIST_TYPE);
 		} catch (Exception exception) {
