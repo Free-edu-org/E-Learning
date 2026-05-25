@@ -1010,7 +1010,7 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
       "taskText": "Choose the correct answer",
       "hint": "Look at the subject.",
       "userAnswer": "go",
-      "correctAnswer": "goes",
+      "correctAnswers": ["goes"],
       "isCorrect": false,
       "originalIsCorrect": false,
       "manuallyReviewed": true,
@@ -1078,7 +1078,7 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
 | `tasks[].taskText` | String | Treść zadania. |
 | `tasks[].hint` | String or null | Podpowiedź zapisana dla zadania. |
 | `tasks[].userAnswer` | String or null | Zapisana odpowiedź ucznia. Dla `choose` zwracana jest wartość tekstowa, nie indeks. |
-| `tasks[].correctAnswer` | String or null | Poprawna odpowiedź. |
+| `tasks[].correctAnswers` | List of String or null | Lista poprawnych odpowiedzi. |
 | `tasks[].isCorrect` | Boolean | Status poprawności odpowiedzi. |
 | `tasks[].possibleAnswers` | String or null | Lista możliwych odpowiedzi rozdzielona `|` dla `choose`. |
 | `tasks[].words` | String or null | Lista słów rozdzielona `|` dla `scatter`. |
@@ -1892,7 +1892,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
           "lessonPublicId": "44444444-4444-4444-4444-444444444444",
           "task": "Choose the correct answer",
           "possibleAnswers": "a|b|c|d",
-          "correctAnswer": null,
+          "correctAnswers": null,
           "hint": "Think about grammar",
           "section": "Vocabulary",
           "createdAt": "2026-03-21T10:00:00"
@@ -1907,8 +1907,8 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 ```
 
 **Notes:**
-- For `STUDENT`: `correctAnswer` fields are `null` (stripped). `status` is `IN_PROGRESS` or triggers auto-start.
-- For `TEACHER`/`ADMIN`: `correctAnswer` fields are visible. `status` is `null`.
+- For `STUDENT`: `correctAnswers` fields are `null` (stripped). `status` is `IN_PROGRESS` or triggers auto-start.
+- For `TEACHER`/`ADMIN`: `correctAnswers` fields are visible. `status` is `null`.
 
 **Known Errors:**
 - `LESSON_NOT_FOUND` (404 Not Found): Lesson does not exist.
@@ -1930,7 +1930,6 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 {
   "task": "Choose the correct answer",
   "possibleAnswers": "option1|option2|option3",
-  "correctAnswer": 1,
   "correctAnswers": [1, 2],
   "hint": "Think about grammar",
   "section": "Vocabulary"
@@ -1941,7 +1940,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 ```json
 {
   "publicId": "33333333-3333-3333-3333-333333333333", "lessonPublicId": "44444444-4444-4444-4444-444444444444", "task": "...", "possibleAnswers": "...",
-  "correctAnswer": 1, "correctAnswers": [1, 2], "hint": "...", "section": "...", "createdAt": "..."
+  "correctAnswers": [1, 2], "hint": "...", "section": "...", "createdAt": "..."
 }
 ```
 
