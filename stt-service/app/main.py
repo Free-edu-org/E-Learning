@@ -340,7 +340,9 @@ def evaluate_transcription(
     return result
 
 
-def parse_expected_texts(expected_text: str, expected_texts: Optional[str]) -> list[str]:
+def parse_expected_texts(
+    expected_text: str, expected_texts: Optional[str]
+) -> list[str]:
     if not expected_texts:
         return [expected_text]
     try:
