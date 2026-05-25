@@ -1,5 +1,6 @@
 ﻿import {
   Autocomplete,
+  Box,
   Chip,
   Divider,
   InputAdornment,
@@ -9,6 +10,7 @@
   TextField,
   ToggleButton,
   ToggleButtonGroup,
+  Typography,
 } from "@mui/material";
 import { alpha, type SxProps, type Theme } from "@mui/material/styles";
 import {
@@ -19,6 +21,10 @@ import {
 import type { SelectChangeEvent } from "@mui/material";
 import type { Group } from "@/api/lessonService";
 import { panelToolbarSx } from "@/components/ui/panel/panelStyles";
+import {
+  LESSON_LABEL_COLOR_OPTIONS,
+  type LessonLabelColor,
+} from "@/constants/lessonLabelColors";
 
 const toolbarFieldSx: SxProps<Theme> = {
   minWidth: 180,
@@ -85,6 +91,75 @@ const compactToolbarFieldSx: SxProps<Theme> = {
   "& .MuiInputBase-input": {
     fontSize: "0.85rem",
   },
+};
+
+const fixedAutocompleteFieldSx: SxProps<Theme> = {
+  "& .MuiAutocomplete-inputRoot": {
+    flexWrap: "nowrap",
+    alignItems: "center",
+    overflow: "hidden",
+    minHeight: "38px !important",
+    maxHeight: "38px",
+    py: "0 !important",
+  },
+  "& .MuiAutocomplete-input": {
+    flex: "0 0 32px !important",
+    minWidth: "32px !important",
+    width: "32px !important",
+  },
+  "& .MuiAutocomplete-tag": {
+    m: 0,
+  },
+};
+
+const selectToolbarFieldSx: SxProps<Theme> = {
+  borderRadius: 2,
+  minHeight: 38,
+  bgcolor: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.common.white, 0.98)
+      : "#151a2c",
+  border: "1px solid",
+  borderColor: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.text.primary, 0.06)
+      : alpha(theme.palette.common.white, 0.06),
+  boxShadow: (theme: Theme) =>
+    theme.palette.mode === "light"
+      ? "0 2px 8px rgba(15, 23, 42, 0.035)"
+      : "inset 0 1px 0 rgba(255,255,255,0.02)",
+  transition:
+    "border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease",
+  "& fieldset": { border: "none" },
+  "&:hover": {
+    borderColor: (theme: Theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.primary.main, 0.14)
+        : alpha(theme.palette.common.white, 0.1),
+    bgcolor: (theme: Theme) =>
+      theme.palette.mode === "light" ? theme.palette.common.white : "#171d2f",
+  },
+  "&.Mui-focused": {
+    borderColor: (theme: Theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.primary.main, 0.22)
+        : alpha(theme.palette.primary.light, 0.2),
+    boxShadow: (theme: Theme) =>
+      theme.palette.mode === "light"
+        ? `0 0 0 3px ${alpha(theme.palette.primary.main, 0.08)}`
+        : `0 0 0 3px ${alpha(theme.palette.primary.light, 0.08)}`,
+  },
+};
+
+const compactAutocompleteValueSx: SxProps<Theme> = {
+  display: "flex",
+  alignItems: "center",
+  gap: 0.5,
+  minWidth: 0,
+  maxWidth: "calc(100% - 38px)",
+  overflow: "hidden",
+  whiteSpace: "nowrap",
+  flexShrink: 1,
 };
 
 const segmentedGroupSx: SxProps<Theme> = {
@@ -182,6 +257,8 @@ interface LessonToolbarProps {
   availableGroups: Group[];
   selectedGroups: Group[];
   onSelectedGroupsChange: (groups: Group[]) => void;
+  selectedLabelColors: LessonLabelColor[];
+  onSelectedLabelColorsChange: (colors: LessonLabelColor[]) => void;
 }
 
 export function LessonToolbar({
@@ -196,6 +273,8 @@ export function LessonToolbar({
   availableGroups,
   selectedGroups,
   onSelectedGroupsChange,
+  selectedLabelColors,
+  onSelectedLabelColorsChange,
 }: LessonToolbarProps) {
   const handleStatusChange = (
     _: React.MouseEvent<HTMLElement>,
@@ -213,6 +292,16 @@ export function LessonToolbar({
 
   const handleSortChange = (e: SelectChangeEvent) => {
     onSortModeChange(e.target.value as SortMode);
+  };
+
+  const handleColorFilterChange = (
+    e: SelectChangeEvent<LessonLabelColor[]>,
+  ) => {
+    const value = e.target.value;
+    const nextValues = (
+      typeof value === "string" ? value.split(",") : value
+    ) as LessonLabelColor[];
+    onSelectedLabelColorsChange([...new Set(nextValues)]);
   };
 
   return (
@@ -254,22 +343,40 @@ export function LessonToolbar({
         getOptionLabel={(option) => option.name}
         isOptionEqualToValue={(opt, val) => opt.publicId === val.publicId}
         disableCloseOnSelect
-        limitTags={1}
         noOptionsText="Brak grup"
-        renderTags={(tagValue, getTagProps) =>
-          tagValue.map((option, index) => {
-            const { key, ...rest } = getTagProps({ index });
-            return (
+        renderValue={(tagValue, getItemProps) => {
+          const [firstGroup] = tagValue;
+          if (!firstGroup) return null;
+
+          const { key, ...rest } = getItemProps({ index: 0 });
+          const hiddenCount = tagValue.length - 1;
+
+          return (
+            <Box sx={compactAutocompleteValueSx}>
               <Chip
                 key={key}
-                label={option.name}
+                label={firstGroup.name}
                 size="small"
-                sx={{ fontSize: "0.7rem", height: 20 }}
+                sx={{
+                  fontSize: "0.7rem",
+                  height: 20,
+                  maxWidth: hiddenCount > 0 ? 110 : 150,
+                  flexShrink: 1,
+                }}
                 {...rest}
               />
-            );
-          })
-        }
+              {hiddenCount > 0 && (
+                <Chip
+                  key="groups-more"
+                  label={`+${hiddenCount}`}
+                  size="small"
+                  aria-label={`Jeszcze ${hiddenCount} wybranych grup`}
+                  sx={{ fontSize: "0.7rem", height: 20 }}
+                />
+              )}
+            </Box>
+          );
+        }}
         renderInput={(params) => (
           <TextField
             {...params}
@@ -281,10 +388,108 @@ export function LessonToolbar({
         sx={{
           ...(toolbarFieldSx as object),
           ...(compactToolbarFieldSx as object),
+          ...(fixedAutocompleteFieldSx as object),
           minWidth: { xs: "100%", sm: 220 },
-          flex: { xs: "1 1 100%", lg: "1 1 230px" },
+          width: { xs: "100%", sm: 220, lg: 230 },
+          flex: { xs: "0 0 100%", sm: "0 0 220px", lg: "0 0 230px" },
         }}
       />
+
+      <Divider
+        orientation="vertical"
+        flexItem
+        sx={{ display: { xs: "none", md: "block" } }}
+      />
+
+      <Select
+        multiple
+        size="small"
+        value={selectedLabelColors}
+        onChange={handleColorFilterChange}
+        displayEmpty
+        renderValue={(selected) => {
+          const selectedValues = selected as LessonLabelColor[];
+          if (selectedValues.length === 0) {
+            return (
+              <Typography color="text.secondary">Filtruj kolory...</Typography>
+            );
+          }
+
+          const firstColor = LESSON_LABEL_COLOR_OPTIONS.find(
+            (option) => option.value === selectedValues[0],
+          );
+
+          if (!firstColor) {
+            return null;
+          }
+
+          const hiddenCount = selectedValues.length - 1;
+          const compactLabel =
+            hiddenCount > 0
+              ? `${firstColor.label} + ${hiddenCount}`
+              : firstColor.label;
+
+          return (
+            <Box sx={compactAutocompleteValueSx}>
+              <Chip
+                label={compactLabel}
+                size="small"
+                icon={
+                  <Box
+                    component="span"
+                    sx={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      bgcolor: firstColor.color,
+                    }}
+                  />
+                }
+                sx={{
+                  fontSize: "0.7rem",
+                  height: 20,
+                  maxWidth: 156,
+                  flexShrink: 1,
+                  "& .MuiChip-icon": { ml: 0.75 },
+                }}
+              />
+            </Box>
+          );
+        }}
+        sx={{
+          ...(selectToolbarFieldSx as object),
+          minWidth: { xs: "100%", sm: 210 },
+          width: { xs: "100%", sm: 210, lg: 220 },
+          flex: { xs: "0 0 100%", sm: "0 0 210px", lg: "0 0 220px" },
+          fontSize: "0.82rem",
+          "& .MuiSelect-select": { py: "6.5px", fontSize: "0.82rem" },
+        }}
+      >
+        {LESSON_LABEL_COLOR_OPTIONS.map((option) => (
+          <MenuItem
+            key={option.value}
+            value={option.value}
+            sx={{ fontSize: "0.82rem" }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Box
+                component="span"
+                aria-hidden="true"
+                sx={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: "50%",
+                  bgcolor: option.color,
+                  boxShadow: (theme) =>
+                    `0 0 0 1px ${alpha(theme.palette.text.primary, 0.14)}`,
+                  flexShrink: 0,
+                }}
+              />
+              {option.label}
+            </Box>
+          </MenuItem>
+        ))}
+      </Select>
 
       <Divider
         orientation="vertical"

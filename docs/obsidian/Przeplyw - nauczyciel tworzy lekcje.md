@@ -27,6 +27,8 @@ Wezly:
 Reguly:
 - nauczyciel moze edytowac lekcje, jezeli jest jej wlascicielem
 - admin moze wykonywac operacje wlascicielskie
+- `labelColor` lekcji jest opcjonalny; dozwolone sa tylko `gray`, `red`, `orange`, `yellow`, `green`, `blue`, `purple`
+- pusty `labelColor` oznacza brak kolorowej kropki
 - zadanie musi nalezec do lekcji wskazanej w URL
 
 Zrodla:

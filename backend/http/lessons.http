@@ -10,6 +10,7 @@ Authorization: Bearer {{auth_token}}
 {
   "title": "Present Simple - lesson 1",
   "theme": "Grammar",
+  "labelColor": "blue",
   "groupPublicIds": ["{{group_public_id}}", "{{second_group_public_id}}"]
 }
 
@@ -21,7 +22,31 @@ Authorization: Bearer {{auth_token}}
 {
   "title": "Present Simple - lesson 1 (updated)",
   "theme": "Grammar",
+  "labelColor": "green",
   "groupPublicIds": ["{{group_public_id}}"]
+}
+
+### Clear lesson label color (requires ADMIN or lesson owner TEACHER)
+PUT http://localhost:8080/api/v1/lessons/{{lesson_public_id}}
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "title": "Present Simple - lesson 1 (updated)",
+  "theme": "Grammar",
+  "labelColor": null,
+  "groupPublicIds": ["{{group_public_id}}"]
+}
+
+### Create lesson with invalid label color (expect 400 LESSON_INVALID_LABEL_COLOR)
+POST http://localhost:8080/api/v1/lessons
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "title": "Invalid color lesson",
+  "theme": "Grammar",
+  "labelColor": "pink"
 }
 
 ### Quick status change (isActive) (requires ADMIN or lesson owner TEACHER)
