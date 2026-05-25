@@ -47,11 +47,6 @@ public class SttClient {
 	}
 
 	public Mono<SttEvaluationResponse> evaluate(FilePart audio, String expectedText, double minScore, String language) {
-		return evaluate(audio, List.of(expectedText), minScore, language);
-	}
-
-	public Mono<SttEvaluationResponse> evaluate(FilePart audio, List<String> expectedTexts, double minScore,
-			String language) {
 		log.info("Starting STT evaluation request");
 		return DataBufferUtils.join(audio.content()).flatMap(dataBuffer -> {
 			byte[] bytes = new byte[dataBuffer.readableByteCount()];
@@ -61,8 +56,7 @@ public class SttClient {
 			MultipartBodyBuilder bodyBuilder = new MultipartBodyBuilder();
 			bodyBuilder.part("file", new NamedByteArrayResource(bytes, audio.filename()))
 					.contentType(resolveContentType(audio));
-			bodyBuilder.part("expectedText", expectedTexts.get(0));
-			bodyBuilder.part("expectedTexts", String.join("\n", expectedTexts));
+			bodyBuilder.part("expectedText", expectedText);
 			bodyBuilder.part("minScore", String.valueOf(minScore));
 			if (language != null && !language.isBlank()) {
 				bodyBuilder.part("language", language);

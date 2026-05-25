@@ -32,7 +32,6 @@ class SpeakWordResult(BaseModel):
 class EvaluationResponse(BaseModel):
     rawTranscription: str
     matchedTranscription: str
-    expectedText: str
     normalizedExpected: str
     normalizedActual: str
     score: float
@@ -317,7 +316,6 @@ def evaluate_transcription(
     result = EvaluationResponse(
         rawTranscription=safe_raw,
         matchedTranscription=matched_transcription,
-        expectedText=expected_text,
         normalizedExpected=normalize_text(expected_text),
         normalizedActual=normalize_text(safe_raw),
         score=score,
@@ -338,42 +336,6 @@ def evaluate_transcription(
         result.matchedTranscription,
     )
     return result
-
-
-def parse_expected_texts(
-    expected_text: str, expected_texts: Optional[str]
-) -> list[str]:
-    if not expected_texts:
-        return [expected_text]
-    try:
-        parsed = json.loads(expected_texts)
-        if isinstance(parsed, list):
-            texts = [str(item).strip() for item in parsed if str(item).strip()]
-            return texts or [expected_text]
-    except json.JSONDecodeError:
-        pass
-    texts = [line.strip() for line in expected_texts.splitlines() if line.strip()]
-    return texts or [expected_text]
-
-
-def evaluate_transcription_against_any(
-    raw_transcription: Optional[str],
-    expected_texts: list[str],
-    min_score: float,
-    language: Optional[str],
-    duration: Optional[float],
-) -> EvaluationResponse:
-    evaluations = [
-        evaluate_transcription(
-            raw_transcription,
-            expected_text,
-            min_score,
-            language,
-            duration,
-        )
-        for expected_text in expected_texts
-    ]
-    return max(evaluations, key=lambda result: result.score)
 
 
 async def transcribe_audio(file: UploadFile, language: Optional[str] = None) -> dict:
@@ -426,14 +388,13 @@ async def transcribe(file: UploadFile = File(...)):
 async def evaluate(
     file: UploadFile = File(...),
     expectedText: str = Form(...),
-    expectedTexts: Optional[str] = Form(default=None),
     minScore: float = Form(...),
     language: Optional[str] = Form(default=None),
 ):
     transcription = await transcribe_audio(file, language)
-    return evaluate_transcription_against_any(
+    return evaluate_transcription(
         transcription["text"],
-        parse_expected_texts(expectedText, expectedTexts),
+        expectedText,
         minScore,
         transcription["language"],
         transcription["duration"],
