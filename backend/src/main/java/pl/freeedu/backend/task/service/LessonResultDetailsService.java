@@ -104,22 +104,29 @@ public class LessonResultDetailsService {
 	private List<TaskDefinition> buildTaskDefinitions(Integer lessonId) {
 		List<TaskDefinition> definitions = chooseTaskRepository.findByLessonId(lessonId).stream()
 				.map(task -> TaskDefinition.choose(task.getId(), task.getPublicId(), task.getSection(), task.getTask(),
-						task.getHint(), task.getPossibleAnswers(), String.valueOf(task.getCorrectAnswer())))
+						task.getHint(), task.getPossibleAnswers(), String.valueOf(task.getCorrectAnswer()),
+						TaskAnswerUtils.deserializeIntegerAnswers(task.getCorrectAnswers(), task.getCorrectAnswer())
+								.stream().map(String::valueOf).toList()))
 				.collect(Collectors.toList());
 
-		definitions.addAll(writeTaskRepository.findByLessonId(lessonId).stream()
-				.map(task -> TaskDefinition.write(task.getId(), task.getPublicId(), task.getSection(), task.getTask(),
-						task.getHint(), task.getCorrectAnswer()))
-				.toList());
-		definitions.addAll(scatterTaskRepository
-				.findByLessonId(lessonId).stream().map(task -> TaskDefinition.scatter(task.getId(), task.getPublicId(),
-						task.getSection(), task.getTask(), task.getHint(), task.getWords(), task.getCorrectAnswer()))
-				.toList());
 		definitions
-				.addAll(speakTaskRepository
-						.findByLessonId(lessonId).stream().map(task -> TaskDefinition.speak(task.getId(),
-								task.getPublicId(), task.getSection(), task.getHint(), task.getExpectedText()))
+				.addAll(writeTaskRepository.findByLessonId(lessonId).stream()
+						.map(task -> TaskDefinition.write(task.getId(), task.getPublicId(), task.getSection(),
+								task.getTask(), task.getHint(), task.getCorrectAnswer(), TaskAnswerUtils
+										.deserializeStringAnswers(task.getCorrectAnswers(), task.getCorrectAnswer())))
 						.toList());
+		definitions.addAll(scatterTaskRepository.findByLessonId(lessonId).stream()
+				.map(task -> TaskDefinition.scatter(task.getId(), task.getPublicId(), task.getSection(), task.getTask(),
+						task.getHint(), task.getWords(), task.getCorrectAnswer(),
+						TaskAnswerUtils.deserializeStringAnswers(task.getCorrectAnswers(), task.getCorrectAnswer())))
+				.toList());
+		definitions.addAll(speakTaskRepository.findByLessonId(lessonId).stream().map(task -> {
+			List<String> expectedTexts = TaskAnswerUtils.deserializeStringAnswers(task.getExpectedTexts(),
+					task.getExpectedText());
+			String expectedText = expectedTexts.isEmpty() ? task.getExpectedText() : expectedTexts.get(0);
+			return TaskDefinition.speak(task.getId(), task.getPublicId(), task.getSection(), task.getHint(),
+					expectedText, List.of(expectedText));
+		}).toList());
 
 		definitions
 				.sort(Comparator.comparing(TaskDefinition::section, Comparator.nullsFirst(String::compareToIgnoreCase))
@@ -139,31 +146,31 @@ public class LessonResultDetailsService {
 	}
 
 	private record TaskDefinition(Integer taskId, String publicId, String taskType, String dbTaskType, String section,
-			String taskText, String hint, String correctAnswer, String possibleAnswers, String words,
-			int displayOrder) {
+			String taskText, String hint, String correctAnswer, List<String> correctAnswers, String possibleAnswers,
+			String words, int displayOrder) {
 
 		private static TaskDefinition choose(Integer taskId, String publicId, String section, String taskText,
-				String hint, String possibleAnswers, String correctAnswer) {
+				String hint, String possibleAnswers, String correctAnswer, List<String> correctAnswers) {
 			return new TaskDefinition(taskId, publicId, "choose", "choose_tasks", section, taskText, hint,
-					correctAnswer, possibleAnswers, null, 0);
+					correctAnswer, correctAnswers, possibleAnswers, null, 0);
 		}
 
 		private static TaskDefinition write(Integer taskId, String publicId, String section, String taskText,
-				String hint, String correctAnswer) {
+				String hint, String correctAnswer, List<String> correctAnswers) {
 			return new TaskDefinition(taskId, publicId, "write", "write_tasks", section, taskText, hint, correctAnswer,
-					null, null, 1);
+					correctAnswers, null, null, 1);
 		}
 
 		private static TaskDefinition scatter(Integer taskId, String publicId, String section, String taskText,
-				String hint, String words, String correctAnswer) {
+				String hint, String words, String correctAnswer, List<String> correctAnswers) {
 			return new TaskDefinition(taskId, publicId, "scatter", "scatter_tasks", section, taskText, hint,
-					correctAnswer, null, words, 2);
+					correctAnswer, correctAnswers, null, words, 2);
 		}
 
 		private static TaskDefinition speak(Integer taskId, String publicId, String section, String hint,
-				String correctAnswer) {
+				String correctAnswer, List<String> correctAnswers) {
 			return new TaskDefinition(taskId, publicId, "speak", "speak_tasks", section, null, hint, correctAnswer,
-					null, null, 3);
+					correctAnswers, null, null, 3);
 		}
 
 		private LessonResultTaskDetailDto toDto(UserAnswer answer, Integer tabSwitchCount) {
@@ -174,9 +181,15 @@ public class LessonResultDetailsService {
 				mappedUserAnswer = mapChooseAnswer(mappedUserAnswer, possibleAnswers);
 				mappedCorrectAnswer = mapChooseAnswer(correctAnswer, possibleAnswers);
 			}
+			List<String> mappedCorrectAnswers = correctAnswers;
+			if ("choose".equals(taskType) && possibleAnswers != null) {
+				mappedCorrectAnswers = correctAnswers.stream().map(option -> mapChooseAnswer(option, possibleAnswers))
+						.toList();
+			}
 
 			return LessonResultTaskDetailDto.builder().taskPublicId(publicId).taskType(taskType).section(section)
 					.taskText(taskText).hint(hint).userAnswer(mappedUserAnswer).correctAnswer(mappedCorrectAnswer)
+					.correctAnswers(mappedCorrectAnswers)
 					.isCorrect(answer != null ? Boolean.TRUE.equals(answer.getIsCorrect()) : Boolean.FALSE)
 					.originalIsCorrect(answer != null ? answer.getOriginalIsCorrect() : null)
 					.manuallyReviewed(

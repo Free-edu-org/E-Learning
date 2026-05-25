@@ -57,20 +57,23 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonPublicId}/submit) - STT
         response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/choose`, {
             task: 'What is 2+2?',
             possibleAnswers: '3|4|5|6',
-            correctAnswer: 1
+            correctAnswer: 1,
+            correctAnswers: [1, 3]
         });
         chooseTaskPublicId = response.data.publicId;
 
         response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/write`, {
             task: 'Translate hello',
-            correctAnswer: 'hello'
+            correctAnswer: 'hello',
+            correctAnswers: ['hello', 'hi']
         });
         writeTaskPublicId = response.data.publicId;
 
         response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/scatter`, {
             task: 'Arrange',
             words: 'cat|the|big|is',
-            correctAnswer: 'the cat is big'
+            correctAnswer: 'the cat is big',
+            correctAnswers: ['the cat is big', 'the big cat is']
         });
         scatterTaskPublicId = response.data.publicId;
 
@@ -246,9 +249,9 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonPublicId}/submit) - STT
 
     function buildBaseAnswers() {
         return [
-            { taskPublicId: chooseTaskPublicId, taskType: 'choose', answer: '1' },
-            { taskPublicId: writeTaskPublicId, taskType: 'write', answer: 'hello' },
-            { taskPublicId: scatterTaskPublicId, taskType: 'scatter', answer: 'the cat is big' }
+            { taskPublicId: chooseTaskPublicId, taskType: 'choose', answer: '3' },
+            { taskPublicId: writeTaskPublicId, taskType: 'write', answer: 'hi' },
+            { taskPublicId: scatterTaskPublicId, taskType: 'scatter', answer: 'the big cat is' }
         ];
     }
 

@@ -1,7 +1,7 @@
 package pl.freeedu.backend.task.dto;
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,9 +17,10 @@ public class WriteTaskRequest {
 	@Size(max = 300, message = "Task must be at most 300 characters long")
 	private String task;
 
-	@NotBlank(message = "Correct answer is required")
 	@Size(max = 300, message = "Correct answer must be at most 300 characters long")
 	private String correctAnswer;
+
+	private java.util.List<String> correctAnswers;
 
 	@Size(max = 200, message = "Hint must be at most 200 characters long")
 	private String hint;

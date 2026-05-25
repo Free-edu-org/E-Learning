@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -18,6 +19,7 @@ public class ChooseTaskResponse {
 	private String task;
 	private String possibleAnswers;
 	private Integer correctAnswer;
+	private List<Integer> correctAnswers;
 	private String hint;
 	private String hintImageUrl;
 	private String section;

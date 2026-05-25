@@ -28,6 +28,9 @@ public class SpeakTask {
 	@Column(name = "expected_text", nullable = false, columnDefinition = "TEXT")
 	private String expectedText;
 
+	@Column(name = "expected_texts", nullable = false, columnDefinition = "TEXT")
+	private String expectedTexts;
+
 	@Column(columnDefinition = "TEXT")
 	private String hint;
 

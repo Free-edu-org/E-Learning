@@ -1,7 +1,6 @@
 package pl.freeedu.backend.task.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,8 +21,9 @@ public class ChooseTaskRequest {
 	@Size(max = 1000, message = "Possible answers must be at most 1000 characters long")
 	private String possibleAnswers;
 
-	@NotNull(message = "Correct answer is required")
 	private Integer correctAnswer;
+
+	private java.util.List<Integer> correctAnswers;
 
 	@Size(max = 200, message = "Hint must be at most 200 characters long")
 	private String hint;

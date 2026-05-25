@@ -6,6 +6,7 @@ import {
 } from "@mui/icons-material";
 import type { WriteTaskResponse } from "@/api/taskService";
 import type { SubmitAnswerDetail } from "@/api/studentService";
+import { formatAcceptedAnswers } from "@/utils/answerDisplay";
 import {
   taskCardSx,
   taskHeaderSx,
@@ -87,7 +88,13 @@ export function WriteTaskSolver({
           </Stack>
           {!result.isCorrect && (
             <Typography variant="body2" sx={{ mt: 0.5 }}>
-              Prawidłowa odpowiedź: <strong>{result.correctAnswer}</strong>
+              Prawidłowe odpowiedzi:{" "}
+              <strong>
+                {formatAcceptedAnswers(
+                  result.correctAnswers,
+                  result.correctAnswer,
+                )}
+              </strong>
             </Typography>
           )}
         </Box>

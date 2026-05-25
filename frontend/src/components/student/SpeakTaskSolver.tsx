@@ -31,6 +31,7 @@ import {
   taskFeedbackCorrectSx,
   taskTypeMeta,
 } from "./taskSolverStyles";
+import { formatAcceptedAnswers } from "@/utils/answerDisplay";
 import { formatPercent } from "@/utils/dashboardUtils";
 
 interface SpeakTaskSolverProps {
@@ -516,7 +517,7 @@ export function SpeakTaskSolver({
             <Typography variant="body2" fontWeight={600}>
               {result.isCorrect
                 ? "Wymowa zaakceptowana."
-                : `Oczekiwany tekst: ${result.correctAnswer}`}
+                : `Oczekiwany tekst: ${formatAcceptedAnswers(result.correctAnswers, result.correctAnswer)}`}
             </Typography>
           </Stack>
         </Box>

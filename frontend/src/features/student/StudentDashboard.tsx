@@ -540,7 +540,7 @@ export function StudentDashboard() {
       ) {
         return studentLessonColors[lesson.publicId] ?? null;
       }
-      return lesson.labelColor ?? null;
+      return null;
     },
     [studentLessonColors],
   );

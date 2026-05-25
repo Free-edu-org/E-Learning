@@ -1,4 +1,4 @@
--- Użytkownicy (Hasła powinny być haszowane, tu są tekstem jawnym dla przykładu)
+-- Użytkownicy (hasła są zahashowane dla środowiska demo)
 INSERT INTO users (email, username, password, role) VALUES
     ('admin@szkola.pl', 'admin_marek', '$2a$10$E76vPLy8/fTJ36cpmvYNBOGKxUB72aTb7rexqJgvHIuaQLE4vS1KC', 'ADMIN'),
     ('student1@edu.pl', 'jan_kowalski', '$2a$10$EfQqseEyw46zbJW75uREjeFG.SG5XK/OtIKrmxHMr0xyCmgS3N5f.', 'STUDENT'),
@@ -28,47 +28,47 @@ INSERT INTO lessons (title, theme, is_active, teacher_id) VALUES
     ('Kolory i zwierzęta', 'Słownictwo podstawowe - kolory, zwierzęta, proste zdania', TRUE, 4);
 
 -- Zadania do lekcji 1 i 2
-INSERT INTO choose_tasks (lesson_id, task, possible_answers, correct_answer) VALUES
-    (1, 'Jak powiesz "Dzień dobry" rano?', 'Good night|Good morning|Hello', 1),
-    (2, 'Wybierz poprawną formę: He ___ to school.', 'go|goes|going', 1);
+INSERT INTO choose_tasks (lesson_id, task, possible_answers, correct_answer, correct_answers) VALUES
+    (1, 'Jak powiesz "Dzień dobry" rano?', 'Good night|Good morning|Hello', 1, '[1]'),
+    (2, 'Wybierz poprawną formę: He ___ to school.', 'go|goes|going', 1, '[1]');
 
-INSERT INTO write_tasks (lesson_id, task, correct_answer) VALUES
-    (1, 'Przetłumacz na angielski: "Cześć"', 'Hello'),
-    (2, 'Wpisz przeczenie: I ___ not like apples.', 'do');
+INSERT INTO write_tasks (lesson_id, task, correct_answer, correct_answers) VALUES
+    (1, 'Przetłumacz na angielski: "Cześć"', 'Hello', JSON_ARRAY('Hello')),
+    (2, 'Wpisz przeczenie: I ___ not like apples.', 'do', JSON_ARRAY('do'));
 
-INSERT INTO scatter_tasks (lesson_id, task, words, correct_answer) VALUES
-    (1, 'Ułóż zdanie: am, I, John', 'am|I|John', 'I am John');
+INSERT INTO scatter_tasks (lesson_id, task, words, correct_answer, correct_answers) VALUES
+    (1, 'Ułóż zdanie: am, I, John', 'am|I|John', 'I am John', JSON_ARRAY('I am John'));
 
 -- Lekcja 3: "Kolory i zwierzęta" - pełna lekcja z sekcjami, hintami i 4 typami zadań
-INSERT INTO choose_tasks (lesson_id, task, possible_answers, correct_answer, hint, section) VALUES
-    (3, 'What color is the sky?', 'red|blue|green|yellow', 1, 'Pomyśl o pogodnym dniu.', 'Kolory'),
-    (3, 'What color is grass?', 'blue|red|green|orange', 2, 'Pomyśl o parku wiosną.', 'Kolory'),
-    (3, 'Choose the correct translation of "czerwony":', 'blue|red|yellow|pink', 1, NULL, 'Kolory');
+INSERT INTO choose_tasks (lesson_id, task, possible_answers, correct_answer, correct_answers, hint, section) VALUES
+    (3, 'What color is the sky?', 'red|blue|green|yellow', 1, '[1]', 'Pomyśl o pogodnym dniu.', 'Kolory'),
+    (3, 'What color is grass?', 'blue|red|green|orange', 2, '[2]', 'Pomyśl o parku wiosną.', 'Kolory'),
+    (3, 'Choose the correct translation of "czerwony":', 'blue|red|yellow|pink', 1, '[1]', NULL, 'Kolory');
 
-INSERT INTO write_tasks (lesson_id, task, correct_answer, hint, section) VALUES
-    (3, 'Przetłumacz na angielski: "żółty"', 'yellow', 'Kolor słońca i bananów.', 'Kolory'),
-    (3, 'Jak po angielsku powiemy "czarny"?', 'black', NULL, 'Kolory');
+INSERT INTO write_tasks (lesson_id, task, correct_answer, correct_answers, hint, section) VALUES
+    (3, 'Przetłumacz na angielski: "żółty"', 'yellow', JSON_ARRAY('yellow'), 'Kolor słońca i bananów.', 'Kolory'),
+    (3, 'Jak po angielsku powiemy "czarny"?', 'black', JSON_ARRAY('black'), NULL, 'Kolory');
 
-INSERT INTO choose_tasks (lesson_id, task, possible_answers, correct_answer, hint, section) VALUES
-    (3, 'Which animal says "meow"?', 'dog|cat|bird|fish', 1, 'To zwierzę domowe, które lubi mleko.', 'Zwierzęta'),
-    (3, 'Which animal can fly?', 'cat|fish|bird|dog', 2, 'Ma skrzydła i pióra.', 'Zwierzęta');
+INSERT INTO choose_tasks (lesson_id, task, possible_answers, correct_answer, correct_answers, hint, section) VALUES
+    (3, 'Which animal says "meow"?', 'dog|cat|bird|fish', 1, '[1]', 'To zwierzę domowe, które lubi mleko.', 'Zwierzęta'),
+    (3, 'Which animal can fly?', 'cat|fish|bird|dog', 2, '[2]', 'Ma skrzydła i pióra.', 'Zwierzęta');
 
-INSERT INTO write_tasks (lesson_id, task, correct_answer, hint, section) VALUES
-    (3, 'Przetłumacz na angielski: "pies"', 'dog', 'Najlepszy przyjaciel człowieka.', 'Zwierzęta'),
-    (3, 'Jak po angielsku powiemy "ryba"?', 'fish', NULL, 'Zwierzęta');
+INSERT INTO write_tasks (lesson_id, task, correct_answer, correct_answers, hint, section) VALUES
+    (3, 'Przetłumacz na angielski: "pies"', 'dog', JSON_ARRAY('dog'), 'Najlepszy przyjaciel człowieka.', 'Zwierzęta'),
+    (3, 'Jak po angielsku powiemy "ryba"?', 'fish', JSON_ARRAY('fish'), NULL, 'Zwierzęta');
 
-INSERT INTO scatter_tasks (lesson_id, task, words, correct_answer, hint, section) VALUES
-    (3, 'Ułóż zdanie z rozsypanki:', 'a|have|I|cat', 'I have a cat', 'Zacznij od "I".', 'Zwierzęta'),
-    (3, 'Ułóż zdanie:', 'is|The|big|dog', 'The dog is big', 'Zacznij od "The".', 'Zwierzęta');
+INSERT INTO scatter_tasks (lesson_id, task, words, correct_answer, correct_answers, hint, section) VALUES
+    (3, 'Ułóż zdanie z rozsypanki:', 'a|have|I|cat', 'I have a cat', JSON_ARRAY('I have a cat'), 'Zacznij od "I".', 'Zwierzęta'),
+    (3, 'Ułóż zdanie:', 'is|The|big|dog', 'The dog is big', JSON_ARRAY('The dog is big'), 'Zacznij od "The".', 'Zwierzęta');
 
-INSERT INTO scatter_tasks (lesson_id, task, words, correct_answer, hint, section) VALUES
-    (3, 'Ułóż zdanie:', 'blue|The|is|sky', 'The sky is blue', NULL, 'Proste zdania'),
-    (3, 'Ułóż poprawne zdanie:', 'like|I|red|color|the', 'I like the red color', 'Zacznij od "I".', 'Proste zdania');
+INSERT INTO scatter_tasks (lesson_id, task, words, correct_answer, correct_answers, hint, section) VALUES
+    (3, 'Ułóż zdanie:', 'blue|The|is|sky', 'The sky is blue', JSON_ARRAY('The sky is blue'), NULL, 'Proste zdania'),
+    (3, 'Ułóż poprawne zdanie:', 'like|I|red|color|the', 'I like the red color', JSON_ARRAY('I like the red color'), 'Zacznij od "I".', 'Proste zdania');
 
-INSERT INTO speak_tasks (lesson_id, expected_text, hint, section) VALUES
-    (3, 'The cat is black and the dog is brown', 'Zwróć uwagę na wymowę "brown".', 'Proste zdania'),
-    (3, 'I like blue birds and yellow fish', NULL, 'Proste zdania'),
-    (3, 'My favorite color is green', 'Słowo "favorite" wymawiamy "fejwryt".', 'Proste zdania');
+INSERT INTO speak_tasks (lesson_id, expected_text, expected_texts, hint, section) VALUES
+    (3, 'The cat is black and the dog is brown', JSON_ARRAY('The cat is black and the dog is brown'), 'Zwróć uwagę na wymowę "brown".', 'Proste zdania'),
+    (3, 'I like blue birds and yellow fish', JSON_ARRAY('I like blue birds and yellow fish'), NULL, 'Proste zdania'),
+    (3, 'My favorite color is green', JSON_ARRAY('My favorite color is green'), 'Słowo "favorite" wymawiamy "fejwryt".', 'Proste zdania');
 
 -- Przypisania
 INSERT INTO user_in_group (user_id, group_id) VALUES

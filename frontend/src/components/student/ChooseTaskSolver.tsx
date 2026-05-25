@@ -6,6 +6,7 @@ import {
 } from "@mui/icons-material";
 import type { ChooseTaskResponse } from "@/api/taskService";
 import type { SubmitAnswerDetail } from "@/api/studentService";
+import { getAcceptedAnswers } from "@/utils/answerDisplay";
 import {
   taskCardSx,
   taskHeaderSx,
@@ -36,11 +37,17 @@ export function ChooseTaskSolver({
 }: ChooseTaskSolverProps) {
   const options = task.possibleAnswers.split("|");
   const meta = taskTypeMeta.choose;
+  const acceptedIndexes = result
+    ? getAcceptedAnswers(result.correctAnswers, result.correctAnswer)
+    : [];
+  const acceptedOptions = acceptedIndexes
+    .map((answer) => options[Number(answer)])
+    .filter(Boolean);
 
   const getOptionSx = (index: number) => {
     const indexStr = String(index);
     if (result) {
-      const isCorrectOption = String(result.correctAnswer) === indexStr;
+      const isCorrectOption = acceptedIndexes.includes(indexStr);
       const isSelectedWrong = !result.isCorrect && value === indexStr;
       if (isCorrectOption) return chooseOptionCorrectSx;
       if (isSelectedWrong) return chooseOptionIncorrectSx;
@@ -104,8 +111,8 @@ export function ChooseTaskSolver({
           </Stack>
           {!result.isCorrect && (
             <Typography variant="body2" sx={{ mt: 0.5 }}>
-              Prawidłowa odpowiedź:{" "}
-              <strong>{options[Number(result.correctAnswer)]}</strong>
+              Prawidłowe odpowiedzi:{" "}
+              <strong>{acceptedOptions.join(", ")}</strong>
             </Typography>
           )}
         </Box>
