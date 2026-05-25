@@ -118,10 +118,11 @@ public class LessonResultDetailsService {
 						task.getHint(), task.getWords(),
 						TaskAnswerUtils.deserializeStringAnswers(task.getCorrectAnswers())))
 				.toList());
-		definitions.addAll(speakTaskRepository.findByLessonId(lessonId).stream()
-				.map(task -> TaskDefinition.speak(task.getId(), task.getPublicId(), task.getSection(), task.getHint(),
-						TaskAnswerUtils.deserializeStringAnswers(task.getExpectedTexts())))
-				.toList());
+		definitions
+				.addAll(speakTaskRepository.findByLessonId(lessonId).stream()
+						.map(task -> TaskDefinition.speak(task.getId(), task.getPublicId(), task.getSection(),
+								task.getHint(), TaskAnswerUtils.deserializeStringAnswers(task.getExpectedTexts())))
+						.toList());
 
 		definitions
 				.sort(Comparator.comparing(TaskDefinition::section, Comparator.nullsFirst(String::compareToIgnoreCase))
@@ -141,8 +142,8 @@ public class LessonResultDetailsService {
 	}
 
 	private record TaskDefinition(Integer taskId, String publicId, String taskType, String dbTaskType, String section,
-			String taskText, String hint, List<String> correctAnswers, String possibleAnswers,
-			String words, int displayOrder) {
+			String taskText, String hint, List<String> correctAnswers, String possibleAnswers, String words,
+			int displayOrder) {
 
 		private static TaskDefinition choose(Integer taskId, String publicId, String section, String taskText,
 				String hint, String possibleAnswers, List<String> correctAnswers) {
