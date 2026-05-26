@@ -1,19 +1,33 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
+  Chip,
   CircularProgress,
+  Collapse,
   Container,
   Divider,
+  IconButton,
+  InputAdornment,
+  MenuItem,
+  TextField,
   Tooltip as MuiTooltip,
   Typography,
 } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
+import type { SxProps, Theme } from "@mui/material/styles";
 import {
   ArrowBack as ArrowBackIcon,
+  ExpandLess as ExpandLessIcon,
+  ExpandMore as ExpandMoreIcon,
+  UnfoldLess as UnfoldLessIcon,
+  UnfoldMore as UnfoldMoreIcon,
   Replay as ReplayIcon,
+  Search as SearchIcon,
+  Sort as SortIcon,
   Visibility as VisibilityIcon,
   WarningAmberOutlined as WarningIcon,
 } from "@mui/icons-material";
@@ -29,6 +43,7 @@ import {
 } from "recharts";
 import { lessonService } from "@/api/lessonService";
 import type {
+  Group,
   LessonStatsResponse,
   LessonStatsStudentResult,
 } from "@/api/lessonService";
@@ -50,8 +65,12 @@ import {
   panelFooterButtonSx,
   panelInlineActionsSx,
   panelSurfaceSx,
+  panelToolbarButtonSx,
+  panelToolbarSx,
 } from "@/components/ui/panel/panelStyles";
 import { formatPercent } from "@/utils/dashboardUtils";
+
+type SortMode = "date_desc" | "date_asc" | "score_desc" | "score_asc";
 
 function formatDate(value: string | null): string {
   if (!value) return "-";
@@ -85,13 +104,196 @@ function getPerformanceTier(percent: number): "success" | "warning" | "error" {
   return "error";
 }
 
+function sortStudents(
+  students: LessonStatsStudentResult[],
+  sortMode: SortMode,
+): LessonStatsStudentResult[] {
+  const sorted = [...students];
+  sorted.sort((left, right) => {
+    switch (sortMode) {
+      case "date_asc":
+        return (
+          new Date(left.completedAt ?? 0).getTime() -
+          new Date(right.completedAt ?? 0).getTime()
+        );
+      case "score_asc":
+        return left.resultPercent - right.resultPercent;
+      case "score_desc":
+        return right.resultPercent - left.resultPercent;
+      case "date_desc":
+      default:
+        return (
+          new Date(right.completedAt ?? 0).getTime() -
+          new Date(left.completedAt ?? 0).getTime()
+        );
+    }
+  });
+  return sorted;
+}
+
+function sortStudentsByName(
+  students: LessonStatsStudentResult[],
+): LessonStatsStudentResult[] {
+  return [...students].sort((left, right) =>
+    left.username.localeCompare(right.username, "pl"),
+  );
+}
+
+const toolbarFieldSx: SxProps<Theme> = {
+  minWidth: 180,
+  flex: "1 1 180px",
+  "& .MuiOutlinedInput-root": {
+    borderRadius: 2,
+    minHeight: 40,
+    bgcolor: (theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.common.white, 0.98)
+        : "#151a2c",
+    border: "1px solid",
+    borderColor: (theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.text.primary, 0.06)
+        : alpha(theme.palette.common.white, 0.06),
+    boxShadow: (theme) =>
+      theme.palette.mode === "light"
+        ? "0 2px 8px rgba(15, 23, 42, 0.035)"
+        : "inset 0 1px 0 rgba(255,255,255,0.02)",
+    transition:
+      "border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease",
+    "& fieldset": {
+      border: "none",
+    },
+    "&:hover": {
+      borderColor: (theme) =>
+        theme.palette.mode === "light"
+          ? alpha(theme.palette.primary.main, 0.14)
+          : alpha(theme.palette.common.white, 0.1),
+      bgcolor: (theme) =>
+        theme.palette.mode === "light" ? theme.palette.common.white : "#171d2f",
+    },
+    "&.Mui-focused": {
+      borderColor: (theme) =>
+        theme.palette.mode === "light"
+          ? alpha(theme.palette.primary.main, 0.22)
+          : alpha(theme.palette.primary.light, 0.2),
+      boxShadow: (theme) =>
+        theme.palette.mode === "light"
+          ? `0 0 0 3px ${alpha(theme.palette.primary.main, 0.08)}`
+          : `0 0 0 3px ${alpha(theme.palette.primary.light, 0.08)}`,
+    },
+  },
+  "& .MuiInputBase-input::placeholder": {
+    opacity: 1,
+    color: (theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.text.secondary, 0.8)
+        : alpha(theme.palette.common.white, 0.38),
+  },
+};
+
+const compactToolbarFieldSx: SxProps<Theme> = {
+  "& .MuiOutlinedInput-root.MuiInputBase-root": {
+    minHeight: 38,
+  },
+  "& .MuiAutocomplete-inputRoot": {
+    minHeight: "38px !important",
+  },
+  "& .MuiInputBase-input": {
+    fontSize: "0.85rem",
+  },
+};
+
+const searchAdornmentSx: SxProps<Theme> = {
+  ml: 0,
+  mr: 1,
+  alignSelf: "center",
+  flexShrink: 0,
+};
+
+const searchAdornmentSelectorSx = {
+  ml: 0,
+  mr: 1,
+  alignSelf: "center",
+  flexShrink: 0,
+};
+
+const searchIconSx: SxProps<Theme> = {
+  color: "text.secondary",
+  fontSize: 20,
+  opacity: 1,
+  flexShrink: 0,
+};
+
+const searchFieldChromeSx: SxProps<Theme> = {
+  "& .MuiOutlinedInput-root, & .MuiAutocomplete-inputRoot": {
+    minHeight: "38px !important",
+    display: "flex",
+    alignItems: "center",
+    boxSizing: "border-box",
+  },
+  "& .MuiInputAdornment-positionStart": searchAdornmentSelectorSx,
+  "& .MuiInputBase-input": {
+    fontSize: "0.85rem",
+    lineHeight: 1.2,
+    paddingTop: "0 !important",
+    paddingBottom: "0 !important",
+    minWidth: 0,
+  },
+};
+
+const searchTextFieldSx: SxProps<Theme> = {
+  ...(searchFieldChromeSx as object),
+  "& .MuiOutlinedInput-root": {
+    pl: 1.5,
+    pr: 1.5,
+  },
+};
+
+const searchAutocompleteFieldSx: SxProps<Theme> = {
+  ...(searchFieldChromeSx as object),
+  "& .MuiAutocomplete-inputRoot": {
+    pl: "12px !important",
+    pr: "36px !important",
+    gap: 0,
+    flexWrap: "nowrap",
+    overflow: "hidden",
+    py: "0 !important",
+  },
+  "& .MuiAutocomplete-input": {
+    flex: "1 1 72px !important",
+    minWidth: "72px !important",
+    width: "auto !important",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    padding: "0 !important",
+  },
+  "& .MuiAutocomplete-tag": {
+    m: 0,
+  },
+  "& .MuiAutocomplete-endAdornment": {
+    right: 8,
+  },
+};
+
+function SearchStartAdornment() {
+  return (
+    <InputAdornment position="start" sx={searchAdornmentSx}>
+      <SearchIcon
+        fontSize="small"
+        className="toolbar-search-icon"
+        sx={searchIconSx}
+      />
+    </InputAdornment>
+  );
+}
+
 export function LessonStatsView() {
   const { lessonPublicId } = useParams<{ lessonPublicId: string }>();
   const navigate = useNavigate();
   const theme = useTheme();
   const { logout } = useAuth();
   const [stats, setStats] = useState<LessonStatsResponse | null>(null);
-  const [lessonTitle, setLessonTitle] = useState<string>("");
+  const [lessonTitle, setLessonTitle] = useState("");
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingUser, setLoadingUser] = useState(true);
@@ -105,6 +307,14 @@ export function LessonStatsView() {
   >([]);
   const [resetConfirmStudent, setResetConfirmStudent] =
     useState<LessonStatsStudentResult | null>(null);
+  const [selectedGroups, setSelectedGroups] = useState<Group[]>([]);
+  const [sortMode, setSortMode] = useState<SortMode>("date_desc");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [hasInitializedCollapsedGroups, setHasInitializedCollapsedGroups] =
+    useState(false);
 
   useEffect(() => {
     userService
@@ -162,15 +372,94 @@ export function LessonStatsView() {
     }
   };
 
-  const studentChartData =
-    stats?.studentResults.map((r) => ({
-      name: r.username,
-      value: Number(r.resultPercent.toFixed(1)),
-    })) ?? [];
+  const availableGroups = useMemo(() => {
+    const groups = new Map<string, string>();
+    for (const student of stats?.studentResults ?? []) {
+      if (student.groupPublicId && student.groupName) {
+        groups.set(student.groupPublicId, student.groupName);
+      }
+    }
+    return Array.from(groups.entries())
+      .map(([publicId, name]) => ({ publicId, name }))
+      .sort((left, right) => left.name.localeCompare(right.name, "pl"));
+  }, [stats]);
 
-  const distributionData = stats
-    ? buildDistributionData(stats.studentResults)
-    : [];
+  const filteredStudentResults = useMemo(() => {
+    if (!stats) return [];
+
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    return stats.studentResults.filter((student) => {
+      const matchesGroup =
+        selectedGroups.length === 0 ||
+        selectedGroups.some(
+          (group) => group.publicId === student.groupPublicId,
+        );
+      const matchesSearch =
+        normalizedQuery.length === 0 ||
+        student.username.toLowerCase().includes(normalizedQuery);
+      return matchesGroup && matchesSearch;
+    });
+  }, [searchQuery, selectedGroups, stats]);
+
+  const visibleStudentResults = useMemo(
+    () => sortStudents(filteredStudentResults, sortMode),
+    [filteredStudentResults, sortMode],
+  );
+
+  const groupedStudentResults = useMemo(() => {
+    const groups = new Map<string, LessonStatsStudentResult[]>();
+    for (const student of visibleStudentResults) {
+      const key = student.groupPublicId ?? "ungrouped";
+      const current = groups.get(key) ?? [];
+      current.push(student);
+      groups.set(key, current);
+    }
+
+    return Array.from(groups.entries())
+      .map(([groupKey, students]) => ({
+        groupKey,
+        groupName:
+          students[0]?.groupName ??
+          (groupKey === "ungrouped" ? "Bez grupy" : "Nieznana grupa"),
+        averagePercent:
+          students.reduce((sum, student) => sum + student.resultPercent, 0) /
+          students.length,
+        students,
+      }))
+      .sort((left, right) =>
+        left.groupName.localeCompare(right.groupName, "pl"),
+      );
+  }, [visibleStudentResults]);
+
+  const groupChartData = groupedStudentResults.map((group) => ({
+    name: group.groupName,
+    value: Number(group.averagePercent.toFixed(1)),
+  }));
+
+  const expandedGroups = groupedStudentResults.filter(
+    (group) => !collapsedGroups.has(group.groupKey),
+  );
+
+  const allGroupsCollapsed =
+    groupedStudentResults.length > 0 &&
+    groupedStudentResults.every((group) => collapsedGroups.has(group.groupKey));
+
+  const showGroupChart = allGroupsCollapsed && groupedStudentResults.length > 0;
+
+  const activeChartStudentResults = showGroupChart
+    ? []
+    : expandedGroups.flatMap((group) => group.students);
+
+  const activeStudentChartData = sortStudentsByName(
+    activeChartStudentResults,
+  ).map((student) => ({
+    name: student.username,
+    value: Number(student.resultPercent.toFixed(1)),
+  }));
+
+  const distributionData = showGroupChart
+    ? buildDistributionData(filteredStudentResults)
+    : buildDistributionData(activeChartStudentResults);
 
   const chartGridColor = alpha(
     theme.palette.text.primary,
@@ -189,6 +478,39 @@ export function LessonStatsView() {
     color: "#e2e8f0",
     fontSize: "12px",
   };
+
+  const toggleGroupCollapsed = (groupKey: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(groupKey)) {
+        next.delete(groupKey);
+      } else {
+        next.add(groupKey);
+      }
+      return next;
+    });
+  };
+
+  const expandAllGroups = () => {
+    setCollapsedGroups(new Set());
+  };
+
+  const collapseAllGroups = () => {
+    setCollapsedGroups(
+      new Set(groupedStudentResults.map((group) => group.groupKey)),
+    );
+  };
+
+  useEffect(() => {
+    if (hasInitializedCollapsedGroups || groupedStudentResults.length === 0) {
+      return;
+    }
+
+    setCollapsedGroups(
+      new Set(groupedStudentResults.map((group) => group.groupKey)),
+    );
+    setHasInitializedCollapsedGroups(true);
+  }, [groupedStudentResults, hasInitializedCollapsedGroups]);
 
   return (
     <Box
@@ -217,7 +539,6 @@ export function LessonStatsView() {
           onUserUpdated={setUser}
         />
 
-        {/* Back + title */}
         <Box
           sx={{
             display: "flex",
@@ -282,7 +603,6 @@ export function LessonStatsView() {
 
         {stats && !loading && (
           <>
-            {/* Top stat cards */}
             <Box
               sx={{
                 display: "flex",
@@ -308,8 +628,7 @@ export function LessonStatsView() {
               />
             </Box>
 
-            {/* Charts row */}
-            {stats.studentResults.length > 0 && (
+            {visibleStudentResults.length > 0 && (
               <Box
                 sx={{
                   display: "grid",
@@ -318,27 +637,22 @@ export function LessonStatsView() {
                   mb: 2.25,
                 }}
               >
-                {/* Per-student bar chart */}
                 <Box
                   sx={{
                     ...panelSurfaceSx,
                     p: 2,
                   }}
                 >
-                  <Typography variant="subtitle1" fontWeight={700} mb={0.5}>
+                  <Typography variant="subtitle1" fontWeight={700} mb={1.25}>
                     Wyniki uczniów
                   </Typography>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    display="block"
-                    mb={1.35}
-                    sx={{ opacity: 0.8 }}
-                  >
-                    Porównanie wyników procentowych
-                  </Typography>
                   <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={studentChartData} margin={{ bottom: 40 }}>
+                    <BarChart
+                      data={
+                        showGroupChart ? groupChartData : activeStudentChartData
+                      }
+                      margin={{ bottom: 40 }}
+                    >
                       <defs>
                         <linearGradient
                           id="lessonStatsStudentBars"
@@ -395,7 +709,10 @@ export function LessonStatsView() {
                         radius={[10, 10, 0, 0]}
                         barSize={22}
                       >
-                        {studentChartData.map((entry) => (
+                        {(showGroupChart
+                          ? groupChartData
+                          : activeStudentChartData
+                        ).map((entry) => (
                           <Cell
                             key={entry.name}
                             fill={
@@ -410,24 +727,14 @@ export function LessonStatsView() {
                   </ResponsiveContainer>
                 </Box>
 
-                {/* Distribution bar chart */}
                 <Box
                   sx={{
                     ...panelSurfaceSx,
                     p: 2,
                   }}
                 >
-                  <Typography variant="subtitle1" fontWeight={700} mb={0.5}>
+                  <Typography variant="subtitle1" fontWeight={700} mb={1.25}>
                     Rozkład wyników
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    display="block"
-                    mb={1.35}
-                    sx={{ opacity: 0.8 }}
-                  >
-                    Liczba uczniów w przedziałach procentowych
                   </Typography>
                   <ResponsiveContainer width="100%" height={220}>
                     <BarChart data={distributionData} margin={{ bottom: 10 }}>
@@ -490,273 +797,605 @@ export function LessonStatsView() {
               </Box>
             )}
 
-            {/* Detailed results */}
             <Box sx={{ ...panelSurfaceSx, p: 0, overflow: "hidden" }}>
-              <Typography
-                variant="subtitle1"
-                fontWeight={700}
-                sx={{ px: 2.5, py: 1.5 }}
+              <Box
+                sx={{
+                  px: 2.5,
+                  py: 1.5,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "flex-start",
+                  gap: 1,
+                }}
               >
-                Szczegółowe wyniki
-              </Typography>
+                <Typography variant="subtitle1" fontWeight={700}>
+                  Szczegółowe wyniki
+                </Typography>
+              </Box>
               <Divider />
 
-              {stats.studentResults.length === 0 ? (
+              <Box
+                sx={{
+                  ...panelToolbarSx,
+                  mx: 2,
+                  my: 2,
+                  p: 1.5,
+                }}
+              >
+                <TextField
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Szukaj po imieniu i nazwisku ucznia"
+                  size="small"
+                  fullWidth
+                  slotProps={{
+                    input: {
+                      startAdornment: <SearchStartAdornment />,
+                    },
+                  }}
+                  sx={{
+                    ...(toolbarFieldSx as object),
+                    ...(compactToolbarFieldSx as object),
+                    ...(searchTextFieldSx as object),
+                    minWidth: { xs: "100%", sm: 205, lg: 240 },
+                    flex: { xs: "1 1 100%", md: "1 1 215px" },
+                  }}
+                />
+
+                <Divider
+                  orientation="vertical"
+                  flexItem
+                  sx={{ display: { xs: "none", md: "block" } }}
+                />
+
+                <Autocomplete
+                  multiple
+                  size="small"
+                  options={availableGroups}
+                  value={selectedGroups}
+                  onChange={(_, newValue) => setSelectedGroups(newValue)}
+                  getOptionLabel={(option) => option.name}
+                  isOptionEqualToValue={(opt, val) =>
+                    opt.publicId === val.publicId
+                  }
+                  disableCloseOnSelect
+                  noOptionsText="Brak grup"
+                  renderTags={(tagValue, getTagProps) => {
+                    const [firstGroup] = tagValue;
+                    if (!firstGroup) return null;
+
+                    const { key, ...rest } = getTagProps({
+                      index: 0,
+                    });
+                    const hiddenCount = tagValue.length - 1;
+
+                    return [
+                      <Chip
+                        key={key}
+                        label={firstGroup.name}
+                        size="small"
+                        sx={{
+                          fontSize: "0.7rem",
+                          height: 20,
+                          maxWidth: hiddenCount > 0 ? 110 : 150,
+                          flexShrink: 1,
+                          "& .MuiChip-label": {
+                            display: "block",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          },
+                          "& .MuiChip-deleteIcon": {
+                            display: "none",
+                          },
+                        }}
+                        {...rest}
+                      />,
+                      ...(hiddenCount > 0
+                        ? [
+                            <Chip
+                              key="groups-more"
+                              label={`+${hiddenCount}`}
+                              size="small"
+                              aria-label={`Jeszcze ${hiddenCount} wybranych grup`}
+                              sx={{ fontSize: "0.7rem", height: 20 }}
+                            />,
+                          ]
+                        : []),
+                    ];
+                  }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      placeholder={
+                        selectedGroups.length === 0
+                          ? "Filtruj grupy..."
+                          : undefined
+                      }
+                      slotProps={{
+                        input: {
+                          ...params.InputProps,
+                          startAdornment: (
+                            <>
+                              <SearchStartAdornment />
+                              {params.InputProps.startAdornment}
+                            </>
+                          ),
+                        },
+                      }}
+                    />
+                  )}
+                  sx={{
+                    ...(toolbarFieldSx as object),
+                    ...(compactToolbarFieldSx as object),
+                    ...(searchAutocompleteFieldSx as object),
+                    minWidth: { xs: "100%", sm: 220 },
+                    width: { xs: "100%", sm: 220, lg: 230 },
+                    flex: { xs: "0 0 100%", sm: "0 0 220px", lg: "0 0 230px" },
+                  }}
+                />
+
+                <Divider
+                  orientation="vertical"
+                  flexItem
+                  sx={{ display: { xs: "none", md: "block" } }}
+                />
+
+                <TextField
+                  select
+                  size="small"
+                  value={sortMode}
+                  onChange={(event) =>
+                    setSortMode(event.target.value as SortMode)
+                  }
+                  sx={{
+                    ...(toolbarFieldSx as object),
+                    ...(compactToolbarFieldSx as object),
+                    minWidth: { xs: "100%", sm: 220 },
+                    flex: { xs: "1 1 100%", lg: "0 0 220px" },
+                    "& .MuiSelect-select": {
+                      py: "6.5px",
+                      fontSize: "0.85rem",
+                      fontWeight: 400,
+                      color: "text.primary",
+                      lineHeight: 1.2,
+                      display: "flex",
+                      alignItems: "center",
+                    },
+                  }}
+                  slotProps={{
+                    select: {
+                      startAdornment: (
+                        <InputAdornment position="start" sx={{ ml: 0, mr: 1 }}>
+                          <SortIcon
+                            fontSize="small"
+                            sx={{ color: "text.secondary" }}
+                          />
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
+                >
+                  <MenuItem value="date_desc">Data: od najnowszych</MenuItem>
+                  <MenuItem value="date_asc">Data: od najstarszych</MenuItem>
+                  <MenuItem value="score_desc">Wynik: od najwyższych</MenuItem>
+                  <MenuItem value="score_asc">Wynik: od najniższych</MenuItem>
+                </TextField>
+                <Box
+                  sx={{
+                    display: "flex",
+                    gap: 0.5,
+                    ml: { xs: 0, lg: "auto" },
+                    flex: { xs: "1 1 100%", lg: "0 0 auto" },
+                    justifyContent: { xs: "flex-end", lg: "flex-start" },
+                  }}
+                >
+                  <IconButton
+                    size="small"
+                    onClick={expandAllGroups}
+                    aria-label="Rozwi? wszystkie grupy"
+                    sx={{
+                      ...panelToolbarButtonSx,
+                      minWidth: 34,
+                      width: 34,
+                      minHeight: 34,
+                      p: 0,
+                    }}
+                  >
+                    <UnfoldMoreIcon fontSize="small" />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    onClick={collapseAllGroups}
+                    aria-label="Zwi? wszystkie grupy"
+                    sx={{
+                      ...panelToolbarButtonSx,
+                      minWidth: 34,
+                      width: 34,
+                      minHeight: 34,
+                      p: 0,
+                    }}
+                  >
+                    <UnfoldLessIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+              </Box>
+              <Divider />
+
+              {visibleStudentResults.length === 0 ? (
                 <Box sx={{ px: 3, py: 4, textAlign: "center" }}>
                   <Typography variant="body2" color="text.secondary">
-                    Brak wyników - żaden uczeń nie ukończył jeszcze tej lekcji.
+                    Brak wyników dla wybranych filtrów.
                   </Typography>
                 </Box>
               ) : (
-                <Box sx={{ p: 1.25, display: "grid", gap: 0.85 }}>
-                  {stats.studentResults.map((student) => {
-                    const percentTier = getPerformanceTier(
-                      student.resultPercent,
-                    );
+                <Box sx={{ p: 1.25, display: "grid", gap: 1.5 }}>
+                  {groupedStudentResults.map((group) => {
+                    const isCollapsed = collapsedGroups.has(group.groupKey);
 
                     return (
                       <Box
-                        key={student.userPublicId}
-                        sx={{
-                          display: "flex",
-                          flexWrap: { xs: "wrap", sm: "nowrap" },
-                          alignItems: { xs: "flex-start", sm: "center" },
-                          px: 1.5,
-                          py: 1.2,
-                          gap: 1.25,
-                          borderRadius: 2.25,
-                          border: "1px solid",
-                          borderColor: (theme) =>
-                            alpha(theme.palette.text.primary, 0.08),
-                          bgcolor: (theme) =>
-                            theme.palette.mode === "dark"
-                              ? alpha(theme.palette.common.black, 0.2)
-                              : alpha(theme.palette.common.white, 0.7),
-                          boxShadow: (theme) =>
-                            theme.palette.mode === "dark"
-                              ? "0 8px 18px rgba(2, 6, 23, 0.2)"
-                              : "0 8px 22px rgba(15, 23, 42, 0.035)",
-                        }}
+                        key={group.groupKey}
+                        sx={{ display: "grid", gap: 0.85 }}
                       >
-                        {/* Avatar */}
                         <Box
-                          component={RouterLink}
-                          to={`/teacher/students/${student.userPublicId}/progress?fromLessonPublicId=${lessonPublicId}`}
-                          state={{
-                            backTo: `/teacher/lessons/${lessonPublicId}/stats`,
-                            backLabel: "Wróć do wyników lekcji",
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => toggleGroupCollapsed(group.groupKey)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              toggleGroupCollapsed(group.groupKey);
+                            }
                           }}
-                          aria-label={`Przejdź do profilu ucznia ${student.username}`}
                           sx={{
-                            display: "inline-flex",
-                            flexShrink: 0,
-                            borderRadius: "50%",
-                            textDecoration: "none",
-                            outline: "none",
-                            "&:focus-visible": {
-                              boxShadow: (theme) =>
-                                `0 0 0 3px ${alpha(theme.palette.primary.main, 0.35)}`,
-                            },
-                          }}
-                        >
-                          <UserAvatar
-                            avatarUrl={student.avatarUrl}
-                            username={student.username}
-                            size={36}
-                            sx={{
-                              transition:
-                                "box-shadow 0.2s ease, transform 0.2s ease",
-                              "&:hover": {
-                                boxShadow: (theme) =>
-                                  `0 0 0 3px ${alpha(theme.palette.primary.main, 0.18)}`,
-                                transform: "translateY(-1px)",
-                              },
-                            }}
-                          />
-                        </Box>
-
-                        {/* Name + date — takes remaining width of first row */}
-                        <Box
-                          sx={{
-                            flex: 1,
-                            minWidth: 0,
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "flex-start",
-                            gap: 0.35,
-                          }}
-                        >
-                          <Typography
-                            component={RouterLink}
-                            to={`/teacher/students/${student.userPublicId}/progress?fromLessonPublicId=${lessonPublicId}`}
-                            state={{
-                              backTo: `/teacher/lessons/${lessonPublicId}/stats`,
-                              backLabel: "Wróć do wyników lekcji",
-                            }}
-                            variant="body2"
-                            fontWeight={600}
-                            sx={{
-                              color: "text.primary",
-                              display: "block",
-                              lineHeight: 1.25,
-                              maxWidth: "100%",
-                              overflowWrap: "anywhere",
-                              textDecoration: "none",
-                              outline: "none",
-                              "&:hover": {
-                                color: "primary.main",
-                                textDecoration: "underline",
-                                textUnderlineOffset: "3px",
-                              },
-                              "&:focus-visible": {
-                                color: "primary.main",
-                                textDecoration: "underline",
-                                textUnderlineOffset: "3px",
-                              },
-                            }}
-                          >
-                            {student.username}
-                          </Typography>
-                          <Typography
-                            component="span"
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{ display: "block", lineHeight: 1.3 }}
-                          >
-                            Ukończono: {formatDate(student.completedAt)}
-                          </Typography>
-                        </Box>
-
-                        {/* Score + actions — full-width second row on mobile */}
-                        <Box
-                          sx={{
-                            width: { xs: "100%", sm: "auto" },
-                            ml: { xs: 0, sm: "auto" },
-                            pl: { xs: "calc(36px + 10px)", sm: 0 },
+                            px: 1.25,
+                            py: 0.75,
                             display: "flex",
                             alignItems: "center",
-                            justifyContent: {
-                              xs: "space-between",
-                              sm: "flex-end",
-                            },
+                            justifyContent: "space-between",
                             gap: 1,
-                            flexWrap: { xs: "wrap", sm: "nowrap" },
+                            borderRadius: 2,
+                            border: "1px solid",
+                            borderColor: (theme) =>
+                              alpha(theme.palette.text.primary, 0.08),
+                            bgcolor: (theme) =>
+                              theme.palette.mode === "dark"
+                                ? alpha(theme.palette.common.white, 0.03)
+                                : alpha(theme.palette.primary.main, 0.025),
+                            cursor: "pointer",
+                            transition:
+                              "background-color 0.2s ease, border-color 0.2s ease",
+                            "&:hover": {
+                              bgcolor: (theme) =>
+                                alpha(theme.palette.primary.main, 0.06),
+                              borderColor: (theme) =>
+                                alpha(theme.palette.primary.main, 0.18),
+                            },
+                            "&:focus-visible": {
+                              outline: "none",
+                              boxShadow: (theme) =>
+                                `0 0 0 3px ${alpha(theme.palette.primary.main, 0.18)}`,
+                            },
                           }}
+                        >
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography variant="subtitle2" fontWeight={800}>
+                              {group.groupName}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              Średni wynik:{" "}
+                              {formatPercent(group.averagePercent)}
+                            </Typography>
+                          </Box>
+                          <IconButton
+                            size="small"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              toggleGroupCollapsed(group.groupKey);
+                            }}
+                            aria-label={
+                              isCollapsed ? "Rozwiń grupę" : "Zwiń grupę"
+                            }
+                          >
+                            {isCollapsed ? (
+                              <ExpandMoreIcon fontSize="small" />
+                            ) : (
+                              <ExpandLessIcon fontSize="small" />
+                            )}
+                          </IconButton>
+                        </Box>
+
+                        <Collapse
+                          in={!isCollapsed}
+                          timeout="auto"
+                          unmountOnExit
                         >
                           <Box
                             sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 0.75,
-                              flexShrink: 0,
+                              display: "grid",
+                              gap: 0.85,
+                              ml: { xs: 0.75, sm: 1.5 },
+                              pl: { xs: 1, sm: 1.5 },
+                              borderLeft: "2px solid",
+                              borderColor: (theme) =>
+                                alpha(theme.palette.primary.main, 0.14),
                             }}
                           >
-                            <Box
-                              sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "flex-end",
-                                gap: 1.1,
-                              }}
-                            >
-                              <Typography
-                                variant="body2"
-                                fontWeight={700}
-                                sx={{
-                                  color: `${percentTier}.main`,
-                                  minWidth: 48,
-                                  textAlign: "right",
-                                }}
-                              >
-                                {formatPercent(student.resultPercent)}
-                              </Typography>
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                                sx={{ minWidth: 72, textAlign: "right" }}
-                              >
-                                {student.score}/{student.maxScore} pkt
-                              </Typography>
-                            </Box>
-                            <Box
-                              sx={{
-                                width: 20,
-                                display: "flex",
-                                justifyContent: "center",
-                              }}
-                            >
-                              {student.totalTabSwitchCount > 0 && (
-                                <MuiTooltip
-                                  title={`Uczen wychodzil z zakladek: ${student.totalTabSwitchCount}`}
-                                >
-                                  <WarningIcon
-                                    sx={{ color: "warning.main", fontSize: 18 }}
-                                  />
-                                </MuiTooltip>
-                              )}
-                            </Box>
-                          </Box>
+                            {group.students.map((student) => {
+                              const percentTier = getPerformanceTier(
+                                student.resultPercent,
+                              );
 
-                          <Box
-                            sx={{
-                              ...panelInlineActionsSx,
-                              gap: 0.5,
-                              flexShrink: 0,
-                            }}
-                          >
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              startIcon={<ReplayIcon fontSize="small" />}
-                              sx={{
-                                ...panelDeleteButtonSx,
-                                minHeight: 32,
-                                borderRadius: 999,
-                                px: 1.15,
-                                fontSize: "0.76rem",
-                                boxShadow: "none",
-                                "& .MuiButton-startIcon": {
-                                  marginRight: 0.4,
-                                  marginLeft: 0,
-                                },
-                              }}
-                              disabled={resettingUserPublicIds.includes(
-                                student.userPublicId,
-                              )}
-                              onClick={() => setResetConfirmStudent(student)}
-                            >
-                              {resettingUserPublicIds.includes(
-                                student.userPublicId,
-                              )
-                                ? "Resetowanie..."
-                                : "Resetuj wynik"}
-                            </Button>
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              startIcon={<VisibilityIcon fontSize="small" />}
-                              sx={{
-                                ...panelFooterButtonSx,
-                                minHeight: 32,
-                                borderRadius: 999,
-                                px: 1.15,
-                                fontSize: "0.76rem",
-                                boxShadow: "none",
-                                "& .MuiButton-startIcon": {
-                                  marginRight: 0.4,
-                                  marginLeft: 0,
-                                },
-                              }}
-                              onClick={() =>
-                                navigate(
-                                  `/teacher/lessons/${lessonPublicId}/students/${student.userPublicId}/result`,
-                                )
-                              }
-                            >
-                              Szczegóły
-                            </Button>
+                              return (
+                                <Box
+                                  key={student.userPublicId}
+                                  sx={{
+                                    display: "flex",
+                                    flexWrap: { xs: "wrap", sm: "nowrap" },
+                                    alignItems: {
+                                      xs: "flex-start",
+                                      sm: "center",
+                                    },
+                                    px: 1.5,
+                                    py: 1.2,
+                                    gap: 1.25,
+                                    borderRadius: 2.25,
+                                    border: "1px solid",
+                                    borderColor: (theme) =>
+                                      alpha(theme.palette.text.primary, 0.08),
+                                    bgcolor: (theme) =>
+                                      theme.palette.mode === "dark"
+                                        ? alpha(theme.palette.common.black, 0.2)
+                                        : alpha(
+                                            theme.palette.common.white,
+                                            0.7,
+                                          ),
+                                    boxShadow: (theme) =>
+                                      theme.palette.mode === "dark"
+                                        ? "0 8px 18px rgba(2, 6, 23, 0.2)"
+                                        : "0 8px 22px rgba(15, 23, 42, 0.035)",
+                                  }}
+                                >
+                                  <Box
+                                    component={RouterLink}
+                                    to={`/teacher/students/${student.userPublicId}/progress?fromLessonPublicId=${lessonPublicId}`}
+                                    state={{
+                                      backTo: `/teacher/lessons/${lessonPublicId}/stats`,
+                                      backLabel: "Wróć do wyników lekcji",
+                                    }}
+                                    aria-label={`Przejdź do profilu ucznia ${student.username}`}
+                                    sx={{
+                                      display: "inline-flex",
+                                      flexShrink: 0,
+                                      borderRadius: "50%",
+                                      textDecoration: "none",
+                                      outline: "none",
+                                      "&:focus-visible": {
+                                        boxShadow: (theme) =>
+                                          `0 0 0 3px ${alpha(theme.palette.primary.main, 0.35)}`,
+                                      },
+                                    }}
+                                  >
+                                    <UserAvatar
+                                      avatarUrl={student.avatarUrl}
+                                      username={student.username}
+                                      size={36}
+                                      sx={{
+                                        transition:
+                                          "box-shadow 0.2s ease, transform 0.2s ease",
+                                        "&:hover": {
+                                          boxShadow: (theme) =>
+                                            `0 0 0 3px ${alpha(theme.palette.primary.main, 0.18)}`,
+                                          transform: "translateY(-1px)",
+                                        },
+                                      }}
+                                    />
+                                  </Box>
+
+                                  <Box
+                                    sx={{
+                                      flex: 1,
+                                      minWidth: 0,
+                                      display: "flex",
+                                      flexDirection: "column",
+                                      alignItems: "flex-start",
+                                      gap: 0.35,
+                                    }}
+                                  >
+                                    <Typography
+                                      component={RouterLink}
+                                      to={`/teacher/students/${student.userPublicId}/progress?fromLessonPublicId=${lessonPublicId}`}
+                                      state={{
+                                        backTo: `/teacher/lessons/${lessonPublicId}/stats`,
+                                        backLabel: "Wróć do wyników lekcji",
+                                      }}
+                                      variant="body2"
+                                      fontWeight={600}
+                                      sx={{
+                                        color: "text.primary",
+                                        display: "block",
+                                        lineHeight: 1.25,
+                                        maxWidth: "100%",
+                                        overflowWrap: "anywhere",
+                                        textDecoration: "none",
+                                        outline: "none",
+                                        "&:hover": {
+                                          color: "primary.main",
+                                          textDecoration: "underline",
+                                          textUnderlineOffset: "3px",
+                                        },
+                                        "&:focus-visible": {
+                                          color: "primary.main",
+                                          textDecoration: "underline",
+                                          textUnderlineOffset: "3px",
+                                        },
+                                      }}
+                                    >
+                                      {student.username}
+                                    </Typography>
+                                    <Typography
+                                      component="span"
+                                      variant="caption"
+                                      color="text.secondary"
+                                      sx={{
+                                        display: "block",
+                                        lineHeight: 1.3,
+                                      }}
+                                    >
+                                      Ukończono:{" "}
+                                      {formatDate(student.completedAt)}
+                                    </Typography>
+                                  </Box>
+
+                                  <Box
+                                    sx={{
+                                      width: { xs: "100%", sm: "auto" },
+                                      ml: { xs: 0, sm: "auto" },
+                                      pl: { xs: "calc(36px + 10px)", sm: 0 },
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: {
+                                        xs: "space-between",
+                                        sm: "flex-end",
+                                      },
+                                      gap: 1,
+                                      flexWrap: { xs: "wrap", sm: "nowrap" },
+                                    }}
+                                  >
+                                    <Box
+                                      sx={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 0.75,
+                                        flexShrink: 0,
+                                      }}
+                                    >
+                                      <Box
+                                        sx={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          justifyContent: "flex-end",
+                                          gap: 1.1,
+                                        }}
+                                      >
+                                        <Typography
+                                          variant="body2"
+                                          fontWeight={700}
+                                          sx={{
+                                            color: `${percentTier}.main`,
+                                            minWidth: 48,
+                                            textAlign: "right",
+                                          }}
+                                        >
+                                          {formatPercent(student.resultPercent)}
+                                        </Typography>
+                                        <Typography
+                                          variant="body2"
+                                          color="text.secondary"
+                                          sx={{
+                                            minWidth: 72,
+                                            textAlign: "right",
+                                          }}
+                                        >
+                                          {student.score}/{student.maxScore} pkt
+                                        </Typography>
+                                      </Box>
+                                      <Box
+                                        sx={{
+                                          width: 20,
+                                          display: "flex",
+                                          justifyContent: "center",
+                                        }}
+                                      >
+                                        {student.totalTabSwitchCount > 0 && (
+                                          <MuiTooltip
+                                            title={`Uczeń wychodził z zakładek: ${student.totalTabSwitchCount}`}
+                                          >
+                                            <WarningIcon
+                                              sx={{
+                                                color: "warning.main",
+                                                fontSize: 18,
+                                              }}
+                                            />
+                                          </MuiTooltip>
+                                        )}
+                                      </Box>
+                                    </Box>
+
+                                    <Box
+                                      sx={{
+                                        ...panelInlineActionsSx,
+                                        gap: 0.5,
+                                        flexShrink: 0,
+                                      }}
+                                    >
+                                      <Button
+                                        size="small"
+                                        variant="outlined"
+                                        startIcon={
+                                          <ReplayIcon fontSize="small" />
+                                        }
+                                        sx={{
+                                          ...panelDeleteButtonSx,
+                                          minHeight: 32,
+                                          borderRadius: 999,
+                                          px: 1.15,
+                                          fontSize: "0.76rem",
+                                          boxShadow: "none",
+                                          "& .MuiButton-startIcon": {
+                                            marginRight: 0.4,
+                                            marginLeft: 0,
+                                          },
+                                        }}
+                                        disabled={resettingUserPublicIds.includes(
+                                          student.userPublicId,
+                                        )}
+                                        onClick={() =>
+                                          setResetConfirmStudent(student)
+                                        }
+                                      >
+                                        {resettingUserPublicIds.includes(
+                                          student.userPublicId,
+                                        )
+                                          ? "Resetowanie..."
+                                          : "Resetuj wynik"}
+                                      </Button>
+                                      <Button
+                                        size="small"
+                                        variant="outlined"
+                                        startIcon={
+                                          <VisibilityIcon fontSize="small" />
+                                        }
+                                        sx={{
+                                          ...panelFooterButtonSx,
+                                          minHeight: 32,
+                                          borderRadius: 999,
+                                          px: 1.15,
+                                          fontSize: "0.76rem",
+                                          boxShadow: "none",
+                                          "& .MuiButton-startIcon": {
+                                            marginRight: 0.4,
+                                            marginLeft: 0,
+                                          },
+                                        }}
+                                        onClick={() =>
+                                          navigate(
+                                            `/teacher/lessons/${lessonPublicId}/students/${student.userPublicId}/result`,
+                                          )
+                                        }
+                                      >
+                                        Szczegóły
+                                      </Button>
+                                    </Box>
+                                  </Box>
+                                </Box>
+                              );
+                            })}
                           </Box>
-                        </Box>
+                        </Collapse>
                       </Box>
                     );
                   })}
