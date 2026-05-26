@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  Alert,
   Box,
   Button,
   Chip,
@@ -23,12 +24,14 @@ import {
   type SpeakTaskResponse,
   type SpeakTranscriptionResponse,
 } from "@/api/taskService";
+import { ApiError } from "@/api/apiClient";
 import type { SubmitAnswerDetail } from "@/api/studentService";
 import {
   taskCardSx,
   taskFeedbackCorrectSx,
   taskTypeMeta,
 } from "./taskSolverStyles";
+import { formatAcceptedAnswers } from "@/utils/answerDisplay";
 import { formatPercent } from "@/utils/dashboardUtils";
 
 interface SpeakTaskSolverProps {
@@ -144,6 +147,9 @@ export function SpeakTaskSolver({
   const [processing, setProcessing] = useState(false);
   const [recordingBlobUrl, setRecordingBlobUrl] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
+  const [transcriptionError, setTranscriptionError] = useState<string | null>(
+    null,
+  );
 
   // Revoke blob URL on unmount
   useEffect(() => {
@@ -184,6 +190,7 @@ export function SpeakTaskSolver({
 
   const startRecording = async () => {
     try {
+      setTranscriptionError(null);
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       chunksRef.current = [];
 
@@ -253,6 +260,7 @@ export function SpeakTaskSolver({
       return;
     }
     setProcessing(true);
+    setTranscriptionError(null);
     try {
       const response = await taskService.transcribeSpeakTask(
         lessonPublicId,
@@ -261,8 +269,28 @@ export function SpeakTaskSolver({
       );
       onChange(response.text);
       onTranscriptionResult(response);
-    } catch {
-      // Intentionally silent: the task keeps the user in the retry flow without extra inline errors.
+    } catch (error: unknown) {
+      if (error instanceof ApiError) {
+        if (error.problem.code === "SPEAK_ATTEMPT_LIMIT_EXCEEDED") {
+          setTranscriptionError("Osiągnięto limit prób dla tego zadania.");
+        } else if (error.problem.code === "STT_SERVICE_UNAVAILABLE") {
+          setTranscriptionError(
+            "Usługa rozpoznawania mowy jest chwilowo niedostępna. Spróbuj ponownie za moment.",
+          );
+        } else if (error.problem.code === "STT_RECOGNITION_FAILED") {
+          setTranscriptionError(
+            "Nie udało się rozpoznać wypowiedzi. Spróbuj ponownie.",
+          );
+        } else {
+          setTranscriptionError(
+            "Nie udało się rozpoznać wypowiedzi. Spróbuj ponownie.",
+          );
+        }
+      } else {
+        setTranscriptionError(
+          "Nie udało się połączyć z usługą rozpoznawania mowy.",
+        );
+      }
     } finally {
       setProcessing(false);
     }
@@ -474,6 +502,12 @@ export function SpeakTaskSolver({
           )}
       </Box>
 
+      {transcriptionError && (
+        <Alert severity="warning" sx={{ mt: 2 }}>
+          {transcriptionError}
+        </Alert>
+      )}
+
       {result && (
         <Box sx={result.isCorrect ? taskFeedbackCorrectSx : { mt: 2 }}>
           <Stack direction="row" alignItems="center" spacing={1}>
@@ -483,7 +517,7 @@ export function SpeakTaskSolver({
             <Typography variant="body2" fontWeight={600}>
               {result.isCorrect
                 ? "Wymowa zaakceptowana."
-                : `Oczekiwany tekst: ${result.correctAnswer}`}
+                : `Oczekiwany tekst: ${formatAcceptedAnswers(result.correctAnswers, result.correctAnswer)}`}
             </Typography>
           </Stack>
         </Box>

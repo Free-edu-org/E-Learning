@@ -37,10 +37,13 @@ import type { Group, Lesson, TeacherStats } from "@/api/lessonService";
 import { taskService } from "@/api/taskService";
 import type { LessonTasksResponse } from "@/api/taskService";
 import { userService, type UserProfile } from "@/api/userService";
+import { LessonLabelColorPicker } from "@/components/lesson/LessonLabelColorPicker";
 import { ActionButton } from "@/components/teacher/ActionButton";
 import { LessonCard } from "@/components/teacher/LessonCard";
 import {
   LessonToolbar,
+  NO_LABEL_COLOR_FILTER,
+  type LessonLabelColorFilter,
   type SortMode,
   type StatusFilter,
   type ViewMode,
@@ -68,6 +71,7 @@ import {
   panelSurfaceSx,
 } from "@/components/ui/panel/panelStyles";
 import { useAuth } from "@/context/AuthContext";
+import type { LessonLabelColor } from "@/constants/lessonLabelColors";
 import { uiTokens } from "@/theme/uiTokens";
 import { LESSON_TITLE_MAX_LENGTH } from "./lessonEditor";
 import { getApiErrorMessage, formatPercent } from "@/utils/dashboardUtils";
@@ -81,6 +85,7 @@ interface DialogFeedbackState {
 interface LessonDraft {
   title: string;
   theme: string;
+  labelColor: LessonLabelColor | null;
   groups: Group[];
   tasks: LessonTaskDraft[];
 }
@@ -88,6 +93,7 @@ interface LessonDraft {
 const emptyLessonDraft: LessonDraft = {
   title: "",
   theme: "",
+  labelColor: null,
   groups: [],
   tasks: [],
 };
@@ -109,6 +115,7 @@ function getErrorMessage(error: unknown, fallback: string) {
     return getApiErrorMessage(error, fallback, {
       title: "Tytuł",
       theme: "Temat",
+      labelColor: "Kolor",
     });
   }
   if (error instanceof Error && error.message === "NETWORK_ERROR") {
@@ -347,6 +354,9 @@ export function TeacherDashboard() {
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [sortMode, setSortMode] = useState<SortMode>("date_desc");
   const [selectedGroups, setSelectedGroups] = useState<Group[]>([]);
+  const [selectedLabelColors, setSelectedLabelColors] = useState<
+    LessonLabelColorFilter[]
+  >([]);
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [lessonDraft, setLessonDraft] = useState<LessonDraft>(emptyLessonDraft);
@@ -497,6 +507,7 @@ export function TeacherDashboard() {
       const createdLesson = await lessonService.createLesson({
         title: lessonDraft.title,
         theme: lessonDraft.theme,
+        labelColor: lessonDraft.labelColor,
         groupPublicIds: groupPublicIds.length > 0 ? groupPublicIds : undefined,
       });
 
@@ -571,6 +582,7 @@ export function TeacherDashboard() {
     setEditDraft({
       title: lesson.title,
       theme: lesson.theme,
+      labelColor: lesson.labelColor ?? null,
       groups: lesson.groups,
       tasks: [],
     });
@@ -647,6 +659,7 @@ export function TeacherDashboard() {
       await lessonService.updateLesson(lessonPublicId, {
         title: editDraft.title,
         theme: editDraft.theme,
+        labelColor: editDraft.labelColor,
         groupPublicIds,
       });
 
@@ -835,6 +848,17 @@ export function TeacherDashboard() {
       );
     }
 
+    if (selectedLabelColors.length > 0) {
+      const selectedColors = new Set(selectedLabelColors);
+      result = result.filter(
+        (lesson) =>
+          (lesson.labelColor != null &&
+            selectedColors.has(lesson.labelColor)) ||
+          (lesson.labelColor == null &&
+            selectedColors.has(NO_LABEL_COLOR_FILTER)),
+      );
+    }
+
     result = [...result].sort((a, b) => {
       switch (sortMode) {
         case "date_asc":
@@ -851,7 +875,14 @@ export function TeacherDashboard() {
     });
 
     return result;
-  }, [lessons, searchQuery, selectedGroups, sortMode, statusFilter]);
+  }, [
+    lessons,
+    searchQuery,
+    selectedGroups,
+    selectedLabelColors,
+    sortMode,
+    statusFilter,
+  ]);
 
   const handleLogout = () => {
     logout();
@@ -971,6 +1002,8 @@ export function TeacherDashboard() {
                 availableGroups={availableGroups}
                 selectedGroups={selectedGroups}
                 onSelectedGroupsChange={setSelectedGroups}
+                selectedLabelColors={selectedLabelColors}
+                onSelectedLabelColorsChange={setSelectedLabelColors}
               />
 
               {loadingData ? (
@@ -989,7 +1022,9 @@ export function TeacherDashboard() {
                 <Alert severity="info" sx={{ borderRadius: 2 }}>
                   {lessons.length === 0
                     ? 'Nie masz jeszcze żadnych lekcji. Kliknij "Utwórz lekcję", aby dodać pierwszą.'
-                    : "Brak lekcji pasujących do bieżących filtrów."}
+                    : selectedLabelColors.length > 0
+                      ? "Brak lekcji dla wybranych kolorów."
+                      : "Brak lekcji pasujących do bieżących filtrów."}
                 </Alert>
               ) : viewMode === "list" ? (
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
@@ -1134,6 +1169,21 @@ export function TeacherDashboard() {
                     />
                   </FormField>
                 </Stack>
+              </FormSection>
+              <FormSection
+                title="Kolor organizacyjny"
+                description="Opcjonalna kropka pomaga porządkować lekcje na dashboardzie."
+              >
+                <LessonLabelColorPicker
+                  value={lessonDraft.labelColor}
+                  onChange={(labelColor) =>
+                    setLessonDraft((current) => ({
+                      ...current,
+                      labelColor,
+                    }))
+                  }
+                  disabled={createDialogLoading}
+                />
               </FormSection>
               <FormSection
                 title="Przypisanie do grup"
@@ -1402,6 +1452,21 @@ export function TeacherDashboard() {
                     />
                   </FormField>
                 </Stack>
+              </FormSection>
+              <FormSection
+                title="Kolor organizacyjny"
+                description="Opcjonalna kropka pomaga porządkować lekcje na dashboardzie."
+              >
+                <LessonLabelColorPicker
+                  value={editDraft.labelColor}
+                  onChange={(labelColor) =>
+                    setEditDraft((current) => ({
+                      ...current,
+                      labelColor,
+                    }))
+                  }
+                  disabled={editDialogLoading}
+                />
               </FormSection>
               <FormSection
                 title="Przypisanie do grup"

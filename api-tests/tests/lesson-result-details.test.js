@@ -45,7 +45,7 @@ describe('Lesson Result Details API', () => {
         response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/choose`, {
             task: 'Choose the right option',
             possibleAnswers: 'red|green|blue',
-            correctAnswer: 1,
+            correctAnswers: [1],
             hint: 'Pick the second answer',
             section: 'Quiz'
         });
@@ -54,7 +54,7 @@ describe('Lesson Result Details API', () => {
 
         response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/write`, {
             task: 'Write the word "hello"',
-            correctAnswer: 'hello',
+            correctAnswers: ['hello'],
             hint: 'Simple greeting',
             section: 'Writing'
         });

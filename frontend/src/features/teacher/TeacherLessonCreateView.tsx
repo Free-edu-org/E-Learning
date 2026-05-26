@@ -26,6 +26,8 @@ import {
   EditNoteOutlined as WriteIcon,
 } from "@mui/icons-material";
 import { lessonService } from "@/api/lessonService";
+import { LessonLabelColorDot } from "@/components/lesson/LessonLabelColorDot";
+import { LessonLabelColorPicker } from "@/components/lesson/LessonLabelColorPicker";
 import { userService, type UserProfile } from "@/api/userService";
 import { TaskEditor } from "@/components/teacher/TaskEditor";
 import {
@@ -161,6 +163,7 @@ export function TeacherLessonCreateView() {
       const createdLesson = await lessonService.createLesson({
         title: draft.title,
         theme: draft.theme,
+        labelColor: draft.labelColor,
         groupPublicIds: groupPublicIds.length > 0 ? groupPublicIds : undefined,
       });
 
@@ -402,6 +405,22 @@ export function TeacherLessonCreateView() {
               </FormSection>
 
               <FormSection
+                title="Kolor organizacyjny"
+                description="Opcjonalna kropka pomoże szybko odnaleźć lekcję na dashboardzie."
+              >
+                <LessonLabelColorPicker
+                  value={draft.labelColor}
+                  onChange={(labelColor) =>
+                    setDraft((current) => ({
+                      ...current,
+                      labelColor,
+                    }))
+                  }
+                  disabled={saving}
+                />
+              </FormSection>
+
+              <FormSection
                 title="Przypisanie do grup"
                 description="Wybierz grupy, które mają mieć dostęp do tej lekcji."
               >
@@ -547,6 +566,7 @@ export function TeacherLessonCreateView() {
                         sx={{ display: "flex", alignItems: "center", gap: 1 }}
                       >
                         <ReadyIcon fontSize="small" color="primary" />
+                        <LessonLabelColorDot color={draft.labelColor} />
                         <Typography
                           variant="body2"
                           sx={{ minWidth: 0, overflowWrap: "anywhere" }}

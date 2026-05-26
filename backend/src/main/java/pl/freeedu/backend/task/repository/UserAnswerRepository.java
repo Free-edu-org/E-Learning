@@ -8,11 +8,15 @@ import org.springframework.transaction.annotation.Transactional;
 import pl.freeedu.backend.task.model.UserAnswer;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface UserAnswerRepository extends JpaRepository<UserAnswer, Integer> {
 
 	List<UserAnswer> findByUserIdAndLessonId(Integer userId, Integer lessonId);
+
+	Optional<UserAnswer> findByUserIdAndLessonIdAndTaskIdAndTaskType(Integer userId, Integer lessonId, Integer taskId,
+			String taskType);
 
 	@Query(value = """
 			SELECT ua.task_type,

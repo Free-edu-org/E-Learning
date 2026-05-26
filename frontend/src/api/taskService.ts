@@ -6,6 +6,7 @@ export interface CreateChooseTaskRequest {
   task: string;
   possibleAnswers: string;
   correctAnswer: number;
+  correctAnswers?: number[];
   hint?: string;
   section?: string;
 }
@@ -13,6 +14,7 @@ export interface CreateChooseTaskRequest {
 export interface CreateWriteTaskRequest {
   task: string;
   correctAnswer: string;
+  correctAnswers?: string[];
   hint?: string;
   section?: string;
 }
@@ -21,6 +23,7 @@ export interface CreateScatterTaskRequest {
   task: string;
   words: string;
   correctAnswer: string;
+  correctAnswers?: string[];
   hint?: string;
   section?: string;
 }
@@ -43,27 +46,33 @@ export interface TaskResponse {
 export interface ChooseTaskResponse extends TaskResponse {
   possibleAnswers: string;
   correctAnswer: number | null;
+  correctAnswers: number[] | null;
   createdAt: string;
 }
 
 export interface WriteTaskResponse extends TaskResponse {
   correctAnswer: string | null;
+  correctAnswers: string[] | null;
   createdAt: string;
 }
 
 export interface ScatterTaskResponse extends TaskResponse {
   words: string;
   correctAnswer: string | null;
+  correctAnswers: string[] | null;
   createdAt: string;
 }
 
 export interface SpeakTaskResponse extends Omit<TaskResponse, "task"> {
   expectedText: string;
+  expectedTexts: string[] | null;
   createdAt: string;
 }
 
 export interface SpeakTranscriptionResponse {
+  attemptId: string;
   text: string;
+  rawText: string;
   expectedText: string;
   correct: boolean;
   score: number;

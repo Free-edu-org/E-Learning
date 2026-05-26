@@ -1,6 +1,6 @@
 # Domena - lekcje
 
-Lekcja jest glownym kontenerem tresci. Nalezy do nauczyciela, moze byc aktywna lub nieaktywna, moze byc przypisana do grup i zawiera zadania z [[Domena - zadania]].
+Lekcja jest glownym kontenerem tresci. Nalezy do nauczyciela, moze byc aktywna lub nieaktywna, moze byc przypisana do grup, zawiera zadania z [[Domena - zadania]] i moze miec opcjonalny kolor organizacyjny `labelColor`.
 
 Polaczenia:
 - [[Rola - Teacher]] tworzy i edytuje lekcje
@@ -8,6 +8,11 @@ Polaczenia:
 - [[Rola - Student]] widzi aktywne lekcje przypisane przez [[Domena - grupy]]
 - [[Domena - postep studenta]] zapisuje stan lekcji dla ucznia
 - [[Frontend - Wyniki Lekcji]] prezentuje wyniki uczniow per lekcja
+
+Kolory organizacyjne:
+- pole `labelColor` jest opcjonalne i przechowuje stabilna wartosc API, nie dowolny CSS
+- dozwolone wartosci: `gray`, `red`, `orange`, `yellow`, `green`, `blue`, `purple`
+- nauczyciel moze filtrowac dashboard po wielu kolorach naraz; logika dziala jak OR
 
 Endpointy:
 - `GET /api/v1/lessons`

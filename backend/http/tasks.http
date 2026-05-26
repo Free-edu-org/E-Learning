@@ -3,7 +3,6 @@ GET http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/tasks
 Authorization: Bearer {{auth_token}}
 
 ### Create choose task (ADMIN or lesson owner TEACHER)
-POST http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/tasks/choose
 Content-Type: application/json
 Authorization: Bearer {{auth_token}}
 
@@ -11,6 +10,7 @@ Authorization: Bearer {{auth_token}}
   "task": "What is 2+2?",
   "possibleAnswers": "3|4|5|6",
   "correctAnswer": 1,
+  "correctAnswers": [1],
   "hint": "Basic math",
   "section": "Math"
 }
@@ -24,6 +24,7 @@ Authorization: Bearer {{auth_token}}
   "task": "What is 3+3?",
   "possibleAnswers": "5|6|7|8",
   "correctAnswer": 1,
+  "correctAnswers": [1, 2],
   "hint": "Updated",
   "section": "Math"
 }
@@ -40,6 +41,7 @@ Authorization: Bearer {{auth_token}}
 {
   "task": "Write the past tense of 'go'",
   "correctAnswer": "went",
+  "correctAnswers": ["went", "has gone"],
   "hint": "Irregular verb",
   "section": "Grammar"
 }
@@ -52,6 +54,7 @@ Authorization: Bearer {{auth_token}}
 {
   "task": "Write the past tense of 'run'",
   "correctAnswer": "ran",
+  "correctAnswers": ["ran", "did run"],
   "hint": "Also irregular",
   "section": "Grammar"
 }
@@ -69,6 +72,7 @@ Authorization: Bearer {{auth_token}}
   "task": "Arrange the words",
   "words": "is|cat|the|big",
   "correctAnswer": "the cat is big",
+  "correctAnswers": ["the cat is big"],
   "hint": "Subject first",
   "section": "Grammar"
 }
@@ -82,6 +86,7 @@ Authorization: Bearer {{auth_token}}
   "task": "Arrange updated",
   "words": "is|dog|the|small",
   "correctAnswer": "the dog is small",
+  "correctAnswers": ["the dog is small"],
   "hint": "Subject first"
 }
 
@@ -122,20 +127,63 @@ Content-Type: audio/webm
 < ./answer.webm
 --FreeEduBoundary--
 
+### Expected response fields:
+### - attemptId
+### - text (matchedTranscription)
+### - rawText (rawTranscription)
+### - expectedText
+### - score
+### - correct
+### - words[]
+
 ### Delete speak task
 DELETE http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/tasks/speak/{{task_public_id}}
 Authorization: Bearer {{auth_token}}
 
-### Submit lesson answers (STUDENT only)
+### Submit lesson answers with valid speaking attemptId (STUDENT only)
 POST http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/submit
 Content-Type: application/json
 Authorization: Bearer {{auth_token}}
 
 {
   "answers": [
-    { "taskPublicId": "{{task_public_id}}", "taskType": "choose", "answer": "1" },
-    { "taskPublicId": "{{task_public_id}}", "taskType": "write", "answer": "went" },
-    { "taskPublicId": "{{task_public_id}}", "taskType": "speak", "answer": "Hello" }
+    { "taskPublicId": "{{choose_task_public_id}}", "taskType": "choose", "answer": "1" },
+    { "taskPublicId": "{{write_task_public_id}}", "taskType": "write", "answer": "went" },
+    { "taskPublicId": "{{speak_task_public_id}}", "taskType": "speak", "answer": "", "attemptId": "{{speak_attempt_id}}" }
+  ]
+}
+
+### Submit lesson with skipped speaking task
+POST http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/submit
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "answers": [
+    { "taskPublicId": "{{choose_task_public_id}}", "taskType": "choose", "answer": "1" },
+    { "taskPublicId": "{{write_task_public_id}}", "taskType": "write", "answer": "went" }
+  ]
+}
+
+### Submit lesson with speaking answer but without attemptId
+POST http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/submit
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "answers": [
+    { "taskPublicId": "{{speak_task_public_id}}", "taskType": "speak", "answer": "Hello how are you" }
+  ]
+}
+
+### Submit lesson with invalid speaking attemptId
+POST http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/submit
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "answers": [
+    { "taskPublicId": "{{speak_task_public_id}}", "taskType": "speak", "answer": "", "attemptId": "00000000-0000-0000-0000-000000000000" }
   ]
 }
 
@@ -150,8 +198,12 @@ Authorization: Bearer {{auth_token}}
 }
 
 ### Reset user progress (ADMIN or lesson owner TEACHER)
+# Resets only the selected lesson result and removes only that lesson's contribution
+# from student progress history.
 POST http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/users/{{user_public_id}}/reset
 Authorization: Bearer {{auth_token}}
+
+### After reset, old {{speak_attempt_id}} must no longer be reusable in /submit.
 
 ### Upload hint image for a choose task (ADMIN or lesson owner TEACHER)
 POST http://localhost:8080/api/v1/lessons/{{lesson_public_id}}/tasks/choose/{{task_public_id}}/hint-image

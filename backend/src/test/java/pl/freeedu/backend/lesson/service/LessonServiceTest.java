@@ -2,12 +2,14 @@ package pl.freeedu.backend.lesson.service;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.freeedu.backend.lesson.dto.LessonRequest;
 import pl.freeedu.backend.lesson.dto.LessonResponse;
 import pl.freeedu.backend.lesson.dto.LessonStatusRequest;
+import pl.freeedu.backend.lesson.exception.LessonErrorCode;
 import pl.freeedu.backend.lesson.exception.LessonException;
 import pl.freeedu.backend.lesson.mapper.LessonMapper;
 import pl.freeedu.backend.lesson.model.Lesson;
@@ -138,7 +140,7 @@ class LessonServiceTest {
 	@Test
 	void shouldCreateLessonProperly() {
 		// given
-		LessonRequest request = LessonRequest.builder().title("Title").theme("Theme")
+		LessonRequest request = LessonRequest.builder().title("Title").theme("Theme").labelColor(" GREEN ")
 				.groupPublicIds(List.of("group-public-1", "group-public-2")).build();
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
 		when(userRepository.findById(10)).thenReturn(Optional.of(User.builder().id(10).build()));
@@ -164,12 +166,57 @@ class LessonServiceTest {
 			verify(userGroupPublicIdLookupService).getRequiredInternalId("group-public-1");
 			verify(userGroupPublicIdLookupService).getRequiredInternalId("group-public-2");
 		}).verifyComplete();
+		ArgumentCaptor<Lesson> lessonCaptor = ArgumentCaptor.forClass(Lesson.class);
+		verify(lessonRepository).save(lessonCaptor.capture());
+		assertEquals("green", lessonCaptor.getValue().getLabelColor());
+	}
+
+	@Test
+	void shouldCreateLessonWithoutLabelColorWhenBlank() {
+		// given
+		LessonRequest request = LessonRequest.builder().title("Title").theme("Theme").labelColor(" ").build();
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
+		when(userRepository.findById(10)).thenReturn(Optional.of(User.builder().id(10).build()));
+		when(lessonRepository.save(any())).thenAnswer(inv -> {
+			Lesson lesson = inv.getArgument(0);
+			lesson.setId(99);
+			return lesson;
+		});
+		when(lessonMapper.toResponse(any())).thenReturn(LessonResponse.builder().publicId("lesson-99").build());
+		when(groupHasLessonRepository.findGroupsForLesson(99)).thenReturn(List.of());
+
+		// when
+		Mono<LessonResponse> result = lessonService.createLesson(Mono.just(request));
+
+		// then
+		StepVerifier.create(result).expectNextMatches(resp -> "lesson-99".equals(resp.getPublicId())).verifyComplete();
+		ArgumentCaptor<Lesson> lessonCaptor = ArgumentCaptor.forClass(Lesson.class);
+		verify(lessonRepository).save(lessonCaptor.capture());
+		assertNull(lessonCaptor.getValue().getLabelColor());
+	}
+
+	@Test
+	void shouldRejectInvalidLessonLabelColorOnCreate() {
+		// given
+		LessonRequest request = LessonRequest.builder().title("Title").theme("Theme").labelColor("cyan").build();
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
+
+		// when
+		Mono<LessonResponse> result = lessonService.createLesson(Mono.just(request));
+
+		// then
+		StepVerifier.create(result).expectErrorSatisfies(error -> {
+			LessonException exception = assertInstanceOf(LessonException.class, error);
+			assertEquals(LessonErrorCode.LESSON_INVALID_LABEL_COLOR, exception.getErrorCode());
+		}).verify();
+		verify(lessonRepository, never()).save(any());
+		verify(userRepository, never()).findById(any());
 	}
 
 	@Test
 	void shouldUpdateLessonProperly() {
 		// given
-		LessonRequest request = LessonRequest.builder().title("New").theme("Theme")
+		LessonRequest request = LessonRequest.builder().title("New").theme("Theme").labelColor("blue")
 				.groupPublicIds(List.of("group-public-3")).build();
 		Lesson lesson = Lesson.builder().id(10).title("Old").build();
 
@@ -188,7 +235,48 @@ class LessonServiceTest {
 			verify(groupHasLessonRepository, times(1)).saveAll(any());
 			verify(userGroupPublicIdLookupService).getRequiredInternalId("group-public-3");
 			assertEquals("New", lesson.getTitle());
+			assertEquals("blue", lesson.getLabelColor());
 		}).verifyComplete();
+	}
+
+	@Test
+	void shouldClearLessonLabelColorOnUpdateWhenBlank() {
+		// given
+		LessonRequest request = LessonRequest.builder().title("New").theme("Theme").labelColor("").build();
+		Lesson lesson = Lesson.builder().id(10).title("Old").labelColor("red").build();
+
+		when(lessonRepository.findById(10)).thenReturn(Optional.of(lesson));
+		when(lessonRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+		when(lessonMapper.toResponse(any())).thenReturn(LessonResponse.builder().publicId("lesson-10").build());
+
+		// when
+		Mono<LessonResponse> result = lessonService.updateLesson(10, Mono.just(request));
+
+		// then
+		StepVerifier.create(result).expectNextMatches(resp -> "lesson-10".equals(resp.getPublicId())).verifyComplete();
+		assertNull(lesson.getLabelColor());
+		verify(groupHasLessonRepository, never()).deleteByLessonId(any());
+	}
+
+	@Test
+	void shouldRejectInvalidLessonLabelColorOnUpdate() {
+		// given
+		LessonRequest request = LessonRequest.builder().title("New").theme("Theme").labelColor("pink").build();
+		Lesson lesson = Lesson.builder().id(10).title("Old").labelColor("red").build();
+
+		when(lessonRepository.findById(10)).thenReturn(Optional.of(lesson));
+
+		// when
+		Mono<LessonResponse> result = lessonService.updateLesson(10, Mono.just(request));
+
+		// then
+		StepVerifier.create(result).expectErrorSatisfies(error -> {
+			LessonException exception = assertInstanceOf(LessonException.class, error);
+			assertEquals(LessonErrorCode.LESSON_INVALID_LABEL_COLOR, exception.getErrorCode());
+		}).verify();
+		assertEquals("red", lesson.getLabelColor());
+		verify(lessonRepository, never()).save(any());
+		verify(groupHasLessonRepository, never()).deleteByLessonId(any());
 	}
 
 	@Test

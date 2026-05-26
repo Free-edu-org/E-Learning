@@ -19,6 +19,7 @@ import {
   GroupsOutlined as GroupsIcon,
 } from "@mui/icons-material";
 import type { Lesson } from "@/api/lessonService";
+import { LessonLabelColorDot } from "@/components/lesson/LessonLabelColorDot";
 import {
   panelCardFooterSx,
   panelFooterButtonsSx,
@@ -311,6 +312,15 @@ export function LessonCard({
   if (listView) {
     return (
       <Box
+        role="button"
+        tabIndex={0}
+        onClick={() => onResults?.(lesson)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            onResults?.(lesson);
+          }
+        }}
         sx={{
           ...panelListRowSx,
           display: "flex",
@@ -318,22 +328,32 @@ export function LessonCard({
           gap: 2,
           px: 2,
           py: 1.25,
+          cursor: onResults ? "pointer" : "default",
           transition: "box-shadow 0.15s, border-color 0.15s",
           "&:hover": { boxShadow: 2, borderColor: "primary.light" },
+          "&:focus-visible": {
+            outline: "none",
+            boxShadow: (theme: Theme) =>
+              `0 0 0 3px ${alpha(theme.palette.primary.main, 0.14)}`,
+            borderColor: "primary.main",
+          },
         }}
       >
         <StatusDot active={lesson.isActive} />
 
         <Stack direction="row" spacing={1.25} alignItems="center">
           <Box sx={{ minWidth: 0 }}>
-            <Typography
-              variant="body2"
-              fontWeight={700}
-              color="primary.main"
-              sx={{ overflowWrap: "anywhere" }}
-            >
-              {lesson.title}
-            </Typography>
+            <Stack direction="row" spacing={0.75} alignItems="center">
+              <LessonLabelColorDot color={lesson.labelColor} />
+              <Typography
+                variant="body2"
+                fontWeight={700}
+                color="primary.main"
+                sx={{ overflowWrap: "anywhere", minWidth: 0 }}
+              >
+                {lesson.title}
+              </Typography>
+            </Stack>
             <Typography
               variant="caption"
               color="text.secondary"
@@ -351,7 +371,26 @@ export function LessonCard({
                 minWidth: 0,
               }}
             >
-              <GroupChips groups={lesson.groups} />
+              {lesson.groups.length === 0 ? (
+                <Typography
+                  variant="caption"
+                  color="text.disabled"
+                  sx={{ fontStyle: "italic" }}
+                >
+                  Brak grup
+                </Typography>
+              ) : (
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.6 }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ fontWeight: 700 }}
+                  >
+                    Grupy:
+                  </Typography>
+                  <GroupChips groups={lesson.groups} />
+                </Box>
+              )}
               <Typography
                 variant="caption"
                 color="text.secondary"
@@ -423,7 +462,31 @@ export function LessonCard({
   }
 
   return (
-    <Card elevation={0} sx={[panelGridCardSx as object, lessonCardSurfaceSx]}>
+    <Card
+      elevation={0}
+      role="button"
+      tabIndex={0}
+      onClick={() => onResults?.(lesson)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onResults?.(lesson);
+        }
+      }}
+      sx={[
+        panelGridCardSx as object,
+        lessonCardSurfaceSx,
+        {
+          cursor: onResults ? "pointer" : "default",
+          "&:focus-visible": {
+            outline: "none",
+            boxShadow: (theme: Theme) =>
+              `0 0 0 3px ${alpha(theme.palette.primary.main, 0.14)}`,
+            borderColor: "primary.main",
+          },
+        },
+      ]}
+    >
       <Box
         sx={{
           display: "flex",
@@ -442,13 +505,20 @@ export function LessonCard({
               alignItems="flex-start"
             >
               <Box sx={{ minWidth: 0 }}>
-                <Typography
-                  variant="subtitle1"
-                  fontWeight={800}
-                  sx={{ lineHeight: 1.3, overflowWrap: "anywhere" }}
-                >
-                  {lesson.title}
-                </Typography>
+                <Stack direction="row" spacing={0.8} alignItems="center">
+                  <LessonLabelColorDot color={lesson.labelColor} size={11} />
+                  <Typography
+                    variant="subtitle1"
+                    fontWeight={800}
+                    sx={{
+                      lineHeight: 1.3,
+                      overflowWrap: "anywhere",
+                      minWidth: 0,
+                    }}
+                  >
+                    {lesson.title}
+                  </Typography>
+                </Stack>
                 <Typography
                   variant="body2"
                   color="text.secondary"
@@ -473,7 +543,20 @@ export function LessonCard({
             </Stack>
 
             <Box sx={{ minWidth: 0 }}>
-              <GroupChips groups={lesson.groups} />
+              {lesson.groups.length === 0 ? null : (
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ fontWeight: 700 }}
+                  >
+                    Grupy:
+                  </Typography>
+                  <Box sx={{ minWidth: 0 }}>
+                    <GroupChips groups={lesson.groups} />
+                  </Box>
+                </Box>
+              )}
             </Box>
 
             <Box sx={{ flex: 1, minHeight: 0 }} />
@@ -485,16 +568,14 @@ export function LessonCard({
                   Utworzono {formatDate(lesson.createdAt)}
                 </Typography>
               </Box>
-              <Box sx={lessonMetaRowSx}>
-                <GroupsIcon sx={{ fontSize: 14 }} />
-                <Typography variant="caption" color="inherit">
-                  {lesson.groups.length === 0
-                    ? "Brak przypisanych grup"
-                    : lesson.groups.length === 1
-                      ? "1 przypisana grupa"
-                      : `${lesson.groups.length} przypisane grupy`}
-                </Typography>
-              </Box>
+              {lesson.groups.length === 0 && (
+                <Box sx={lessonMetaRowSx}>
+                  <GroupsIcon sx={{ fontSize: 14 }} />
+                  <Typography variant="caption" color="inherit">
+                    Brak przypisanych grup
+                  </Typography>
+                </Box>
+              )}
 
               <Box
                 sx={{

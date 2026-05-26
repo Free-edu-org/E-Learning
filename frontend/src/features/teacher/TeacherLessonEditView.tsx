@@ -35,6 +35,8 @@ import {
   type Lesson,
   type LessonAttachment,
 } from "@/api/lessonService";
+import { LessonLabelColorDot } from "@/components/lesson/LessonLabelColorDot";
+import { LessonLabelColorPicker } from "@/components/lesson/LessonLabelColorPicker";
 import { taskService } from "@/api/taskService";
 import { userService, type UserProfile } from "@/api/userService";
 import { TaskEditor } from "@/components/teacher/TaskEditor";
@@ -78,6 +80,7 @@ function buildDraftFromLesson(
   return {
     title: lesson.title,
     theme: lesson.theme,
+    labelColor: lesson.labelColor ?? null,
     groups: lesson.groups,
     tasks,
   };
@@ -295,6 +298,7 @@ export function TeacherLessonEditView() {
       await lessonService.updateLesson(lesson.publicId, {
         title: draft.title,
         theme: draft.theme,
+        labelColor: draft.labelColor,
         groupPublicIds,
       });
 
@@ -377,6 +381,7 @@ export function TeacherLessonEditView() {
         ...lesson,
         title: draft.title,
         theme: draft.theme,
+        labelColor: draft.labelColor,
         groups: draft.groups,
       };
 
@@ -656,6 +661,22 @@ export function TeacherLessonEditView() {
               </FormSection>
 
               <FormSection
+                title="Kolor organizacyjny"
+                description="Opcjonalna kropka pomaga porządkować lekcje na dashboardzie."
+              >
+                <LessonLabelColorPicker
+                  value={draft.labelColor}
+                  onChange={(labelColor) =>
+                    setDraft((current) => ({
+                      ...current,
+                      labelColor,
+                    }))
+                  }
+                  disabled={saving}
+                />
+              </FormSection>
+
+              <FormSection
                 title="Przypisanie do grup"
                 description="Wybierz grupy, które mają mieć dostęp do tej lekcji."
               >
@@ -908,6 +929,7 @@ export function TeacherLessonEditView() {
                         sx={{ display: "flex", alignItems: "center", gap: 1 }}
                       >
                         <ReadyIcon fontSize="small" color="primary" />
+                        <LessonLabelColorDot color={draft.labelColor} />
                         <Typography
                           variant="body2"
                           sx={{ minWidth: 0, overflowWrap: "anywhere" }}

@@ -1,5 +1,6 @@
 import { fetchApi, fetchApiBlob } from "./apiClient";
 import type { LessonResultDetailsResponse } from "./studentService";
+import type { LessonLabelColor } from "@/constants/lessonLabelColors";
 
 export interface Group {
   publicId: string;
@@ -22,6 +23,7 @@ export interface Lesson {
   publicId: string;
   title: string;
   theme: string;
+  labelColor?: LessonLabelColor | null;
   isActive: boolean;
   teacherPublicId?: string;
   teacherName?: string;
@@ -52,6 +54,8 @@ export interface TeacherStudentResponse {
 export interface LessonStatsStudentResult {
   userPublicId: string;
   username: string;
+  groupPublicId: string | null;
+  groupName: string | null;
   avatarUrl?: string | null;
   completedAt: string | null;
   score: number;
@@ -83,6 +87,7 @@ export interface UpdateTeacherStudentRequest {
 export interface CreateLessonRequest {
   title: string;
   theme: string;
+  labelColor?: LessonLabelColor | null;
   groupPublicIds?: string[];
 }
 
@@ -114,6 +119,10 @@ export interface TeacherStudentStatsResponse {
   lessonResults: StudentLessonResult[];
   progressHistory: ProgressPoint[];
   skillStats: SkillStat[];
+}
+
+export interface TaskAnswerManualReviewRequest {
+  isCorrect: boolean;
 }
 
 export const lessonService = {
@@ -162,6 +171,19 @@ export const lessonService = {
   getLessonResultDetails: (lessonPublicId: string, studentPublicId: string) =>
     fetchApi<LessonResultDetailsResponse>(
       `/api/v1/teacher/lessons/${lessonPublicId}/students/${studentPublicId}/result`,
+    ),
+  reviewTaskAnswer: (
+    lessonPublicId: string,
+    studentPublicId: string,
+    taskPublicId: string,
+    payload: TaskAnswerManualReviewRequest,
+  ) =>
+    fetchApi<LessonResultDetailsResponse>(
+      `/api/v1/teacher/lessons/${lessonPublicId}/students/${studentPublicId}/tasks/${taskPublicId}/review`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      },
     ),
   getStudentStats: (studentPublicId: string) =>
     fetchApi<TeacherStudentStatsResponse>(

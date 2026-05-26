@@ -47,6 +47,7 @@ import {
   SendOutlined as SendIcon,
   GridViewOutlined as GridIcon,
   LockOutlined as LockIcon,
+  SwapVertOutlined as SortIcon,
 } from "@mui/icons-material";
 import { useTheme, alpha } from "@mui/material/styles";
 import type { SxProps, Theme } from "@mui/material/styles";
@@ -114,6 +115,7 @@ type UserFilter = "ALL" | UserRole;
 type AdminTab = "users" | "groups";
 type AdminListUser = AdminTeacherProfile | AdminStudentProfile;
 type AdminViewMode = "grid" | "list";
+type AdminSortMode = "created_desc" | "created_asc" | "name_az" | "name_za";
 type GroupEditableField = "name" | "description" | "teacherPublicId";
 
 interface UserDraft {
@@ -271,13 +273,44 @@ function formatDate(value?: string) {
 }
 
 const toolbarFieldSx = {
-  minWidth: 180,
-  flex: "1 1 180px",
+  minWidth: 140,
+  flex: "1 1 140px",
   "& .MuiAutocomplete-inputRoot": {
     bgcolor: (theme: Theme) =>
       theme.palette.mode === "light"
         ? alpha(theme.palette.common.white, 0.98)
         : "#151a2c",
+    borderRadius: 2,
+    minHeight: 40,
+    border: "1px solid",
+    borderColor: (theme: Theme) =>
+      theme.palette.mode === "light"
+        ? alpha(theme.palette.text.primary, 0.06)
+        : alpha(theme.palette.common.white, 0.06),
+    boxShadow: (theme: Theme) =>
+      theme.palette.mode === "light"
+        ? "0 2px 8px rgba(15, 23, 42, 0.035)"
+        : "inset 0 1px 0 rgba(255,255,255,0.02)",
+    transition:
+      "border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease",
+    "&:hover": {
+      borderColor: (theme: Theme) =>
+        theme.palette.mode === "light"
+          ? alpha(theme.palette.primary.main, 0.14)
+          : alpha(theme.palette.common.white, 0.1),
+      bgcolor: (theme: Theme) =>
+        theme.palette.mode === "light" ? theme.palette.common.white : "#171d2f",
+    },
+    "&.Mui-focused": {
+      borderColor: (theme: Theme) =>
+        theme.palette.mode === "light"
+          ? alpha(theme.palette.primary.main, 0.22)
+          : alpha(theme.palette.primary.light, 0.2),
+      boxShadow: (theme: Theme) =>
+        theme.palette.mode === "light"
+          ? `0 0 0 3px ${alpha(theme.palette.primary.main, 0.08)}`
+          : `0 0 0 3px ${alpha(theme.palette.primary.light, 0.08)}`,
+    },
   },
   "& .MuiOutlinedInput-root": {
     borderRadius: 2,
@@ -332,19 +365,100 @@ const compactToolbarFieldSx = {
   "& .MuiOutlinedInput-root.MuiInputBase-root": {
     minHeight: 38,
   },
+  "& .MuiAutocomplete-inputRoot": {
+    minHeight: "38px !important",
+  },
   "& .MuiInputBase-input": {
     fontSize: "0.85rem",
+    lineHeight: 1.2,
   },
 };
 
-const groupCompactToolbarFieldSx = {
-  "& .MuiOutlinedInput-root.MuiInputBase-root": {
-    minHeight: 36,
+const searchAdornmentSx: SxProps<Theme> = {
+  ml: 0,
+  mr: 1,
+  alignSelf: "center",
+  flexShrink: 0,
+};
+
+const searchAdornmentSelectorSx = {
+  ml: 0,
+  mr: 1,
+  alignSelf: "center",
+  flexShrink: 0,
+};
+
+const searchIconSx: SxProps<Theme> = {
+  color: "text.secondary",
+  fontSize: 20,
+  opacity: 1,
+  flexShrink: 0,
+};
+
+const searchFieldChromeSx: SxProps<Theme> = {
+  "& .MuiOutlinedInput-root, & .MuiAutocomplete-inputRoot": {
+    minHeight: "38px !important",
+    display: "flex",
+    alignItems: "center",
+    boxSizing: "border-box",
   },
+  "& .MuiInputAdornment-positionStart": searchAdornmentSelectorSx,
   "& .MuiInputBase-input": {
-    fontSize: "0.82rem",
+    fontSize: "0.85rem",
+    lineHeight: 1.2,
+    paddingTop: "0 !important",
+    paddingBottom: "0 !important",
+    minWidth: 0,
   },
 };
+
+const searchTextFieldSx: SxProps<Theme> = {
+  ...(searchFieldChromeSx as object),
+  "& .MuiOutlinedInput-root": {
+    pl: 1.5,
+    pr: 1.5,
+  },
+};
+
+const searchAutocompleteFieldSx: SxProps<Theme> = {
+  ...(searchFieldChromeSx as object),
+  "& .MuiAutocomplete-inputRoot": {
+    pl: "12px !important",
+    pr: "36px !important",
+    gap: 0,
+    flexWrap: "nowrap",
+    overflow: "hidden",
+    py: "0 !important",
+  },
+  "& .MuiAutocomplete-input": {
+    flex: "1 1 72px !important",
+    minWidth: "72px !important",
+    width: "auto !important",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    padding: "0 !important",
+  },
+  "& .MuiAutocomplete-tag": {
+    m: 0,
+    height: 20,
+    fontSize: "0.7rem",
+  },
+  "& .MuiAutocomplete-endAdornment": {
+    right: 8,
+  },
+};
+
+function SearchStartAdornment() {
+  return (
+    <InputAdornment position="start" sx={searchAdornmentSx}>
+      <SearchIcon
+        fontSize="small"
+        className="toolbar-search-icon"
+        sx={searchIconSx}
+      />
+    </InputAdornment>
+  );
+}
 
 const segmentedGroupSx = {
   p: 0.375,
@@ -862,6 +976,7 @@ export function AdminDashboard() {
   const [userSearch, setUserSearch] = useState("");
   const [groupSearch, setGroupSearch] = useState("");
   const [viewMode, setViewMode] = useState<AdminViewMode>("grid");
+  const [sortMode, setSortMode] = useState<AdminSortMode>("created_desc");
   const [selectedTeacherFilters, setSelectedTeacherFilters] = useState<
     UserProfile[]
   >([]);
@@ -887,6 +1002,8 @@ export function AdminDashboard() {
   const [groups, setGroups] = useState<UserGroup[]>([]);
   const [groupsLoading, setGroupsLoading] = useState(true);
   const [groupsError, setGroupsError] = useState<string | null>(null);
+
+  // sortMode now supports created_* and name_* modes; use setSortMode directly
 
   const [userDialogOpen, setUserDialogOpen] = useState(false);
   const [userDialogMode, setUserDialogMode] = useState<"create" | "edit">(
@@ -1064,6 +1181,34 @@ export function AdminDashboard() {
       );
     });
   }, [groupSearch, groups, selectedTeacherFilters]);
+
+  const displayedUsers = useMemo(() => {
+    const sorted = [...filteredUsers];
+    sorted.sort((left, right) => {
+      if (sortMode === "created_asc")
+        return left.createdAt.localeCompare(right.createdAt);
+      if (sortMode === "created_desc")
+        return right.createdAt.localeCompare(left.createdAt);
+      if (sortMode === "name_az")
+        return (left.username ?? "").localeCompare(right.username ?? "", "pl");
+      return (right.username ?? "").localeCompare(left.username ?? "", "pl");
+    });
+    return sorted;
+  }, [filteredUsers, sortMode]);
+
+  const displayedGroups = useMemo(() => {
+    const sorted = [...filteredGroups];
+    sorted.sort((left, right) => {
+      if (sortMode === "created_asc")
+        return left.createdAt.localeCompare(right.createdAt);
+      if (sortMode === "created_desc")
+        return right.createdAt.localeCompare(left.createdAt);
+      if (sortMode === "name_az")
+        return left.name.localeCompare(right.name, "pl");
+      return right.name.localeCompare(left.name, "pl");
+    });
+    return sorted;
+  }, [filteredGroups, sortMode]);
 
   const assignableGroups = useMemo(() => {
     return groups;
@@ -2290,29 +2435,30 @@ export function AdminDashboard() {
                   </Alert>
                 )}
 
-                <Paper elevation={0} sx={panelToolbarSx}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    ...panelToolbarSx,
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                  }}
+                >
                   <TextField
                     size="small"
-                    placeholder="Szukaj po nazwie lub emailu"
+                    placeholder="Szukaj po nazwie"
                     value={userSearch}
                     onChange={(event) => setUserSearch(event.target.value)}
                     slotProps={{
                       input: {
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <SearchIcon
-                              fontSize="small"
-                              sx={{ color: "text.secondary" }}
-                            />
-                          </InputAdornment>
-                        ),
+                        startAdornment: <SearchStartAdornment />,
                       },
                     }}
                     sx={{
                       ...toolbarFieldSx,
                       ...compactToolbarFieldSx,
-                      minWidth: { xs: "100%", sm: 260, lg: 320 },
-                      flex: { xs: "1 1 100%", md: "1.5 1 280px" },
+                      ...(searchTextFieldSx as object),
+                      minWidth: { xs: "100%", sm: 200, lg: 235 },
+                      flex: { xs: "1 1 100%", md: "1 1 210px" },
                     }}
                   />
 
@@ -2333,22 +2479,50 @@ export function AdminDashboard() {
                       option.publicId === value.publicId
                     }
                     disableCloseOnSelect
-                    limitTags={1}
                     noOptionsText="Brak nauczycieli"
-                    renderTags={(tagValue, getTagProps) =>
-                      tagValue.map((option, index) => {
-                        const { key, ...rest } = getTagProps({ index });
-                        return (
-                          <Chip
-                            key={key}
-                            label={option.username}
-                            size="small"
-                            sx={{ fontSize: "0.7rem", height: 20 }}
-                            {...rest}
-                          />
-                        );
-                      })
-                    }
+                    renderTags={(tagValue, getTagProps) => {
+                      const [firstTeacher] = tagValue;
+                      if (!firstTeacher) return null;
+
+                      const { key, ...rest } = getTagProps({
+                        index: 0,
+                      });
+                      const hiddenCount = tagValue.length - 1;
+
+                      return [
+                        <Chip
+                          key={key}
+                          label={firstTeacher.username}
+                          size="small"
+                          sx={{
+                            fontSize: "0.7rem",
+                            height: 20,
+                            maxWidth: hiddenCount > 0 ? 110 : 150,
+                            flexShrink: 1,
+                            "& .MuiChip-label": {
+                              display: "block",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            },
+                            "& .MuiChip-deleteIcon": {
+                              display: "none",
+                            },
+                          }}
+                          {...rest}
+                        />,
+                        ...(hiddenCount > 0
+                          ? [
+                              <Chip
+                                key="teachers-more"
+                                label={`+${hiddenCount}`}
+                                size="small"
+                                aria-label={`Jeszcze ${hiddenCount} wybranych nauczycieli`}
+                                sx={{ fontSize: "0.7rem", height: 20 }}
+                              />,
+                            ]
+                          : []),
+                      ];
+                    }}
                     renderInput={(params) => (
                       <TextField
                         {...params}
@@ -2357,20 +2531,31 @@ export function AdminDashboard() {
                             ? "Filtruj nauczycieli..."
                             : undefined
                         }
+                        slotProps={{
+                          input: {
+                            ...params.InputProps,
+                            startAdornment: (
+                              <>
+                                <SearchStartAdornment />
+                                {params.InputProps.startAdornment}
+                              </>
+                            ),
+                          },
+                        }}
                       />
                     )}
                     sx={{
                       ...toolbarFieldSx,
                       ...compactToolbarFieldSx,
-                      minWidth: { xs: "100%", sm: 220 },
-                      flex: { xs: "1 1 100%", lg: "1 1 230px" },
+                      ...(searchAutocompleteFieldSx as object),
+                      minWidth: { xs: "100%", sm: 180 },
+                      width: { xs: "100%", sm: 180, lg: 195 },
+                      flex: {
+                        xs: "0 0 100%",
+                        sm: "0 0 180px",
+                        lg: "0 0 195px",
+                      },
                     }}
-                  />
-
-                  <Divider
-                    orientation="vertical"
-                    flexItem
-                    sx={{ display: { xs: "none", md: "block" } }}
                   />
 
                   <Autocomplete
@@ -2384,22 +2569,50 @@ export function AdminDashboard() {
                       option.publicId === value.publicId
                     }
                     disableCloseOnSelect
-                    limitTags={1}
                     noOptionsText="Brak grup"
-                    renderTags={(tagValue, getTagProps) =>
-                      tagValue.map((option, index) => {
-                        const { key, ...rest } = getTagProps({ index });
-                        return (
-                          <Chip
-                            key={key}
-                            label={option.name}
-                            size="small"
-                            sx={{ fontSize: "0.7rem", height: 20 }}
-                            {...rest}
-                          />
-                        );
-                      })
-                    }
+                    renderTags={(tagValue, getTagProps) => {
+                      const [firstGroup] = tagValue;
+                      if (!firstGroup) return null;
+
+                      const { key, ...rest } = getTagProps({
+                        index: 0,
+                      });
+                      const hiddenCount = tagValue.length - 1;
+
+                      return [
+                        <Chip
+                          key={key}
+                          label={firstGroup.name}
+                          size="small"
+                          sx={{
+                            fontSize: "0.7rem",
+                            height: 20,
+                            maxWidth: hiddenCount > 0 ? 110 : 150,
+                            flexShrink: 1,
+                            "& .MuiChip-label": {
+                              display: "block",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            },
+                            "& .MuiChip-deleteIcon": {
+                              display: "none",
+                            },
+                          }}
+                          {...rest}
+                        />,
+                        ...(hiddenCount > 0
+                          ? [
+                              <Chip
+                                key="groups-more"
+                                label={`+${hiddenCount}`}
+                                size="small"
+                                aria-label={`Jeszcze ${hiddenCount} wybranych grup`}
+                                sx={{ fontSize: "0.7rem", height: 20 }}
+                              />,
+                            ]
+                          : []),
+                      ];
+                    }}
                     renderInput={(params) => (
                       <TextField
                         {...params}
@@ -2408,15 +2621,80 @@ export function AdminDashboard() {
                             ? "Filtruj grupy..."
                             : undefined
                         }
+                        slotProps={{
+                          input: {
+                            ...params.InputProps,
+                            startAdornment: (
+                              <>
+                                <SearchStartAdornment />
+                                {params.InputProps.startAdornment}
+                              </>
+                            ),
+                          },
+                        }}
                       />
                     )}
                     sx={{
                       ...toolbarFieldSx,
-                      ...groupCompactToolbarFieldSx,
-                      minWidth: { xs: "100%", sm: 220 },
-                      flex: { xs: "1 1 100%", lg: "1 1 230px" },
+                      ...compactToolbarFieldSx,
+                      ...(searchAutocompleteFieldSx as object),
+                      minWidth: { xs: "100%", sm: 195 },
+                      width: { xs: "100%", sm: 195, lg: 215 },
+                      flex: {
+                        xs: "0 0 100%",
+                        sm: "0 0 195px",
+                        lg: "0 0 215px",
+                      },
                     }}
                   />
+
+                  <TextField
+                    select
+                    size="small"
+                    value={sortMode}
+                    onChange={(e) =>
+                      setSortMode(e.target.value as AdminSortMode)
+                    }
+                    sx={{
+                      ...toolbarFieldSx,
+                      ...compactToolbarFieldSx,
+                      minWidth: { xs: 140, sm: 170 },
+                      flex: "0 0 auto",
+                      "& .MuiSelect-select": {
+                        py: "0 !important",
+                        fontSize: "0.85rem",
+                        fontWeight: 400,
+                        color: "text.primary",
+                        display: "flex",
+                        alignItems: "center",
+                        lineHeight: 1.2,
+                      },
+                      "& .MuiOutlinedInput-root": {
+                        py: "0 !important",
+                        alignItems: "center",
+                      },
+                    }}
+                    slotProps={{
+                      select: {
+                        startAdornment: (
+                          <InputAdornment
+                            position="start"
+                            sx={{ ml: 0, mr: 1 }}
+                          >
+                            <SortIcon
+                              fontSize="small"
+                              sx={{ color: "text.secondary" }}
+                            />
+                          </InputAdornment>
+                        ),
+                      },
+                    }}
+                  >
+                    <MenuItem value="created_desc">Data: najnowsze</MenuItem>
+                    <MenuItem value="created_asc">Data: najstarsze</MenuItem>
+                    <MenuItem value="name_az">Nazwa: A-Z</MenuItem>
+                    <MenuItem value="name_za">Nazwa: Z-A</MenuItem>
+                  </TextField>
 
                   <Divider
                     orientation="vertical"
@@ -2468,13 +2746,6 @@ export function AdminDashboard() {
                   >
                     Bez grupy
                   </ToggleButton>
-
-                  <Divider
-                    orientation="vertical"
-                    flexItem
-                    sx={{ display: { xs: "none", md: "block" } }}
-                  />
-
                   <ToggleButtonGroup
                     value={viewMode}
                     exclusive
@@ -2514,13 +2785,13 @@ export function AdminDashboard() {
                   >
                     <CircularProgress />
                   </Box>
-                ) : filteredUsers.length === 0 ? (
+                ) : displayedUsers.length === 0 ? (
                   <Alert severity="info">
                     Brak kont pasujących do wybranych filtrów.
                   </Alert>
                 ) : viewMode === "list" ? (
                   <Stack spacing={1.25}>
-                    {filteredUsers.map((user) => (
+                    {displayedUsers.map((user) => (
                       <Paper
                         key={`${user.role}-${user.publicId}`}
                         elevation={0}
@@ -2750,7 +3021,7 @@ export function AdminDashboard() {
                   </Stack>
                 ) : (
                   <Grid container spacing={2}>
-                    {filteredUsers.map((user) => (
+                    {displayedUsers.map((user) => (
                       <Grid
                         key={`${user.role}-${user.publicId}`}
                         size={{ xs: 12, md: 6, xl: 4 }}
@@ -3124,7 +3395,14 @@ export function AdminDashboard() {
 
                 {groupsError && <Alert severity="warning">{groupsError}</Alert>}
 
-                <Paper elevation={0} sx={panelToolbarSx}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    ...panelToolbarSx,
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                  }}
+                >
                   <TextField
                     size="small"
                     placeholder="Filtruj grupy po nazwie lub opisie"
@@ -3132,21 +3410,15 @@ export function AdminDashboard() {
                     onChange={(event) => setGroupSearch(event.target.value)}
                     slotProps={{
                       input: {
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <SearchIcon
-                              fontSize="small"
-                              sx={{ color: "text.secondary" }}
-                            />
-                          </InputAdornment>
-                        ),
+                        startAdornment: <SearchStartAdornment />,
                       },
                     }}
                     sx={{
                       ...toolbarFieldSx,
-                      ...groupCompactToolbarFieldSx,
-                      minWidth: { xs: "100%", sm: 260, lg: 320 },
-                      flex: { xs: "1 1 100%", md: "1.4 1 280px" },
+                      ...compactToolbarFieldSx,
+                      ...(searchTextFieldSx as object),
+                      minWidth: { xs: "100%", sm: 215, lg: 250 },
+                      flex: { xs: "1 1 100%", md: "1.05 1 225px" },
                     }}
                   />
 
@@ -3167,22 +3439,50 @@ export function AdminDashboard() {
                       option.publicId === value.publicId
                     }
                     disableCloseOnSelect
-                    limitTags={1}
                     noOptionsText="Brak nauczycieli"
-                    renderTags={(tagValue, getTagProps) =>
-                      tagValue.map((option, index) => {
-                        const { key, ...rest } = getTagProps({ index });
-                        return (
-                          <Chip
-                            key={key}
-                            label={option.username}
-                            size="small"
-                            sx={{ fontSize: "0.7rem", height: 20 }}
-                            {...rest}
-                          />
-                        );
-                      })
-                    }
+                    renderTags={(tagValue, getTagProps) => {
+                      const [firstTeacher] = tagValue;
+                      if (!firstTeacher) return null;
+
+                      const { key, ...rest } = getTagProps({
+                        index: 0,
+                      });
+                      const hiddenCount = tagValue.length - 1;
+
+                      return [
+                        <Chip
+                          key={key}
+                          label={firstTeacher.username}
+                          size="small"
+                          sx={{
+                            fontSize: "0.7rem",
+                            height: 20,
+                            maxWidth: hiddenCount > 0 ? 110 : 150,
+                            flexShrink: 1,
+                            "& .MuiChip-label": {
+                              display: "block",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            },
+                            "& .MuiChip-deleteIcon": {
+                              display: "none",
+                            },
+                          }}
+                          {...rest}
+                        />,
+                        ...(hiddenCount > 0
+                          ? [
+                              <Chip
+                                key="group-teachers-more"
+                                label={`+${hiddenCount}`}
+                                size="small"
+                                aria-label={`Jeszcze ${hiddenCount} wybranych nauczycieli`}
+                                sx={{ fontSize: "0.7rem", height: 20 }}
+                              />,
+                            ]
+                          : []),
+                      ];
+                    }}
                     renderInput={(params) => (
                       <TextField
                         {...params}
@@ -3191,12 +3491,30 @@ export function AdminDashboard() {
                             ? "Filtruj nauczycieli..."
                             : undefined
                         }
+                        slotProps={{
+                          input: {
+                            ...params.InputProps,
+                            startAdornment: (
+                              <>
+                                <SearchStartAdornment />
+                                {params.InputProps.startAdornment}
+                              </>
+                            ),
+                          },
+                        }}
                       />
                     )}
                     sx={{
                       ...toolbarFieldSx,
-                      minWidth: { xs: "100%", sm: 220 },
-                      flex: { xs: "1 1 100%", lg: "1 1 230px" },
+                      ...compactToolbarFieldSx,
+                      ...(searchAutocompleteFieldSx as object),
+                      minWidth: { xs: "100%", sm: 190 },
+                      width: { xs: "100%", sm: 190, lg: 205 },
+                      flex: {
+                        xs: "0 0 100%",
+                        sm: "0 0 190px",
+                        lg: "0 0 205px",
+                      },
                     }}
                   />
 
@@ -3205,6 +3523,54 @@ export function AdminDashboard() {
                     flexItem
                     sx={{ display: { xs: "none", md: "block" } }}
                   />
+
+                  <TextField
+                    select
+                    size="small"
+                    value={sortMode}
+                    onChange={(e) =>
+                      setSortMode(e.target.value as AdminSortMode)
+                    }
+                    sx={{
+                      ...toolbarFieldSx,
+                      ...compactToolbarFieldSx,
+                      minWidth: { xs: 140, sm: 165 },
+                      flex: "0 0 auto",
+                      "& .MuiSelect-select": {
+                        py: "0 !important",
+                        fontSize: "0.85rem",
+                        fontWeight: 400,
+                        color: "text.primary",
+                        display: "flex",
+                        alignItems: "center",
+                        lineHeight: 1.2,
+                      },
+                      "& .MuiOutlinedInput-root": {
+                        py: "0 !important",
+                        alignItems: "center",
+                      },
+                    }}
+                    slotProps={{
+                      select: {
+                        startAdornment: (
+                          <InputAdornment
+                            position="start"
+                            sx={{ ml: 0, mr: 1 }}
+                          >
+                            <SortIcon
+                              fontSize="small"
+                              sx={{ color: "text.secondary" }}
+                            />
+                          </InputAdornment>
+                        ),
+                      },
+                    }}
+                  >
+                    <MenuItem value="created_desc">Data: najnowsze</MenuItem>
+                    <MenuItem value="created_asc">Data: najstarsze</MenuItem>
+                    <MenuItem value="name_az">Nazwa: A-Z</MenuItem>
+                    <MenuItem value="name_za">Nazwa: Z-A</MenuItem>
+                  </TextField>
 
                   <ToggleButtonGroup
                     value={viewMode}
@@ -3245,13 +3611,13 @@ export function AdminDashboard() {
                   >
                     <CircularProgress />
                   </Box>
-                ) : filteredGroups.length === 0 ? (
+                ) : displayedGroups.length === 0 ? (
                   <Alert severity="info">
                     Brak grup pasujących do aktualnych filtrów.
                   </Alert>
                 ) : viewMode === "list" ? (
                   <Stack spacing={1.25}>
-                    {filteredGroups.map((group) => (
+                    {displayedGroups.map((group) => (
                       <Paper
                         key={group.publicId}
                         elevation={0}
@@ -3393,7 +3759,7 @@ export function AdminDashboard() {
                   </Stack>
                 ) : (
                   <Grid container spacing={2}>
-                    {filteredGroups.map((group) => (
+                    {displayedGroups.map((group) => (
                       <Grid
                         key={group.publicId}
                         size={{ xs: 12, md: 6, xl: 4 }}

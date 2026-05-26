@@ -1,0 +1,104 @@
+CREATE TABLE speak_attempts (
+    id                     INT           NOT NULL AUTO_INCREMENT,
+    public_id              VARCHAR(36)   NOT NULL,
+    user_id                INT           NOT NULL,
+    lesson_id              INT           NOT NULL,
+    task_id                INT           NOT NULL,
+    user_lesson_id         INT           NOT NULL,
+    expected_text          TEXT          NOT NULL,
+    raw_transcription      TEXT          NOT NULL,
+    matched_transcription  TEXT          NOT NULL,
+    normalized_expected    TEXT          NOT NULL,
+    normalized_actual      TEXT          NOT NULL,
+    score                  DOUBLE        NOT NULL,
+    is_correct             TINYINT(1)    NOT NULL,
+    words_json             TEXT          NOT NULL,
+    language               VARCHAR(32)   DEFAULT NULL,
+    duration               DOUBLE        DEFAULT NULL,
+    submitted_at           TIMESTAMP     NULL DEFAULT NULL,
+    created_at             TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_speak_attempts_public_id (public_id),
+    KEY idx_speak_attempts_user_id (user_id),
+    KEY idx_speak_attempts_lesson_id (lesson_id),
+    KEY idx_speak_attempts_user_lesson_id (user_lesson_id),
+    KEY idx_speak_attempts_task_id (task_id),
+    KEY idx_speak_attempts_submitted_at (submitted_at),
+    KEY idx_speak_attempts_created_at (created_at),
+    KEY idx_speak_attempts_user_lesson_task_submitted (user_lesson_id, task_id, submitted_at),
+    KEY idx_speak_attempts_submitted_created (submitted_at, created_at),
+    CONSTRAINT fk_speak_attempts_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    CONSTRAINT fk_speak_attempts_lesson FOREIGN KEY (lesson_id) REFERENCES lessons (id) ON DELETE CASCADE,
+    CONSTRAINT fk_speak_attempts_user_lesson FOREIGN KEY (user_lesson_id) REFERENCES user_lessons (id) ON DELETE CASCADE,
+    CONSTRAINT fk_speak_attempts_task FOREIGN KEY (task_id) REFERENCES speak_tasks (id) ON DELETE CASCADE
+);
+
+ALTER TABLE student_progress_history
+    ADD COLUMN lesson_id INT NULL AFTER user_id;
+
+ALTER TABLE student_progress_history
+    DROP INDEX uk_student_progress_history_user_date,
+    ADD UNIQUE KEY uk_student_progress_history_user_lesson_date (user_id, lesson_id, progress_date),
+    ADD KEY idx_student_progress_history_user_lesson_id (user_id, lesson_id),
+    ADD CONSTRAINT fk_student_progress_history_lesson FOREIGN KEY (lesson_id) REFERENCES lessons (id) ON DELETE CASCADE;
+
+ALTER TABLE user_answers
+    ADD COLUMN original_is_correct TINYINT(1) NULL AFTER is_correct,
+    ADD COLUMN manually_reviewed TINYINT(1) NOT NULL DEFAULT 0 AFTER original_is_correct,
+    ADD COLUMN reviewed_by INT NULL AFTER manually_reviewed,
+    ADD COLUMN reviewed_at TIMESTAMP NULL DEFAULT NULL AFTER reviewed_by;
+
+UPDATE user_answers
+SET original_is_correct = is_correct
+WHERE original_is_correct IS NULL;
+
+ALTER TABLE lessons
+    ADD COLUMN label_color VARCHAR(20) NULL AFTER theme;
+
+ALTER TABLE choose_tasks
+    ADD COLUMN correct_answers TEXT NULL AFTER correct_answer;
+
+UPDATE choose_tasks
+SET correct_answers = CONCAT('[', correct_answer, ']');
+
+ALTER TABLE choose_tasks
+    DROP COLUMN correct_answer;
+
+ALTER TABLE choose_tasks
+    MODIFY correct_answers TEXT NOT NULL;
+
+ALTER TABLE write_tasks
+    ADD COLUMN correct_answers TEXT NULL AFTER correct_answer;
+
+UPDATE write_tasks
+SET correct_answers = JSON_ARRAY(correct_answer);
+
+ALTER TABLE write_tasks
+    DROP COLUMN correct_answer;
+
+ALTER TABLE write_tasks
+    MODIFY correct_answers TEXT NOT NULL;
+
+ALTER TABLE scatter_tasks
+    ADD COLUMN correct_answers TEXT NULL AFTER correct_answer;
+
+UPDATE scatter_tasks
+SET correct_answers = JSON_ARRAY(correct_answer);
+
+ALTER TABLE scatter_tasks
+    DROP COLUMN correct_answer;
+
+ALTER TABLE scatter_tasks
+    MODIFY correct_answers TEXT NOT NULL;
+
+ALTER TABLE speak_tasks
+    ADD COLUMN expected_texts TEXT NULL AFTER expected_text;
+
+UPDATE speak_tasks
+SET expected_texts = JSON_ARRAY(expected_text);
+
+ALTER TABLE speak_tasks
+    DROP COLUMN expected_text;
+
+ALTER TABLE speak_tasks
+    MODIFY expected_texts TEXT NOT NULL;

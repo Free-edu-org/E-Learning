@@ -4,8 +4,11 @@ import {
   AccordionSummary,
   Alert,
   Box,
+  Button,
+  CircularProgress,
   Chip,
   Stack,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
@@ -18,12 +21,16 @@ import {
 import type { LessonResultDetailsResponse } from "@/api/studentService";
 import { StatsCard } from "@/components/teacher/StatsCard";
 import { panelSurfaceSx } from "@/components/ui/panel/panelStyles";
+import { getAcceptedAnswers } from "@/utils/answerDisplay";
 import { formatPercent } from "@/utils/dashboardUtils";
 
 interface LessonResultDetailsPanelProps {
   result: LessonResultDetailsResponse;
   performerLabel?: string;
   showTabSwitchInfo?: boolean;
+  allowManualReview?: boolean;
+  reviewingTaskPublicId?: string | null;
+  onReviewChange?: (taskPublicId: string, isCorrect: boolean) => void;
 }
 
 function getTaskTypeLabel(
@@ -55,6 +62,9 @@ export function LessonResultDetailsPanel({
   result,
   performerLabel,
   showTabSwitchInfo = false,
+  allowManualReview = false,
+  reviewingTaskPublicId = null,
+  onReviewChange,
 }: LessonResultDetailsPanelProps) {
   const theme = useTheme();
   const correctCount = result.tasks.filter((task) => task.isCorrect).length;
@@ -120,10 +130,6 @@ export function LessonResultDetailsPanel({
           <Typography variant="h6" fontWeight={700}>
             Szczegóły odpowiedzi
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Każde zadanie pokazuje odpowiedź ucznia, poprawną odpowiedź i status
-            poprawności.
-          </Typography>
         </Box>
 
         <Stack spacing={1.5} sx={{ p: 2 }}>
@@ -131,6 +137,20 @@ export function LessonResultDetailsPanel({
             const possibleAnswers = splitPipeList(task.possibleAnswers);
             const scatterWords = splitPipeList(task.words);
             const statusColor = task.isCorrect ? "success.main" : "error.main";
+            const actionColor = task.isCorrect ? "error" : "success";
+            const isReviewing = reviewingTaskPublicId === task.taskPublicId;
+            const acceptedAnswers = getAcceptedAnswers(
+              task.correctAnswers,
+              task.correctAnswer,
+            );
+            const reviewLabel =
+              task.reviewStatus === "MANUAL_CORRECTED_TO_CORRECT"
+                ? "Ręcznie poprawione na poprawne"
+                : task.reviewStatus === "MANUAL_CORRECTED_TO_INCORRECT"
+                  ? "Ręcznie poprawione na błędne"
+                  : task.reviewStatus === "MANUAL_CONFIRMED"
+                    ? "Ręcznie potwierdzone"
+                    : null;
 
             return (
               <Accordion
@@ -162,6 +182,7 @@ export function LessonResultDetailsPanel({
                         : theme.palette.error.main,
                       0.06,
                     )}`,
+                  transition: "border-color 160ms ease, box-shadow 160ms ease",
                   "&:before": { display: "none" },
                 }}
               >
@@ -181,6 +202,7 @@ export function LessonResultDetailsPanel({
                         : alpha(theme.palette.common.black, 0.02),
                     "& .MuiAccordionSummary-content": {
                       my: 0.5,
+                      alignItems: "center",
                     },
                   }}
                 >
@@ -208,37 +230,68 @@ export function LessonResultDetailsPanel({
                       Rodzaj: {getTaskTypeLabel(task.taskType)}
                     </Typography>
                   </Box>
-                  <Chip
-                    icon={task.isCorrect ? <CorrectIcon /> : <IncorrectIcon />}
-                    label={task.isCorrect ? "Poprawne" : "Błędne"}
-                    variant="outlined"
-                    size="small"
+
+                  <Box
                     sx={{
                       ml: "auto",
                       mr: 1,
-                      height: 24,
-                      fontSize: "0.69rem",
-                      fontWeight: 700,
-                      color: statusColor,
-                      borderColor: (theme) =>
-                        alpha(
-                          theme.palette[task.isCorrect ? "success" : "error"]
-                            .main,
-                          0.36,
-                        ),
-                      bgcolor: (theme) =>
-                        alpha(
-                          theme.palette[task.isCorrect ? "success" : "error"]
-                            .main,
-                          0.08,
-                        ),
-                      "& .MuiChip-icon": {
-                        fontSize: 14,
-                        color: "inherit",
-                        mr: 0.25,
-                      },
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
                     }}
-                  />
+                  >
+                    {reviewLabel && (
+                      <Tooltip title="Odpowiedź została ręcznie zweryfikowana przez nauczyciela">
+                        <Chip
+                          label={reviewLabel}
+                          variant="outlined"
+                          size="small"
+                          sx={{
+                            height: 24,
+                            fontSize: "0.69rem",
+                            fontWeight: 700,
+                            color: "warning.main",
+                            borderColor: (theme) =>
+                              alpha(theme.palette.warning.main, 0.32),
+                            bgcolor: (theme) =>
+                              alpha(theme.palette.warning.main, 0.08),
+                          }}
+                        />
+                      </Tooltip>
+                    )}
+
+                    <Chip
+                      icon={
+                        task.isCorrect ? <CorrectIcon /> : <IncorrectIcon />
+                      }
+                      label={task.isCorrect ? "Poprawne" : "Błędne"}
+                      variant="outlined"
+                      size="small"
+                      sx={{
+                        height: 24,
+                        fontSize: "0.69rem",
+                        fontWeight: 700,
+                        color: statusColor,
+                        borderColor: (theme) =>
+                          alpha(
+                            theme.palette[task.isCorrect ? "success" : "error"]
+                              .main,
+                            0.36,
+                          ),
+                        bgcolor: (theme) =>
+                          alpha(
+                            theme.palette[task.isCorrect ? "success" : "error"]
+                              .main,
+                            0.08,
+                          ),
+                        "& .MuiChip-icon": {
+                          fontSize: 14,
+                          color: "inherit",
+                          mr: 0.25,
+                        },
+                      }}
+                    />
+                  </Box>
                 </AccordionSummary>
 
                 <AccordionDetails sx={{ p: 2 }}>
@@ -256,8 +309,8 @@ export function LessonResultDetailsPanel({
                         icon={<VisibilityOffIcon />}
                         label={
                           task.tabSwitchCount > 0
-                            ? `Zmiana zakladki: ${task.tabSwitchCount}`
-                            : "Bez zmiany zakladki"
+                            ? `Zmiana zakładki: ${task.tabSwitchCount}`
+                            : "Bez zmiany zakładki"
                         }
                         variant="outlined"
                         size="small"
@@ -427,23 +480,139 @@ export function LessonResultDetailsPanel({
                         color="text.secondary"
                         sx={{ opacity: 0.85 }}
                       >
-                        Poprawna odpowiedź
+                        Poprawne odpowiedzi
                       </Typography>
-                      <Typography
-                        variant="body2"
-                        fontWeight={700}
-                        sx={{
-                          mt: 0.5,
-                          lineHeight: 1.45,
-                          color: "text.primary",
-                        }}
-                      >
-                        {task.correctAnswer?.trim()
-                          ? task.correctAnswer
-                          : "Brak zapisanej poprawnej odpowiedzi"}
-                      </Typography>
+                      {acceptedAnswers.length > 0 ? (
+                        <Stack
+                          direction="row"
+                          spacing={0.75}
+                          useFlexGap
+                          flexWrap="wrap"
+                          sx={{ mt: 0.75 }}
+                        >
+                          {acceptedAnswers.map((answer, answerIndex) => (
+                            <Chip
+                              key={`${answer}-${answerIndex}`}
+                              label={answer}
+                              size="small"
+                              sx={{
+                                height: "auto",
+                                minHeight: 24,
+                                borderRadius: 1.5,
+                                fontWeight: 700,
+                                "& .MuiChip-label": {
+                                  display: "block",
+                                  whiteSpace: "normal",
+                                  overflowWrap: "anywhere",
+                                  py: 0.35,
+                                },
+                              }}
+                            />
+                          ))}
+                        </Stack>
+                      ) : (
+                        <Typography
+                          variant="body2"
+                          fontWeight={700}
+                          sx={{
+                            mt: 0.5,
+                            lineHeight: 1.45,
+                            color: "text.primary",
+                          }}
+                        >
+                          Brak zapisanej poprawnej odpowiedzi
+                        </Typography>
+                      )}
                     </Box>
                   </Box>
+
+                  {allowManualReview && onReviewChange && (
+                    <Box
+                      sx={{
+                        mt: 1.5,
+                        display: "flex",
+                        justifyContent: "flex-end",
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          position: "relative",
+                          width: { xs: "100%", sm: 220 },
+                          maxWidth: 220,
+                        }}
+                      >
+                        <Button
+                          fullWidth
+                          variant="outlined"
+                          disabled={isReviewing}
+                          startIcon={
+                            task.isCorrect ? <IncorrectIcon /> : <CorrectIcon />
+                          }
+                          onClick={() =>
+                            onReviewChange(task.taskPublicId, !task.isCorrect)
+                          }
+                          sx={{
+                            textTransform: "none",
+                            fontWeight: 600,
+                            fontSize: "0.85rem",
+                            px: 1.5,
+                            py: 0.7,
+                            borderRadius: 2.5,
+                            boxShadow: "none",
+                            color: `${actionColor}.main`,
+                            borderColor: (theme) =>
+                              alpha(theme.palette[actionColor].main, 0.24),
+                            bgcolor: (theme) =>
+                              alpha(theme.palette[actionColor].main, 0.05),
+                            transition:
+                              "background-color 160ms ease, border-color 160ms ease, color 160ms ease, opacity 160ms ease",
+                            "&:hover": {
+                              borderColor: (theme) =>
+                                alpha(theme.palette[actionColor].main, 0.34),
+                              bgcolor: (theme) =>
+                                alpha(theme.palette[actionColor].main, 0.1),
+                              boxShadow: "none",
+                            },
+                            "&.Mui-disabled": {
+                              color: `${actionColor}.main`,
+                              borderColor: (theme) =>
+                                alpha(theme.palette[actionColor].main, 0.2),
+                              bgcolor: (theme) =>
+                                alpha(theme.palette[actionColor].main, 0.05),
+                              opacity: 0.72,
+                            },
+                          }}
+                        >
+                          <Box
+                            component="span"
+                            sx={{
+                              opacity: isReviewing ? 0 : 1,
+                              transition: "opacity 120ms ease",
+                            }}
+                          >
+                            {task.isCorrect
+                              ? "Oznacz jako błędne"
+                              : "Oznacz jako poprawne"}
+                          </Box>
+                        </Button>
+
+                        {isReviewing && (
+                          <Box
+                            sx={{
+                              position: "absolute",
+                              inset: 0,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              pointerEvents: "none",
+                            }}
+                          >
+                            <CircularProgress size={18} />
+                          </Box>
+                        )}
+                      </Box>
+                    </Box>
+                  )}
                 </AccordionDetails>
               </Accordion>
             );

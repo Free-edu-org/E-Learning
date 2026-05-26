@@ -32,6 +32,7 @@ export function TeacherLessonResultView() {
   const [loading, setLoading] = useState(true);
   const [loadingUser, setLoadingUser] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reviewingTaskId, setReviewingTaskId] = useState<string | null>(null);
 
   useEffect(() => {
     userService
@@ -59,6 +60,30 @@ export function TeacherLessonResultView() {
       )
       .finally(() => setLoading(false));
   }, [lessonPublicId, studentPublicId, routeError]);
+
+  const handleReviewChange = async (
+    taskPublicId: string,
+    isCorrect: boolean,
+  ) => {
+    if (!lessonPublicId || !studentPublicId) return;
+    setReviewingTaskId(taskPublicId);
+    setError(null);
+    try {
+      const updated = await lessonService.reviewTaskAnswer(
+        lessonPublicId,
+        studentPublicId,
+        taskPublicId,
+        { isCorrect },
+      );
+      setResult(updated);
+    } catch (err: unknown) {
+      setError(
+        getErrorMessage(err, "Nie udało się zaktualizować oceny odpowiedzi."),
+      );
+    } finally {
+      setReviewingTaskId(null);
+    }
+  };
 
   return (
     <Box
@@ -109,6 +134,9 @@ export function TeacherLessonResultView() {
             result={result}
             performerLabel={result.username}
             showTabSwitchInfo={true}
+            allowManualReview={true}
+            reviewingTaskPublicId={reviewingTaskId}
+            onReviewChange={handleReviewChange}
           />
         )}
       </Container>

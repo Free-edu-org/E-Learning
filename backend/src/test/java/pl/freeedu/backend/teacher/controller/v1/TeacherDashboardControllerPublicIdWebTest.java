@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
@@ -83,6 +84,26 @@ class TeacherDashboardControllerPublicIdWebTest {
 		result.expectStatus().isOk().expectBody().jsonPath("$.lessonPublicId").isEqualTo("lesson-public-id")
 				.jsonPath("$.lessonId").doesNotExist();
 		verify(teacherService).getLessonResultDetails(21, 77);
+	}
+
+	@Test
+	void shouldReviewTaskAnswerByPublicIdsWhenTeacherHasAccess() {
+		when(lessonPublicIdLookupService.getRequiredInternalId("lesson-public-id")).thenReturn(21);
+		when(userPublicIdLookupService.getInternalId("77")).thenReturn(Mono.just(77));
+		when(teacherService.reviewTaskAnswer(org.mockito.ArgumentMatchers.eq(21), org.mockito.ArgumentMatchers.eq(77),
+				org.mockito.ArgumentMatchers.eq("task-public-id"), any()))
+				.thenReturn(Mono.just(LessonResultDetailsResponse.builder().lessonPublicId("lesson-public-id").score(3)
+						.maxScore(4).tasks(List.of()).build()));
+
+		WebTestClient.ResponseSpec result = webTestClient.mutateWith(mockUser("teacher").roles("TEACHER")).patch()
+				.uri("/api/v1/teacher/lessons/lesson-public-id/students/77/tasks/task-public-id/review")
+				.contentType(MediaType.APPLICATION_JSON).bodyValue("""
+						{"isCorrect":true}
+						""").exchange();
+
+		result.expectStatus().isOk().expectBody().jsonPath("$.score").isEqualTo(3);
+		verify(teacherService).reviewTaskAnswer(org.mockito.ArgumentMatchers.eq(21),
+				org.mockito.ArgumentMatchers.eq(77), org.mockito.ArgumentMatchers.eq("task-public-id"), any());
 	}
 
 	@Test

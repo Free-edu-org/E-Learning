@@ -11,6 +11,7 @@ import pl.freeedu.backend.lesson.exception.LessonException;
 import pl.freeedu.backend.lesson.mapper.LessonMapper;
 import pl.freeedu.backend.lesson.model.GroupHasLesson;
 import pl.freeedu.backend.lesson.model.Lesson;
+import pl.freeedu.backend.lesson.model.LessonLabelColor;
 import pl.freeedu.backend.lesson.repository.GroupHasLessonRepository;
 import pl.freeedu.backend.lesson.repository.LessonRepository;
 import pl.freeedu.backend.security.service.SecurityService;
@@ -30,6 +31,7 @@ import reactor.core.scheduler.Schedulers;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -127,10 +129,11 @@ public class LessonService {
 		return requestMono
 				.flatMap(request -> securityService.getCurrentUserId().flatMap(teacherId -> Mono.fromCallable(() -> {
 					log.info("Creating new lesson. Teacher ID: {}", teacherId);
+					String labelColor = normalizeLabelColor(request.getLabelColor());
 					User teacher = userRepository.findById(teacherId)
 							.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 					Lesson lesson = Lesson.builder().title(request.getTitle()).theme(request.getTheme())
-							.teacher(teacher).isActive(Boolean.FALSE).build();
+							.labelColor(labelColor).teacher(teacher).isActive(Boolean.FALSE).build();
 					Lesson saved = lessonRepository.save(lesson);
 
 					if (request.getGroupPublicIds() != null && !request.getGroupPublicIds().isEmpty()) {
@@ -160,6 +163,7 @@ public class LessonService {
 		}).subscribeOn(Schedulers.boundedElastic()).flatMap(lesson -> Mono.fromCallable(() -> {
 			lesson.setTitle(request.getTitle());
 			lesson.setTheme(request.getTheme());
+			lesson.setLabelColor(normalizeLabelColor(request.getLabelColor()));
 			Lesson saved = lessonRepository.save(lesson);
 
 			if (request.getGroupPublicIds() != null) {
@@ -226,5 +230,20 @@ public class LessonService {
 
 	private List<Integer> resolveGroupIds(List<String> groupPublicIds) {
 		return groupPublicIds.stream().map(userGroupPublicIdLookupService::getRequiredInternalId).toList();
+	}
+
+	private String normalizeLabelColor(String labelColor) {
+		if (labelColor == null || labelColor.isBlank()) {
+			return null;
+		}
+
+		String normalized = labelColor.trim().toLowerCase(Locale.ROOT);
+		if (!LessonLabelColor.isValid(normalized)) {
+			log.warn("Lesson label color validation failed. Provided value: '{}'. Allowed values: {}", labelColor,
+					LessonLabelColor.apiValues());
+			throw new LessonException(LessonErrorCode.LESSON_INVALID_LABEL_COLOR);
+		}
+
+		return normalized;
 	}
 }

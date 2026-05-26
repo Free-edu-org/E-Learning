@@ -61,8 +61,15 @@ export function StudentAchievementNotifications({
       // Only show toast if it's a new achievement in the queue
       if (lastAchievementIdRef.current !== currentNotification.id) {
         lastAchievementIdRef.current = currentNotification.id;
-        setShowToast(true);
+        setShowToast(false);
         setShowModal(false);
+        const timer = window.setTimeout(() => {
+          setShowToast(true);
+        }, 0);
+
+        return () => {
+          window.clearTimeout(timer);
+        };
       }
     } else {
       setShowToast(false);

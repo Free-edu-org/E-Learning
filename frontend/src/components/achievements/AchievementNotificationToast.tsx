@@ -38,6 +38,7 @@ export function AchievementNotificationToast({
 
   return (
     <Snackbar
+      key={achievement.id}
       open={open}
       autoHideDuration={3000}
       onClose={onClose}

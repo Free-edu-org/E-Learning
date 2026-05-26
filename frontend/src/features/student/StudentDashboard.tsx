@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Box,
@@ -36,6 +36,7 @@ import {
   PlayArrowOutlined as PlayIcon,
   MicNoneOutlined as MicIcon,
   AutoAwesomeOutlined as AIIcon,
+  PaletteOutlined as PaletteIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import {
@@ -45,6 +46,8 @@ import {
   type StudentStats,
 } from "@/api/studentService";
 import { StudentAchievementNotifications } from "@/components/achievements/StudentAchievementNotifications";
+import { LessonLabelColorDot } from "@/components/lesson/LessonLabelColorDot";
+import { LessonLabelColorPicker } from "@/components/lesson/LessonLabelColorPicker";
 import { lessonService } from "@/api/lessonService";
 import { userService, type UserProfile } from "@/api/userService";
 import { DashboardHeader } from "@/components/ui/panel/DashboardHeader";
@@ -57,6 +60,11 @@ import {
 } from "@/components/ui/panel/panelStyles";
 import { StatsCard } from "@/components/teacher/StatsCard";
 import { useAuth } from "@/context/AuthContext";
+import {
+  LESSON_LABEL_COLOR_OPTIONS,
+  getLessonLabelColorOption,
+  type LessonLabelColor,
+} from "@/constants/lessonLabelColors";
 import { formatPercent, getErrorMessage } from "@/utils/dashboardUtils";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -446,6 +454,8 @@ const STATUS_ORDER: Record<StudentLesson["status"], number> = {
   COMPLETED: 2,
 };
 
+const STUDENT_LESSON_COLOR_STORAGE_PREFIX = "student-dashboard-lesson-colors";
+
 export function StudentDashboard() {
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -469,10 +479,89 @@ export function StudentDashboard() {
   type LessonSort = "title_asc" | "title_desc" | "status";
   const [lessonFilter, setLessonFilter] = useState<LessonFilter>("ALL");
   const [lessonSort, setLessonSort] = useState<LessonSort>("status");
+  const [selectedLabelColors, setSelectedLabelColors] = useState<
+    LessonLabelColor[]
+  >([]);
   const [downloadingAttachmentId, setDownloadingAttachmentId] = useState<
     string | null
   >(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [colorPickerLesson, setColorPickerLesson] =
+    useState<StudentLesson | null>(null);
+  const [studentLessonColors, setStudentLessonColors] = useState<
+    Record<string, LessonLabelColor | null>
+  >({});
+
+  const lessonColorStorageKey = useMemo(
+    () =>
+      user?.publicId
+        ? `${STUDENT_LESSON_COLOR_STORAGE_PREFIX}:${user.publicId}`
+        : null,
+    [user?.publicId],
+  );
+
+  useEffect(() => {
+    if (!lessonColorStorageKey) return;
+
+    const raw = localStorage.getItem(lessonColorStorageKey);
+    if (!raw) {
+      setStudentLessonColors({});
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(raw) as Record<string, unknown>;
+      const sanitized: Record<string, LessonLabelColor | null> = {};
+
+      for (const [lessonPublicId, color] of Object.entries(parsed)) {
+        if (color === null) {
+          sanitized[lessonPublicId] = null;
+          continue;
+        }
+
+        if (typeof color === "string" && getLessonLabelColorOption(color)) {
+          sanitized[lessonPublicId] = color as LessonLabelColor;
+        }
+      }
+
+      setStudentLessonColors(sanitized);
+    } catch {
+      setStudentLessonColors({});
+    }
+  }, [lessonColorStorageKey]);
+
+  const resolveLessonColor = useCallback(
+    (lesson: StudentLesson): LessonLabelColor | null => {
+      if (
+        Object.prototype.hasOwnProperty.call(
+          studentLessonColors,
+          lesson.publicId,
+        )
+      ) {
+        return studentLessonColors[lesson.publicId] ?? null;
+      }
+      return null;
+    },
+    [studentLessonColors],
+  );
+
+  const saveStudentLessonColor = (
+    lesson: StudentLesson,
+    color: LessonLabelColor | null,
+  ) => {
+    setStudentLessonColors((current) => {
+      const next = {
+        ...current,
+        [lesson.publicId]: color,
+      };
+
+      if (lessonColorStorageKey) {
+        localStorage.setItem(lessonColorStorageKey, JSON.stringify(next));
+      }
+
+      return next;
+    });
+  };
 
   const handleDownloadAttachment = async (
     lessonPublicId: string,
@@ -548,6 +637,14 @@ export function StudentDashboard() {
       return l.status === lessonFilter;
     });
 
+    if (selectedLabelColors.length > 0) {
+      const selectedColors = new Set(selectedLabelColors);
+      result = result.filter((lesson) => {
+        const lessonColor = resolveLessonColor(lesson);
+        return lessonColor != null && selectedColors.has(lessonColor);
+      });
+    }
+
     result = [...result].sort((a, b) => {
       if (lessonSort === "title_asc")
         return a.title.localeCompare(b.title, "pl");
@@ -557,7 +654,13 @@ export function StudentDashboard() {
     });
 
     return result;
-  }, [lessons, lessonFilter, lessonSort]);
+  }, [
+    lessons,
+    lessonFilter,
+    lessonSort,
+    resolveLessonColor,
+    selectedLabelColors,
+  ]);
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: pageBg, pb: 6 }}>
@@ -767,6 +870,102 @@ export function StudentDashboard() {
               </ToggleButtonGroup>
 
               <Select
+                multiple
+                value={selectedLabelColors}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  const nextValues = (
+                    typeof value === "string" ? value.split(",") : value
+                  ) as LessonLabelColor[];
+                  setSelectedLabelColors([...new Set(nextValues)]);
+                }}
+                displayEmpty
+                size="small"
+                renderValue={(selected) => {
+                  const selectedValues = selected as LessonLabelColor[];
+                  if (selectedValues.length === 0) {
+                    return (
+                      <Typography color="text.secondary">
+                        Filtruj kolory...
+                      </Typography>
+                    );
+                  }
+
+                  const firstColor = LESSON_LABEL_COLOR_OPTIONS.find(
+                    (option) => option.value === selectedValues[0],
+                  );
+
+                  if (!firstColor) {
+                    return null;
+                  }
+
+                  const hiddenCount = selectedValues.length - 1;
+                  const compactLabel =
+                    hiddenCount > 0
+                      ? `${firstColor.label} + ${hiddenCount}`
+                      : firstColor.label;
+
+                  return (
+                    <Chip
+                      label={compactLabel}
+                      size="small"
+                      icon={
+                        <Box
+                          component="span"
+                          sx={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: "50%",
+                            bgcolor: firstColor.color,
+                          }}
+                        />
+                      }
+                      sx={{
+                        fontSize: "0.7rem",
+                        height: 20,
+                        maxWidth: 156,
+                        flexShrink: 1,
+                        "& .MuiChip-icon": { ml: 0.75 },
+                      }}
+                    />
+                  );
+                }}
+                sx={{
+                  minWidth: 170,
+                  borderRadius: 2.5,
+                  fontSize: "0.85rem",
+                  fontWeight: 700,
+                  bgcolor: "background.paper",
+                  "& .MuiSelect-select": { py: "6.5px", fontSize: "0.82rem" },
+                }}
+              >
+                {LESSON_LABEL_COLOR_OPTIONS.map((option) => (
+                  <MenuItem
+                    key={option.value}
+                    value={option.value}
+                    sx={{ fontSize: "0.82rem" }}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Box
+                        component="span"
+                        aria-hidden="true"
+                        sx={{
+                          width: 10,
+                          height: 10,
+                          borderRadius: "50%",
+                          bgcolor: option.color,
+                          boxShadow: (theme) =>
+                            `0 0 0 1px ${alpha(theme.palette.text.primary, 0.14)}`,
+                          flexShrink: 0,
+                        }}
+                      />
+                      {option.label}
+                    </Box>
+                  </MenuItem>
+                ))}
+              </Select>
+
+              <Select
                 value={lessonSort}
                 onChange={(e) =>
                   setLessonSort(e.target.value as typeof lessonSort)
@@ -833,6 +1032,7 @@ export function StudentDashboard() {
             {displayedLessons.map((lesson) => {
               const isCompleted = lesson.status === "COMPLETED";
               const isLocked = !lesson.isActive && !isCompleted;
+              const lessonColor = resolveLessonColor(lesson);
 
               return (
                 <Grid key={lesson.publicId} size={{ xs: 12, md: 6, lg: 4 }}>
@@ -899,21 +1099,35 @@ export function StudentDashboard() {
                         {getLessonStatusTag(lesson)}
                       </Stack>
 
-                      <Typography
-                        variant="h6"
-                        fontWeight={800}
-                        sx={{
-                          mb: 1,
-                          lineHeight: 1.3,
-                          display: "-webkit-box",
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: "vertical",
-                          overflow: "hidden",
-                          minHeight: "2.6em",
-                        }}
+                      <Stack
+                        direction="row"
+                        spacing={0.8}
+                        alignItems="flex-start"
+                        sx={{ mb: 1, minHeight: "2.6em" }}
                       >
-                        {lesson.title}
-                      </Typography>
+                        {lessonColor && (
+                          <Box sx={{ pt: 0.45, flexShrink: 0 }}>
+                            <LessonLabelColorDot
+                              color={lessonColor}
+                              size={11}
+                            />
+                          </Box>
+                        )}
+                        <Typography
+                          variant="h6"
+                          fontWeight={800}
+                          sx={{
+                            lineHeight: 1.3,
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
+                            minWidth: 0,
+                          }}
+                        >
+                          {lesson.title}
+                        </Typography>
+                      </Stack>
 
                       <Typography
                         variant="body2"
@@ -932,71 +1146,100 @@ export function StudentDashboard() {
 
                       <Stack
                         direction="row"
-                        spacing={1}
+                        justifyContent="space-between"
+                        alignItems="center"
                         sx={{ mt: "auto", pt: 1 }}
                       >
-                        {lesson.attachments.length > 0 && (
+                        <Box sx={{ display: "flex", gap: 0.5 }}>
+                          {lesson.attachments.length > 0 && (
+                            <Button
+                              size="small"
+                              variant="text"
+                              startIcon={
+                                <AttachFileIcon sx={{ fontSize: 16 }} />
+                              }
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setAttachmentLesson(lesson);
+                              }}
+                              sx={{
+                                textTransform: "none",
+                                fontWeight: 700,
+                                color: "info.main",
+                                fontSize: "0.75rem",
+                                borderRadius: 1.5,
+                                px: 1.5,
+                                "&:hover": {
+                                  bgcolor: alpha(theme.palette.info.main, 0.08),
+                                },
+                              }}
+                            >
+                              Materiały ({lesson.attachments.length})
+                            </Button>
+                          )}
+
                           <Button
                             size="small"
                             variant="text"
-                            startIcon={<AttachFileIcon sx={{ fontSize: 16 }} />}
+                            startIcon={<PaletteIcon sx={{ fontSize: 16 }} />}
                             onClick={(e) => {
                               e.stopPropagation();
-                              setAttachmentLesson(lesson);
+                              setColorPickerLesson(lesson);
                             }}
                             sx={{
                               textTransform: "none",
                               fontWeight: 700,
-                              color: "info.main",
+                              color: "secondary.main",
                               fontSize: "0.75rem",
                               borderRadius: 1.5,
                               px: 1.5,
                               "&:hover": {
-                                bgcolor: alpha(theme.palette.info.main, 0.08),
+                                bgcolor: alpha(
+                                  theme.palette.secondary.main,
+                                  0.08,
+                                ),
                               },
                             }}
                           >
-                            Materiały ({lesson.attachments.length})
+                            Kolor
                           </Button>
-                        )}
-
-                        <Box sx={{ ml: "auto" }}>
-                          {isCompleted ? (
-                            <Button
-                              size="small"
-                              variant="contained"
-                              startIcon={<ResultIcon sx={{ fontSize: 16 }} />}
-                              sx={{
-                                textTransform: "none",
-                                fontWeight: 800,
-                                borderRadius: 2,
-                                fontSize: "0.75rem",
-                                pointerEvents: "none",
-                                bgcolor: alpha(theme.palette.success.main, 0.1),
-                                color: "success.main",
-                                boxShadow: "none",
-                              }}
-                            >
-                              {formatPercent(lesson.resultPercent)}
-                            </Button>
-                          ) : !isLocked ? (
-                            <Button
-                              size="small"
-                              variant="contained"
-                              endIcon={<PlayIcon sx={{ fontSize: 16 }} />}
-                              sx={{
-                                textTransform: "none",
-                                fontWeight: 700,
-                                borderRadius: 2,
-                                fontSize: "0.75rem",
-                                px: 2,
-                                boxShadow: "none",
-                              }}
-                            >
-                              Rozpocznij
-                            </Button>
-                          ) : null}
                         </Box>
+
+                        {isCompleted ? (
+                          <Button
+                            size="small"
+                            variant="contained"
+                            startIcon={<ResultIcon sx={{ fontSize: 16 }} />}
+                            sx={{
+                              textTransform: "none",
+                              fontWeight: 800,
+                              borderRadius: 2,
+                              fontSize: "0.75rem",
+                              pointerEvents: "none",
+                              bgcolor: alpha(theme.palette.success.main, 0.1),
+                              color: "success.main",
+                              boxShadow: "none",
+                            }}
+                          >
+                            {formatPercent(lesson.resultPercent)}
+                          </Button>
+                        ) : !isLocked ? (
+                          <Button
+                            size="small"
+                            variant="contained"
+                            endIcon={<PlayIcon sx={{ fontSize: 16 }} />}
+                            sx={{
+                              textTransform: "none",
+                              fontWeight: 700,
+                              borderRadius: 2,
+                              fontSize: "0.75rem",
+                              px: 2,
+                              boxShadow: "none",
+                            }}
+                          >
+                            Rozpocznij
+                          </Button>
+                        ) : null}
                       </Stack>
                     </Box>
                   </Paper>
@@ -1146,6 +1389,39 @@ export function StudentDashboard() {
           onClose={() => setAttachmentLesson(null)}
           onDownload={handleDownloadAttachment}
         />
+
+        <Dialog
+          open={Boolean(colorPickerLesson)}
+          onClose={() => setColorPickerLesson(null)}
+          maxWidth="xs"
+          fullWidth
+          PaperProps={{ sx: { borderRadius: 4, backgroundImage: "none" } }}
+        >
+          <DialogTitle sx={{ pt: 3, px: 3, pb: 1 }}>Kolor lekcji</DialogTitle>
+          <DialogContent sx={{ px: 3, pb: 2 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              {colorPickerLesson?.title}
+            </Typography>
+            <LessonLabelColorPicker
+              value={
+                colorPickerLesson ? resolveLessonColor(colorPickerLesson) : null
+              }
+              onChange={(value) => {
+                if (!colorPickerLesson) return;
+                saveStudentLessonColor(colorPickerLesson, value);
+                setColorPickerLesson(null);
+              }}
+            />
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 3 }}>
+            <Button
+              onClick={() => setColorPickerLesson(null)}
+              sx={{ textTransform: "none", fontWeight: 700 }}
+            >
+              Zamknij
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Container>
     </Box>
   );

@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -17,8 +19,11 @@ public class LessonResultTaskDetailDto {
 	private String taskText;
 	private String hint;
 	private String userAnswer;
-	private String correctAnswer;
+	private List<String> correctAnswers;
 	private Boolean isCorrect;
+	private Boolean originalIsCorrect;
+	private Boolean manuallyReviewed;
+	private String reviewStatus;
 	private String possibleAnswers;
 	private String words;
 	private Integer tabSwitchCount;

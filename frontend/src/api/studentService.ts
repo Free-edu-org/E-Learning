@@ -1,5 +1,4 @@
 import { fetchApi } from "./apiClient";
-
 export interface StudentStats {
   totalLessons: number;
   completedLessons: number;
@@ -68,6 +67,7 @@ export interface SubmitAnswerItem {
   taskPublicId: string;
   taskType: "choose" | "write" | "scatter" | "speak";
   answer: string;
+  attemptId?: string;
 }
 
 export interface SubmitAnswersRequest {
@@ -79,6 +79,7 @@ export interface SubmitAnswerDetail {
   taskType: string;
   isCorrect: boolean;
   correctAnswer: string;
+  correctAnswers?: string[];
 }
 
 export interface SubmitAnswersResponse {
@@ -100,7 +101,15 @@ export interface LessonResultTaskDetail {
   hint: string | null;
   userAnswer: string | null;
   correctAnswer: string | null;
+  correctAnswers?: string[] | null;
   isCorrect: boolean;
+  originalIsCorrect: boolean | null;
+  manuallyReviewed: boolean;
+  reviewStatus:
+    | "AUTO"
+    | "MANUAL_CONFIRMED"
+    | "MANUAL_CORRECTED_TO_CORRECT"
+    | "MANUAL_CORRECTED_TO_INCORRECT";
   possibleAnswers: string | null;
   words: string | null;
   tabSwitchCount: number;

@@ -1,16 +1,19 @@
 package pl.freeedu.backend.teacher.service;
 
+import java.time.LocalDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
+import pl.freeedu.backend.achievement.event.StudentStatsChangedEvent;
 import pl.freeedu.backend.accountinvitation.service.AccountActivationService;
 import pl.freeedu.backend.lesson.dto.LessonResponse;
 import pl.freeedu.backend.lesson.exception.LessonErrorCode;
@@ -21,10 +24,19 @@ import pl.freeedu.backend.lesson.repository.GroupHasLessonRepository;
 import pl.freeedu.backend.lesson.repository.LessonRepository;
 import pl.freeedu.backend.lesson.service.LessonAttachmentService;
 import pl.freeedu.backend.security.service.SecurityService;
+import pl.freeedu.backend.student.model.StudentProgressHistory;
+import pl.freeedu.backend.student.repository.StudentProgressHistoryRepository;
+import pl.freeedu.backend.student.service.PointService;
 import pl.freeedu.backend.task.dto.LessonResultDetailsResponse;
 import pl.freeedu.backend.task.exception.TaskErrorCode;
 import pl.freeedu.backend.task.exception.TaskException;
+import pl.freeedu.backend.task.model.UserAnswer;
+import pl.freeedu.backend.task.model.UserLesson;
+import pl.freeedu.backend.task.model.UserLessonStatus;
+import pl.freeedu.backend.task.repository.UserAnswerRepository;
+import pl.freeedu.backend.task.repository.UserLessonRepository;
 import pl.freeedu.backend.task.service.LessonResultDetailsService;
+import pl.freeedu.backend.task.service.TaskPublicIdLookupService;
 import pl.freeedu.backend.teacher.dto.*;
 import pl.freeedu.backend.usergroup.dto.UserGroupResponse;
 import pl.freeedu.backend.teacher.repository.TeacherStatsRepository;
@@ -44,6 +56,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -87,6 +100,18 @@ class TeacherServiceTest {
 
 	@Mock
 	private UserGroupPublicIdLookupService userGroupPublicIdLookupService;
+	@Mock
+	private StudentProgressHistoryRepository studentProgressHistoryRepository;
+	@Mock
+	private UserAnswerRepository userAnswerRepository;
+	@Mock
+	private UserLessonRepository userLessonRepository;
+	@Mock
+	private TaskPublicIdLookupService taskPublicIdLookupService;
+	@Mock
+	private PointService pointService;
+	@Mock
+	private ApplicationEventPublisher applicationEventPublisher;
 
 	@Mock
 	private AccountActivationService accountActivationService;
@@ -127,9 +152,11 @@ class TeacherServiceTest {
 		User teacher = User.builder().id(10).build();
 		Lesson lesson = Lesson.builder().id(7).teacher(teacher).build();
 		LessonStatsStudentResult firstStudent = LessonStatsStudentResult.builder().userPublicId("student-1")
-				.username("ania").score(4).maxScore(5).resultPercent(80.0).totalTabSwitchCount(3).build();
+				.username("ania").groupPublicId("group-a").groupName("Grupa A").score(4).maxScore(5).resultPercent(80.0)
+				.totalTabSwitchCount(3).build();
 		LessonStatsStudentResult secondStudent = LessonStatsStudentResult.builder().userPublicId("student-2")
-				.username("bartek").score(5).maxScore(5).resultPercent(100.0).totalTabSwitchCount(0).build();
+				.username("bartek").groupPublicId("group-b").groupName("Grupa B").score(5).maxScore(5)
+				.resultPercent(100.0).totalTabSwitchCount(0).build();
 
 		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
 		when(lessonRepository.findById(7)).thenReturn(Optional.of(lesson));
@@ -145,6 +172,8 @@ class TeacherServiceTest {
 			assertEquals(100.0, stats.getBestScore());
 			assertEquals(2, stats.getStudentResults().size());
 			assertEquals(3, stats.getStudentResults().get(0).getTotalTabSwitchCount());
+			assertEquals("group-a", stats.getStudentResults().get(0).getGroupPublicId());
+			assertEquals("Grupa A", stats.getStudentResults().get(0).getGroupName());
 			assertEquals(0, stats.getStudentResults().get(1).getTotalTabSwitchCount());
 		}).verifyComplete();
 	}
@@ -386,5 +415,89 @@ class TeacherServiceTest {
 		}).verify();
 		verify(userInGroupRepository, never()).hasAccessToLesson(anyInt(), anyInt());
 		verify(lessonResultDetailsService, never()).getCompletedLessonResult(anyInt(), anyInt());
+	}
+
+	@Test
+	void shouldManuallyReviewTaskAnswerAndReturnUpdatedLessonResult() {
+		User teacher = User.builder().id(10).build();
+		Lesson lesson = Lesson.builder().id(3).teacher(teacher).build();
+		UserLesson userLesson = UserLesson.builder().id(44).userId(21).lessonId(3).status(UserLessonStatus.COMPLETED)
+				.score(0).maxScore(1).finishedAt(LocalDateTime.of(2026, 5, 20, 12, 0)).build();
+		UserAnswer answer = UserAnswer.builder().lessonId(3).userId(21).taskId(7).taskType("write_tasks").answer("helo")
+				.isCorrect(false).originalIsCorrect(false).manuallyReviewed(false).build();
+		LessonResultDetailsResponse refreshed = LessonResultDetailsResponse.builder().lessonPublicId("lesson-3")
+				.userPublicId("21").score(1).maxScore(1).build();
+
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
+		when(lessonRepository.findById(3)).thenReturn(Optional.of(lesson));
+		when(userInGroupRepository.hasAccessToLesson(21, 3)).thenReturn(true);
+		when(userLessonRepository.findByUserIdAndLessonId(21, 3)).thenReturn(Optional.of(userLesson));
+		when(taskPublicIdLookupService.getInternalId("task-7", "choose"))
+				.thenThrow(new TaskException(TaskErrorCode.TASK_NOT_FOUND));
+		when(taskPublicIdLookupService.getInternalId("task-7", "write")).thenReturn(7);
+		when(userAnswerRepository.findByUserIdAndLessonIdAndTaskIdAndTaskType(21, 3, 7, "write_tasks"))
+				.thenReturn(Optional.of(answer));
+		when(userAnswerRepository.findByUserIdAndLessonId(21, 3)).thenReturn(List.of(answer));
+		when(studentProgressHistoryRepository.findByUserIdAndLessonIdAndProgressDate(eq(21), eq(3), any()))
+				.thenReturn(Optional.of(StudentProgressHistory.builder().userId(21).lessonId(3).build()));
+		when(lessonResultDetailsService.getCompletedLessonResult(3, 21)).thenReturn(Mono.just(refreshed));
+
+		Mono<LessonResultDetailsResponse> result = teacherService.reviewTaskAnswer(3, 21, "task-7",
+				Mono.just(TaskAnswerManualReviewRequest.builder().isCorrect(true).build()));
+
+		StepVerifier.create(result).assertNext(response -> assertEquals(1, response.getScore())).verifyComplete();
+		assertTrue(answer.getIsCorrect());
+		assertTrue(answer.getManuallyReviewed());
+		verify(userAnswerRepository).save(answer);
+		verify(userLessonRepository).save(userLesson);
+		verify(pointService).reconcilePointsForLessonResult(44, 21, 1, 10);
+		verify(applicationEventPublisher).publishEvent(any(StudentStatsChangedEvent.class));
+	}
+
+	@Test
+	void shouldRecalculateScoreAndPointsWithoutDriftWhenTeacherFlipsManualReviewMultipleTimes() {
+		User teacher = User.builder().id(10).build();
+		Lesson lesson = Lesson.builder().id(3).teacher(teacher).build();
+		UserLesson userLesson = UserLesson.builder().id(44).userId(21).lessonId(3).status(UserLessonStatus.COMPLETED)
+				.score(0).maxScore(1).finishedAt(LocalDateTime.of(2026, 5, 20, 12, 0)).build();
+		UserAnswer answer = UserAnswer.builder().lessonId(3).userId(21).taskId(7).taskType("write_tasks").answer("helo")
+				.isCorrect(false).originalIsCorrect(false).manuallyReviewed(false).build();
+		StudentProgressHistory snapshot = StudentProgressHistory.builder().userId(21).lessonId(3).build();
+		List<UserAnswer> answers = new ArrayList<>(List.of(answer));
+
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(10));
+		when(lessonRepository.findById(3)).thenReturn(Optional.of(lesson));
+		when(userInGroupRepository.hasAccessToLesson(21, 3)).thenReturn(true);
+		when(userLessonRepository.findByUserIdAndLessonId(21, 3)).thenReturn(Optional.of(userLesson));
+		when(taskPublicIdLookupService.getInternalId("task-7", "choose"))
+				.thenThrow(new TaskException(TaskErrorCode.TASK_NOT_FOUND));
+		when(taskPublicIdLookupService.getInternalId("task-7", "write")).thenReturn(7);
+		when(userAnswerRepository.findByUserIdAndLessonIdAndTaskIdAndTaskType(21, 3, 7, "write_tasks"))
+				.thenReturn(Optional.of(answer));
+		when(userAnswerRepository.findByUserIdAndLessonId(21, 3)).thenAnswer(invocation -> List.copyOf(answers));
+		when(studentProgressHistoryRepository.findByUserIdAndLessonIdAndProgressDate(eq(21), eq(3), any()))
+				.thenReturn(Optional.of(snapshot));
+		when(lessonResultDetailsService.getCompletedLessonResult(3, 21))
+				.thenAnswer(invocation -> Mono.just(LessonResultDetailsResponse.builder().lessonPublicId("lesson-3")
+						.userPublicId("21").score(userLesson.getScore()).maxScore(userLesson.getMaxScore()).build()));
+
+		StepVerifier
+				.create(teacherService.reviewTaskAnswer(3, 21, "task-7",
+						Mono.just(TaskAnswerManualReviewRequest.builder().isCorrect(true).build())))
+				.assertNext(response -> assertEquals(1, response.getScore())).verifyComplete();
+		assertTrue(answer.getIsCorrect());
+		assertEquals(1, userLesson.getScore());
+
+		StepVerifier
+				.create(teacherService.reviewTaskAnswer(3, 21, "task-7",
+						Mono.just(TaskAnswerManualReviewRequest.builder().isCorrect(false).build())))
+				.assertNext(response -> assertEquals(0, response.getScore())).verifyComplete();
+		assertFalse(answer.getIsCorrect());
+		assertEquals(0, userLesson.getScore());
+
+		verify(pointService).reconcilePointsForLessonResult(44, 21, 1, 10);
+		verify(pointService).reconcilePointsForLessonResult(44, 21, 0, 10);
+		verify(userLessonRepository, atLeast(2)).save(userLesson);
+		verify(applicationEventPublisher, atLeast(2)).publishEvent(any(StudentStatsChangedEvent.class));
 	}
 }

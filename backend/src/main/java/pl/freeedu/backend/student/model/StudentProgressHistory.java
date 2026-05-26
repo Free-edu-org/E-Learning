@@ -29,6 +29,9 @@ public class StudentProgressHistory {
 	@Column(name = "user_id", nullable = false)
 	private Integer userId;
 
+	@Column(name = "lesson_id")
+	private Integer lessonId;
+
 	@Column(name = "progress_date", nullable = false)
 	private LocalDate progressDate;
 

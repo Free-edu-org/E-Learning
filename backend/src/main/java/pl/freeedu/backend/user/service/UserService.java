@@ -8,14 +8,13 @@ import java.util.stream.Stream;
 import java.util.Set;
 import java.util.function.BiFunction;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
-import pl.freeedu.backend.achievement.event.AvatarChangedEvent;
 import pl.freeedu.backend.auth.exception.AuthErrorCode;
 import pl.freeedu.backend.auth.exception.AuthException;
+import pl.freeedu.backend.student.service.StudentAchievementService;
 import pl.freeedu.backend.user.exception.UserErrorCode;
 import pl.freeedu.backend.user.exception.UserException;
 import pl.freeedu.backend.user.dto.RegisterUserRequest;
@@ -37,17 +36,17 @@ public class UserService {
 	private final PasswordEncoder passwordEncoder;
 	private final SecurityService securityService;
 	private final TransactionTemplate transactionTemplate;
-	private final ApplicationEventPublisher applicationEventPublisher;
+	private final StudentAchievementService studentAchievementService;
 
 	public UserService(UserRepository userRepository, UserMapper userMapper, PasswordEncoder passwordEncoder,
 			SecurityService securityService, TransactionTemplate transactionTemplate,
-			ApplicationEventPublisher applicationEventPublisher) {
+			StudentAchievementService studentAchievementService) {
 		this.userRepository = userRepository;
 		this.userMapper = userMapper;
 		this.passwordEncoder = passwordEncoder;
 		this.securityService = securityService;
 		this.transactionTemplate = transactionTemplate;
-		this.applicationEventPublisher = applicationEventPublisher;
+		this.studentAchievementService = studentAchievementService;
 	}
 
 	public Mono<Void> createAdmin(Mono<RegisterUserRequest> requestMono) {
@@ -272,7 +271,10 @@ public class UserService {
 		return transactionTemplate.execute(status -> {
 			user.setAvatarUrl(avatarUrl);
 			User updatedUser = userRepository.save(user);
-			applicationEventPublisher.publishEvent(new AvatarChangedEvent(updatedUser.getId()));
+			int newUnlocks = studentAchievementService.checkAndUnlockAchievementsSafely(updatedUser.getId(),
+					"avatar change");
+			log.info("Avatar achievement sync check completed for user ID: {}. Newly persisted unlocks: {}",
+					updatedUser.getId(), newUnlocks);
 			return updatedUser;
 		});
 	}

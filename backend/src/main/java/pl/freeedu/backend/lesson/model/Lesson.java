@@ -29,6 +29,9 @@ public class Lesson {
 	@Column(nullable = false, columnDefinition = "TEXT")
 	private String theme;
 
+	@Column(name = "label_color", length = 20)
+	private String labelColor;
+
 	@Column(name = "is_active", nullable = false)
 	private Boolean isActive;
 

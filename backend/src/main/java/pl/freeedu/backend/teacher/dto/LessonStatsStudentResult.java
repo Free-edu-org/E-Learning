@@ -15,6 +15,8 @@ public class LessonStatsStudentResult {
 
 	private String userPublicId;
 	private String username;
+	private String groupPublicId;
+	private String groupName;
 	private Instant completedAt;
 	private Integer score;
 	private Integer maxScore;

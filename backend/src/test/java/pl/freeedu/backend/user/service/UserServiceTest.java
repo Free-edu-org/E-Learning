@@ -2,22 +2,20 @@ package pl.freeedu.backend.user.service;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
-import pl.freeedu.backend.achievement.event.AvatarChangedEvent;
 import pl.freeedu.backend.auth.exception.AuthErrorCode;
 import pl.freeedu.backend.auth.exception.AuthException;
 import pl.freeedu.backend.security.principal.CustomUserDetails;
 import pl.freeedu.backend.security.service.SecurityService;
+import pl.freeedu.backend.student.service.StudentAchievementService;
 import pl.freeedu.backend.user.dto.ChangePasswordRequest;
 import pl.freeedu.backend.user.dto.RegisterUserRequest;
 import pl.freeedu.backend.user.dto.UpdateUserRequest;
@@ -54,7 +52,7 @@ class UserServiceTest {
 	@Mock
 	private TransactionTemplate transactionTemplate;
 	@Mock
-	private ApplicationEventPublisher applicationEventPublisher;
+	private StudentAchievementService studentAchievementService;
 
 	@InjectMocks
 	private UserService userService;
@@ -229,6 +227,7 @@ class UserServiceTest {
 		when(filePart.headers()).thenReturn(headers);
 		when(userRepository.findById(internalUserId)).thenReturn(Optional.of(user));
 		when(userRepository.save(user)).thenReturn(user);
+		when(studentAchievementService.checkAndUnlockAchievementsSafely(internalUserId, "avatar change")).thenReturn(1);
 		when(userMapper.toUserResponse(user)).thenAnswer(
 				invocation -> UserResponse.builder().publicId(userPublicId).avatarUrl(user.getAvatarUrl()).build());
 		when(filePart.transferTo(any(Path.class))).thenAnswer(invocation -> {
@@ -246,18 +245,17 @@ class UserServiceTest {
 			assertFalse(response.getAvatarUrl().startsWith("/uploads/avatars/" + internalUserId + "-"));
 			deleteTestAvatars(userPublicId);
 		}).verifyComplete();
-		ArgumentCaptor<AvatarChangedEvent> eventCaptor = ArgumentCaptor.forClass(AvatarChangedEvent.class);
-		verify(applicationEventPublisher).publishEvent(eventCaptor.capture());
-		assertEquals(internalUserId, eventCaptor.getValue().userId());
+		verify(studentAchievementService).checkAndUnlockAchievementsSafely(internalUserId, "avatar change");
 	}
 
 	@Test
-	void shouldPublishAvatarChangedEventWhenPresetAvatarIsSet() {
+	void shouldCheckAchievementsSynchronouslyWhenPresetAvatarIsSet() {
 		// given
 		Integer internalUserId = 42;
 		User user = User.builder().id(internalUserId).publicId("user-public-avatar").build();
 		when(userRepository.findById(internalUserId)).thenReturn(Optional.of(user));
 		when(userRepository.save(user)).thenReturn(user);
+		when(studentAchievementService.checkAndUnlockAchievementsSafely(internalUserId, "avatar change")).thenReturn(1);
 		when(userMapper.toUserResponse(user))
 				.thenReturn(UserResponse.builder().publicId("user-public-avatar").avatarUrl("preset:avatar_1").build());
 
@@ -269,9 +267,7 @@ class UserServiceTest {
 			assertEquals("user-public-avatar", response.getPublicId());
 			assertEquals("preset:avatar_1", user.getAvatarUrl());
 		}).verifyComplete();
-		ArgumentCaptor<AvatarChangedEvent> eventCaptor = ArgumentCaptor.forClass(AvatarChangedEvent.class);
-		verify(applicationEventPublisher).publishEvent(eventCaptor.capture());
-		assertEquals(internalUserId, eventCaptor.getValue().userId());
+		verify(studentAchievementService).checkAndUnlockAchievementsSafely(internalUserId, "avatar change");
 	}
 
 	@Test

@@ -1,6 +1,8 @@
 package pl.freeedu.backend.task.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,9 +26,6 @@ import pl.freeedu.backend.usergroup.repository.UserInGroupRepository;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.text.Normalizer;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.util.*;
@@ -36,16 +35,13 @@ import java.util.stream.Collectors;
 @Service
 public class TaskService {
 
-	private static final String STT_NORMALIZATION_RESOURCE = "/stt/stt-normalization.json";
-	private static final SttNormalizationConfig STT_NORMALIZATION_CONFIG = loadSttNormalizationConfig();
-	private static final Set<String> STT_FILLER_WORDS = STT_NORMALIZATION_CONFIG.fillerWords();
-	private static final Map<String, String> STT_CONTRACTIONS = STT_NORMALIZATION_CONFIG.contractions();
-	private static final Map<String, Set<String>> STT_WORD_VARIANTS = STT_NORMALIZATION_CONFIG.wordVariants();
+	private static final int MAX_UNUSED_SPEAK_ATTEMPTS_PER_TASK = 5;
 
 	private final ChooseTaskRepository chooseTaskRepository;
 	private final WriteTaskRepository writeTaskRepository;
 	private final ScatterTaskRepository scatterTaskRepository;
 	private final SpeakTaskRepository speakTaskRepository;
+	private final SpeakAttemptRepository speakAttemptRepository;
 	private final UserAnswerRepository userAnswerRepository;
 	private final UserLessonRepository userLessonRepository;
 	private final LessonRepository lessonRepository;
@@ -59,36 +55,25 @@ public class TaskService {
 	private final PointService pointsService;
 	private final TransactionTemplate transactionTemplate;
 	private final ApplicationEventPublisher applicationEventPublisher;
+	private final ObjectMapper objectMapper;
+	private final MeterRegistry meterRegistry;
 	private final double sttMinScore;
-
-	private static SttNormalizationConfig loadSttNormalizationConfig() {
-		ObjectMapper objectMapper = new ObjectMapper();
-		try (InputStream inputStream = TaskService.class.getResourceAsStream(STT_NORMALIZATION_RESOURCE)) {
-			if (inputStream == null) {
-				throw new IllegalStateException("Missing STT normalization resource: " + STT_NORMALIZATION_RESOURCE);
-			}
-			RawSttNormalizationConfig rawConfig = objectMapper.readValue(inputStream, RawSttNormalizationConfig.class);
-			return rawConfig.toConfig();
-		} catch (IOException e) {
-			throw new IllegalStateException("Failed to load STT normalization resource: " + STT_NORMALIZATION_RESOURCE,
-					e);
-		}
-	}
 
 	public TaskService(ChooseTaskRepository chooseTaskRepository, WriteTaskRepository writeTaskRepository,
 			ScatterTaskRepository scatterTaskRepository, SpeakTaskRepository speakTaskRepository,
-			UserAnswerRepository userAnswerRepository, UserLessonRepository userLessonRepository,
-			LessonRepository lessonRepository, SecurityService securityService,
-			UserInGroupRepository userInGroupRepository, SttClient sttClient,
+			SpeakAttemptRepository speakAttemptRepository, UserAnswerRepository userAnswerRepository,
+			UserLessonRepository userLessonRepository, LessonRepository lessonRepository,
+			SecurityService securityService, UserInGroupRepository userInGroupRepository, SttClient sttClient,
 			TaskPublicIdLookupService taskPublicIdLookupService, TaskHintImageService taskHintImageService,
 			StudentProgressHistoryRepository studentProgressHistoryRepository,
 			UserTaskAttentionEventRepository userTaskAttentionEventRepository, PointService pointsService,
 			TransactionTemplate transactionTemplate, ApplicationEventPublisher applicationEventPublisher,
-			@Value("${application.stt.min-score}") double sttMinScore) {
+			MeterRegistry meterRegistry, @Value("${application.stt.min-score}") double sttMinScore) {
 		this.chooseTaskRepository = chooseTaskRepository;
 		this.writeTaskRepository = writeTaskRepository;
 		this.scatterTaskRepository = scatterTaskRepository;
 		this.speakTaskRepository = speakTaskRepository;
+		this.speakAttemptRepository = speakAttemptRepository;
 		this.userAnswerRepository = userAnswerRepository;
 		this.userLessonRepository = userLessonRepository;
 		this.lessonRepository = lessonRepository;
@@ -102,6 +87,8 @@ public class TaskService {
 		this.pointsService = pointsService;
 		this.transactionTemplate = transactionTemplate;
 		this.applicationEventPublisher = applicationEventPublisher;
+		this.objectMapper = new ObjectMapper();
+		this.meterRegistry = meterRegistry;
 		this.sttMinScore = sttMinScore;
 	}
 
@@ -169,9 +156,12 @@ public class TaskService {
 				log.warn("Create ChooseTask failed: Lesson with ID: {} not found", lessonId);
 				return new TaskException(TaskErrorCode.LESSON_NOT_FOUND);
 			});
+			List<Integer> correctAnswers = TaskAnswerUtils.normalizeChooseAnswers(request.getCorrectAnswers(),
+					request.getPossibleAnswers());
 			ChooseTask task = ChooseTask.builder().lessonId(lessonId).task(request.getTask())
-					.possibleAnswers(request.getPossibleAnswers()).correctAnswer(request.getCorrectAnswer())
-					.hint(request.getHint()).section(request.getSection()).build();
+					.possibleAnswers(request.getPossibleAnswers())
+					.correctAnswers(TaskAnswerUtils.serializeIntegerAnswers(correctAnswers)).hint(request.getHint())
+					.section(request.getSection()).build();
 			ChooseTask saved = chooseTaskRepository.save(task);
 			log.info("ChooseTask ID: {} created for lesson ID: {}", saved.getId(), lessonId);
 			return toChooseTaskResponse(saved, false, requireLessonPublicId(lessonId));
@@ -183,9 +173,11 @@ public class TaskService {
 		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
 			log.info("Updating ChooseTask publicId: {} for lesson ID: {}", taskPublicId, lessonId);
 			ChooseTask task = getChooseTaskForLesson(lessonId, taskPublicId);
+			List<Integer> correctAnswers = TaskAnswerUtils.normalizeChooseAnswers(request.getCorrectAnswers(),
+					request.getPossibleAnswers());
 			task.setTask(request.getTask());
 			task.setPossibleAnswers(request.getPossibleAnswers());
-			task.setCorrectAnswer(request.getCorrectAnswer());
+			task.setCorrectAnswers(TaskAnswerUtils.serializeIntegerAnswers(correctAnswers));
 			task.setHint(request.getHint());
 			task.setSection(request.getSection());
 			ChooseTask saved = chooseTaskRepository.save(task);
@@ -210,9 +202,10 @@ public class TaskService {
 	public Mono<WriteTaskResponse> createWriteTask(Integer lessonId, Mono<WriteTaskRequest> requestMono) {
 		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
 			lessonRepository.findById(lessonId).orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_FOUND));
+			List<String> correctAnswers = TaskAnswerUtils.normalizeTextAnswers(request.getCorrectAnswers());
 			WriteTask task = WriteTask.builder().lessonId(lessonId).task(request.getTask())
-					.correctAnswer(request.getCorrectAnswer()).hint(request.getHint()).section(request.getSection())
-					.build();
+					.correctAnswers(TaskAnswerUtils.serializeStringAnswers(correctAnswers)).hint(request.getHint())
+					.section(request.getSection()).build();
 			WriteTask saved = writeTaskRepository.save(task);
 			return toWriteTaskResponse(saved, false, requireLessonPublicId(lessonId));
 		}).subscribeOn(Schedulers.boundedElastic()));
@@ -222,8 +215,9 @@ public class TaskService {
 			Mono<WriteTaskRequest> requestMono) {
 		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
 			WriteTask task = getWriteTaskForLesson(lessonId, taskPublicId);
+			List<String> correctAnswers = TaskAnswerUtils.normalizeTextAnswers(request.getCorrectAnswers());
 			task.setTask(request.getTask());
-			task.setCorrectAnswer(request.getCorrectAnswer());
+			task.setCorrectAnswers(TaskAnswerUtils.serializeStringAnswers(correctAnswers));
 			task.setHint(request.getHint());
 			task.setSection(request.getSection());
 			WriteTask saved = writeTaskRepository.save(task);
@@ -245,9 +239,10 @@ public class TaskService {
 	public Mono<ScatterTaskResponse> createScatterTask(Integer lessonId, Mono<ScatterTaskRequest> requestMono) {
 		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
 			lessonRepository.findById(lessonId).orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_FOUND));
+			List<String> correctAnswers = TaskAnswerUtils.normalizeTextAnswers(request.getCorrectAnswers());
 			ScatterTask task = ScatterTask.builder().lessonId(lessonId).task(request.getTask())
-					.words(request.getWords()).correctAnswer(request.getCorrectAnswer()).hint(request.getHint())
-					.section(request.getSection()).build();
+					.words(request.getWords()).correctAnswers(TaskAnswerUtils.serializeStringAnswers(correctAnswers))
+					.hint(request.getHint()).section(request.getSection()).build();
 			ScatterTask saved = scatterTaskRepository.save(task);
 			return toScatterTaskResponse(saved, false, requireLessonPublicId(lessonId));
 		}).subscribeOn(Schedulers.boundedElastic()));
@@ -257,9 +252,10 @@ public class TaskService {
 			Mono<ScatterTaskRequest> requestMono) {
 		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
 			ScatterTask task = getScatterTaskForLesson(lessonId, taskPublicId);
+			List<String> correctAnswers = TaskAnswerUtils.normalizeTextAnswers(request.getCorrectAnswers());
 			task.setTask(request.getTask());
 			task.setWords(request.getWords());
-			task.setCorrectAnswer(request.getCorrectAnswer());
+			task.setCorrectAnswers(TaskAnswerUtils.serializeStringAnswers(correctAnswers));
 			task.setHint(request.getHint());
 			task.setSection(request.getSection());
 			ScatterTask saved = scatterTaskRepository.save(task);
@@ -281,8 +277,10 @@ public class TaskService {
 	public Mono<SpeakTaskResponse> createSpeakTask(Integer lessonId, Mono<SpeakTaskRequest> requestMono) {
 		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
 			lessonRepository.findById(lessonId).orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_FOUND));
-			SpeakTask task = SpeakTask.builder().lessonId(lessonId).expectedText(request.getExpectedText())
-					.hint(request.getHint()).section(request.getSection()).build();
+			List<String> expectedTexts = TaskAnswerUtils.normalizeSingleTextAnswer(request.getExpectedTexts());
+			SpeakTask task = SpeakTask.builder().lessonId(lessonId)
+					.expectedTexts(TaskAnswerUtils.serializeStringAnswers(expectedTexts)).hint(request.getHint())
+					.section(request.getSection()).build();
 			SpeakTask saved = speakTaskRepository.save(task);
 			return toSpeakTaskResponse(saved, requireLessonPublicId(lessonId));
 		}).subscribeOn(Schedulers.boundedElastic()));
@@ -292,7 +290,8 @@ public class TaskService {
 			Mono<SpeakTaskRequest> requestMono) {
 		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
 			SpeakTask task = getSpeakTaskForLesson(lessonId, taskPublicId);
-			task.setExpectedText(request.getExpectedText());
+			List<String> expectedTexts = TaskAnswerUtils.normalizeSingleTextAnswer(request.getExpectedTexts());
+			task.setExpectedTexts(TaskAnswerUtils.serializeStringAnswers(expectedTexts));
 			task.setHint(request.getHint());
 			task.setSection(request.getSection());
 			SpeakTask saved = speakTaskRepository.save(task);
@@ -327,13 +326,14 @@ public class TaskService {
 				log.warn("Transcription failed: Lesson ID: {} is not active", lessonId);
 				throw new TaskException(TaskErrorCode.LESSON_NOT_ACTIVE);
 			}
-			return getSpeakTaskForLesson(lessonId, taskPublicId);
-		}).subscribeOn(Schedulers.boundedElastic())).flatMap(speakTask -> audio.switchIfEmpty(Mono.defer(() -> {
+			UserLesson userLesson = requireActiveUserLesson(userId, lessonId);
+			SpeakTask speakTask = getSpeakTaskForLesson(lessonId, taskPublicId);
+			requireSpeakAttemptLimitNotExceeded(userLesson.getId(), speakTask.getId());
+			return new SpeakAttemptContext(userId, lesson, userLesson, speakTask);
+		}).subscribeOn(Schedulers.boundedElastic())).flatMap(entry -> audio.switchIfEmpty(Mono.defer(() -> {
 			log.warn("Transcription failed: Audio file is missing for task publicId: {}", taskPublicId);
 			return Mono.error(new TaskException(TaskErrorCode.STT_AUDIO_REQUIRED));
-		})).flatMap(
-				filePart -> sttClient.transcribe(filePart).map(sttResponse -> buildSpeakTranscriptionResponse(speakTask,
-						sttResponse.getText() == null ? "" : sttResponse.getText()))));
+		})).flatMap(filePart -> evaluateSpeakAttempt(entry, filePart)));
 	}
 
 	// --- Submit ---
@@ -379,33 +379,46 @@ public class TaskService {
 			for (AnswerItemRequest item : request.getAnswers()) {
 				String dbTaskType = resolveDbTaskType(item.getTaskType());
 				boolean correct = false;
-				String correctAnswer = null;
+				List<String> correctAnswers = List.of();
 
 				Integer taskId = taskPublicIdLookupService.getInternalId(item.getTaskPublicId(), item.getTaskType());
 
 				switch (item.getTaskType()) {
 					case "choose" -> {
 						ChooseTask ct = getChooseTaskForLesson(lessonId, item.getTaskPublicId());
-						correctAnswer = String.valueOf(ct.getCorrectAnswer());
-						correct = item.getAnswer().trim().equals(correctAnswer);
+						List<Integer> answers = TaskAnswerUtils.deserializeIntegerAnswers(ct.getCorrectAnswers());
+						correctAnswers = answers.stream().map(String::valueOf).toList();
+						correct = TaskAnswerUtils.matchesAnyChooseAnswer(item.getAnswer(), answers);
 						maxScore++;
 					}
 					case "write" -> {
 						WriteTask wt = getWriteTaskForLesson(lessonId, item.getTaskPublicId());
-						correctAnswer = wt.getCorrectAnswer();
-						correct = item.getAnswer().trim().equalsIgnoreCase(correctAnswer.trim());
+						correctAnswers = TaskAnswerUtils.deserializeStringAnswers(wt.getCorrectAnswers());
+						correct = TaskAnswerUtils.matchesAnyTextAnswer(item.getAnswer(), correctAnswers);
 						maxScore++;
 					}
 					case "scatter" -> {
 						ScatterTask st = getScatterTaskForLesson(lessonId, item.getTaskPublicId());
-						correctAnswer = st.getCorrectAnswer();
-						correct = item.getAnswer().trim().equalsIgnoreCase(correctAnswer.trim());
+						correctAnswers = TaskAnswerUtils.deserializeStringAnswers(st.getCorrectAnswers());
+						correct = TaskAnswerUtils.matchesAnyTextAnswer(item.getAnswer(), correctAnswers);
 						maxScore++;
 					}
 					case "speak" -> {
 						SpeakTask st = getSpeakTaskForLesson(lessonId, item.getTaskPublicId());
-						correctAnswer = st.getExpectedText();
-						correct = isSpeakAnswerCorrect(item.getAnswer(), correctAnswer);
+						correctAnswers = TaskAnswerUtils.deserializeStringAnswers(st.getExpectedTexts());
+						if (item.getAttemptId() == null || item.getAttemptId().isBlank()) {
+							correct = false;
+							item.setAnswer("");
+						} else {
+							SpeakAttempt attempt = requireValidSpeakAttempt(item.getAttemptId(), userId, userLesson,
+									st.getId());
+							correct = Boolean.TRUE.equals(attempt.getCorrect());
+							item.setAnswer(attempt.getMatchedTranscription());
+							if (attempt.getSubmittedAt() == null) {
+								attempt.setSubmittedAt(LocalDateTime.now());
+								speakAttemptRepository.save(attempt);
+							}
+						}
 						maxScore++;
 					}
 					default -> {
@@ -419,11 +432,12 @@ public class TaskService {
 				}
 
 				UserAnswer ua = UserAnswer.builder().taskId(taskId).taskType(dbTaskType).userId(userId)
-						.lessonId(lessonId).answer(item.getAnswer()).isCorrect(correct).build();
+						.lessonId(lessonId).answer(item.getAnswer()).isCorrect(correct).originalIsCorrect(correct)
+						.manuallyReviewed(false).reviewedBy(null).reviewedAt(null).build();
 				userAnswerRepository.save(ua);
 
 				details.add(AnswerResultDto.builder().taskPublicId(item.getTaskPublicId()).taskType(item.getTaskType())
-						.isCorrect(correct).correctAnswer(correctAnswer).build());
+						.isCorrect(correct).correctAnswers(correctAnswers).build());
 			}
 
 			userLesson.setScore(score);
@@ -431,7 +445,7 @@ public class TaskService {
 			userLesson.setStatus(UserLessonStatus.COMPLETED);
 			userLesson.setFinishedAt(LocalDateTime.now());
 			userLessonRepository.save(userLesson);
-			saveProgressHistorySnapshot(userId);
+			saveProgressHistorySnapshot(userId, lessonId, score, maxScore);
 			pointsService.addPointsForLessonResult(userLesson.getId(), userId, score, "TASK_CORRECT", userId);
 			applicationEventPublisher.publishEvent(new StudentStatsChangedEvent(userId, "lesson-submitted"));
 
@@ -498,9 +512,11 @@ public class TaskService {
 				userAnswerRepository.deleteByUserIdAndLessonId(userId, lessonId);
 				userTaskAttentionEventRepository.deleteByUserIdAndLessonId(userId, lessonId);
 				userLessonRepository.findByUserIdAndLessonId(userId, lessonId).ifPresent(ul -> {
+					speakAttemptRepository.deleteByUserLessonId(ul.getId());
 					pointsService.rollbackPointsForLessonResult(ul.getId(), userId, null);
 				});
 				userLessonRepository.deleteByUserIdAndLessonId(userId, lessonId);
+				studentProgressHistoryRepository.deleteByUserIdAndLessonId(userId, lessonId);
 				return null;
 			});
 			return (Void) null;
@@ -529,17 +545,16 @@ public class TaskService {
 		}
 	}
 
-	private void saveProgressHistorySnapshot(Integer userId) {
-		double averageScore = Optional
-				.ofNullable(
-						userLessonRepository.findAveragePercentByUserIdAndStatus(userId, UserLessonStatus.COMPLETED))
-				.orElse(0.0);
+	private void saveProgressHistorySnapshot(Integer userId, Integer lessonId, int score, int maxScore) {
+		double lessonPercent = maxScore > 0 ? (score * 100.0) / maxScore : 0.0;
 		LocalDate progressDate = LocalDate.now();
 
 		StudentProgressHistory snapshot = studentProgressHistoryRepository
-				.findByUserIdAndProgressDate(userId, progressDate)
-				.orElseGet(() -> StudentProgressHistory.builder().userId(userId).progressDate(progressDate).build());
-		snapshot.setAvgScore(roundToOneDecimal(averageScore));
+				.findByUserIdAndLessonIdAndProgressDate(userId, lessonId, progressDate)
+				.orElseGet(() -> StudentProgressHistory.builder().userId(userId).lessonId(lessonId)
+						.progressDate(progressDate).build());
+		snapshot.setLessonId(lessonId);
+		snapshot.setAvgScore(roundToOneDecimal(lessonPercent));
 		studentProgressHistoryRepository.save(snapshot);
 	}
 
@@ -614,8 +629,9 @@ public class TaskService {
 		String hintImageUrl = t.getHintImageFileName() != null
 				? "/api/v1/lessons/" + lessonPublicId + "/tasks/choose/" + t.getPublicId() + "/hint-image"
 				: null;
+		List<Integer> correctAnswers = TaskAnswerUtils.deserializeIntegerAnswers(t.getCorrectAnswers());
 		return ChooseTaskResponse.builder().publicId(t.getPublicId()).lessonPublicId(lessonPublicId).task(t.getTask())
-				.possibleAnswers(t.getPossibleAnswers()).correctAnswer(stripAnswer ? null : t.getCorrectAnswer())
+				.possibleAnswers(t.getPossibleAnswers()).correctAnswers(stripAnswer ? null : correctAnswers)
 				.hint(t.getHint()).hintImageUrl(hintImageUrl).section(t.getSection()).createdAt(t.getCreatedAt())
 				.build();
 	}
@@ -624,8 +640,9 @@ public class TaskService {
 		String hintImageUrl = t.getHintImageFileName() != null
 				? "/api/v1/lessons/" + lessonPublicId + "/tasks/write/" + t.getPublicId() + "/hint-image"
 				: null;
+		List<String> correctAnswers = TaskAnswerUtils.deserializeStringAnswers(t.getCorrectAnswers());
 		return WriteTaskResponse.builder().publicId(t.getPublicId()).lessonPublicId(lessonPublicId).task(t.getTask())
-				.correctAnswer(stripAnswer ? null : t.getCorrectAnswer()).hint(t.getHint()).hintImageUrl(hintImageUrl)
+				.correctAnswers(stripAnswer ? null : correctAnswers).hint(t.getHint()).hintImageUrl(hintImageUrl)
 				.section(t.getSection()).createdAt(t.getCreatedAt()).build();
 	}
 
@@ -633,8 +650,9 @@ public class TaskService {
 		String hintImageUrl = t.getHintImageFileName() != null
 				? "/api/v1/lessons/" + lessonPublicId + "/tasks/scatter/" + t.getPublicId() + "/hint-image"
 				: null;
+		List<String> correctAnswers = TaskAnswerUtils.deserializeStringAnswers(t.getCorrectAnswers());
 		return ScatterTaskResponse.builder().publicId(t.getPublicId()).lessonPublicId(lessonPublicId).task(t.getTask())
-				.words(t.getWords()).correctAnswer(stripAnswer ? null : t.getCorrectAnswer()).hint(t.getHint())
+				.words(t.getWords()).correctAnswers(stripAnswer ? null : correctAnswers).hint(t.getHint())
 				.hintImageUrl(hintImageUrl).section(t.getSection()).createdAt(t.getCreatedAt()).build();
 	}
 
@@ -642,8 +660,9 @@ public class TaskService {
 		String hintImageUrl = t.getHintImageFileName() != null
 				? "/api/v1/lessons/" + lessonPublicId + "/tasks/speak/" + t.getPublicId() + "/hint-image"
 				: null;
+		List<String> expectedTexts = TaskAnswerUtils.deserializeStringAnswers(t.getExpectedTexts());
 		return SpeakTaskResponse.builder().publicId(t.getPublicId()).lessonPublicId(lessonPublicId)
-				.expectedText(t.getExpectedText()).hint(t.getHint()).hintImageUrl(hintImageUrl).section(t.getSection())
+				.expectedTexts(expectedTexts).hint(t.getHint()).hintImageUrl(hintImageUrl).section(t.getSection())
 				.createdAt(t.getCreatedAt()).build();
 	}
 
@@ -652,299 +671,143 @@ public class TaskService {
 				.orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_FOUND));
 	}
 
-	private SpeakTranscriptionResponse buildSpeakTranscriptionResponse(SpeakTask speakTask, String transcription) {
-		List<SpeakWordResultDto> wordResults = buildSpeakWordResults(transcription, speakTask.getExpectedText());
-		double score = calculateSpeakScore(wordResults);
-		return SpeakTranscriptionResponse.builder().text(transcription).expectedText(speakTask.getExpectedText())
-				.correct(score >= sttMinScore).score(score).words(wordResults).build();
+	private SpeakTranscriptionResponse buildSpeakTranscriptionResponse(SpeakAttemptContext context,
+			SttEvaluationResponse evaluation) {
+		SpeakAttempt attempt = saveSpeakAttempt(context, evaluation);
+		return SpeakTranscriptionResponse.builder().attemptId(attempt.getPublicId())
+				.text(nullToEmpty(attempt.getMatchedTranscription()))
+				.rawText(nullToEmpty(attempt.getRawTranscription())).expectedText(attempt.getExpectedText())
+				.correct(Boolean.TRUE.equals(attempt.getCorrect()))
+				.score(Optional.ofNullable(attempt.getScore()).orElse(0.0))
+				.words(toSpeakWordResults(evaluation.getWords())).build();
 	}
 
-	private boolean isSpeakAnswerCorrect(String answer, String expectedText) {
-		return calculateSpeakScore(buildSpeakWordResults(answer, expectedText)) >= sttMinScore;
+	private SpeakAttempt saveSpeakAttempt(SpeakAttemptContext context, SttEvaluationResponse evaluation) {
+		SpeakAttempt attempt = SpeakAttempt.builder().userId(context.userId()).lessonId(context.lesson().getId())
+				.taskId(context.speakTask().getId()).userLesson(context.userLesson())
+				.expectedText(nullToEmpty(evaluation.getExpectedText()).isBlank()
+						? TaskAnswerUtils.deserializeStringAnswers(context.speakTask().getExpectedTexts()).get(0)
+						: evaluation.getExpectedText())
+				.rawTranscription(nullToEmpty(evaluation.getRawTranscription()))
+				.matchedTranscription(nullToEmpty(evaluation.getMatchedTranscription()))
+				.normalizedExpected(nullToEmpty(evaluation.getNormalizedExpected()))
+				.normalizedActual(nullToEmpty(evaluation.getNormalizedActual())).score(evaluation.getScore())
+				.correct(evaluation.isCorrect()).wordsJson(serializeWords(evaluation.getWords()))
+				.language(evaluation.getLanguage()).duration(evaluation.getDuration()).build();
+		SpeakAttempt savedAttempt = speakAttemptRepository.save(attempt);
+		log.info(
+				"Saved speak attempt: userId={}, lessonPublicId={}, userLessonId={}, taskPublicId={}, attemptPublicId={}, score={}, correct={}, duration={}, language={}",
+				context.userId(), context.lesson().getPublicId(), context.userLesson().getId(),
+				context.speakTask().getPublicId(), savedAttempt.getPublicId(), savedAttempt.getScore(),
+				savedAttempt.getCorrect(), savedAttempt.getDuration(), savedAttempt.getLanguage());
+		log.debug(
+				"Speak attempt transcription details: attemptPublicId={}, rawTranscription='{}', matchedTranscription='{}'",
+				savedAttempt.getPublicId(), savedAttempt.getRawTranscription(), savedAttempt.getMatchedTranscription());
+		return savedAttempt;
 	}
 
-	private double calculateSpeakScore(List<SpeakWordResultDto> wordResults) {
-		if (wordResults.isEmpty()) {
-			return 0.0;
-		}
-		long correctWords = wordResults.stream().filter(SpeakWordResultDto::isCorrect).count();
-		return (double) correctWords / wordResults.size();
+	private Mono<SpeakTranscriptionResponse> evaluateSpeakAttempt(SpeakAttemptContext context, FilePart filePart) {
+		incrementMetric("freeedu.stt.evaluate.requests");
+		long startedAtNanos = System.nanoTime();
+		List<String> expectedTexts = TaskAnswerUtils.deserializeStringAnswers(context.speakTask().getExpectedTexts());
+		String expectedText = expectedTexts.get(0);
+		Mono<SttEvaluationResponse> evaluation = sttClient.evaluate(filePart, expectedText, sttMinScore, null);
+		return evaluation
+				.flatMap(sttResponse -> Mono.fromCallable(() -> buildSpeakTranscriptionResponse(context, sttResponse))
+						.subscribeOn(Schedulers.boundedElastic()))
+				.doOnSuccess(response -> {
+					recordSttEvaluateDuration(startedAtNanos);
+					incrementMetric("freeedu.stt.evaluate.success");
+					incrementMetric(
+							response.isCorrect() ? "freeedu.stt.evaluate.correct" : "freeedu.stt.evaluate.incorrect");
+				}).doOnError(error -> {
+					recordSttEvaluateDuration(startedAtNanos);
+					incrementMetric("freeedu.stt.evaluate.errors");
+					logSpeakEvaluationFailure(context, error);
+					if (error instanceof TaskException taskException) {
+						if (taskException.getErrorCode() == TaskErrorCode.STT_SERVICE_UNAVAILABLE) {
+							incrementMetric("freeedu.stt.evaluate.service_unavailable");
+						} else if (taskException.getErrorCode() == TaskErrorCode.STT_RECOGNITION_FAILED) {
+							incrementMetric("freeedu.stt.evaluate.recognition_failed");
+						}
+					}
+				});
 	}
 
-	private boolean isWordMatch(String expectedWord, String actualWord) {
-		String normalizedExpected = normalizeSpeechWord(expectedWord);
-		String normalizedActual = normalizeSpeechWord(actualWord);
-		if (normalizedExpected.isEmpty() || normalizedActual.isEmpty()) {
-			return false;
-		}
-		if (normalizedExpected.equals(normalizedActual)) {
-			return true;
-		}
-
-		Set<String> expectedVariants = STT_WORD_VARIANTS.get(normalizedExpected);
-		if (expectedVariants != null && expectedVariants.contains(normalizedActual)) {
-			return true;
-		}
-
-		Set<String> actualVariants = STT_WORD_VARIANTS.get(normalizedActual);
-		if (actualVariants != null && actualVariants.contains(normalizedExpected)) {
-			return true;
-		}
-
-		return isSafeFuzzyWordMatch(normalizedExpected, normalizedActual);
+	private void recordSttEvaluateDuration(long startedAtNanos) {
+		Timer.builder("freeedu.stt.evaluate.duration").register(meterRegistry)
+				.record(System.nanoTime() - startedAtNanos, java.util.concurrent.TimeUnit.NANOSECONDS);
 	}
 
-	private String normalizeSpeechText(String value) {
-		if (value == null) {
-			return "";
-		}
-
-		String normalized = value.toLowerCase(Locale.ROOT);
-		normalized = normalized.replaceAll("\\[[^\\]]*\\]", " ");
-		normalized = normalized.replaceAll("\\(([^)]+?)\\)", " ");
-		normalized = normalized.replaceAll("\\s+'", "'");
-		for (Map.Entry<String, String> entry : STT_CONTRACTIONS.entrySet()) {
-			normalized = normalized.replaceAll("\\b" + java.util.regex.Pattern.quote(entry.getKey()) + "\\b",
-					entry.getValue());
-		}
-		normalized = removeDiacritics(normalized);
-		normalized = normalized.replaceAll("[^\\p{L}\\p{N}\\s]", " ");
-		normalized = normalized.replaceAll("\\s+", " ").trim();
-		if (normalized.isEmpty()) {
-			return "";
-		}
-
-		return Arrays.stream(normalized.split(" ")).filter(word -> !word.isBlank())
-				.filter(word -> !STT_FILLER_WORDS.contains(word)).collect(Collectors.joining(" "));
+	private void incrementMetric(String metricName) {
+		meterRegistry.counter(metricName).increment();
 	}
 
-	private List<SpeakWordResultDto> buildSpeakWordResults(String actual, String expected) {
-		List<String> actualWords = splitNormalizedWords(actual);
-		List<String> expectedWords = splitNormalizedWords(expected);
-		if (expectedWords.isEmpty()) {
+	private void logSpeakEvaluationFailure(SpeakAttemptContext context, Throwable error) {
+		String errorType = error instanceof TaskException taskException
+				? taskException.getErrorCode().toString()
+				: error.getClass().getSimpleName();
+		log.warn(
+				"Speak evaluation failed: errorType={}, userId={}, lessonPublicId={}, userLessonId={}, taskPublicId={}",
+				errorType, context.userId(), context.lesson().getPublicId(), context.userLesson().getId(),
+				context.speakTask().getPublicId());
+	}
+
+	private SpeakAttempt requireValidSpeakAttempt(String attemptPublicId, Integer userId, UserLesson userLesson,
+			Integer taskId) {
+		if (attemptPublicId == null || attemptPublicId.isBlank()) {
+			throw new TaskException(TaskErrorCode.SPEAK_ATTEMPT_REQUIRED);
+		}
+
+		SpeakAttempt attempt = speakAttemptRepository.findByPublicId(attemptPublicId)
+				.orElseThrow(() -> new TaskException(TaskErrorCode.SPEAK_ATTEMPT_NOT_FOUND));
+
+		if (!Objects.equals(attempt.getUserId(), userId) || !Objects.equals(attempt.getTaskId(), taskId)
+				|| attempt.getUserLesson() == null
+				|| !Objects.equals(attempt.getUserLesson().getId(), userLesson.getId())) {
+			throw new TaskException(TaskErrorCode.SPEAK_ATTEMPT_INVALID);
+		}
+
+		return attempt;
+	}
+
+	private UserLesson requireActiveUserLesson(Integer userId, Integer lessonId) {
+		UserLesson userLesson = userLessonRepository.findByUserIdAndLessonId(userId, lessonId)
+				.orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_STARTED));
+		if (userLesson.getStatus() == UserLessonStatus.COMPLETED) {
+			throw new TaskException(TaskErrorCode.LESSON_ALREADY_COMPLETED);
+		}
+		return userLesson;
+	}
+
+	private void requireSpeakAttemptLimitNotExceeded(Integer userLessonId, Integer taskId) {
+		long unusedAttempts = speakAttemptRepository.countByUserLessonIdAndTaskIdAndSubmittedAtIsNull(userLessonId,
+				taskId);
+		if (unusedAttempts >= MAX_UNUSED_SPEAK_ATTEMPTS_PER_TASK) {
+			throw new TaskException(TaskErrorCode.SPEAK_ATTEMPT_LIMIT_EXCEEDED);
+		}
+	}
+
+	private List<SpeakWordResultDto> toSpeakWordResults(List<SttEvaluationWordDto> words) {
+		if (words == null || words.isEmpty()) {
 			return Collections.emptyList();
 		}
-
-		int expectedCount = expectedWords.size();
-		int actualCount = actualWords.size();
-		int[][] dp = new int[expectedCount + 1][actualCount + 1];
-
-		for (int i = expectedCount - 1; i >= 0; i--) {
-			for (int j = actualCount - 1; j >= 0; j--) {
-				if (isWordMatch(expectedWords.get(i), actualWords.get(j))) {
-					dp[i][j] = 1 + dp[i + 1][j + 1];
-					continue;
-				}
-				dp[i][j] = Math.max(dp[i + 1][j + 1], Math.max(dp[i + 1][j], dp[i][j + 1]));
-			}
-		}
-
-		List<SpeakWordResultDto> results = new ArrayList<>(expectedCount);
-		int i = 0;
-		int j = 0;
-
-		while (i < expectedCount) {
-			String expectedWord = expectedWords.get(i);
-			if (j >= actualCount) {
-				results.add(buildSpeakWordResult(expectedWord, "", false));
-				i++;
-				continue;
-			}
-
-			String actualWord = actualWords.get(j);
-			if (isWordMatch(expectedWord, actualWord)) {
-				results.add(buildSpeakWordResult(expectedWord, actualWord, true));
-				i++;
-				j++;
-				continue;
-			}
-
-			int insertionScore = dp[i][j + 1];
-			int substitutionScore = dp[i + 1][j + 1];
-			int deletionScore = dp[i + 1][j];
-
-			if (insertionScore > substitutionScore && insertionScore >= deletionScore) {
-				j++;
-				continue;
-			}
-
-			if (substitutionScore >= deletionScore) {
-				results.add(buildSpeakWordResult(expectedWord, actualWord, false));
-				i++;
-				j++;
-				continue;
-			}
-
-			results.add(buildSpeakWordResult(expectedWord, "", false));
-			i++;
-		}
-
-		return results;
+		return words.stream().map(word -> SpeakWordResultDto.builder().expected(nullToEmpty(word.getExpected()))
+				.actual(nullToEmpty(word.getActual())).correct(word.isCorrect()).build()).toList();
 	}
 
-	private SpeakWordResultDto buildSpeakWordResult(String expectedWord, String actualWord, boolean correct) {
-		return SpeakWordResultDto.builder().expected(expectedWord).actual(actualWord).correct(correct).build();
-	}
-
-	private String normalizeSpeechWord(String value) {
-		String normalized = normalizeSpeechText(value);
-		if (normalized.isEmpty()) {
-			return "";
-		}
-		int firstSpace = normalized.indexOf(' ');
-		return firstSpace >= 0 ? normalized.substring(0, firstSpace) : normalized;
-	}
-
-	private boolean isSafeFuzzyWordMatch(String expectedWord, String actualWord) {
-		int minLength = Math.min(expectedWord.length(), actualWord.length());
-		if (minLength <= 5) {
-			return false;
-		}
-		if (expectedWord.charAt(0) != actualWord.charAt(0)) {
-			return false;
-		}
-
-		boolean sameLastCharacter = expectedWord.charAt(expectedWord.length() - 1) == actualWord
-				.charAt(actualWord.length() - 1);
-		if (Math.max(expectedWord.length(), actualWord.length()) >= 6) {
-			int distance = levenshteinDistance(expectedWord, actualWord, 2);
-			if (distance <= 1) {
-				return sameLastCharacter || sharedPrefixLength(expectedWord, actualWord) >= minLength - 1;
-			}
-			return distance == 2 && sameLastCharacter && hasHighSimilarity(expectedWord, actualWord);
-		}
-
-		return false;
-	}
-
-	private boolean hasHighSimilarity(String expectedWord, String actualWord) {
-		int maxLength = Math.max(expectedWord.length(), actualWord.length());
-		if (maxLength == 0) {
-			return false;
-		}
-		return 1.0 - ((double) levenshteinDistance(expectedWord, actualWord, Integer.MAX_VALUE) / maxLength) >= 0.8;
-	}
-
-	private int levenshteinDistance(String left, String right, int maxDistance) {
-		int leftLength = left.length();
-		int rightLength = right.length();
-		if (Math.abs(leftLength - rightLength) > maxDistance) {
-			return maxDistance + 1;
-		}
-
-		int[] previous = new int[rightLength + 1];
-		int[] current = new int[rightLength + 1];
-		for (int j = 0; j <= rightLength; j++) {
-			previous[j] = j;
-		}
-
-		for (int i = 1; i <= leftLength; i++) {
-			current[0] = i;
-			int rowMin = current[0];
-			for (int j = 1; j <= rightLength; j++) {
-				int substitutionCost = left.charAt(i - 1) == right.charAt(j - 1) ? 0 : 1;
-				current[j] = Math.min(Math.min(current[j - 1] + 1, previous[j] + 1),
-						previous[j - 1] + substitutionCost);
-				rowMin = Math.min(rowMin, current[j]);
-			}
-			if (rowMin > maxDistance) {
-				return maxDistance + 1;
-			}
-			int[] temp = previous;
-			previous = current;
-			current = temp;
-		}
-
-		return previous[rightLength];
-	}
-
-	private int sharedPrefixLength(String left, String right) {
-		int prefixLength = 0;
-		int limit = Math.min(left.length(), right.length());
-		while (prefixLength < limit && left.charAt(prefixLength) == right.charAt(prefixLength)) {
-			prefixLength++;
-		}
-		return prefixLength;
-	}
-
-	private String removeDiacritics(String value) {
-		String normalized = Normalizer.normalize(value, Normalizer.Form.NFKD);
-		StringBuilder builder = new StringBuilder(normalized.length());
-		for (int i = 0; i < normalized.length(); i++) {
-			char current = normalized.charAt(i);
-			if (current == 'ł') {
-				builder.append('l');
-				continue;
-			}
-			if (current == 'Ł') {
-				builder.append('L');
-				continue;
-			}
-			if (Character.getType(current) != Character.NON_SPACING_MARK) {
-				builder.append(current);
-			}
-		}
-		return builder.toString();
-	}
-
-	private record SttNormalizationConfig(Set<String> fillerWords, Map<String, String> contractions,
-			Map<String, Set<String>> wordVariants) {
-	}
-
-	private static final class RawSttNormalizationConfig {
-
-		private List<String> fillerWords;
-		private Map<String, String> contractions;
-		private Map<String, List<String>> wordVariants;
-
-		public List<String> getFillerWords() {
-			return fillerWords;
-		}
-
-		public void setFillerWords(List<String> fillerWords) {
-			this.fillerWords = fillerWords;
-		}
-
-		public Map<String, String> getContractions() {
-			return contractions;
-		}
-
-		public void setContractions(Map<String, String> contractions) {
-			this.contractions = contractions;
-		}
-
-		public Map<String, List<String>> getWordVariants() {
-			return wordVariants;
-		}
-
-		public void setWordVariants(Map<String, List<String>> wordVariants) {
-			this.wordVariants = wordVariants;
-		}
-
-		private SttNormalizationConfig toConfig() {
-			Set<String> normalizedFillerWords = fillerWords == null
-					? Set.of()
-					: Collections.unmodifiableSet(new LinkedHashSet<>(fillerWords));
-			Map<String, String> normalizedContractions = contractions == null
-					? Map.of()
-					: Collections.unmodifiableMap(new LinkedHashMap<>(contractions));
-			Map<String, Set<String>> normalizedWordVariants = new LinkedHashMap<>();
-			if (wordVariants != null) {
-				for (Map.Entry<String, List<String>> entry : wordVariants.entrySet()) {
-					normalizedWordVariants.put(entry.getKey(),
-							Collections.unmodifiableSet(new LinkedHashSet<>(entry.getValue())));
-				}
-			}
-			return new SttNormalizationConfig(normalizedFillerWords, normalizedContractions,
-					Collections.unmodifiableMap(normalizedWordVariants));
+	private String serializeWords(List<SttEvaluationWordDto> words) {
+		try {
+			return objectMapper.writeValueAsString(words == null ? List.of() : words);
+		} catch (Exception exception) {
+			throw new IllegalStateException("Failed to serialize STT evaluation words", exception);
 		}
 	}
 
-	private List<String> splitNormalizedWords(String value) {
-		String normalized = normalizeSpeechText(value);
-		if (normalized.isEmpty()) {
-			return Collections.emptyList();
-		}
-		return Arrays.asList(normalized.split(" "));
+	private String nullToEmpty(String value) {
+		return value == null ? "" : value;
+	}
+
+	private record SpeakAttemptContext(Integer userId, Lesson lesson, UserLesson userLesson, SpeakTask speakTask) {
 	}
 }

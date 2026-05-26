@@ -64,7 +64,7 @@ describe('Lesson Attachments (/api/v1/lessons/{lessonPublicId}/attachments)', ()
         res = await apiClient.post(`/lessons/${lessonPublicId}/tasks/choose`, {
             task: 'Choose the correct answer',
             possibleAnswers: 'A|B|C|D',
-            correctAnswer: 0,
+            correctAnswers: [0],
             hint: 'Pick A',
             section: 'Files'
         });

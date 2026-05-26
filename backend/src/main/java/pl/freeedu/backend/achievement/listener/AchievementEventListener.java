@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
-import pl.freeedu.backend.achievement.event.AvatarChangedEvent;
 import pl.freeedu.backend.achievement.event.PointsChangedEvent;
 import pl.freeedu.backend.achievement.event.StudentStatsChangedEvent;
 import pl.freeedu.backend.student.service.StudentAchievementService;
@@ -17,12 +16,6 @@ public class AchievementEventListener {
 
 	public AchievementEventListener(StudentAchievementService studentAchievementService) {
 		this.studentAchievementService = studentAchievementService;
-	}
-
-	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-	public void onAvatarChanged(AvatarChangedEvent event) {
-		log.info("Processing achievement check after avatar change. User ID: {}", event.userId());
-		runAchievementCheck(event.userId(), "avatar change");
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)

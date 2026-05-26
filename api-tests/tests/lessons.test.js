@@ -41,6 +41,7 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
             const updateResponse = await apiClient.put(`/lessons/${lessonPublicIdToUpdate}`, {
                 title: lesson.title,
                 theme: lesson.theme,
+                labelColor: lesson.labelColor ?? null,
                 groupPublicIds: []
             });
             return updateResponse.status === 200;
@@ -87,6 +88,7 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
             const response = await apiClient.post('/lessons', {
                 title: `CRUD Lesson ${uniqueId}`,
                 theme: 'Testing',
+                labelColor: 'green',
                 groupPublicIds: []
             });
             expect(response.status).toBe(201);
@@ -94,11 +96,13 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
             expect(response.data).not.toHaveProperty('id');
             expect(response.data.title).toBe(`CRUD Lesson ${uniqueId}`);
             expect(response.data.theme).toBe('Testing');
+            expect(response.data.labelColor).toBe('green');
             expect(response.data.isActive).toBe(false); // default
             expect(response.data.teacherPublicId).toBeDefined();
             expect(response.data.teacherName).toBeDefined();
             expect(response.data).toHaveProperty("teacherAvatarUrl");
             expect(response.data).toHaveProperty("createdAt");
+            expect(response.data).toHaveProperty("labelColor");
             expect(Array.isArray(response.data.groups)).toBe(true);
             createdLessonPublicId = response.data.publicId;
             createdLessonPublicIds.push(response.data.publicId);
@@ -127,6 +131,17 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
             expect(response.data.groups).toEqual([]);
             expect(response.data).not.toHaveProperty('id');
             createdLessonPublicIds.push(response.data.publicId);
+        });
+
+        it('should return 400 for invalid labelColor', async () => {
+            setAuthToken(teacherToken);
+            const response = await apiClient.post('/lessons', {
+                title: `Bad Color ${uniqueId}`,
+                theme: 'Testing',
+                labelColor: 'pink'
+            });
+            expect(response.status).toBe(400);
+            expect(response.data.code).toBe('LESSON_INVALID_LABEL_COLOR');
         });
 
         it('should return 400 for missing title', async () => {
@@ -163,6 +178,7 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
             const lesson = response.data.find(l => l.publicId === createdLessonPublicId);
             expect(lesson).toBeTruthy();
             expect(lesson).toHaveProperty("teacherAvatarUrl");
+            expect(lesson.labelColor).toBe('green');
             expect(lesson).not.toHaveProperty('id');
         });
 
@@ -204,13 +220,15 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
             setAuthToken(teacherToken);
             const response = await apiClient.put(`/lessons/${createdLessonPublicId}`, {
                 title: `Updated Lesson ${uniqueId}`,
-                theme: 'Updated Theme'
+                theme: 'Updated Theme',
+                labelColor: 'blue'
             });
             expect(response.status).toBe(200);
             expect(response.data.publicId).toBe(createdLessonPublicId);
             expect(response.data).not.toHaveProperty('id');
             expect(response.data.title).toBe(`Updated Lesson ${uniqueId}`);
             expect(response.data.theme).toBe('Updated Theme');
+            expect(response.data.labelColor).toBe('blue');
         });
 
         it('should return 403 for non-existent lesson when teacher security blocks before lookup', async () => {
@@ -242,7 +260,7 @@ describe('Lessons CRUD (/api/v1/lessons)', () => {
             const taskResponse = await apiClient.post(`/lessons/${createdLessonPublicId}/tasks/choose`, {
                 task: `Activate ${uniqueId}?`,
                 possibleAnswers: 'no|yes',
-                correctAnswer: 1
+                correctAnswers: [1]
             });
             expect(taskResponse.status).toBe(201);
             expect(taskResponse.data.publicId).toBeTruthy();

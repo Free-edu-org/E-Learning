@@ -11,7 +11,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class SpeakTranscriptionResponse {
 
+	private String attemptId;
 	private String text;
+	private String rawText;
 	private String expectedText;
 	private boolean correct;
 	private double score;
