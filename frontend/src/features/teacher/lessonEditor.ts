@@ -231,7 +231,7 @@ export async function createLessonTask(
 
   const expectedTexts = parseTextCorrectAnswers(task);
   return taskService.createSpeakTask(lessonPublicId, {
-    expectedText: expectedTexts[0],
+    expectedTexts,
     hint,
     section,
   });
@@ -282,7 +282,7 @@ export async function updateLessonTask(
 
   const expectedTexts = parseTextCorrectAnswers(task);
   return taskService.updateSpeakTask(lessonPublicId, taskPublicId, {
-    expectedText: expectedTexts[0],
+    expectedTexts,
     hint,
     section,
   });

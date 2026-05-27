@@ -173,6 +173,7 @@ export function SpeakTaskSolver({
     transcriptionResult == null
       ? null
       : Math.max(0, Math.min(1, transcriptionResult.score)) * 100;
+  const expectedText = task.expectedText ?? task.expectedTexts?.[0] ?? "";
 
   // Build unified word list for display
   const displayWords: {
@@ -183,7 +184,7 @@ export function SpeakTaskSolver({
         text: w.expected,
         wordResult: w,
       }))
-    : task.expectedText
+    : expectedText
         .split(/\s+/)
         .filter(Boolean)
         .map((w) => ({ text: w, wordResult: null }));

@@ -213,7 +213,7 @@ async function createLessonTask(lessonPublicId: string, task: LessonTaskDraft) {
   }
 
   return taskService.createSpeakTask(lessonPublicId, {
-    expectedText: task.correctAnswer.trim(),
+    expectedTexts: [task.correctAnswer.trim()],
     hint,
     section,
   });
@@ -254,7 +254,7 @@ async function updateLessonTask(
     });
   }
   return taskService.updateSpeakTask(lessonPublicId, taskPublicId, {
-    expectedText: task.correctAnswer.trim(),
+    expectedTexts: [task.correctAnswer.trim()],
     hint,
     section,
   });
@@ -311,11 +311,12 @@ function tasksResponseToDrafts(
       });
     }
     for (const t of section.speakTasks) {
+      const expectedText = t.expectedText ?? t.expectedTexts?.[0] ?? "";
       drafts.push({
         id: `backendTask:speak:${t.publicId}`,
         type: "speak",
         possibleAnswers: "",
-        correctAnswer: t.expectedText,
+        correctAnswer: expectedText,
         words: "",
         hint: t.hint ?? "",
         section: sec,
