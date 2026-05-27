@@ -8,10 +8,17 @@ import java.util.stream.Stream;
 import java.util.Set;
 import java.util.function.BiFunction;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.web.server.ResponseStatusException;
 import pl.freeedu.backend.auth.exception.AuthErrorCode;
 import pl.freeedu.backend.auth.exception.AuthException;
 import pl.freeedu.backend.student.service.StudentAchievementService;
@@ -26,6 +33,7 @@ import pl.freeedu.backend.user.repository.UserRepository;
 import pl.freeedu.backend.security.service.SecurityService;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import org.springframework.http.HttpStatus;
 
 @Slf4j
 @Service
@@ -37,16 +45,21 @@ public class UserService {
 	private final SecurityService securityService;
 	private final TransactionTemplate transactionTemplate;
 	private final StudentAchievementService studentAchievementService;
+	private final Path avatarDir;
 
 	public UserService(UserRepository userRepository, UserMapper userMapper, PasswordEncoder passwordEncoder,
 			SecurityService securityService, TransactionTemplate transactionTemplate,
-			StudentAchievementService studentAchievementService) {
+			StudentAchievementService studentAchievementService,
+			@Value("${application.storage.uploads-dir:uploads}") String uploadsDir) {
 		this.userRepository = userRepository;
 		this.userMapper = userMapper;
 		this.passwordEncoder = passwordEncoder;
 		this.securityService = securityService;
 		this.transactionTemplate = transactionTemplate;
 		this.studentAchievementService = studentAchievementService;
+		String resolvedUploadsDir = (uploadsDir == null || uploadsDir.isBlank()) ? "uploads" : uploadsDir;
+		this.avatarDir = Paths.get(resolvedUploadsDir, "avatars").toAbsolutePath().normalize();
+		log.info("Avatar storage directory initialized at: {}", avatarDir);
 	}
 
 	public Mono<Void> createAdmin(Mono<RegisterUserRequest> requestMono) {
@@ -168,7 +181,6 @@ public class UserService {
 
 	private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of("image/jpeg", "image/png");
 	private static final long MAX_AVATAR_SIZE_BYTES = 2L * 1024 * 1024; // 2 MB
-	private static final String AVATAR_DIR = "uploads/avatars";
 	private static final Set<String> ALLOWED_PRESETS = Set.of("avatar_1", "avatar_2", "avatar_3", "avatar_4",
 			"avatar_5", "avatar_6", "avatar_7", "avatar_8", "avatar_9", "avatar_10", "avatar_11", "avatar_12");
 
@@ -199,12 +211,12 @@ public class UserService {
 					String publicIdPrefix = user.getPublicId();
 					String legacyInternalIdPrefix = String.valueOf(id);
 					String fileName = publicIdPrefix + "-" + System.currentTimeMillis() + "." + extension;
-					Path dir = Paths.get(AVATAR_DIR);
+					Path dir = avatarDir;
 					Path filePath = dir.resolve(fileName);
 
 					return Mono.fromCallable(() -> {
 						try {
-							log.debug("Preparing avatar directory and deleting old files for user ID: {}", id);
+							log.info("Preparing avatar directory for user ID: {} at {}", id, dir);
 							Files.createDirectories(dir);
 							try (Stream<Path> files = Files.list(dir)) {
 								files.filter(path -> {
@@ -222,6 +234,7 @@ public class UserService {
 									}
 								});
 							}
+							log.info("Resolved avatar file path for user ID: {} to {}", id, filePath.toAbsolutePath());
 							return filePath;
 						} catch (IOException e) {
 							log.error("Failed to prepare avatar directory for user ID: {}", id, e);
@@ -238,6 +251,8 @@ public class UserService {
 										Files.deleteIfExists(path);
 										throw new UserException(UserErrorCode.AVATAR_FILE_TOO_LARGE);
 									}
+									log.info("Avatar file saved for user ID: {} at {} (exists={}, readable={})", id,
+											path.toAbsolutePath(), Files.exists(path), Files.isReadable(path));
 									String avatarUrl = "/uploads/avatars/" + path.getFileName().toString();
 									User updatedUser = updateAvatarInTransaction(user, avatarUrl);
 									log.info("Avatar uploaded successfully for user ID: {}", id);
@@ -248,6 +263,39 @@ public class UserService {
 								}
 							}).subscribeOn(Schedulers.boundedElastic()));
 				}));
+	}
+
+	public Mono<ResponseEntity<Resource>> getAvatarFile(String fileName) {
+		return Mono.fromCallable(() -> {
+			Path filePath = avatarDir.resolve(fileName).normalize();
+			if (!filePath.startsWith(avatarDir)) {
+				log.warn("Rejected avatar file request with invalid path: {}", fileName);
+				throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+			}
+
+			Resource resource = new FileSystemResource(filePath);
+			if (!resource.exists() || !resource.isReadable()) {
+				log.error("Avatar file missing or unreadable. Requested: {}, resolved path: {}, exists={}, readable={}",
+						fileName, filePath.toAbsolutePath(), resource.exists(), resource.isReadable());
+				throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+			}
+
+			String contentType = resolveAvatarContentType(fileName);
+			HttpHeaders headers = new HttpHeaders();
+			headers.setContentType(MediaType.parseMediaType(contentType));
+			headers.setCacheControl("max-age=3600, public");
+
+			log.info("Serving avatar file '{}' from '{}'", fileName, filePath.toAbsolutePath());
+			return ResponseEntity.<Resource>ok().headers(headers).body(resource);
+		}).subscribeOn(Schedulers.boundedElastic());
+	}
+
+	private String resolveAvatarContentType(String fileName) {
+		String lower = fileName.toLowerCase();
+		if (lower.endsWith(".png")) {
+			return MediaType.IMAGE_PNG_VALUE;
+		}
+		return MediaType.IMAGE_JPEG_VALUE;
 	}
 
 	public Mono<UserResponse> setPresetAvatar(Integer id, String presetName) {
