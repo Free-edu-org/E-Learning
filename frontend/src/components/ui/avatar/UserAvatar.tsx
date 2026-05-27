@@ -7,6 +7,19 @@ interface UserAvatarProps extends Omit<AvatarProps, "src" | "children"> {
   size?: number;
 }
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
+
+function resolveAvatarSrc(avatarUrl?: string | null) {
+  if (!avatarUrl) return undefined;
+  if (avatarUrl.startsWith("preset:")) {
+    return `/avatars/${avatarUrl.substring(7)}.svg`;
+  }
+  if (avatarUrl.startsWith("/uploads/")) {
+    return `${API_BASE_URL}${avatarUrl}`;
+  }
+  return avatarUrl;
+}
+
 export function UserAvatar({
   avatarUrl,
   username,
@@ -15,13 +28,7 @@ export function UserAvatar({
   ...props
 }: UserAvatarProps) {
   const theme = useTheme();
-  const isPreset = !!avatarUrl?.startsWith("preset:");
-  const presetName = isPreset && avatarUrl ? avatarUrl.substring(7) : null;
-  const resolvedSrc = isPreset
-    ? `/avatars/${presetName}.svg`
-    : avatarUrl
-      ? avatarUrl
-      : undefined;
+  const resolvedSrc = resolveAvatarSrc(avatarUrl);
 
   const initials = username ? username.substring(0, 2).toUpperCase() : "?";
 
