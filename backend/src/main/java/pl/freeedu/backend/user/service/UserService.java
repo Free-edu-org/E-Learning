@@ -57,7 +57,8 @@ public class UserService {
 		this.securityService = securityService;
 		this.transactionTemplate = transactionTemplate;
 		this.studentAchievementService = studentAchievementService;
-		this.avatarDir = Paths.get(uploadsDir, "avatars").toAbsolutePath().normalize();
+		String resolvedUploadsDir = (uploadsDir == null || uploadsDir.isBlank()) ? "uploads" : uploadsDir;
+		this.avatarDir = Paths.get(resolvedUploadsDir, "avatars").toAbsolutePath().normalize();
 		log.info("Avatar storage directory initialized at: {}", avatarDir);
 	}
 
