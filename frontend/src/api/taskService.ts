@@ -29,7 +29,7 @@ export interface CreateScatterTaskRequest {
 }
 
 export interface CreateSpeakTaskRequest {
-  expectedTexts: string[];
+  expectedText: string;
   hint?: string;
   section?: string;
 }
@@ -64,8 +64,7 @@ export interface ScatterTaskResponse extends TaskResponse {
 }
 
 export interface SpeakTaskResponse extends Omit<TaskResponse, "task"> {
-  expectedText?: string | null;
-  expectedTexts: string[] | null;
+  expectedText: string | null;
   createdAt: string;
 }
 

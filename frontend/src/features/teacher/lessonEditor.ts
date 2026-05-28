@@ -229,9 +229,9 @@ export async function createLessonTask(
     });
   }
 
-  const expectedTexts = parseTextCorrectAnswers(task);
+  const expectedText = parseTextCorrectAnswers(task)[0] ?? "";
   return taskService.createSpeakTask(lessonPublicId, {
-    expectedTexts,
+    expectedText,
     hint,
     section,
   });
@@ -280,9 +280,9 @@ export async function updateLessonTask(
     });
   }
 
-  const expectedTexts = parseTextCorrectAnswers(task);
+  const expectedText = parseTextCorrectAnswers(task)[0] ?? "";
   return taskService.updateSpeakTask(lessonPublicId, taskPublicId, {
-    expectedTexts,
+    expectedText,
     hint,
     section,
   });
@@ -349,7 +349,7 @@ export function tasksResponseToDrafts(
     }
 
     for (const task of section.speakTasks) {
-      const expectedText = task.expectedText ?? task.expectedTexts?.[0] ?? "";
+      const expectedText = task.expectedText ?? "";
       drafts.push({
         id: `backendTask:speak:${task.publicId}`,
         type: "speak",
