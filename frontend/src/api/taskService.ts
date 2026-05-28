@@ -64,8 +64,7 @@ export interface ScatterTaskResponse extends TaskResponse {
 }
 
 export interface SpeakTaskResponse extends Omit<TaskResponse, "task"> {
-  expectedText: string;
-  expectedTexts: string[] | null;
+  expectedText: string | null;
   createdAt: string;
 }
 

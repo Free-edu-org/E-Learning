@@ -2102,7 +2102,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 **Success (201 Created):**
 ```json
 {
-  "publicId": "33333333-3333-3333-3333-333333333333", "lessonPublicId": "44444444-4444-4444-4444-444444444444", "expectedText": "...", "expectedTexts": ["..."], "hint": "...",
+  "publicId": "33333333-3333-3333-3333-333333333333", "lessonPublicId": "44444444-4444-4444-4444-444444444444", "expectedText": "...", "hint": "...",
   "section": "...", "createdAt": "..."
 }
 ```

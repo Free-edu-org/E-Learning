@@ -12,7 +12,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class SpeakTaskRequest {
 
-	private java.util.List<String> expectedTexts;
+	@Size(max = 300, message = "Expected text must be at most 300 characters long")
+	private String expectedText;
 
 	@Size(max = 200, message = "Hint must be at most 200 characters long")
 	private String hint;

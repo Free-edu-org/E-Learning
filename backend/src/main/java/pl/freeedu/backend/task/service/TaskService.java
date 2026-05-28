@@ -277,10 +277,10 @@ public class TaskService {
 	public Mono<SpeakTaskResponse> createSpeakTask(Integer lessonId, Mono<SpeakTaskRequest> requestMono) {
 		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
 			lessonRepository.findById(lessonId).orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_FOUND));
-			List<String> expectedTexts = TaskAnswerUtils.normalizeSingleTextAnswer(request.getExpectedTexts());
+			String expectedText = TaskAnswerUtils.normalizeSingleTextAnswer(request.getExpectedText());
 			SpeakTask task = SpeakTask.builder().lessonId(lessonId)
-					.expectedTexts(TaskAnswerUtils.serializeStringAnswers(expectedTexts)).hint(request.getHint())
-					.section(request.getSection()).build();
+					.expectedTexts(TaskAnswerUtils.serializeStringAnswers(List.of(expectedText)))
+					.hint(request.getHint()).section(request.getSection()).build();
 			SpeakTask saved = speakTaskRepository.save(task);
 			return toSpeakTaskResponse(saved, requireLessonPublicId(lessonId));
 		}).subscribeOn(Schedulers.boundedElastic()));
@@ -290,8 +290,8 @@ public class TaskService {
 			Mono<SpeakTaskRequest> requestMono) {
 		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
 			SpeakTask task = getSpeakTaskForLesson(lessonId, taskPublicId);
-			List<String> expectedTexts = TaskAnswerUtils.normalizeSingleTextAnswer(request.getExpectedTexts());
-			task.setExpectedTexts(TaskAnswerUtils.serializeStringAnswers(expectedTexts));
+			String expectedText = TaskAnswerUtils.normalizeSingleTextAnswer(request.getExpectedText());
+			task.setExpectedTexts(TaskAnswerUtils.serializeStringAnswers(List.of(expectedText)));
 			task.setHint(request.getHint());
 			task.setSection(request.getSection());
 			SpeakTask saved = speakTaskRepository.save(task);
@@ -661,8 +661,9 @@ public class TaskService {
 				? "/api/v1/lessons/" + lessonPublicId + "/tasks/speak/" + t.getPublicId() + "/hint-image"
 				: null;
 		List<String> expectedTexts = TaskAnswerUtils.deserializeStringAnswers(t.getExpectedTexts());
+		String expectedText = expectedTexts.isEmpty() ? null : expectedTexts.get(0);
 		return SpeakTaskResponse.builder().publicId(t.getPublicId()).lessonPublicId(lessonPublicId)
-				.expectedTexts(expectedTexts).hint(t.getHint()).hintImageUrl(hintImageUrl).section(t.getSection())
+				.expectedText(expectedText).hint(t.getHint()).hintImageUrl(hintImageUrl).section(t.getSection())
 				.createdAt(t.getCreatedAt()).build();
 	}
 
