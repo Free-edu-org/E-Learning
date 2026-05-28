@@ -311,11 +311,12 @@ function tasksResponseToDrafts(
       });
     }
     for (const t of section.speakTasks) {
+      const expectedText = t.expectedText ?? "";
       drafts.push({
         id: `backendTask:speak:${t.publicId}`,
         type: "speak",
         possibleAnswers: "",
-        correctAnswer: t.expectedText,
+        correctAnswer: expectedText,
         words: "",
         hint: t.hint ?? "",
         section: sec,

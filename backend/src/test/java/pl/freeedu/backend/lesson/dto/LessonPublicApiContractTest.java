@@ -45,6 +45,8 @@ class LessonPublicApiContractTest {
 		assertTrue(writeTaskResponseFields.contains("lessonPublicId"));
 		assertTrue(scatterTaskResponseFields.contains("lessonPublicId"));
 		assertTrue(speakTaskResponseFields.contains("lessonPublicId"));
+		assertTrue(speakTaskResponseFields.contains("expectedText"));
+		assertFalse(speakTaskResponseFields.contains("expectedTexts"));
 	}
 
 	@Test

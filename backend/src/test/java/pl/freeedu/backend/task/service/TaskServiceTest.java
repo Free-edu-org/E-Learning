@@ -467,24 +467,23 @@ class TaskServiceTest {
 
 		// when
 		Mono<SpeakTaskResponse> result = taskService.createSpeakTask(1,
-				Mono.just(SpeakTaskRequest.builder().expectedTexts(List.of("Hello world")).build()));
+				Mono.just(SpeakTaskRequest.builder().expectedText("Hello world").build()));
 
 		// then
 		StepVerifier.create(result).assertNext(r -> {
-			assertEquals("Hello world", r.getExpectedTexts().get(0));
-			assertEquals(List.of("Hello world"), r.getExpectedTexts());
+			assertEquals("Hello world", r.getExpectedText());
 		}).verifyComplete();
 	}
 
 	@Test
-	void shouldRejectMultipleExpectedTextsForSpeakTask() {
+	void shouldRejectBlankExpectedTextForSpeakTask() {
 		// given
 		Lesson lesson = Lesson.builder().id(1).publicId("lesson-1").build();
 		when(lessonRepository.findById(1)).thenReturn(Optional.of(lesson));
 
 		// when
 		Mono<SpeakTaskResponse> result = taskService.createSpeakTask(1,
-				Mono.just(SpeakTaskRequest.builder().expectedTexts(List.of("Hello world", "Hi world")).build()));
+				Mono.just(SpeakTaskRequest.builder().expectedText("   ").build()));
 
 		// then
 		StepVerifier.create(result).expectErrorSatisfies(error -> {
