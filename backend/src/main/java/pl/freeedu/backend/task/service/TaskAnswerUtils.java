@@ -61,12 +61,8 @@ final class TaskAnswerUtils {
 		return List.copyOf(normalized);
 	}
 
-	static List<String> normalizeSingleTextAnswer(List<String> answers) {
-		List<String> normalized = normalizeTextAnswers(answers);
-		if (normalized.size() > 1) {
-			throw new TaskException(TaskErrorCode.INVALID_TASK_ANSWERS);
-		}
-		return normalized;
+	static String normalizeSingleTextAnswer(String answer) {
+		return normalizeTextAnswers(answer == null ? List.of() : List.of(answer)).get(0);
 	}
 
 	static String serializeStringAnswers(List<String> answers) {
