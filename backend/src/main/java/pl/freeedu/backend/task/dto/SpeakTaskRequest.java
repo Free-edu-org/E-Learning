@@ -25,5 +25,6 @@ public class SpeakTaskRequest {
 
 	@NotNull(message = "Points is required")
 	@Min(value = 1, message = "Points must be at least 1")
-	private Integer points;
+	@Builder.Default
+	private Integer points = 1;
 }
