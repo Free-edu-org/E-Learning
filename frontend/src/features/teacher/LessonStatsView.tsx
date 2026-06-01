@@ -644,14 +644,14 @@ export function LessonStatsView() {
                   }}
                 >
                   <Typography variant="subtitle1" fontWeight={700} mb={1.25}>
-                    Wyniki uczniów
+                    {showGroupChart ? "Wyniki grup" : "Wyniki uczniów"}
                   </Typography>
                   <ResponsiveContainer width="100%" height={220}>
                     <BarChart
                       data={
                         showGroupChart ? groupChartData : activeStudentChartData
                       }
-                      margin={{ bottom: 40 }}
+                      margin={{ top: 15, bottom: 40 }}
                     >
                       <defs>
                         <linearGradient
@@ -681,6 +681,9 @@ export function LessonStatsView() {
                       <XAxis
                         dataKey="name"
                         tick={{ fontSize: 11, fill: chartLabelColor }}
+                        tickFormatter={(value) =>
+                          value.length > 15 ? `${value.slice(0, 15)}...` : value
+                        }
                         angle={-35}
                         textAnchor="end"
                         interval={0}
@@ -691,6 +694,8 @@ export function LessonStatsView() {
                       />
                       <YAxis
                         domain={[0, 100]}
+                        ticks={[0, 25, 50, 75, 100]}
+                        interval={0}
                         tick={{ fontSize: 11, fill: chartAxisColor }}
                         tickLine={false}
                         axisLine={false}
@@ -737,7 +742,10 @@ export function LessonStatsView() {
                     Rozkład wyników
                   </Typography>
                   <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={distributionData} margin={{ bottom: 10 }}>
+                    <BarChart
+                      data={distributionData}
+                      margin={{ top: 15, bottom: 10 }}
+                    >
                       <defs>
                         <linearGradient
                           id="lessonStatsDistributionBars"
