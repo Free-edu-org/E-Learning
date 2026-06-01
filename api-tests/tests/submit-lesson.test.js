@@ -57,13 +57,15 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonPublicId}/submit) - STT
         response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/choose`, {
             task: 'What is 2+2?',
             possibleAnswers: '3|4|5|6',
-            correctAnswers: [1, 3]
+            correctAnswers: [1, 3],
+            points: 2
         });
         chooseTaskPublicId = response.data.publicId;
 
         response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/write`, {
             task: 'Translate hello',
-            correctAnswers: ['hello', 'hi']
+            correctAnswers: ['hello', 'hi'],
+            points: 3
         });
         writeTaskPublicId = response.data.publicId;
 
@@ -75,12 +77,14 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonPublicId}/submit) - STT
         scatterTaskPublicId = response.data.publicId;
 
         response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/speak`, {
-            expectedTexts: ['Hello how are you']
+            expectedText: 'Hello how are you',
+            points: 4
         });
         speakTaskPublicId = response.data.publicId;
 
         response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/speak`, {
-            expectedTexts: ['Good morning']
+            expectedText: 'Good morning',
+            points: 5
         });
         secondSpeakTaskPublicId = response.data.publicId;
 
@@ -267,8 +271,8 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonPublicId}/submit) - STT
             });
 
             expect(response.status).toBe(200);
-            expect(response.data.score).toBe(4);
-            expect(response.data.maxScore).toBe(4);
+            expect(response.data.score).toBe(10);
+            expect(response.data.maxScore).toBe(10);
             expect(response.data.details.find((detail) => detail.taskType === 'speak').isCorrect).toBe(true);
         });
     });
@@ -285,8 +289,8 @@ describe('Submit Lesson API (POST /api/v1/lessons/{lessonPublicId}/submit) - STT
             });
 
             expect(response.status).toBe(200);
-            expect(response.data.score).toBe(3);
-            expect(response.data.maxScore).toBe(4);
+            expect(response.data.score).toBe(6);
+            expect(response.data.maxScore).toBe(10);
             expect(response.data.details.find((detail) => detail.taskType === 'speak').isCorrect).toBe(false);
         });
 

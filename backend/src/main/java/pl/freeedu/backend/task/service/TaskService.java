@@ -172,7 +172,7 @@ public class TaskService {
 			ChooseTask task = ChooseTask.builder().lessonId(lessonId).task(request.getTask())
 					.possibleAnswers(request.getPossibleAnswers())
 					.correctAnswers(TaskAnswerUtils.serializeIntegerAnswers(correctAnswers)).hint(request.getHint())
-					.section(request.getSection()).points(request.getPoints()).build();
+					.section(request.getSection()).points(getPointsOrDefault(request.getPoints())).build();
 			ChooseTask saved = chooseTaskRepository.save(task);
 			log.info("ChooseTask ID: {} created for lesson ID: {}", saved.getId(), lessonId);
 			recalculateUserLessonsForLesson(lessonId);
@@ -192,7 +192,7 @@ public class TaskService {
 			task.setCorrectAnswers(TaskAnswerUtils.serializeIntegerAnswers(correctAnswers));
 			task.setHint(request.getHint());
 			task.setSection(request.getSection());
-			task.setPoints(request.getPoints());
+			task.setPoints(getPointsOrDefault(request.getPoints()));
 			ChooseTask saved = chooseTaskRepository.save(task);
 			log.info("ChooseTask publicId: {} updated successfully", taskPublicId);
 			recalculateUserLessonsForLesson(lessonId);
@@ -220,7 +220,7 @@ public class TaskService {
 			List<String> correctAnswers = TaskAnswerUtils.normalizeTextAnswers(request.getCorrectAnswers());
 			WriteTask task = WriteTask.builder().lessonId(lessonId).task(request.getTask())
 					.correctAnswers(TaskAnswerUtils.serializeStringAnswers(correctAnswers)).hint(request.getHint())
-					.section(request.getSection()).points(request.getPoints()).build();
+					.section(request.getSection()).points(getPointsOrDefault(request.getPoints())).build();
 			WriteTask saved = writeTaskRepository.save(task);
 			recalculateUserLessonsForLesson(lessonId);
 			return toWriteTaskResponse(saved, false, requireLessonPublicId(lessonId));
@@ -236,7 +236,7 @@ public class TaskService {
 			task.setCorrectAnswers(TaskAnswerUtils.serializeStringAnswers(correctAnswers));
 			task.setHint(request.getHint());
 			task.setSection(request.getSection());
-			task.setPoints(request.getPoints());
+			task.setPoints(getPointsOrDefault(request.getPoints()));
 			WriteTask saved = writeTaskRepository.save(task);
 			recalculateUserLessonsForLesson(lessonId);
 			return toWriteTaskResponse(saved, false, requireLessonPublicId(lessonId));
@@ -261,7 +261,8 @@ public class TaskService {
 			List<String> correctAnswers = TaskAnswerUtils.normalizeTextAnswers(request.getCorrectAnswers());
 			ScatterTask task = ScatterTask.builder().lessonId(lessonId).task(request.getTask())
 					.words(request.getWords()).correctAnswers(TaskAnswerUtils.serializeStringAnswers(correctAnswers))
-					.hint(request.getHint()).section(request.getSection()).points(request.getPoints()).build();
+					.hint(request.getHint()).section(request.getSection())
+					.points(getPointsOrDefault(request.getPoints())).build();
 			ScatterTask saved = scatterTaskRepository.save(task);
 			recalculateUserLessonsForLesson(lessonId);
 			return toScatterTaskResponse(saved, false, requireLessonPublicId(lessonId));
@@ -278,7 +279,7 @@ public class TaskService {
 			task.setCorrectAnswers(TaskAnswerUtils.serializeStringAnswers(correctAnswers));
 			task.setHint(request.getHint());
 			task.setSection(request.getSection());
-			task.setPoints(request.getPoints());
+			task.setPoints(getPointsOrDefault(request.getPoints()));
 			ScatterTask saved = scatterTaskRepository.save(task);
 			recalculateUserLessonsForLesson(lessonId);
 			return toScatterTaskResponse(saved, false, requireLessonPublicId(lessonId));
@@ -303,7 +304,8 @@ public class TaskService {
 			String expectedText = TaskAnswerUtils.normalizeSingleTextAnswer(request.getExpectedText());
 			SpeakTask task = SpeakTask.builder().lessonId(lessonId)
 					.expectedTexts(TaskAnswerUtils.serializeStringAnswers(List.of(expectedText)))
-					.hint(request.getHint()).section(request.getSection()).points(request.getPoints()).build();
+					.hint(request.getHint()).section(request.getSection())
+					.points(getPointsOrDefault(request.getPoints())).build();
 			SpeakTask saved = speakTaskRepository.save(task);
 			recalculateUserLessonsForLesson(lessonId);
 			return toSpeakTaskResponse(saved, requireLessonPublicId(lessonId));
@@ -318,7 +320,7 @@ public class TaskService {
 			task.setExpectedTexts(TaskAnswerUtils.serializeStringAnswers(List.of(expectedText)));
 			task.setHint(request.getHint());
 			task.setSection(request.getSection());
-			task.setPoints(request.getPoints());
+			task.setPoints(getPointsOrDefault(request.getPoints()));
 			SpeakTask saved = speakTaskRepository.save(task);
 			recalculateUserLessonsForLesson(lessonId);
 			return toSpeakTaskResponse(saved, requireLessonPublicId(lessonId));
@@ -889,6 +891,10 @@ public class TaskService {
 			saveProgressHistorySnapshot(ul.getUserId(), lessonId, newScore, newMaxScore);
 			pointsService.reconcilePointsForLessonResult(ul.getId(), ul.getUserId(), newScore, ul.getUserId());
 		}
+	}
+
+	private int getPointsOrDefault(Integer points) {
+		return points == null ? 1 : points;
 	}
 
 	private record SpeakAttemptContext(Integer userId, Lesson lesson, UserLesson userLesson, SpeakTask speakTask) {

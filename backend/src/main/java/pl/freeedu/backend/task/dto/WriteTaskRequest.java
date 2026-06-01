@@ -1,9 +1,11 @@
 package pl.freeedu.backend.task.dto;
 
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import jakarta.validation.constraints.NotBlank;
+
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,7 +21,7 @@ public class WriteTaskRequest {
 	@Size(max = 300, message = "Task must be at most 300 characters long")
 	private String task;
 
-	private java.util.List<String> correctAnswers;
+	private List<String> correctAnswers;
 
 	@Size(max = 200, message = "Hint must be at most 200 characters long")
 	private String hint;
@@ -29,5 +31,6 @@ public class WriteTaskRequest {
 
 	@NotNull(message = "Points is required")
 	@Min(value = 1, message = "Points must be at least 1")
-	private Integer points;
+	@Builder.Default
+	private Integer points = 1;
 }

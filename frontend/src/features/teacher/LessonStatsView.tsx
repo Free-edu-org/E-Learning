@@ -1344,7 +1344,10 @@ export function LessonStatsView() {
                                             whiteSpace: "nowrap",
                                           }}
                                         >
-                                          Czas: {formatDuration(student.durationSeconds)}
+                                          Czas:{" "}
+                                          {formatDuration(
+                                            student.durationSeconds,
+                                          )}
                                         </Typography>
                                       </Box>
                                       <Box

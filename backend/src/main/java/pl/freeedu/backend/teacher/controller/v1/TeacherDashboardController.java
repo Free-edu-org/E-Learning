@@ -24,9 +24,10 @@ import pl.freeedu.backend.teacher.dto.TaskAnswerManualReviewRequest;
 import pl.freeedu.backend.teacher.dto.TeacherCreateStudentRequest;
 import pl.freeedu.backend.teacher.dto.TeacherStatsResponse;
 import pl.freeedu.backend.teacher.dto.TeacherStudentResponse;
-import pl.freeedu.backend.task.dto.LessonResultDetailsResponse;
-import pl.freeedu.backend.teacher.service.TeacherService;
 import pl.freeedu.backend.teacher.dto.TeacherStudentStatsResponse;
+import pl.freeedu.backend.teacher.dto.TeacherUpdateStudentRequest;
+import pl.freeedu.backend.teacher.service.TeacherService;
+import pl.freeedu.backend.task.dto.LessonResultDetailsResponse;
 import pl.freeedu.backend.user.service.UserPublicIdLookupService;
 import pl.freeedu.backend.usergroup.dto.UserGroupResponse;
 import reactor.core.publisher.Flux;
@@ -160,9 +161,8 @@ public class TeacherDashboardController {
 	@PutMapping("/students/{studentPublicId}")
 	@PreAuthorize("hasRole('TEACHER')")
 	@ResponseStatus(HttpStatus.OK)
-	public Mono<TeacherStudentResponse> updateStudent(
-			@org.springframework.web.bind.annotation.PathVariable String studentPublicId,
-			@Valid @RequestBody Mono<pl.freeedu.backend.teacher.dto.TeacherUpdateStudentRequest> request) {
+	public Mono<TeacherStudentResponse> updateStudent(@PathVariable String studentPublicId,
+			@Valid @RequestBody Mono<TeacherUpdateStudentRequest> request) {
 		return userPublicIdLookupService.getInternalId(studentPublicId)
 				.flatMap(studentId -> teacherService.updateStudent(studentId, request));
 	}

@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -17,5 +19,5 @@ public class SpeakTranscriptionResponse {
 	private String expectedText;
 	private boolean correct;
 	private double score;
-	private java.util.List<SpeakWordResultDto> words;
+	private List<SpeakWordResultDto> words;
 }
