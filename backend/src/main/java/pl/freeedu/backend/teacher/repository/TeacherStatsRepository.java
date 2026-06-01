@@ -78,7 +78,9 @@ public class TeacherStatsRepository {
 				+ "ug.public_id, ug.name, " + "SUM(CASE WHEN ua.is_correct = TRUE THEN 1 ELSE 0 END), " + "COUNT(*), "
 				+ "(SUM(CASE WHEN ua.is_correct = TRUE THEN 1.0 ELSE 0.0 END) * 100.0 / COUNT(*)), u.avatar_url, "
 				+ "COALESCE((SELECT SUM(utae.switch_count) FROM user_task_attention_events utae "
-				+ "WHERE utae.user_id = ua.user_id AND utae.lesson_id = ua.lesson_id), 0) " + "FROM user_answers ua "
+				+ "WHERE utae.user_id = ua.user_id AND utae.lesson_id = ua.lesson_id), 0), "
+				+ "(SELECT TIMESTAMPDIFF(SECOND, ul.started_at, ul.finished_at) FROM user_lessons ul "
+				+ "WHERE ul.user_id = ua.user_id AND ul.lesson_id = ua.lesson_id LIMIT 1) " + "FROM user_answers ua "
 				+ "INNER JOIN users u ON ua.user_id = u.id " + "INNER JOIN lessons l ON ua.lesson_id = l.id "
 				+ "INNER JOIN user_in_group uig ON u.id = uig.user_id "
 				+ "INNER JOIN user_groups ug ON uig.group_id = ug.id "
@@ -97,6 +99,7 @@ public class TeacherStatsRepository {
 						: null)
 				.groupPublicId((String) row[3]).groupName((String) row[4]).score(((Number) row[5]).intValue())
 				.maxScore(((Number) row[6]).intValue()).resultPercent(((Number) row[7]).doubleValue())
-				.avatarUrl((String) row[8]).totalTabSwitchCount(((Number) row[9]).intValue()).build()).toList();
+				.avatarUrl((String) row[8]).totalTabSwitchCount(((Number) row[9]).intValue())
+				.durationSeconds(row[10] != null ? ((Number) row[10]).longValue() : null).build()).toList();
 	}
 }

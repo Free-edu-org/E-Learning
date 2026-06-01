@@ -1,4 +1,4 @@
-import { Box, Button, Chip, Stack, Typography } from "@mui/material";
+import { Box, Button, Stack, Typography } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
 import {
   CheckCircleOutlined as CorrectIcon,
@@ -14,7 +14,6 @@ import {
   AppDialogFooter,
 } from "@/components/ui/dialog/AppDialog";
 import { panelSurfaceSx } from "@/components/ui/panel/panelStyles";
-import { formatAcceptedAnswers } from "@/utils/answerDisplay";
 import { formatRatioPercent } from "@/utils/dashboardUtils";
 
 interface LessonResultDialogProps {
@@ -144,21 +143,6 @@ export function LessonResultDialog({
               <Typography variant="body2" fontWeight={500}>
                 Zadanie {index + 1}
               </Typography>
-              {!detail.isCorrect && (
-                <Chip
-                  label={`Poprawne: ${formatAcceptedAnswers(detail.correctAnswers, detail.correctAnswer)}`}
-                  size="small"
-                  sx={{
-                    ml: "auto",
-                    maxWidth: 280,
-                    fontWeight: 700,
-                    "& .MuiChip-label": {
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    },
-                  }}
-                />
-              )}
             </Stack>
           ))}
         </Stack>
