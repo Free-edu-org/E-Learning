@@ -20,4 +20,8 @@ public class SpeakTaskRequest {
 
 	@Size(max = 80, message = "Section must be at most 80 characters long")
 	private String section;
+
+	@jakarta.validation.constraints.NotNull(message = "Points is required")
+	@jakarta.validation.constraints.Min(value = 1, message = "Points must be at least 1")
+	private Integer points;
 }
