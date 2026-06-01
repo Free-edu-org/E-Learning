@@ -139,6 +139,7 @@ function sortStudentsByName(
   );
 }
 
+
 const toolbarFieldSx: SxProps<Theme> = {
   minWidth: 180,
   flex: "1 1 180px",
@@ -320,7 +321,7 @@ export function LessonStatsView() {
     userService
       .getCurrentUser()
       .then(setUser)
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoadingUser(false));
   }, []);
 
@@ -644,14 +645,14 @@ export function LessonStatsView() {
                   }}
                 >
                   <Typography variant="subtitle1" fontWeight={700} mb={1.25}>
-                    Wyniki uczniów
+                    {showGroupChart ? "Wyniki grup" : "Wyniki uczniów"}
                   </Typography>
                   <ResponsiveContainer width="100%" height={220}>
                     <BarChart
                       data={
                         showGroupChart ? groupChartData : activeStudentChartData
                       }
-                      margin={{ bottom: 40 }}
+                      margin={{ top: 15, bottom: 40 }}
                     >
                       <defs>
                         <linearGradient
@@ -681,6 +682,9 @@ export function LessonStatsView() {
                       <XAxis
                         dataKey="name"
                         tick={{ fontSize: 11, fill: chartLabelColor }}
+                        tickFormatter={(value) =>
+                          value.length > 15 ? `${value.slice(0, 15)}...` : value
+                        }
                         angle={-35}
                         textAnchor="end"
                         interval={0}
@@ -691,6 +695,8 @@ export function LessonStatsView() {
                       />
                       <YAxis
                         domain={[0, 100]}
+                        ticks={[0, 25, 50, 75, 100]}
+                        interval={0}
                         tick={{ fontSize: 11, fill: chartAxisColor }}
                         tickLine={false}
                         axisLine={false}
@@ -737,7 +743,7 @@ export function LessonStatsView() {
                     Rozkład wyników
                   </Typography>
                   <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={distributionData} margin={{ bottom: 10 }}>
+                    <BarChart data={distributionData} margin={{ top: 15, bottom: 10 }}>
                       <defs>
                         <linearGradient
                           id="lessonStatsDistributionBars"
@@ -892,14 +898,14 @@ export function LessonStatsView() {
                       />,
                       ...(hiddenCount > 0
                         ? [
-                            <Chip
-                              key="groups-more"
-                              label={`+${hiddenCount}`}
-                              size="small"
-                              aria-label={`Jeszcze ${hiddenCount} wybranych grup`}
-                              sx={{ fontSize: "0.7rem", height: 20 }}
-                            />,
-                          ]
+                          <Chip
+                            key="groups-more"
+                            label={`+${hiddenCount}`}
+                            size="small"
+                            aria-label={`Jeszcze ${hiddenCount} wybranych grup`}
+                            sx={{ fontSize: "0.7rem", height: 20 }}
+                          />,
+                        ]
                         : []),
                     ];
                   }}
@@ -1150,9 +1156,9 @@ export function LessonStatsView() {
                                       theme.palette.mode === "dark"
                                         ? alpha(theme.palette.common.black, 0.2)
                                         : alpha(
-                                            theme.palette.common.white,
-                                            0.7,
-                                          ),
+                                          theme.palette.common.white,
+                                          0.7,
+                                        ),
                                     boxShadow: (theme) =>
                                       theme.palette.mode === "dark"
                                         ? "0 8px 18px rgba(2, 6, 23, 0.2)"
@@ -1440,8 +1446,8 @@ export function LessonStatsView() {
                 disabled={
                   resetConfirmStudent
                     ? resettingUserPublicIds.includes(
-                        resetConfirmStudent.userPublicId,
-                      )
+                      resetConfirmStudent.userPublicId,
+                    )
                     : false
                 }
                 sx={{ ...panelFooterButtonSx, color: "text.secondary" }}
@@ -1465,9 +1471,9 @@ export function LessonStatsView() {
                 sx={panelFooterButtonSx}
               >
                 {resetConfirmStudent &&
-                resettingUserPublicIds.includes(
-                  resetConfirmStudent.userPublicId,
-                )
+                  resettingUserPublicIds.includes(
+                    resetConfirmStudent.userPublicId,
+                  )
                   ? "Resetowanie..."
                   : "Potwierdź reset"}
               </Button>
