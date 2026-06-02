@@ -56,6 +56,7 @@ export interface LessonTaskDraft {
   hint: string;
   section: string;
   hintImageUrl: string | null;
+  points: number;
 }
 
 // Defined at module level — not recreated on re-render
@@ -176,6 +177,21 @@ function TaskCardHeader({
           borderRadius: uiTokens.radius.control,
           flexShrink: 0,
           "& .MuiChip-icon": { color: meta.color },
+        }}
+      />
+      <Chip
+        label={`${task.points || 1} pkt`}
+        size="small"
+        variant="outlined"
+        sx={{
+          fontWeight: 600,
+          height: 24,
+          borderRadius: uiTokens.radius.control,
+          flexShrink: 0,
+          ml: 1,
+          borderColor: (theme) => alpha(theme.palette.text.secondary, 0.15),
+          color: "text.secondary",
+          bgcolor: (theme) => alpha(theme.palette.text.secondary, 0.02),
         }}
       />
       <Typography
@@ -506,7 +522,7 @@ const TaskCardFields = memo(function TaskCardFields({
         <Box
           sx={{
             display: "grid",
-            gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+            gridTemplateColumns: { xs: "1fr", sm: "2fr 2fr 1fr" },
             gap: 1.5,
           }}
         >
@@ -562,6 +578,19 @@ const TaskCardFields = memo(function TaskCardFields({
                 placeholder="Nazwa sekcji grupującej..."
               />
             )}
+          />
+          <TextField
+            label="Punkty"
+            type="number"
+            value={task.points}
+            onChange={(e) => {
+              const val = Math.max(1, parseInt(e.target.value, 10) || 1);
+              updateField("points", val);
+            }}
+            inputProps={{ min: 1 }}
+            fullWidth
+            size="small"
+            helperText="Waga zadania"
           />
         </Box>
 

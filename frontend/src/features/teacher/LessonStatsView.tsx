@@ -1280,8 +1280,6 @@ export function LessonStatsView() {
                                     >
                                       Ukończono:{" "}
                                       {formatDate(student.completedAt)}
-                                      {" • Czas: " +
-                                        formatDuration(student.durationSeconds)}
                                     </Typography>
                                   </Box>
 
@@ -1336,6 +1334,20 @@ export function LessonStatsView() {
                                           }}
                                         >
                                           {student.score}/{student.maxScore} pkt
+                                        </Typography>
+                                        <Typography
+                                          variant="body2"
+                                          color="text.secondary"
+                                          sx={{
+                                            minWidth: 80,
+                                            textAlign: "right",
+                                            whiteSpace: "nowrap",
+                                          }}
+                                        >
+                                          Czas:{" "}
+                                          {formatDuration(
+                                            student.durationSeconds,
+                                          )}
                                         </Typography>
                                       </Box>
                                       <Box

@@ -9,6 +9,7 @@ export interface CreateChooseTaskRequest {
   correctAnswers?: number[];
   hint?: string;
   section?: string;
+  points: number;
 }
 
 export interface CreateWriteTaskRequest {
@@ -17,6 +18,7 @@ export interface CreateWriteTaskRequest {
   correctAnswers?: string[];
   hint?: string;
   section?: string;
+  points: number;
 }
 
 export interface CreateScatterTaskRequest {
@@ -26,12 +28,14 @@ export interface CreateScatterTaskRequest {
   correctAnswers?: string[];
   hint?: string;
   section?: string;
+  points: number;
 }
 
 export interface CreateSpeakTaskRequest {
   expectedText: string;
   hint?: string;
   section?: string;
+  points: number;
 }
 
 export interface TaskResponse {
@@ -41,6 +45,7 @@ export interface TaskResponse {
   hint?: string;
   hintImageUrl?: string | null;
   section?: string;
+  points: number;
 }
 
 export interface ChooseTaskResponse extends TaskResponse {

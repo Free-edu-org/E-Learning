@@ -182,6 +182,7 @@ function getTaskValidationError(
 async function createLessonTask(lessonPublicId: string, task: LessonTaskDraft) {
   const hint = task.hint.trim() || undefined;
   const section = task.section.trim() || undefined;
+  const points = task.points;
 
   if (task.type === "choose") {
     return taskService.createChooseTask(lessonPublicId, {
@@ -190,6 +191,7 @@ async function createLessonTask(lessonPublicId: string, task: LessonTaskDraft) {
       correctAnswer: Number(task.correctAnswer.trim()),
       hint,
       section,
+      points,
     });
   }
 
@@ -199,6 +201,7 @@ async function createLessonTask(lessonPublicId: string, task: LessonTaskDraft) {
       correctAnswer: task.correctAnswer.trim(),
       hint,
       section,
+      points,
     });
   }
 
@@ -209,6 +212,7 @@ async function createLessonTask(lessonPublicId: string, task: LessonTaskDraft) {
       correctAnswer: task.correctAnswer.trim(),
       hint,
       section,
+      points,
     });
   }
 
@@ -216,6 +220,7 @@ async function createLessonTask(lessonPublicId: string, task: LessonTaskDraft) {
     expectedText: task.correctAnswer.trim(),
     hint,
     section,
+    points,
   });
 }
 
@@ -226,6 +231,7 @@ async function updateLessonTask(
 ) {
   const hint = task.hint.trim() || undefined;
   const section = task.section.trim() || undefined;
+  const points = task.points;
 
   if (task.type === "choose") {
     return taskService.updateChooseTask(lessonPublicId, taskPublicId, {
@@ -234,6 +240,7 @@ async function updateLessonTask(
       correctAnswer: Number(task.correctAnswer.trim()),
       hint,
       section,
+      points,
     });
   }
   if (task.type === "write") {
@@ -242,6 +249,7 @@ async function updateLessonTask(
       correctAnswer: task.correctAnswer.trim(),
       hint,
       section,
+      points,
     });
   }
   if (task.type === "scatter") {
@@ -251,12 +259,14 @@ async function updateLessonTask(
       correctAnswer: task.correctAnswer.trim(),
       hint,
       section,
+      points,
     });
   }
   return taskService.updateSpeakTask(lessonPublicId, taskPublicId, {
     expectedText: task.correctAnswer.trim(),
     hint,
     section,
+    points,
   });
 }
 
@@ -282,6 +292,7 @@ function tasksResponseToDrafts(
         hint: t.hint ?? "",
         section: sec,
         hintImageUrl: t.hintImageUrl ?? null,
+        points: t.points,
       });
     }
     for (const t of section.writeTasks) {
@@ -295,6 +306,7 @@ function tasksResponseToDrafts(
         hint: t.hint ?? "",
         section: sec,
         hintImageUrl: t.hintImageUrl ?? null,
+        points: t.points,
       });
     }
     for (const t of section.scatterTasks) {
@@ -308,6 +320,7 @@ function tasksResponseToDrafts(
         hint: t.hint ?? "",
         section: sec,
         hintImageUrl: t.hintImageUrl ?? null,
+        points: t.points,
       });
     }
     for (const t of section.speakTasks) {
@@ -321,6 +334,7 @@ function tasksResponseToDrafts(
         hint: t.hint ?? "",
         section: sec,
         hintImageUrl: t.hintImageUrl ?? null,
+        points: t.points,
       });
     }
   }

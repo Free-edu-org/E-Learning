@@ -54,6 +54,7 @@ function createEmptyTaskDraft(type: TaskType = "write"): LessonTaskDraft {
     hint: "",
     section: "",
     hintImageUrl: null,
+    points: 1,
   };
   if (type !== "speak") (draft as LessonTaskDraft).task = "";
   return draft as LessonTaskDraft;

@@ -1,5 +1,6 @@
 package pl.freeedu.backend.security.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
@@ -40,7 +41,7 @@ public class SecurityConfig {
 	private final UserRepository userRepository;
 	private final JwtService jwtService;
 
-	@org.springframework.beans.factory.annotation.Value("${application.security.cors.allowed-origins:http://localhost:5173}")
+	@Value("${application.security.cors.allowed-origins:http://localhost:5173}")
 	private String allowedOrigins;
 
 	public SecurityConfig(UserRepository userRepository, JwtService jwtService) {

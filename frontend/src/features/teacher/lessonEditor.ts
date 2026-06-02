@@ -193,6 +193,7 @@ export async function createLessonTask(
 ) {
   const hint = task.hint.trim() || undefined;
   const section = task.section.trim() || undefined;
+  const points = task.points;
 
   if (task.type === "choose") {
     const correctAnswers = parseChooseCorrectAnswers(task);
@@ -203,6 +204,7 @@ export async function createLessonTask(
       correctAnswers,
       hint,
       section,
+      points,
     });
   }
 
@@ -214,6 +216,7 @@ export async function createLessonTask(
       correctAnswers,
       hint,
       section,
+      points,
     });
   }
 
@@ -226,6 +229,7 @@ export async function createLessonTask(
       correctAnswers,
       hint,
       section,
+      points,
     });
   }
 
@@ -234,6 +238,7 @@ export async function createLessonTask(
     expectedText,
     hint,
     section,
+    points,
   });
 }
 
@@ -244,6 +249,7 @@ export async function updateLessonTask(
 ) {
   const hint = task.hint.trim() || undefined;
   const section = task.section.trim() || undefined;
+  const points = task.points;
 
   if (task.type === "choose") {
     const correctAnswers = parseChooseCorrectAnswers(task);
@@ -254,6 +260,7 @@ export async function updateLessonTask(
       correctAnswers,
       hint,
       section,
+      points,
     });
   }
 
@@ -265,6 +272,7 @@ export async function updateLessonTask(
       correctAnswers,
       hint,
       section,
+      points,
     });
   }
 
@@ -277,6 +285,7 @@ export async function updateLessonTask(
       correctAnswers,
       hint,
       section,
+      points,
     });
   }
 
@@ -285,6 +294,7 @@ export async function updateLessonTask(
     expectedText,
     hint,
     section,
+    points,
   });
 }
 
@@ -311,6 +321,7 @@ export function tasksResponseToDrafts(
         hint: task.hint ?? "",
         section: sectionName,
         hintImageUrl: task.hintImageUrl ?? null,
+        points: task.points,
       });
     }
 
@@ -328,6 +339,7 @@ export function tasksResponseToDrafts(
         hint: task.hint ?? "",
         section: sectionName,
         hintImageUrl: task.hintImageUrl ?? null,
+        points: task.points,
       });
     }
 
@@ -345,6 +357,7 @@ export function tasksResponseToDrafts(
         hint: task.hint ?? "",
         section: sectionName,
         hintImageUrl: task.hintImageUrl ?? null,
+        points: task.points,
       });
     }
 
@@ -360,6 +373,7 @@ export function tasksResponseToDrafts(
         hint: task.hint ?? "",
         section: sectionName,
         hintImageUrl: task.hintImageUrl ?? null,
+        points: task.points,
       });
     }
   }

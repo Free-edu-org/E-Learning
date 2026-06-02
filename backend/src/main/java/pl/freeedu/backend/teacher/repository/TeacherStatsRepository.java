@@ -33,7 +33,7 @@ public class TeacherStatsRepository {
 
 	public Double calcAvgScore(Integer teacherId) {
 		return ((Number) entityManager.createNativeQuery(
-				"SELECT COALESCE(AVG(CASE WHEN ua.is_correct = TRUE THEN 100.0 ELSE 0.0 END), 0.0) FROM user_answers ua INNER JOIN lessons l ON ua.lesson_id = l.id WHERE l.teacher_id = :tid")
+				"SELECT COALESCE(AVG(ul.score * 100.0 / NULLIF(ul.max_score, 0)), 0.0) FROM user_lessons ul INNER JOIN lessons l ON ul.lesson_id = l.id WHERE l.teacher_id = :tid AND ul.status = 'COMPLETED'")
 				.setParameter("tid", teacherId).getSingleResult()).doubleValue();
 	}
 
@@ -74,19 +74,18 @@ public class TeacherStatsRepository {
 
 	@SuppressWarnings("unchecked")
 	public List<LessonStatsStudentResult> getLessonStudentResults(Integer lessonId, Integer teacherId) {
-		List<Object[]> rows = entityManager.createNativeQuery("SELECT u.public_id, u.username, MAX(ua.created_at), "
-				+ "ug.public_id, ug.name, " + "SUM(CASE WHEN ua.is_correct = TRUE THEN 1 ELSE 0 END), " + "COUNT(*), "
-				+ "(SUM(CASE WHEN ua.is_correct = TRUE THEN 1.0 ELSE 0.0 END) * 100.0 / COUNT(*)), u.avatar_url, "
-				+ "COALESCE((SELECT SUM(utae.switch_count) FROM user_task_attention_events utae "
-				+ "WHERE utae.user_id = ua.user_id AND utae.lesson_id = ua.lesson_id), 0), "
-				+ "(SELECT TIMESTAMPDIFF(SECOND, ul.started_at, ul.finished_at) FROM user_lessons ul "
-				+ "WHERE ul.user_id = ua.user_id AND ul.lesson_id = ua.lesson_id LIMIT 1) " + "FROM user_answers ua "
-				+ "INNER JOIN users u ON ua.user_id = u.id " + "INNER JOIN lessons l ON ua.lesson_id = l.id "
-				+ "INNER JOIN user_in_group uig ON u.id = uig.user_id "
-				+ "INNER JOIN user_groups ug ON uig.group_id = ug.id "
-				+ "WHERE ua.lesson_id = :lessonId AND l.teacher_id = :teacherId "
-				+ "GROUP BY u.public_id, u.username, ug.public_id, ug.name, u.avatar_url "
-				+ "ORDER BY (SUM(CASE WHEN ua.is_correct = TRUE THEN 1.0 ELSE 0.0 END) * 100.0 / COUNT(*)) DESC")
+		List<Object[]> rows = entityManager
+				.createNativeQuery("SELECT u.public_id, u.username, ul.finished_at, "
+						+ "ug.public_id, ug.name, ul.score, ul.max_score, "
+						+ "(ul.score * 100.0 / NULLIF(ul.max_score, 0)), u.avatar_url, "
+						+ "COALESCE((SELECT SUM(utae.switch_count) FROM user_task_attention_events utae "
+						+ "WHERE utae.user_id = ul.user_id AND utae.lesson_id = ul.lesson_id), 0), "
+						+ "TIMESTAMPDIFF(SECOND, ul.started_at, ul.finished_at) FROM user_lessons ul "
+						+ "INNER JOIN users u ON ul.user_id = u.id " + "INNER JOIN lessons l ON ul.lesson_id = l.id "
+						+ "LEFT JOIN user_in_group uig ON u.id = uig.user_id "
+						+ "LEFT JOIN user_groups ug ON uig.group_id = ug.id "
+						+ "WHERE ul.lesson_id = :lessonId AND l.teacher_id = :teacherId AND ul.status = 'COMPLETED' "
+						+ "ORDER BY (ul.score * 100.0 / NULLIF(ul.max_score, 0)) DESC")
 				.setParameter("lessonId", lessonId).setParameter("teacherId", teacherId).getResultList();
 
 		return rows.stream().map(row -> LessonStatsStudentResult
@@ -97,9 +96,11 @@ public class TeacherStatsRepository {
 								? ts.toInstant()
 								: ((java.time.LocalDateTime) row[2]).toInstant(java.time.ZoneOffset.UTC))
 						: null)
-				.groupPublicId((String) row[3]).groupName((String) row[4]).score(((Number) row[5]).intValue())
-				.maxScore(((Number) row[6]).intValue()).resultPercent(((Number) row[7]).doubleValue())
-				.avatarUrl((String) row[8]).totalTabSwitchCount(((Number) row[9]).intValue())
+				.groupPublicId((String) row[3]).groupName((String) row[4])
+				.score(row[5] != null ? ((Number) row[5]).intValue() : 0)
+				.maxScore(row[6] != null ? ((Number) row[6]).intValue() : 0)
+				.resultPercent(row[7] != null ? ((Number) row[7]).doubleValue() : 0.0).avatarUrl((String) row[8])
+				.totalTabSwitchCount(((Number) row[9]).intValue())
 				.durationSeconds(row[10] != null ? ((Number) row[10]).longValue() : null).build()).toList();
 	}
 }
