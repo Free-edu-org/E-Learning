@@ -13,6 +13,7 @@ import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 import pl.freeedu.backend.auth.exception.AuthErrorCode;
 import pl.freeedu.backend.auth.exception.AuthException;
+import pl.freeedu.backend.emailchange.service.EmailChangeService;
 import pl.freeedu.backend.security.principal.CustomUserDetails;
 import pl.freeedu.backend.security.service.SecurityService;
 import pl.freeedu.backend.student.service.StudentAchievementService;
@@ -53,6 +54,8 @@ class UserServiceTest {
 	private TransactionTemplate transactionTemplate;
 	@Mock
 	private StudentAchievementService studentAchievementService;
+	@Mock
+	private EmailChangeService emailChangeService;
 
 	@InjectMocks
 	private UserService userService;
@@ -145,7 +148,7 @@ class UserServiceTest {
 	@Test
 	void shouldUpdateUserSucceed() {
 		// given
-		UpdateUserRequest req = UpdateUserRequest.builder().email("new@e.com").username("new").build();
+		UpdateUserRequest req = UpdateUserRequest.builder().email("old@e.com").username("new").build();
 		User user = User.builder().publicId("user-pub-1").email("old@e.com").username("old").build();
 
 		when(userRepository.findById(1)).thenReturn(Optional.of(user));
@@ -156,10 +159,30 @@ class UserServiceTest {
 		Mono<UserResponse> result = userService.updateUser(1, Mono.just(req));
 
 		// then
-		StepVerifier.create(result).assertNext(r -> {
-			assertEquals("new", r.getUsername());
-			verify(userMapper).updateUserFromRequest(eq(req), eq(user));
-		}).verifyComplete();
+		StepVerifier.create(result).assertNext(r -> assertEquals("new", r.getUsername())).verifyComplete();
+		verify(userMapper).updateUserFromRequest(eq(req), eq(user));
+	}
+
+	@Test
+	void shouldInitiateEmailChangeWhenEmailDiffers() {
+		// given
+		UpdateUserRequest req = UpdateUserRequest.builder().email("new@e.com").username("new").build();
+		User user = User.builder().id(1).publicId("user-pub-1").email("old@e.com").username("old").build();
+
+		when(userRepository.findById(1)).thenReturn(Optional.of(user));
+		when(userRepository.existsByEmail("new@e.com")).thenReturn(false);
+		when(userRepository.save(any())).thenReturn(user);
+		when(userMapper.toUserResponse(user))
+				.thenReturn(UserResponse.builder().email("old@e.com").username("new").build());
+		doNothing().when(emailChangeService).initiateEmailChange(any(), any());
+
+		// when
+		Mono<UserResponse> result = userService.updateUser(1, Mono.just(req));
+
+		// then
+		StepVerifier.create(result).assertNext(r -> assertEquals("old@e.com", r.getEmail())).verifyComplete();
+		verify(emailChangeService).initiateEmailChange(eq(user), eq("new@e.com"));
+		verify(userMapper, never()).updateUserFromRequest(any(), any());
 	}
 
 	@Test

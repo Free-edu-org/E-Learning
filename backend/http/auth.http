@@ -185,3 +185,35 @@ Content-Type: application/json
   "identifier": "pending.student@example.com",
   "password": "anyPassword"
 }
+
+### Confirm email change (204 No Content)
+POST http://localhost:8080/api/v1/auth/email-change/confirm
+Content-Type: application/json
+
+{
+  "token": "paste-email-change-token-here"
+}
+
+### Confirm email change - invalid token (400 EMAIL_CHANGE_TOKEN_INVALID)
+POST http://localhost:8080/api/v1/auth/email-change/confirm
+Content-Type: application/json
+
+{
+  "token": "invalid-token-value"
+}
+
+### Confirm email change - used token (400 EMAIL_CHANGE_TOKEN_USED)
+POST http://localhost:8080/api/v1/auth/email-change/confirm
+Content-Type: application/json
+
+{
+  "token": "already-used-token"
+}
+
+### Confirm email change - new email already taken (409 EMAIL_CHANGE_NEW_EMAIL_TAKEN)
+POST http://localhost:8080/api/v1/auth/email-change/confirm
+Content-Type: application/json
+
+{
+  "token": "token-where-target-email-is-now-taken"
+}
