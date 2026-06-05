@@ -1,5 +1,7 @@
 package pl.freeedu.backend.task.dto;
 
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,4 +22,9 @@ public class SpeakTaskRequest {
 
 	@Size(max = 80, message = "Section must be at most 80 characters long")
 	private String section;
+
+	@NotNull(message = "Points is required")
+	@Min(value = 1, message = "Points must be at least 1")
+	@Builder.Default
+	private Integer points = 1;
 }

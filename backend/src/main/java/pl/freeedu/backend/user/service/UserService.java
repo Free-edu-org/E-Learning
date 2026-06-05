@@ -21,6 +21,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.server.ResponseStatusException;
 import pl.freeedu.backend.auth.exception.AuthErrorCode;
 import pl.freeedu.backend.auth.exception.AuthException;
+import pl.freeedu.backend.emailchange.service.EmailChangeService;
 import pl.freeedu.backend.student.service.StudentAchievementService;
 import pl.freeedu.backend.user.exception.UserErrorCode;
 import pl.freeedu.backend.user.exception.UserException;
@@ -45,11 +46,12 @@ public class UserService {
 	private final SecurityService securityService;
 	private final TransactionTemplate transactionTemplate;
 	private final StudentAchievementService studentAchievementService;
+	private final EmailChangeService emailChangeService;
 	private final Path avatarDir;
 
 	public UserService(UserRepository userRepository, UserMapper userMapper, PasswordEncoder passwordEncoder,
 			SecurityService securityService, TransactionTemplate transactionTemplate,
-			StudentAchievementService studentAchievementService,
+			StudentAchievementService studentAchievementService, EmailChangeService emailChangeService,
 			@Value("${application.storage.uploads-dir:uploads}") String uploadsDir) {
 		this.userRepository = userRepository;
 		this.userMapper = userMapper;
@@ -57,6 +59,7 @@ public class UserService {
 		this.securityService = securityService;
 		this.transactionTemplate = transactionTemplate;
 		this.studentAchievementService = studentAchievementService;
+		this.emailChangeService = emailChangeService;
 		String resolvedUploadsDir = (uploadsDir == null || uploadsDir.isBlank()) ? "uploads" : uploadsDir;
 		this.avatarDir = Paths.get(resolvedUploadsDir, "avatars").toAbsolutePath().normalize();
 		log.info("Avatar storage directory initialized at: {}", avatarDir);
@@ -127,7 +130,9 @@ public class UserService {
 				return new UserException(UserErrorCode.USER_NOT_FOUND);
 			});
 
-			if (!user.getEmail().equals(request.getEmail()) && userRepository.existsByEmail(request.getEmail())) {
+			boolean emailChanged = !user.getEmail().equals(request.getEmail());
+
+			if (emailChanged && userRepository.existsByEmail(request.getEmail())) {
 				log.warn("Update failed: New email already taken for user ID: {}", id);
 				throw new UserException(UserErrorCode.EMAIL_ALREADY_TAKEN);
 			}
@@ -138,10 +143,18 @@ public class UserService {
 				throw new UserException(UserErrorCode.USERNAME_ALREADY_TAKEN);
 			}
 
-			userMapper.updateUserFromRequest(request, user);
-			User updatedUser = userRepository.save(user);
-			log.info("User profile updated successfully for user ID: {}", id);
-			return updatedUser;
+			if (emailChanged) {
+				user.setUsername(request.getUsername());
+				userRepository.save(user);
+				emailChangeService.initiateEmailChange(user, request.getEmail());
+				log.info("Email change initiated for user ID: {}. Username updated immediately.", id);
+			} else {
+				userMapper.updateUserFromRequest(request, user);
+				userRepository.save(user);
+				log.info("User profile updated successfully for user ID: {}", id);
+			}
+
+			return userRepository.findById(id).orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 		}).subscribeOn(Schedulers.boundedElastic()).map(userMapper::toUserResponse));
 	}
 

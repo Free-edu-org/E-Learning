@@ -219,13 +219,13 @@ describe('Multiple Correct Answers (EL-152)', () => {
             expect(res.data.code).toBe('INVALID_TASK_ANSWERS');
         });
 
-        it('speak task creates with single expectedTexts list', async () => {
+        it('speak task creates with single expectedText', async () => {
             setAuthToken(teacherToken);
             const res = await apiClient.post(`/lessons/${lessonPublicId}/tasks/speak`, {
-                expectedTexts: ['Good morning']
+                expectedText: 'Good morning'
             });
             expect(res.status).toBe(201);
-            expect(res.data.expectedTexts).toEqual(['Good morning']);
+            expect(res.data.expectedText).toBe('Good morning');
             createdTasks.push({ type: 'speak', publicId: res.data.publicId });
         });
     });
@@ -265,10 +265,10 @@ describe('Multiple Correct Answers (EL-152)', () => {
             expect(res.data.code).toBe('INVALID_TASK_ANSWERS');
         });
 
-        it('returns 400 INVALID_TASK_ANSWERS for speak task with multiple expectedTexts', async () => {
+        it('returns 400 INVALID_TASK_ANSWERS for speak task with empty expectedText', async () => {
             setAuthToken(teacherToken);
             const res = await apiClient.post(`/lessons/${lessonPublicId}/tasks/speak`, {
-                expectedTexts: ['Hello', 'Hi']
+                expectedText: ''
             });
             expect(res.status).toBe(400);
             expect(res.data.code).toBe('INVALID_TASK_ANSWERS');

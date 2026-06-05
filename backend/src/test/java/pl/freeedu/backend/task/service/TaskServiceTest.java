@@ -1033,4 +1033,84 @@ class TaskServiceTest {
 		// then
 		StepVerifier.create(result).expectError(TaskException.class).verify();
 	}
+
+	@Test
+	void shouldRecoverFromDataIntegrityViolationOnConcurrentGetLessonTasks() {
+		// given
+		Integer lessonId = 1;
+		CustomUserDetails student = new CustomUserDetails(10, "student", "pass", Role.STUDENT);
+		Lesson lesson = Lesson.builder().id(lessonId).publicId("lesson-1").isActive(true).build();
+		UserLesson concurrentUserLesson = UserLesson.builder().id(88).userId(10).lessonId(lessonId)
+				.status(UserLessonStatus.IN_PROGRESS).score(0).maxScore(0).build();
+
+		when(securityService.getCurrentUser()).thenReturn(Mono.just(student));
+		when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
+		when(userInGroupRepository.hasAccessToLesson(student.getId(), lessonId)).thenReturn(true);
+
+		// First search returns empty, so we attempt to save
+		when(userLessonRepository.findByUserIdAndLessonId(student.getId(), lessonId)).thenReturn(Optional.empty()) // first
+																													// check
+				.thenReturn(Optional.of(concurrentUserLesson)); // fallback check after exception
+
+		// Save throws DataIntegrityViolationException due to concurrent insert
+		when(userLessonRepository.save(any()))
+				.thenThrow(new org.springframework.dao.DataIntegrityViolationException("duplicate"));
+
+		ChooseTask chooseTask = ChooseTask.builder().id(1).lessonId(lessonId).correctAnswers("[1]").build();
+		when(chooseTaskRepository.findByLessonId(lessonId)).thenReturn(List.of(chooseTask));
+		when(writeTaskRepository.findByLessonId(lessonId)).thenReturn(List.of());
+		when(scatterTaskRepository.findByLessonId(lessonId)).thenReturn(List.of());
+		when(speakTaskRepository.findByLessonId(lessonId)).thenReturn(List.of());
+
+		// when
+		Mono<LessonTasksResponse> result = taskService.getLessonTasks(lessonId);
+
+		// then
+		StepVerifier.create(result).assertNext(resp -> {
+			assertEquals("lesson-1", resp.getLessonPublicId());
+			assertEquals("IN_PROGRESS", resp.getStatus());
+		}).verifyComplete();
+	}
+
+	@Test
+	void shouldReconcileStudentPointsWhenLessonRecalculated() {
+		// given
+		Integer lessonId = 1;
+		ChooseTaskRequest request = ChooseTaskRequest.builder().task("T").possibleAnswers("A|B")
+				.correctAnswers(List.of(1)).points(5).build();
+		Lesson lesson = Lesson.builder().id(lessonId).publicId("lesson-1").build();
+
+		when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
+		when(chooseTaskRepository.save(any())).thenAnswer(inv -> {
+			ChooseTask t = inv.getArgument(0);
+			t.setId(101);
+			t.setPublicId("task-1");
+			return t;
+		});
+
+		// Mock the recalculate components
+		ChooseTask existingTask = ChooseTask.builder().id(101).lessonId(lessonId).points(5).correctAnswers("[1]")
+				.build();
+		when(chooseTaskRepository.findByLessonId(lessonId)).thenReturn(List.of(existingTask));
+
+		UserLesson studentProgress = UserLesson.builder().id(999).userId(200).lessonId(lessonId)
+				.status(UserLessonStatus.COMPLETED).score(1).maxScore(1).build();
+		when(userLessonRepository.findByLessonId(lessonId)).thenReturn(List.of(studentProgress));
+
+		UserAnswer answer = UserAnswer.builder().taskId(101).taskType("choose_tasks").userId(200).lessonId(lessonId)
+				.isCorrect(true).build();
+		when(userAnswerRepository.findByUserIdAndLessonId(200, lessonId)).thenReturn(List.of(answer));
+
+		// when
+		Mono<ChooseTaskResponse> result = taskService.createChooseTask(lessonId, Mono.just(request));
+
+		// then
+		StepVerifier.create(result).assertNext(resp -> {
+			assertEquals("task-1", resp.getPublicId());
+			// Verify the user lesson scores were updated with new points (5 instead of 1)
+			verify(userLessonRepository).save(argThat(ul -> ul.getScore() == 5 && ul.getMaxScore() == 5));
+			// Verify reconcilePointsForLessonResult was called to sync XP
+			verify(pointsService).reconcilePointsForLessonResult(999, 200, 5, 200);
+		}).verifyComplete();
+	}
 }

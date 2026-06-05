@@ -22,5 +22,6 @@ public class ScatterTaskResponse {
 	private String hint;
 	private String hintImageUrl;
 	private String section;
+	private Integer points;
 	private LocalDateTime createdAt;
 }

@@ -21,6 +21,7 @@ import { RegisterWithInvitation } from "./features/auth/RegisterWithInvitation";
 import { ResetPassword } from "./features/auth/ResetPassword";
 import { AccountActivationPage } from "./features/auth/AccountActivationPage";
 import { EmailVerificationPage } from "./features/auth/EmailVerificationPage";
+import { EmailChangePage } from "./features/auth/EmailChangePage";
 import { TeacherDashboard } from "./features/teacher/TeacherDashboard";
 import { TeacherLessonCreateView } from "./features/teacher/TeacherLessonCreateView";
 import { TeacherLessonEditView } from "./features/teacher/TeacherLessonEditView";
@@ -102,6 +103,10 @@ function App() {
                 <Route
                   path="/verify-email"
                   element={<EmailVerificationPage />}
+                />
+                <Route
+                  path="/verify-email-change"
+                  element={<EmailChangePage />}
                 />
 
                 <Route element={<ProtectedRoute />}>

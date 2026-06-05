@@ -62,6 +62,7 @@ export interface LessonStatsStudentResult {
   maxScore: number;
   resultPercent: number;
   totalTabSwitchCount: number;
+  durationSeconds?: number | null;
 }
 
 export interface LessonStatsResponse {

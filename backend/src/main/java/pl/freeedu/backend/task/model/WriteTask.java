@@ -40,6 +40,10 @@ public class WriteTask {
 	@Column(name = "hint_image_file_name")
 	private String hintImageFileName;
 
+	@Column(nullable = false)
+	@Builder.Default
+	private Integer points = 1;
+
 	@Column(name = "created_at", insertable = false, updatable = false)
 	private LocalDateTime createdAt;
 

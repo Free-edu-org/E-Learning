@@ -81,6 +81,17 @@ function formatDate(value: string | null): string {
   return `${date} ${time}`;
 }
 
+function formatDuration(seconds: number | null | undefined): string {
+  if (seconds == null || seconds < 0) return "-";
+  if (seconds === 0) return "0s";
+  const m = Math.floor(seconds / 60);
+  const s = Math.round(seconds % 60);
+  if (m === 0) {
+    return `${s}s`;
+  }
+  return `${m}m ${s}s`;
+}
+
 function buildDistributionData(results: LessonStatsStudentResult[]) {
   const buckets = [
     { range: "0-20%", min: 0, max: 20, count: 0 },
@@ -424,6 +435,18 @@ export function LessonStatsView() {
         averagePercent:
           students.reduce((sum, student) => sum + student.resultPercent, 0) /
           students.length,
+        averageDuration: (() => {
+          const completedWithDuration = students.filter(
+            (s) => s.durationSeconds != null && s.durationSeconds > 0,
+          );
+          if (completedWithDuration.length === 0) return null;
+          return (
+            completedWithDuration.reduce(
+              (sum, s) => sum + (s.durationSeconds || 0),
+              0,
+            ) / completedWithDuration.length
+          );
+        })(),
         students,
       }))
       .sort((left, right) =>
@@ -644,14 +667,14 @@ export function LessonStatsView() {
                   }}
                 >
                   <Typography variant="subtitle1" fontWeight={700} mb={1.25}>
-                    Wyniki uczniów
+                    {showGroupChart ? "Wyniki grup" : "Wyniki uczniów"}
                   </Typography>
                   <ResponsiveContainer width="100%" height={220}>
                     <BarChart
                       data={
                         showGroupChart ? groupChartData : activeStudentChartData
                       }
-                      margin={{ bottom: 40 }}
+                      margin={{ top: 15, bottom: 40 }}
                     >
                       <defs>
                         <linearGradient
@@ -681,6 +704,9 @@ export function LessonStatsView() {
                       <XAxis
                         dataKey="name"
                         tick={{ fontSize: 11, fill: chartLabelColor }}
+                        tickFormatter={(value) =>
+                          value.length > 15 ? `${value.slice(0, 15)}...` : value
+                        }
                         angle={-35}
                         textAnchor="end"
                         interval={0}
@@ -691,6 +717,8 @@ export function LessonStatsView() {
                       />
                       <YAxis
                         domain={[0, 100]}
+                        ticks={[0, 25, 50, 75, 100]}
+                        interval={0}
                         tick={{ fontSize: 11, fill: chartAxisColor }}
                         tickLine={false}
                         axisLine={false}
@@ -737,7 +765,10 @@ export function LessonStatsView() {
                     Rozkład wyników
                   </Typography>
                   <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={distributionData} margin={{ bottom: 10 }}>
+                    <BarChart
+                      data={distributionData}
+                      margin={{ top: 15, bottom: 10 }}
+                    >
                       <defs>
                         <linearGradient
                           id="lessonStatsDistributionBars"
@@ -1088,6 +1119,8 @@ export function LessonStatsView() {
                             >
                               Średni wynik:{" "}
                               {formatPercent(group.averagePercent)}
+                              {" • Średni czas: " +
+                                formatDuration(group.averageDuration)}
                             </Typography>
                           </Box>
                           <IconButton
@@ -1301,6 +1334,20 @@ export function LessonStatsView() {
                                           }}
                                         >
                                           {student.score}/{student.maxScore} pkt
+                                        </Typography>
+                                        <Typography
+                                          variant="body2"
+                                          color="text.secondary"
+                                          sx={{
+                                            minWidth: 80,
+                                            textAlign: "right",
+                                            whiteSpace: "nowrap",
+                                          }}
+                                        >
+                                          Czas:{" "}
+                                          {formatDuration(
+                                            student.durationSeconds,
+                                          )}
                                         </Typography>
                                       </Box>
                                       <Box

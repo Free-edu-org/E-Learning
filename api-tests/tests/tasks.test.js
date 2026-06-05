@@ -322,14 +322,16 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
         it('should create a speak task (201)', async () => {
             setAuthToken(teacherToken);
             const response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/speak`, {
-                expectedTexts: ['Hello'],
-                hint: 'Greeting'
+                expectedText: 'Hello',
+                hint: 'Greeting',
+                points: 3
             });
             expect(response.status).toBe(201);
             expect(response.data.lessonPublicId).toBe(lessonPublicId);
             expect(response.data).not.toHaveProperty('lessonId');
             expect(response.data).not.toHaveProperty('task');
-            expect(response.data.expectedTexts).toEqual(['Hello']);
+            expect(response.data.expectedText).toBe('Hello');
+            expect(response.data.points).toBe(3);
             speakTaskPublicId = response.data.publicId;
             createdTasks.push({ type: 'speak', publicId: response.data.publicId });
         });
@@ -337,30 +339,32 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
         it('should update a speak task (200)', async () => {
             setAuthToken(teacherToken);
             const response = await apiClient.put(`/lessons/${lessonPublicId}/tasks/speak/${speakTaskPublicId}`, {
-                expectedTexts: ['Goodbye'],
-                hint: 'Farewell'
+                expectedText: 'Goodbye',
+                hint: 'Farewell',
+                points: 5
             });
             expect(response.status).toBe(200);
-            expect(response.data.expectedTexts).toEqual(['Goodbye']);
-        });
-
-        it('should return 400 INVALID_TASK_ANSWERS for multiple speak texts', async () => {
-            setAuthToken(teacherToken);
-            const response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/speak`, {
-                expectedTexts: ['Hello', 'Hi']
-            });
-
-            expect(response.status).toBe(400);
-            expect(response.data.code).toBe('INVALID_TASK_ANSWERS');
+            expect(response.data.expectedText).toBe('Goodbye');
+            expect(response.data.points).toBe(5);
         });
 
         it('should return 400 INVALID_TASK_ANSWERS for empty speak task', async () => {
             setAuthToken(teacherToken);
             const response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/speak`, {
-                expectedTexts: ['']
+                expectedText: ''
             });
             expect(response.status).toBe(400);
             expect(response.data.code).toBe('INVALID_TASK_ANSWERS');
+        });
+
+        it('should return 400 VALIDATION_FAILED for invalid points value (points < 1)', async () => {
+            setAuthToken(teacherToken);
+            const response = await apiClient.post(`/lessons/${lessonPublicId}/tasks/speak`, {
+                expectedText: 'Hello',
+                points: 0
+            });
+            expect(response.status).toBe(400);
+            expect(response.data.code).toBe('VALIDATION_FAILED');
         });
     });
 
