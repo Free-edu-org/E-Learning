@@ -53,6 +53,10 @@ export interface ResendEmailVerificationRequest {
   email: string;
 }
 
+export interface ConfirmEmailChangeRequest {
+  token: string;
+}
+
 export const authService = {
   login: (data: LoginRequest) => {
     return fetchApi<LoginResponse>("/api/v1/auth/login", {
@@ -90,6 +94,11 @@ export const authService = {
     }),
   resendEmailVerification: (data: ResendEmailVerificationRequest) =>
     fetchApi<MessageResponse>("/api/v1/auth/email-verification/resend", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  confirmEmailChange: (data: ConfirmEmailChangeRequest) =>
+    fetchApi<void>("/api/v1/auth/email-change/confirm", {
       method: "POST",
       body: JSON.stringify(data),
     }),
