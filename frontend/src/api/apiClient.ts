@@ -20,6 +20,8 @@ export class ApiError extends Error {
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
+const RETRYABLE_STATUSES = new Set([502, 503, 504]);
+const RETRY_DELAYS_MS = [350, 900];
 
 function getFallbackProblemDetail(response: Response): ProblemDetail {
   return {
@@ -27,21 +29,6 @@ function getFallbackProblemDetail(response: Response): ProblemDetail {
     title: response.statusText,
     detail: "Wystąpił nieoczekiwany błąd. Spróbuj ponownie później.",
   };
-}
-
-function shouldDispatchMaintenanceError(
-  response: Response,
-  problem: ProblemDetail,
-): boolean {
-  if ([502, 503, 504].includes(response.status)) {
-    return true;
-  }
-
-  const problemCode = problem.code?.toUpperCase();
-  return (
-    problemCode === "SERVICE_UNAVAILABLE" ||
-    problemCode === "SYSTEM_UNAVAILABLE"
-  );
 }
 
 async function getProblemDetail(response: Response): Promise<ProblemDetail> {
@@ -58,14 +45,55 @@ function handleAuthExpiry(response: Response, problem: ProblemDetail) {
   }
 }
 
-function dispatchGlobalHttpError(response: Response, problem: ProblemDetail) {
-  if (shouldDispatchMaintenanceError(response, problem)) {
-    dispatchApiError({ type: "maintenance" });
-  } else if (response.status === 403) {
+function dispatchGlobalHttpError(response: Response) {
+  if (response.status === 403) {
     dispatchApiError({ type: "denied" });
   } else if (response.status === 404) {
     dispatchApiError({ type: "404" });
   }
+}
+
+function getRequestMethod(options: RequestInit): string {
+  return (options.method ?? "GET").toUpperCase();
+}
+
+function canRetryRequest(options: RequestInit): boolean {
+  return ["GET", "HEAD"].includes(getRequestMethod(options));
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+): Promise<Response> {
+  const shouldRetry = canRetryRequest(options);
+  let lastNetworkError = false;
+
+  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt += 1) {
+    try {
+      const response = await fetch(url, options);
+      if (
+        !shouldRetry ||
+        !RETRYABLE_STATUSES.has(response.status) ||
+        attempt === RETRY_DELAYS_MS.length
+      ) {
+        return response;
+      }
+      lastNetworkError = false;
+    } catch {
+      if (!shouldRetry || attempt === RETRY_DELAYS_MS.length) {
+        throw new Error("NETWORK_ERROR");
+      }
+      lastNetworkError = true;
+    }
+
+    await sleep(RETRY_DELAYS_MS[attempt]);
+  }
+
+  throw new Error(lastNetworkError ? "NETWORK_ERROR" : "UNREACHABLE_RETRY");
 }
 
 function buildHeaders(options: RequestInit, includeJsonContentType = true) {
@@ -91,18 +119,12 @@ export async function fetchApi<T>(
   const url = `${API_BASE_URL}${endpoint}`;
   const headers = buildHeaders(options);
 
-  let response: Response;
-  try {
-    response = await fetch(url, { ...options, headers });
-  } catch {
-    dispatchApiError({ type: "maintenance" });
-    throw new Error("NETWORK_ERROR");
-  }
+  const response = await fetchWithRetry(url, { ...options, headers });
 
   if (!response.ok) {
     const problem = await getProblemDetail(response);
     handleAuthExpiry(response, problem);
-    dispatchGlobalHttpError(response, problem);
+    dispatchGlobalHttpError(response);
     throw new ApiError(problem);
   }
 
@@ -125,12 +147,7 @@ export async function fetchApiBlob(
   const url = `${API_BASE_URL}${endpoint}`;
   const headers = buildHeaders(options, false);
 
-  let response: Response;
-  try {
-    response = await fetch(url, { ...options, headers });
-  } catch {
-    throw new Error("NETWORK_ERROR");
-  }
+  const response = await fetchWithRetry(url, { ...options, headers });
 
   if (!response.ok) {
     const problem = await getProblemDetail(response);
@@ -148,18 +165,12 @@ export async function fetchApiText(
   const url = `${API_BASE_URL}${endpoint}`;
   const headers = buildHeaders(options, false);
 
-  let response: Response;
-  try {
-    response = await fetch(url, { ...options, headers });
-  } catch {
-    dispatchApiError({ type: "maintenance" });
-    throw new Error("NETWORK_ERROR");
-  }
+  const response = await fetchWithRetry(url, { ...options, headers });
 
   if (!response.ok) {
     const problem = await getProblemDetail(response);
     handleAuthExpiry(response, problem);
-    dispatchGlobalHttpError(response, problem);
+    dispatchGlobalHttpError(response);
     throw new ApiError(problem);
   }
 
