@@ -578,9 +578,7 @@ export function TaskEditor({
                         onChangeById={handleUpdateTaskById}
                         onDeleteById={handleDeleteTaskById}
                         existingSections={existingSections}
-                        defaultExpanded={
-                          defaultExpanded || task.id === newTaskId
-                        }
+                        defaultExpanded={defaultExpanded}
                         lessonPublicId={lessonPublicId}
                         teacherLessons={teacherLessons}
                         assignmentStateByTaskId={assignmentStateByTaskId}

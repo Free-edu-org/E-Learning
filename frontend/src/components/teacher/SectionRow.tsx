@@ -381,7 +381,7 @@ export function SectionRow({
                 onChangeById={onChangeById}
                 onDeleteById={onDeleteById}
                 existingSections={existingSections}
-                defaultExpanded={defaultExpanded}
+                defaultExpanded={defaultExpanded || task.id === autoFocusTaskId}
                 lessonPublicId={lessonPublicId}
                 teacherLessons={teacherLessons}
                 assignmentState={assignmentStateByTaskId?.[task.id]}
