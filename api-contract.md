@@ -1932,7 +1932,8 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
   "possibleAnswers": "option1|option2|option3",
   "correctAnswers": [1, 2],
   "hint": "Think about grammar",
-  "section": "Vocabulary"
+  "section": "Vocabulary",
+  "points": 1
 }
 ```
 
@@ -1946,7 +1947,7 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 
 **Known Errors:**
 - `LESSON_NOT_FOUND` (404 Not Found)
-- `VALIDATION_FAILED` (400 Bad Request): Missing required fields (`task`, `possibleAnswers`)
+- `VALIDATION_FAILED` (400 Bad Request): Missing required fields (`task`, `possibleAnswers`, `points`) or invalid `points < 1`
 - `INVALID_TASK_ANSWERS` (400 Bad Request): Missing, duplicate or out-of-range `correctAnswers`
 - `UNAUTHORIZED` (401), `FORBIDDEN` (403)
 
@@ -1990,7 +1991,8 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
   "correctAnswer": "went",
   "correctAnswers": ["went", "has gone"],
   "hint": "Irregular verb",
-  "section": "Grammar"
+  "section": "Grammar",
+  "points": 1
 }
 ```
 
@@ -2044,7 +2046,8 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
   "correctAnswer": "the cat is big",
   "correctAnswers": ["the cat is big", "the big cat is"],
   "hint": "Subject verb adjective",
-  "section": "Grammar"
+  "section": "Grammar",
+  "points": 1
 }
 ```
 
@@ -2095,7 +2098,8 @@ Task management endpoints nested under lessons. All task CRUD requires `ADMIN` o
 {
   "expectedText": "Hello, how are you?",
   "hint": "Focus on pronunciation",
-  "section": "Speaking"
+  "section": "Speaking",
+  "points": 1
 }
 ```
 
@@ -2282,7 +2286,13 @@ Teacher-only endpoints for storing and reusing a personal catalog of tasks. The 
   - `/api/v1/teacher/task-bank/tasks/speak/{taskPublicId}`
 - **Method**: `PUT`
 - **Auth**: `TEACHER`
-- **Description**: Updates an unassigned task owned by the current teacher. Request payloads are the same as for lesson task update.
+- **Description**: Updates a task owned by the current teacher. Request payloads are the same as for lesson task update.
+- **History Protection**: If task was already used in student results (`user_answers`), update is blocked.
+- **Errors**:
+  - `TASK_NOT_FOUND` (404 Not Found): Task does not belong to current teacher or does not exist.
+  - `TASK_EDIT_LOCKED_AFTER_USE` (409 Conflict): Task is already used in student results and cannot be modified.
+  - `VALIDATION_FAILED` (400 Bad Request)
+  - `UNAUTHORIZED` (401), `FORBIDDEN` (403)
 
 ### 8A.4. Delete Task From Teacher Task Bank
 - **URLs**:
@@ -2292,7 +2302,12 @@ Teacher-only endpoints for storing and reusing a personal catalog of tasks. The 
   - `/api/v1/teacher/task-bank/tasks/speak/{taskPublicId}`
 - **Method**: `DELETE`
 - **Auth**: `TEACHER`
-- **Description**: Deletes an unassigned task owned by the current teacher.
+- **Description**: Deletes a task owned by the current teacher.
+- **History Protection**: If task was already used in student results (`user_answers`), delete is blocked.
+- **Errors**:
+  - `TASK_NOT_FOUND` (404 Not Found): Task does not belong to current teacher or does not exist.
+  - `TASK_EDIT_LOCKED_AFTER_USE` (409 Conflict): Task is already used in student results and cannot be deleted.
+  - `UNAUTHORIZED` (401), `FORBIDDEN` (403)
 
 ### 8A.5. Assign Teacher Task Bank Task To Lesson
 - **URL**: `/api/v1/teacher/task-bank/tasks/{taskType}/{taskPublicId}/assign`
