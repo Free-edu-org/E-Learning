@@ -159,10 +159,9 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
                 ? "#64748b"
                 : "#a7b0c0",
           },
-          divider:
-            highContrast
-              ? "rgba(255, 255, 255, 0.58)"
-              : mode === "light"
+          divider: highContrast
+            ? "rgba(255, 255, 255, 0.58)"
+            : mode === "light"
               ? "rgba(15, 23, 42, 0.08)"
               : "rgba(139, 92, 246, 0.12)",
         },
@@ -194,10 +193,9 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
                     ? "#f5f7fb"
                     : "#0b0d12",
                 scrollbarWidth: "thin",
-                scrollbarColor:
-                  highContrast
-                    ? "#facc15 #000000"
-                    : mode === "light"
+                scrollbarColor: highContrast
+                  ? "#facc15 #000000"
+                  : mode === "light"
                     ? "rgba(15,23,42,0.15) transparent"
                     : "rgba(255,255,255,0.1) transparent",
               },
@@ -274,19 +272,17 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
                   color: highContrast ? "#ffffff" : undefined,
                   transition: "box-shadow 0.2s ease, border-color 0.2s ease",
                   "& fieldset": {
-                    borderColor:
-                      highContrast
-                        ? "#facc15"
-                        : mode === "light"
+                    borderColor: highContrast
+                      ? "#facc15"
+                      : mode === "light"
                         ? "rgba(15, 23, 42, 0.14)"
                         : "rgba(139, 92, 246, 0.18)",
                     transition: "border-color 0.2s ease",
                   },
                   "&:hover fieldset": {
-                    borderColor:
-                      highContrast
-                        ? "#fde047"
-                        : mode === "light"
+                    borderColor: highContrast
+                      ? "#fde047"
+                      : mode === "light"
                         ? "rgba(15, 23, 42, 0.28)"
                         : "rgba(139, 92, 246, 0.35)",
                   },
@@ -295,10 +291,9 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
                     borderWidth: "1.5px",
                   },
                   "&.Mui-focused": {
-                    boxShadow:
-                      highContrast
-                        ? "0 0 0 3px rgba(250, 204, 21, 0.45)"
-                        : mode === "light"
+                    boxShadow: highContrast
+                      ? "0 0 0 3px rgba(250, 204, 21, 0.45)"
+                      : mode === "light"
                         ? "0 0 0 3px rgba(99, 102, 241, 0.12)"
                         : "0 0 0 3px rgba(124, 108, 255, 0.18)",
                   },
@@ -310,10 +305,9 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
                     },
                   },
                   "&.Mui-disabled": {
-                    backgroundColor:
-                      highContrast
-                        ? "#111111"
-                        : mode === "light"
+                    backgroundColor: highContrast
+                      ? "#111111"
+                      : mode === "light"
                         ? "rgba(15, 23, 42, 0.03)"
                         : "rgba(255, 255, 255, 0.02)",
                   },
