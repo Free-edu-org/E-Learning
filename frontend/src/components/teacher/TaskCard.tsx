@@ -1,5 +1,6 @@
 import {
   Autocomplete,
+  Button,
   Box,
   Chip,
   CircularProgress,
@@ -35,6 +36,7 @@ import {
   type ReactNode,
 } from "react";
 import type { DraggableAttributes } from "@dnd-kit/core";
+import type { Lesson } from "@/api/lessonService";
 import type { TaskType } from "@/api/taskService";
 import { taskService } from "@/api/taskService";
 import { fetchApiBlob } from "@/api/apiClient";
@@ -48,6 +50,10 @@ import { TextAnswerBuilder } from "./TextAnswerBuilder";
 export interface LessonTaskDraft {
   id: string;
   type: TaskType;
+  sourceLessonPublicId?: string | null;
+  bankSourceTaskPublicId?: string | null;
+  bankSourceType?: TaskType | null;
+  bankSourceSnapshot?: string | null;
   task?: string;
   possibleAnswers: string;
   correctAnswer: string;
@@ -57,6 +63,11 @@ export interface LessonTaskDraft {
   section: string;
   hintImageUrl: string | null;
   points: number;
+}
+
+export interface TaskAssignmentState {
+  lessons: Lesson[];
+  assigning: boolean;
 }
 
 // Defined at module level — not recreated on re-render
@@ -117,6 +128,8 @@ function TaskCardHeader({
   };
 }) {
   const meta = taskTypeMeta[task.type];
+  const isAvailableBankTask =
+    !task.sourceLessonPublicId && String(task.id).startsWith("backendTask:");
 
   return (
     <Box
@@ -194,6 +207,20 @@ function TaskCardHeader({
           bgcolor: (theme) => alpha(theme.palette.text.secondary, 0.02),
         }}
       />
+      {isAvailableBankTask && (
+        <Chip
+          label="Bez lekcji"
+          size="small"
+          color="success"
+          variant="outlined"
+          sx={{
+            fontWeight: 700,
+            height: 24,
+            ml: 1,
+            borderRadius: uiTokens.radius.control,
+          }}
+        />
+      )}
       <Typography
         variant="body2"
         fontWeight={600}
@@ -280,11 +307,19 @@ const TaskCardFields = memo(function TaskCardFields({
   onChangeById,
   existingSections,
   lessonPublicId,
+  teacherLessons,
+  assignmentState,
+  onAssignmentChange,
+  onAssignToLessons,
 }: {
   task: LessonTaskDraft;
   onChangeById: (id: string, updated: LessonTaskDraft) => void;
   existingSections: string[];
   lessonPublicId?: string;
+  teacherLessons?: Lesson[];
+  assignmentState?: TaskAssignmentState;
+  onAssignmentChange?: (taskId: string, lessons: Lesson[]) => void;
+  onAssignToLessons?: (task: LessonTaskDraft) => void;
 }) {
   const updateField = useCallback(
     <K extends keyof LessonTaskDraft>(field: K, value: LessonTaskDraft[K]) => {
@@ -344,6 +379,10 @@ const TaskCardFields = memo(function TaskCardFields({
     return m ? { type: m[1], taskPublicId: m[2] } : null;
   })();
   const isBackendTask = parsedId !== null;
+  const isBankTask = isBackendTask && !lessonPublicId;
+  const isUnassignedBankTask = isBankTask && !task.sourceLessonPublicId;
+  const selectedLessons = assignmentState?.lessons ?? [];
+  const isAssigning = assignmentState?.assigning ?? false;
 
   const handleImageUpload = useCallback(
     async (file: File) => {
@@ -509,13 +548,26 @@ const TaskCardFields = memo(function TaskCardFields({
         )}
 
         {task.type === "speak" && (
-          <TextAnswerBuilder
-            label="Tekst do rozpoznania"
-            answers={task.correctAnswers || task.correctAnswer}
-            placeholder="Wpisz tekst..."
-            emptyMessage="Dodaj tekst do rozpoznania."
-            maxAnswers={1}
-            onChange={handleTextAnswersChange}
+          <TextField
+            label="Tekst do wypowiedzenia"
+            value={task.correctAnswer}
+            onChange={(e) => {
+              const value = e.target.value.slice(
+                0,
+                INPUT_LIMITS.taskAnswerText,
+              );
+              onChangeById(task.id, {
+                ...task,
+                correctAnswer: value,
+                correctAnswers: value,
+              });
+            }}
+            inputProps={{ maxLength: INPUT_LIMITS.taskAnswerText }}
+            helperText={`${task.correctAnswer.length}/${INPUT_LIMITS.taskAnswerText}`}
+            multiline
+            minRows={2}
+            fullWidth
+            placeholder="Wpisz tekst, który uczeń ma wypowiedzieć..."
           />
         )}
 
@@ -593,6 +645,78 @@ const TaskCardFields = memo(function TaskCardFields({
             helperText="Waga zadania"
           />
         </Box>
+
+        {isBankTask &&
+          teacherLessons &&
+          onAssignmentChange &&
+          onAssignToLessons && (
+            <Box
+              sx={{
+                p: 1.5,
+                borderRadius: 1.5,
+                border: "1px solid",
+                borderColor: (theme) => alpha(theme.palette.divider, 0.3),
+                bgcolor: (theme) =>
+                  alpha(
+                    theme.palette.primary.main,
+                    theme.palette.mode === "dark" ? 0.05 : 0.025,
+                  ),
+              }}
+            >
+              <Stack spacing={1.25}>
+                <Typography variant="subtitle2" fontWeight={700}>
+                  {isUnassignedBankTask
+                    ? "Przypisz do lekcji"
+                    : "Skopiuj do lekcji"}
+                </Typography>
+                <Autocomplete
+                  size="small"
+                  options={teacherLessons}
+                  value={selectedLessons[0] ?? null}
+                  onChange={(_, value) =>
+                    onAssignmentChange(task.id, value ? [value] : [])
+                  }
+                  getOptionLabel={(option) => option.title}
+                  isOptionEqualToValue={(option, value) =>
+                    option.publicId === value.publicId
+                  }
+                  noOptionsText="Brak lekcji"
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 1.5,
+                    },
+                  }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Lekcja docelowa"
+                      placeholder="Wybierz lekcję"
+                    />
+                  )}
+                />
+                <Button
+                  variant="outlined"
+                  disabled={selectedLessons.length === 0 || isAssigning}
+                  onClick={() => onAssignToLessons(task)}
+                  sx={{
+                    alignSelf: "flex-start",
+                    borderRadius: 1.5,
+                    textTransform: "none",
+                    fontWeight: 600,
+                    px: 1.5,
+                  }}
+                >
+                  {isAssigning
+                    ? isUnassignedBankTask
+                      ? "Przypisywanie..."
+                      : "Kopiowanie..."
+                    : isUnassignedBankTask
+                      ? "Przypisz do lekcji"
+                      : "Skopiuj do lekcji"}
+                </Button>
+              </Stack>
+            </Box>
+          )}
 
         {/* ── Hint image ─────────────────────────────────────────────────────── */}
         <Box>
@@ -782,6 +906,11 @@ interface TaskCardProps {
   existingSections: string[];
   defaultExpanded?: boolean;
   lessonPublicId?: string;
+  teacherLessons?: Lesson[];
+  assignmentState?: TaskAssignmentState;
+  onAssignmentChange?: (taskId: string, lessons: Lesson[]) => void;
+  onAssignToLessons?: (task: LessonTaskDraft) => void;
+  autoFocusTaskId?: string | null;
 }
 
 export function TaskCard({
@@ -792,9 +921,15 @@ export function TaskCard({
   existingSections,
   defaultExpanded = false,
   lessonPublicId,
+  teacherLessons,
+  assignmentState,
+  onAssignmentChange,
+  onAssignToLessons,
+  autoFocusTaskId,
 }: TaskCardProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const meta = taskTypeMeta[task.type];
+  const cardRef = useRef<HTMLDivElement | null>(null);
 
   const {
     attributes,
@@ -824,6 +959,21 @@ export function TaskCard({
 
   const handleToggle = useCallback(() => setExpanded((prev) => !prev), []);
 
+  useEffect(() => {
+    if (autoFocusTaskId !== task.id) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      cardRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 120);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [autoFocusTaskId, task.id]);
+
   if (isDragging) {
     return (
       <Box
@@ -843,7 +993,10 @@ export function TaskCard({
 
   return (
     <Box
-      ref={setNodeRef}
+      ref={(node: HTMLDivElement | null) => {
+        setNodeRef(node);
+        cardRef.current = node;
+      }}
       style={style}
       sx={{
         borderRadius: uiTokens.radius.card,
@@ -886,6 +1039,10 @@ export function TaskCard({
           onChangeById={onChangeById}
           existingSections={existingSections}
           lessonPublicId={lessonPublicId}
+          teacherLessons={teacherLessons}
+          assignmentState={assignmentState}
+          onAssignmentChange={onAssignmentChange}
+          onAssignToLessons={onAssignToLessons}
         />
       </Collapse>
     </Box>

@@ -2253,6 +2253,68 @@ Notes:
 - `STUDENT_NO_ACCESS` (403 Forbidden): Student's group does not have access.
 - `TASK_NOT_FOUND` (404 Not Found): Referenced task does not exist or does not belong to the lesson from the path.
 - `INVALID_TASK_TYPE` (400 Bad Request): Unknown task type.
+
+## 8A. Teacher Task Bank (`/api/v1/teacher/task-bank/tasks`)
+
+Teacher-only endpoints for storing and reusing a personal catalog of tasks. The catalog includes both unassigned tasks and tasks already used in lessons.
+
+### 8A.1. Get Teacher Task Bank
+- **URL**: `/api/v1/teacher/task-bank/tasks`
+- **Method**: `GET`
+- **Auth**: `TEACHER`
+- **Description**: Returns all tasks owned by the current teacher grouped by section. Tasks already used in lessons stay visible in the catalog; their item-level `lessonPublicId` points to the source lesson, while unassigned tasks return `lessonPublicId = null`.
+
+### 8A.2. Create Task In Teacher Task Bank
+- **URLs**:
+  - `/api/v1/teacher/task-bank/tasks/choose`
+  - `/api/v1/teacher/task-bank/tasks/write`
+  - `/api/v1/teacher/task-bank/tasks/scatter`
+  - `/api/v1/teacher/task-bank/tasks/speak`
+- **Method**: `POST`
+- **Auth**: `TEACHER`
+- **Description**: Creates an unassigned task in the teacher's personal task bank. Request payloads are the same as for lesson task creation.
+
+### 8A.3. Update Task In Teacher Task Bank
+- **URLs**:
+  - `/api/v1/teacher/task-bank/tasks/choose/{taskPublicId}`
+  - `/api/v1/teacher/task-bank/tasks/write/{taskPublicId}`
+  - `/api/v1/teacher/task-bank/tasks/scatter/{taskPublicId}`
+  - `/api/v1/teacher/task-bank/tasks/speak/{taskPublicId}`
+- **Method**: `PUT`
+- **Auth**: `TEACHER`
+- **Description**: Updates an unassigned task owned by the current teacher. Request payloads are the same as for lesson task update.
+
+### 8A.4. Delete Task From Teacher Task Bank
+- **URLs**:
+  - `/api/v1/teacher/task-bank/tasks/choose/{taskPublicId}`
+  - `/api/v1/teacher/task-bank/tasks/write/{taskPublicId}`
+  - `/api/v1/teacher/task-bank/tasks/scatter/{taskPublicId}`
+  - `/api/v1/teacher/task-bank/tasks/speak/{taskPublicId}`
+- **Method**: `DELETE`
+- **Auth**: `TEACHER`
+- **Description**: Deletes an unassigned task owned by the current teacher.
+
+### 8A.5. Assign Teacher Task Bank Task To Lesson
+- **URL**: `/api/v1/teacher/task-bank/tasks/{taskType}/{taskPublicId}/assign`
+- **Method**: `POST`
+- **Auth**: `TEACHER`
+- **Description**: Copies a saved teacher task to one or many lessons owned by the same teacher. The source task remains visible in the task bank and can be reused again later.
+- **Request body**:
+
+```json
+{
+  "lessonPublicIds": [
+    "44444444-4444-4444-4444-444444444444",
+    "55555555-5555-5555-5555-555555555555"
+  ]
+}
+```
+
+- **Errors**:
+  - `LESSON_NOT_FOUND` (404 Not Found): Selected lesson does not exist.
+  - `TASK_NOT_FOUND` (404 Not Found): Task does not exist, is already assigned, or does not belong to the current teacher.
+  - `INVALID_TASK_TYPE` (400 Bad Request): Unknown task type.
+  - `FORBIDDEN` (403 Forbidden): Teacher does not own the selected lesson.
 - `UNAUTHORIZED` (401), `FORBIDDEN` (403)
 
 ---

@@ -1,4 +1,4 @@
-import { Box, Button, Chip, Stack, Typography } from "@mui/material";
+import { Box, Button, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { AddCircleOutlined as AddIcon } from "@mui/icons-material";
 import {
@@ -26,9 +26,18 @@ import type { TaskType } from "@/api/taskService";
 import { uiTokens } from "@/theme/uiTokens";
 import { TaskCard, TaskCardOverlay } from "./TaskCard";
 import type { LessonTaskDraft } from "./TaskCard";
+import type { Lesson } from "@/api/lessonService";
+import type { TaskAssignmentState } from "./TaskCard";
 import { SectionRow, SectionOverlay } from "./SectionRow";
 import { TaskTypeSelector } from "./TaskTypeSelector";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -99,6 +108,11 @@ interface TaskEditorProps {
   onChange: (tasks: LessonTaskDraft[]) => void;
   defaultExpanded?: boolean;
   lessonPublicId?: string;
+  teacherLessons?: Lesson[];
+  assignmentStateByTaskId?: Record<string, TaskAssignmentState>;
+  onAssignmentChange?: (taskId: string, lessons: Lesson[]) => void;
+  onAssignToLessons?: (task: LessonTaskDraft) => void;
+  headerActions?: ReactNode;
 }
 
 export function TaskEditor({
@@ -106,14 +120,22 @@ export function TaskEditor({
   onChange,
   defaultExpanded = false,
   lessonPublicId,
+  teacherLessons,
+  assignmentStateByTaskId,
+  onAssignmentChange,
+  onAssignToLessons,
+  headerActions,
 }: TaskEditorProps) {
   const [showTypeSelector, setShowTypeSelector] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeType, setActiveType] = useState<ActiveType>(null);
+  const [newTaskId, setNewTaskId] = useState<string | null>(null);
   /** sectionId of the collapsed section a task is currently hovering over */
   const [overSectionId, setOverSectionId] = useState<string | null>(null);
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    () => new Set(groupTasks(tasks).map((g) => g.sectionId)),
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(() =>
+    defaultExpanded
+      ? new Set(groupTasks(tasks).map((g) => g.sectionId))
+      : new Set<string>(),
   );
 
   // Ref keeps handlers free of stale closures — always reads latest tasks.
@@ -430,7 +452,9 @@ export function TaskEditor({
   );
 
   const handleAddTask = (type: TaskType) => {
-    onChange([...tasks, createEmptyTaskDraft(type)]);
+    const newTask = createEmptyTaskDraft(type);
+    onChange([...tasks, newTask]);
+    setNewTaskId(newTask.id);
     setShowTypeSelector(false);
     // New tasks land in the "general" group — expand it so the user can see it
     if (hasSections) {
@@ -466,33 +490,31 @@ export function TaskEditor({
           <Typography variant="body2" color="text.secondary">
             {tasks.length === 0
               ? "Brak dodanych zadań."
-              : `Dodano zadań: ${tasks.length}`}
+              : `Liczba zadań: ${tasks.length}`}
           </Typography>
-          {tasks.length > 0 && (
-            <Chip
-              label={tasks.length}
-              size="small"
-              color="primary"
-              sx={{ fontWeight: 700, minWidth: 28, height: 22 }}
-            />
-          )}
         </Box>
-        <Button
-          size="small"
-          variant="outlined"
-          startIcon={<AddIcon />}
-          onClick={() => setShowTypeSelector((prev) => !prev)}
-          sx={{
-            borderRadius: uiTokens.radius.control,
-            textTransform: "none",
-            fontWeight: 600,
-            borderStyle: "dashed",
-            transition: "all 0.2s ease",
-            "&:hover": { borderStyle: "solid", transform: "translateY(-1px)" },
-          }}
-        >
-          Dodaj zadanie
-        </Button>
+        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+          {headerActions}
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<AddIcon />}
+            onClick={() => setShowTypeSelector((prev) => !prev)}
+            sx={{
+              borderRadius: uiTokens.radius.control,
+              textTransform: "none",
+              fontWeight: 600,
+              borderStyle: "dashed",
+              transition: "all 0.2s ease",
+              "&:hover": {
+                borderStyle: "solid",
+                transform: "translateY(-1px)",
+              },
+            }}
+          >
+            Dodaj zadanie
+          </Button>
+        </Stack>
       </Box>
 
       {/* Type selector */}
@@ -556,8 +578,15 @@ export function TaskEditor({
                         onChangeById={handleUpdateTaskById}
                         onDeleteById={handleDeleteTaskById}
                         existingSections={existingSections}
-                        defaultExpanded={defaultExpanded}
+                        defaultExpanded={
+                          defaultExpanded || task.id === newTaskId
+                        }
                         lessonPublicId={lessonPublicId}
+                        teacherLessons={teacherLessons}
+                        assignmentStateByTaskId={assignmentStateByTaskId}
+                        onAssignmentChange={onAssignmentChange}
+                        onAssignToLessons={onAssignToLessons}
+                        autoFocusTaskId={newTaskId}
                       />
                     );
                   })
@@ -569,8 +598,13 @@ export function TaskEditor({
                       onChangeById={handleUpdateTaskById}
                       onDeleteById={handleDeleteTaskById}
                       existingSections={existingSections}
-                      defaultExpanded={defaultExpanded}
+                      defaultExpanded={defaultExpanded || task.id === newTaskId}
                       lessonPublicId={lessonPublicId}
+                      teacherLessons={teacherLessons}
+                      assignmentState={assignmentStateByTaskId?.[task.id]}
+                      onAssignmentChange={onAssignmentChange}
+                      onAssignToLessons={onAssignToLessons}
+                      autoFocusTaskId={newTaskId}
                     />
                   ))}
             </Stack>

@@ -88,7 +88,7 @@ export function TextAnswerBuilder({
         </Box>
       )}
 
-      <Stack direction="row" spacing={1} alignItems="center">
+      <Stack direction="row" spacing={1} alignItems="flex-start">
         <TextField
           size="small"
           placeholder={placeholder}
@@ -117,6 +117,7 @@ export function TextAnswerBuilder({
                 (maxAnswers != null && answerList.length >= maxAnswers)
               }
               sx={{
+                mt: 0.75,
                 transition: "transform 0.15s ease",
                 "&:hover": { transform: "scale(1.1)" },
               }}

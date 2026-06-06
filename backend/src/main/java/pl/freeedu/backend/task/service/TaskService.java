@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.codec.multipart.FilePart;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.transaction.support.TransactionTemplate;
 import pl.freeedu.backend.achievement.event.StudentStatsChangedEvent;
 import pl.freeedu.backend.lesson.model.Lesson;
@@ -158,18 +159,30 @@ public class TaskService {
 		}).subscribeOn(Schedulers.boundedElastic()));
 	}
 
+	public Mono<LessonTasksResponse> getTeacherTaskBank() {
+		return securityService.getCurrentUserId().flatMap(teacherId -> Mono.fromCallable(() -> {
+			List<ChooseTask> chooseTasks = chooseTaskRepository.findByTeacherId(teacherId);
+			List<WriteTask> writeTasks = writeTaskRepository.findByTeacherId(teacherId);
+			List<ScatterTask> scatterTasks = scatterTaskRepository.findByTeacherId(teacherId);
+			List<SpeakTask> speakTasks = speakTaskRepository.findByTeacherId(teacherId);
+
+			return buildLessonTasksResponse(null, null, chooseTasks, writeTasks, scatterTasks, speakTasks, false);
+		}).subscribeOn(Schedulers.boundedElastic()));
+	}
+
 	// --- Choose Task CRUD ---
 
 	public Mono<ChooseTaskResponse> createChooseTask(Integer lessonId, Mono<ChooseTaskRequest> requestMono) {
 		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
 			log.info("Creating new ChooseTask for lesson ID: {}", lessonId);
-			lessonRepository.findById(lessonId).orElseThrow(() -> {
+			Lesson lesson = lessonRepository.findById(lessonId).orElseThrow(() -> {
 				log.warn("Create ChooseTask failed: Lesson with ID: {} not found", lessonId);
 				return new TaskException(TaskErrorCode.LESSON_NOT_FOUND);
 			});
 			List<Integer> correctAnswers = TaskAnswerUtils.normalizeChooseAnswers(request.getCorrectAnswers(),
 					request.getPossibleAnswers());
 			ChooseTask task = ChooseTask.builder().lessonId(lessonId).task(request.getTask())
+					.teacherId(lesson.getTeacher() != null ? lesson.getTeacher().getId() : null)
 					.possibleAnswers(request.getPossibleAnswers())
 					.correctAnswers(TaskAnswerUtils.serializeIntegerAnswers(correctAnswers)).hint(request.getHint())
 					.section(request.getSection()).points(getPointsOrDefault(request.getPoints())).build();
@@ -178,6 +191,20 @@ public class TaskService {
 			recalculateUserLessonsForLesson(lessonId);
 			return toChooseTaskResponse(saved, false, requireLessonPublicId(lessonId));
 		}).subscribeOn(Schedulers.boundedElastic()));
+	}
+
+	public Mono<ChooseTaskResponse> createBankChooseTask(Mono<ChooseTaskRequest> requestMono) {
+		return securityService.getCurrentUserId()
+				.flatMap(teacherId -> requestMono.flatMap(request -> Mono.fromCallable(() -> {
+					List<Integer> correctAnswers = TaskAnswerUtils.normalizeChooseAnswers(request.getCorrectAnswers(),
+							request.getPossibleAnswers());
+					ChooseTask saved = chooseTaskRepository.save(ChooseTask.builder().lessonId(null)
+							.teacherId(teacherId).task(request.getTask()).possibleAnswers(request.getPossibleAnswers())
+							.correctAnswers(TaskAnswerUtils.serializeIntegerAnswers(correctAnswers))
+							.hint(request.getHint()).section(request.getSection())
+							.points(getPointsOrDefault(request.getPoints())).build());
+					return toChooseTaskResponse(saved, false, null);
+				}).subscribeOn(Schedulers.boundedElastic())));
 	}
 
 	public Mono<ChooseTaskResponse> updateChooseTask(Integer lessonId, String taskPublicId,
@@ -200,6 +227,23 @@ public class TaskService {
 		}).subscribeOn(Schedulers.boundedElastic()));
 	}
 
+	public Mono<ChooseTaskResponse> updateBankChooseTask(String taskPublicId, Mono<ChooseTaskRequest> requestMono) {
+		return securityService.getCurrentUserId()
+				.flatMap(teacherId -> requestMono.flatMap(request -> Mono.fromCallable(() -> {
+					ChooseTask task = getChooseTeacherTask(teacherId, taskPublicId);
+					requireBankTaskEditable(task.getId(), "choose_tasks");
+					List<Integer> correctAnswers = TaskAnswerUtils.normalizeChooseAnswers(request.getCorrectAnswers(),
+							request.getPossibleAnswers());
+					task.setTask(request.getTask());
+					task.setPossibleAnswers(request.getPossibleAnswers());
+					task.setCorrectAnswers(TaskAnswerUtils.serializeIntegerAnswers(correctAnswers));
+					task.setHint(request.getHint());
+					task.setSection(request.getSection());
+					task.setPoints(getPointsOrDefault(request.getPoints()));
+					return toChooseTaskResponse(chooseTaskRepository.save(task), false, null);
+				}).subscribeOn(Schedulers.boundedElastic())));
+	}
+
 	public Mono<Void> deleteChooseTask(Integer lessonId, String taskPublicId) {
 		return Mono.fromCallable(() -> {
 			log.info("Deleting ChooseTask publicId: {} from lesson ID: {}", taskPublicId, lessonId);
@@ -212,19 +256,44 @@ public class TaskService {
 		}).subscribeOn(Schedulers.boundedElastic()).then();
 	}
 
+	public Mono<Void> deleteBankChooseTask(String taskPublicId) {
+		return securityService.getCurrentUserId().flatMap(teacherId -> Mono.fromCallable(() -> {
+			ChooseTask task = getChooseTeacherTask(teacherId, taskPublicId);
+			requireBankTaskEditable(task.getId(), "choose_tasks");
+			taskHintImageService.deleteHintImageFileIfPresent(task.getHintImageFileName());
+			chooseTaskRepository.delete(task);
+			return (Void) null;
+		}).subscribeOn(Schedulers.boundedElastic())).then();
+	}
+
 	// --- Write Task CRUD ---
 
 	public Mono<WriteTaskResponse> createWriteTask(Integer lessonId, Mono<WriteTaskRequest> requestMono) {
 		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
-			lessonRepository.findById(lessonId).orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_FOUND));
+			Lesson lesson = lessonRepository.findById(lessonId)
+					.orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_FOUND));
 			List<String> correctAnswers = TaskAnswerUtils.normalizeTextAnswers(request.getCorrectAnswers());
 			WriteTask task = WriteTask.builder().lessonId(lessonId).task(request.getTask())
+					.teacherId(lesson.getTeacher() != null ? lesson.getTeacher().getId() : null)
 					.correctAnswers(TaskAnswerUtils.serializeStringAnswers(correctAnswers)).hint(request.getHint())
 					.section(request.getSection()).points(getPointsOrDefault(request.getPoints())).build();
 			WriteTask saved = writeTaskRepository.save(task);
 			recalculateUserLessonsForLesson(lessonId);
 			return toWriteTaskResponse(saved, false, requireLessonPublicId(lessonId));
 		}).subscribeOn(Schedulers.boundedElastic()));
+	}
+
+	public Mono<WriteTaskResponse> createBankWriteTask(Mono<WriteTaskRequest> requestMono) {
+		return securityService.getCurrentUserId()
+				.flatMap(teacherId -> requestMono.flatMap(request -> Mono.fromCallable(() -> {
+					List<String> correctAnswers = TaskAnswerUtils.normalizeTextAnswers(request.getCorrectAnswers());
+					WriteTask saved = writeTaskRepository
+							.save(WriteTask.builder().lessonId(null).teacherId(teacherId).task(request.getTask())
+									.correctAnswers(TaskAnswerUtils.serializeStringAnswers(correctAnswers))
+									.hint(request.getHint()).section(request.getSection())
+									.points(getPointsOrDefault(request.getPoints())).build());
+					return toWriteTaskResponse(saved, false, null);
+				}).subscribeOn(Schedulers.boundedElastic())));
 	}
 
 	public Mono<WriteTaskResponse> updateWriteTask(Integer lessonId, String taskPublicId,
@@ -243,6 +312,21 @@ public class TaskService {
 		}).subscribeOn(Schedulers.boundedElastic()));
 	}
 
+	public Mono<WriteTaskResponse> updateBankWriteTask(String taskPublicId, Mono<WriteTaskRequest> requestMono) {
+		return securityService.getCurrentUserId()
+				.flatMap(teacherId -> requestMono.flatMap(request -> Mono.fromCallable(() -> {
+					WriteTask task = getWriteTeacherTask(teacherId, taskPublicId);
+					requireBankTaskEditable(task.getId(), "write_tasks");
+					List<String> correctAnswers = TaskAnswerUtils.normalizeTextAnswers(request.getCorrectAnswers());
+					task.setTask(request.getTask());
+					task.setCorrectAnswers(TaskAnswerUtils.serializeStringAnswers(correctAnswers));
+					task.setHint(request.getHint());
+					task.setSection(request.getSection());
+					task.setPoints(getPointsOrDefault(request.getPoints()));
+					return toWriteTaskResponse(writeTaskRepository.save(task), false, null);
+				}).subscribeOn(Schedulers.boundedElastic())));
+	}
+
 	public Mono<Void> deleteWriteTask(Integer lessonId, String taskPublicId) {
 		return Mono.fromCallable(() -> {
 			WriteTask task = getWriteTaskForLesson(lessonId, taskPublicId);
@@ -253,13 +337,25 @@ public class TaskService {
 		}).subscribeOn(Schedulers.boundedElastic()).then();
 	}
 
+	public Mono<Void> deleteBankWriteTask(String taskPublicId) {
+		return securityService.getCurrentUserId().flatMap(teacherId -> Mono.fromCallable(() -> {
+			WriteTask task = getWriteTeacherTask(teacherId, taskPublicId);
+			requireBankTaskEditable(task.getId(), "write_tasks");
+			taskHintImageService.deleteHintImageFileIfPresent(task.getHintImageFileName());
+			writeTaskRepository.delete(task);
+			return (Void) null;
+		}).subscribeOn(Schedulers.boundedElastic())).then();
+	}
+
 	// --- Scatter Task CRUD ---
 
 	public Mono<ScatterTaskResponse> createScatterTask(Integer lessonId, Mono<ScatterTaskRequest> requestMono) {
 		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
-			lessonRepository.findById(lessonId).orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_FOUND));
+			Lesson lesson = lessonRepository.findById(lessonId)
+					.orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_FOUND));
 			List<String> correctAnswers = TaskAnswerUtils.normalizeTextAnswers(request.getCorrectAnswers());
 			ScatterTask task = ScatterTask.builder().lessonId(lessonId).task(request.getTask())
+					.teacherId(lesson.getTeacher() != null ? lesson.getTeacher().getId() : null)
 					.words(request.getWords()).correctAnswers(TaskAnswerUtils.serializeStringAnswers(correctAnswers))
 					.hint(request.getHint()).section(request.getSection())
 					.points(getPointsOrDefault(request.getPoints())).build();
@@ -267,6 +363,19 @@ public class TaskService {
 			recalculateUserLessonsForLesson(lessonId);
 			return toScatterTaskResponse(saved, false, requireLessonPublicId(lessonId));
 		}).subscribeOn(Schedulers.boundedElastic()));
+	}
+
+	public Mono<ScatterTaskResponse> createBankScatterTask(Mono<ScatterTaskRequest> requestMono) {
+		return securityService.getCurrentUserId()
+				.flatMap(teacherId -> requestMono.flatMap(request -> Mono.fromCallable(() -> {
+					List<String> correctAnswers = TaskAnswerUtils.normalizeTextAnswers(request.getCorrectAnswers());
+					ScatterTask saved = scatterTaskRepository.save(ScatterTask.builder().lessonId(null)
+							.teacherId(teacherId).task(request.getTask()).words(request.getWords())
+							.correctAnswers(TaskAnswerUtils.serializeStringAnswers(correctAnswers))
+							.hint(request.getHint()).section(request.getSection())
+							.points(getPointsOrDefault(request.getPoints())).build());
+					return toScatterTaskResponse(saved, false, null);
+				}).subscribeOn(Schedulers.boundedElastic())));
 	}
 
 	public Mono<ScatterTaskResponse> updateScatterTask(Integer lessonId, String taskPublicId,
@@ -286,6 +395,22 @@ public class TaskService {
 		}).subscribeOn(Schedulers.boundedElastic()));
 	}
 
+	public Mono<ScatterTaskResponse> updateBankScatterTask(String taskPublicId, Mono<ScatterTaskRequest> requestMono) {
+		return securityService.getCurrentUserId()
+				.flatMap(teacherId -> requestMono.flatMap(request -> Mono.fromCallable(() -> {
+					ScatterTask task = getScatterTeacherTask(teacherId, taskPublicId);
+					requireBankTaskEditable(task.getId(), "scatter_tasks");
+					List<String> correctAnswers = TaskAnswerUtils.normalizeTextAnswers(request.getCorrectAnswers());
+					task.setTask(request.getTask());
+					task.setWords(request.getWords());
+					task.setCorrectAnswers(TaskAnswerUtils.serializeStringAnswers(correctAnswers));
+					task.setHint(request.getHint());
+					task.setSection(request.getSection());
+					task.setPoints(getPointsOrDefault(request.getPoints()));
+					return toScatterTaskResponse(scatterTaskRepository.save(task), false, null);
+				}).subscribeOn(Schedulers.boundedElastic())));
+	}
+
 	public Mono<Void> deleteScatterTask(Integer lessonId, String taskPublicId) {
 		return Mono.fromCallable(() -> {
 			ScatterTask task = getScatterTaskForLesson(lessonId, taskPublicId);
@@ -296,13 +421,25 @@ public class TaskService {
 		}).subscribeOn(Schedulers.boundedElastic()).then();
 	}
 
+	public Mono<Void> deleteBankScatterTask(String taskPublicId) {
+		return securityService.getCurrentUserId().flatMap(teacherId -> Mono.fromCallable(() -> {
+			ScatterTask task = getScatterTeacherTask(teacherId, taskPublicId);
+			requireBankTaskEditable(task.getId(), "scatter_tasks");
+			taskHintImageService.deleteHintImageFileIfPresent(task.getHintImageFileName());
+			scatterTaskRepository.delete(task);
+			return (Void) null;
+		}).subscribeOn(Schedulers.boundedElastic())).then();
+	}
+
 	// --- Speak Task CRUD ---
 
 	public Mono<SpeakTaskResponse> createSpeakTask(Integer lessonId, Mono<SpeakTaskRequest> requestMono) {
 		return requestMono.flatMap(request -> Mono.fromCallable(() -> {
-			lessonRepository.findById(lessonId).orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_FOUND));
+			Lesson lesson = lessonRepository.findById(lessonId)
+					.orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_FOUND));
 			String expectedText = TaskAnswerUtils.normalizeSingleTextAnswer(request.getExpectedText());
 			SpeakTask task = SpeakTask.builder().lessonId(lessonId)
+					.teacherId(lesson.getTeacher() != null ? lesson.getTeacher().getId() : null)
 					.expectedTexts(TaskAnswerUtils.serializeStringAnswers(List.of(expectedText)))
 					.hint(request.getHint()).section(request.getSection())
 					.points(getPointsOrDefault(request.getPoints())).build();
@@ -310,6 +447,18 @@ public class TaskService {
 			recalculateUserLessonsForLesson(lessonId);
 			return toSpeakTaskResponse(saved, requireLessonPublicId(lessonId));
 		}).subscribeOn(Schedulers.boundedElastic()));
+	}
+
+	public Mono<SpeakTaskResponse> createBankSpeakTask(Mono<SpeakTaskRequest> requestMono) {
+		return securityService.getCurrentUserId()
+				.flatMap(teacherId -> requestMono.flatMap(request -> Mono.fromCallable(() -> {
+					String expectedText = TaskAnswerUtils.normalizeSingleTextAnswer(request.getExpectedText());
+					SpeakTask saved = speakTaskRepository.save(SpeakTask.builder().lessonId(null).teacherId(teacherId)
+							.expectedTexts(TaskAnswerUtils.serializeStringAnswers(List.of(expectedText)))
+							.hint(request.getHint()).section(request.getSection())
+							.points(getPointsOrDefault(request.getPoints())).build());
+					return toSpeakTaskResponse(saved, null);
+				}).subscribeOn(Schedulers.boundedElastic())));
 	}
 
 	public Mono<SpeakTaskResponse> updateSpeakTask(Integer lessonId, String taskPublicId,
@@ -327,6 +476,20 @@ public class TaskService {
 		}).subscribeOn(Schedulers.boundedElastic()));
 	}
 
+	public Mono<SpeakTaskResponse> updateBankSpeakTask(String taskPublicId, Mono<SpeakTaskRequest> requestMono) {
+		return securityService.getCurrentUserId()
+				.flatMap(teacherId -> requestMono.flatMap(request -> Mono.fromCallable(() -> {
+					SpeakTask task = getSpeakTeacherTask(teacherId, taskPublicId);
+					requireBankTaskEditable(task.getId(), "speak_tasks");
+					String expectedText = TaskAnswerUtils.normalizeSingleTextAnswer(request.getExpectedText());
+					task.setExpectedTexts(TaskAnswerUtils.serializeStringAnswers(List.of(expectedText)));
+					task.setHint(request.getHint());
+					task.setSection(request.getSection());
+					task.setPoints(getPointsOrDefault(request.getPoints()));
+					return toSpeakTaskResponse(speakTaskRepository.save(task), null);
+				}).subscribeOn(Schedulers.boundedElastic())));
+	}
+
 	public Mono<Void> deleteSpeakTask(Integer lessonId, String taskPublicId) {
 		return Mono.fromCallable(() -> {
 			SpeakTask task = getSpeakTaskForLesson(lessonId, taskPublicId);
@@ -335,6 +498,93 @@ public class TaskService {
 			recalculateUserLessonsForLesson(lessonId);
 			return (Void) null;
 		}).subscribeOn(Schedulers.boundedElastic()).then();
+	}
+
+	public Mono<Void> deleteBankSpeakTask(String taskPublicId) {
+		return securityService.getCurrentUserId().flatMap(teacherId -> Mono.fromCallable(() -> {
+			SpeakTask task = getSpeakTeacherTask(teacherId, taskPublicId);
+			requireBankTaskEditable(task.getId(), "speak_tasks");
+			taskHintImageService.deleteHintImageFileIfPresent(task.getHintImageFileName());
+			speakTaskRepository.delete(task);
+			return (Void) null;
+		}).subscribeOn(Schedulers.boundedElastic())).then();
+	}
+
+	public Mono<Void> assignBankTaskToLessons(String taskType, String taskPublicId, List<Integer> lessonIds) {
+		return securityService.getCurrentUserId().flatMap(teacherId -> Mono.fromCallable(() -> {
+			switch (taskType) {
+				case "choose" -> {
+					ChooseTask sourceTask = getChooseTeacherTask(teacherId, taskPublicId);
+					for (Integer lessonId : lessonIds) {
+						Lesson lesson = requireTeacherOwnedLesson(teacherId, lessonId);
+						if (Objects.equals(sourceTask.getLessonId(), lesson.getId())) {
+							continue;
+						}
+						if (sourceTask.getLessonId() == null) {
+							sourceTask.setLessonId(lesson.getId());
+							chooseTaskRepository.save(sourceTask);
+							recalculateUserLessonsForLesson(lesson.getId());
+							break;
+						}
+						chooseTaskRepository.save(cloneChooseTaskForLesson(sourceTask, lesson.getId()));
+						recalculateUserLessonsForLesson(lesson.getId());
+					}
+				}
+				case "write" -> {
+					WriteTask sourceTask = getWriteTeacherTask(teacherId, taskPublicId);
+					for (Integer lessonId : lessonIds) {
+						Lesson lesson = requireTeacherOwnedLesson(teacherId, lessonId);
+						if (Objects.equals(sourceTask.getLessonId(), lesson.getId())) {
+							continue;
+						}
+						if (sourceTask.getLessonId() == null) {
+							sourceTask.setLessonId(lesson.getId());
+							writeTaskRepository.save(sourceTask);
+							recalculateUserLessonsForLesson(lesson.getId());
+							break;
+						}
+						writeTaskRepository.save(cloneWriteTaskForLesson(sourceTask, lesson.getId()));
+						recalculateUserLessonsForLesson(lesson.getId());
+					}
+				}
+				case "scatter" -> {
+					ScatterTask sourceTask = getScatterTeacherTask(teacherId, taskPublicId);
+					for (Integer lessonId : lessonIds) {
+						Lesson lesson = requireTeacherOwnedLesson(teacherId, lessonId);
+						if (Objects.equals(sourceTask.getLessonId(), lesson.getId())) {
+							continue;
+						}
+						if (sourceTask.getLessonId() == null) {
+							sourceTask.setLessonId(lesson.getId());
+							scatterTaskRepository.save(sourceTask);
+							recalculateUserLessonsForLesson(lesson.getId());
+							break;
+						}
+						scatterTaskRepository.save(cloneScatterTaskForLesson(sourceTask, lesson.getId()));
+						recalculateUserLessonsForLesson(lesson.getId());
+					}
+				}
+				case "speak" -> {
+					SpeakTask sourceTask = getSpeakTeacherTask(teacherId, taskPublicId);
+					for (Integer lessonId : lessonIds) {
+						Lesson lesson = requireTeacherOwnedLesson(teacherId, lessonId);
+						if (Objects.equals(sourceTask.getLessonId(), lesson.getId())) {
+							continue;
+						}
+						if (sourceTask.getLessonId() == null) {
+							sourceTask.setLessonId(lesson.getId());
+							speakTaskRepository.save(sourceTask);
+							recalculateUserLessonsForLesson(lesson.getId());
+							break;
+						}
+						speakTaskRepository.save(cloneSpeakTaskForLesson(sourceTask, lesson.getId()));
+						recalculateUserLessonsForLesson(lesson.getId());
+					}
+				}
+				default -> throw new TaskException(TaskErrorCode.INVALID_TASK_TYPE);
+			}
+			return (Void) null;
+		}).subscribeOn(Schedulers.boundedElastic())).then();
 	}
 
 	public Mono<SpeakTranscriptionResponse> transcribeSpeakTask(Integer lessonId, String taskPublicId,
@@ -602,10 +852,28 @@ public class TaskService {
 		return task;
 	}
 
+	private ChooseTask getChooseTeacherTask(Integer teacherId, String taskPublicId) {
+		ChooseTask task = chooseTaskRepository.findByPublicId(taskPublicId)
+				.orElseThrow(() -> new TaskException(TaskErrorCode.TASK_NOT_FOUND));
+		if (!Objects.equals(task.getTeacherId(), teacherId)) {
+			throw new TaskException(TaskErrorCode.TASK_NOT_FOUND);
+		}
+		return task;
+	}
+
 	private WriteTask getWriteTaskForLesson(Integer lessonId, String taskPublicId) {
 		WriteTask task = writeTaskRepository.findByPublicId(taskPublicId)
 				.orElseThrow(() -> new TaskException(TaskErrorCode.TASK_NOT_FOUND));
 		if (!lessonId.equals(task.getLessonId())) {
+			throw new TaskException(TaskErrorCode.TASK_NOT_FOUND);
+		}
+		return task;
+	}
+
+	private WriteTask getWriteTeacherTask(Integer teacherId, String taskPublicId) {
+		WriteTask task = writeTaskRepository.findByPublicId(taskPublicId)
+				.orElseThrow(() -> new TaskException(TaskErrorCode.TASK_NOT_FOUND));
+		if (!Objects.equals(task.getTeacherId(), teacherId)) {
 			throw new TaskException(TaskErrorCode.TASK_NOT_FOUND);
 		}
 		return task;
@@ -620,10 +888,28 @@ public class TaskService {
 		return task;
 	}
 
+	private ScatterTask getScatterTeacherTask(Integer teacherId, String taskPublicId) {
+		ScatterTask task = scatterTaskRepository.findByPublicId(taskPublicId)
+				.orElseThrow(() -> new TaskException(TaskErrorCode.TASK_NOT_FOUND));
+		if (!Objects.equals(task.getTeacherId(), teacherId)) {
+			throw new TaskException(TaskErrorCode.TASK_NOT_FOUND);
+		}
+		return task;
+	}
+
 	private SpeakTask getSpeakTaskForLesson(Integer lessonId, String taskPublicId) {
 		SpeakTask task = speakTaskRepository.findByPublicId(taskPublicId)
 				.orElseThrow(() -> new TaskException(TaskErrorCode.TASK_NOT_FOUND));
 		if (!lessonId.equals(task.getLessonId())) {
+			throw new TaskException(TaskErrorCode.TASK_NOT_FOUND);
+		}
+		return task;
+	}
+
+	private SpeakTask getSpeakTeacherTask(Integer teacherId, String taskPublicId) {
+		SpeakTask task = speakTaskRepository.findByPublicId(taskPublicId)
+				.orElseThrow(() -> new TaskException(TaskErrorCode.TASK_NOT_FOUND));
+		if (!Objects.equals(task.getTeacherId(), teacherId)) {
 			throw new TaskException(TaskErrorCode.TASK_NOT_FOUND);
 		}
 		return task;
@@ -657,46 +943,109 @@ public class TaskService {
 	}
 
 	private ChooseTaskResponse toChooseTaskResponse(ChooseTask t, boolean stripAnswer, String lessonPublicId) {
-		String hintImageUrl = t.getHintImageFileName() != null
-				? "/api/v1/lessons/" + lessonPublicId + "/tasks/choose/" + t.getPublicId() + "/hint-image"
+		String responseLessonPublicId = lessonPublicId != null
+				? lessonPublicId
+				: resolveLessonPublicId(t.getLessonId());
+		String hintImageUrl = responseLessonPublicId != null && t.getHintImageFileName() != null
+				? "/api/v1/lessons/" + responseLessonPublicId + "/tasks/choose/" + t.getPublicId() + "/hint-image"
 				: null;
 		List<Integer> correctAnswers = TaskAnswerUtils.deserializeIntegerAnswers(t.getCorrectAnswers());
-		return ChooseTaskResponse.builder().publicId(t.getPublicId()).lessonPublicId(lessonPublicId).task(t.getTask())
-				.possibleAnswers(t.getPossibleAnswers()).correctAnswers(stripAnswer ? null : correctAnswers)
-				.hint(t.getHint()).hintImageUrl(hintImageUrl).section(t.getSection()).points(t.getPoints())
-				.createdAt(t.getCreatedAt()).build();
-	}
-
-	private WriteTaskResponse toWriteTaskResponse(WriteTask t, boolean stripAnswer, String lessonPublicId) {
-		String hintImageUrl = t.getHintImageFileName() != null
-				? "/api/v1/lessons/" + lessonPublicId + "/tasks/write/" + t.getPublicId() + "/hint-image"
-				: null;
-		List<String> correctAnswers = TaskAnswerUtils.deserializeStringAnswers(t.getCorrectAnswers());
-		return WriteTaskResponse.builder().publicId(t.getPublicId()).lessonPublicId(lessonPublicId).task(t.getTask())
+		return ChooseTaskResponse.builder().publicId(t.getPublicId()).lessonPublicId(responseLessonPublicId)
+				.task(t.getTask()).possibleAnswers(t.getPossibleAnswers())
 				.correctAnswers(stripAnswer ? null : correctAnswers).hint(t.getHint()).hintImageUrl(hintImageUrl)
 				.section(t.getSection()).points(t.getPoints()).createdAt(t.getCreatedAt()).build();
 	}
 
-	private ScatterTaskResponse toScatterTaskResponse(ScatterTask t, boolean stripAnswer, String lessonPublicId) {
-		String hintImageUrl = t.getHintImageFileName() != null
-				? "/api/v1/lessons/" + lessonPublicId + "/tasks/scatter/" + t.getPublicId() + "/hint-image"
+	private WriteTaskResponse toWriteTaskResponse(WriteTask t, boolean stripAnswer, String lessonPublicId) {
+		String responseLessonPublicId = lessonPublicId != null
+				? lessonPublicId
+				: resolveLessonPublicId(t.getLessonId());
+		String hintImageUrl = responseLessonPublicId != null && t.getHintImageFileName() != null
+				? "/api/v1/lessons/" + responseLessonPublicId + "/tasks/write/" + t.getPublicId() + "/hint-image"
 				: null;
 		List<String> correctAnswers = TaskAnswerUtils.deserializeStringAnswers(t.getCorrectAnswers());
-		return ScatterTaskResponse.builder().publicId(t.getPublicId()).lessonPublicId(lessonPublicId).task(t.getTask())
-				.words(t.getWords()).correctAnswers(stripAnswer ? null : correctAnswers).hint(t.getHint())
+		return WriteTaskResponse.builder().publicId(t.getPublicId()).lessonPublicId(responseLessonPublicId)
+				.task(t.getTask()).correctAnswers(stripAnswer ? null : correctAnswers).hint(t.getHint())
 				.hintImageUrl(hintImageUrl).section(t.getSection()).points(t.getPoints()).createdAt(t.getCreatedAt())
 				.build();
 	}
 
+	private ScatterTaskResponse toScatterTaskResponse(ScatterTask t, boolean stripAnswer, String lessonPublicId) {
+		String responseLessonPublicId = lessonPublicId != null
+				? lessonPublicId
+				: resolveLessonPublicId(t.getLessonId());
+		String hintImageUrl = responseLessonPublicId != null && t.getHintImageFileName() != null
+				? "/api/v1/lessons/" + responseLessonPublicId + "/tasks/scatter/" + t.getPublicId() + "/hint-image"
+				: null;
+		List<String> correctAnswers = TaskAnswerUtils.deserializeStringAnswers(t.getCorrectAnswers());
+		return ScatterTaskResponse.builder().publicId(t.getPublicId()).lessonPublicId(responseLessonPublicId)
+				.task(t.getTask()).words(t.getWords()).correctAnswers(stripAnswer ? null : correctAnswers)
+				.hint(t.getHint()).hintImageUrl(hintImageUrl).section(t.getSection()).points(t.getPoints())
+				.createdAt(t.getCreatedAt()).build();
+	}
+
 	private SpeakTaskResponse toSpeakTaskResponse(SpeakTask t, String lessonPublicId) {
-		String hintImageUrl = t.getHintImageFileName() != null
-				? "/api/v1/lessons/" + lessonPublicId + "/tasks/speak/" + t.getPublicId() + "/hint-image"
+		String responseLessonPublicId = lessonPublicId != null
+				? lessonPublicId
+				: resolveLessonPublicId(t.getLessonId());
+		String hintImageUrl = responseLessonPublicId != null && t.getHintImageFileName() != null
+				? "/api/v1/lessons/" + responseLessonPublicId + "/tasks/speak/" + t.getPublicId() + "/hint-image"
 				: null;
 		List<String> expectedTexts = TaskAnswerUtils.deserializeStringAnswers(t.getExpectedTexts());
 		String expectedText = expectedTexts.isEmpty() ? null : expectedTexts.get(0);
-		return SpeakTaskResponse.builder().publicId(t.getPublicId()).lessonPublicId(lessonPublicId)
+		return SpeakTaskResponse.builder().publicId(t.getPublicId()).lessonPublicId(responseLessonPublicId)
 				.expectedText(expectedText).hint(t.getHint()).hintImageUrl(hintImageUrl).section(t.getSection())
 				.points(t.getPoints()).createdAt(t.getCreatedAt()).build();
+	}
+
+	private Lesson requireTeacherOwnedLesson(Integer teacherId, Integer lessonId) {
+		Lesson lesson = lessonRepository.findById(lessonId)
+				.orElseThrow(() -> new TaskException(TaskErrorCode.LESSON_NOT_FOUND));
+		if (lesson.getTeacher() == null || !Objects.equals(lesson.getTeacher().getId(), teacherId)) {
+			throw new AccessDeniedException("Teacher does not own this lesson");
+		}
+		return lesson;
+	}
+
+	private void requireBankTaskEditable(Integer taskId, String taskType) {
+		if (userAnswerRepository.existsByTaskIdAndTaskType(taskId, taskType)) {
+			throw new TaskException(TaskErrorCode.TASK_EDIT_LOCKED_AFTER_USE);
+		}
+	}
+
+	private String resolveLessonPublicId(Integer lessonId) {
+		if (lessonId == null) {
+			return null;
+		}
+		return requireLessonPublicId(lessonId);
+	}
+
+	private ChooseTask cloneChooseTaskForLesson(ChooseTask sourceTask, Integer lessonId) {
+		return ChooseTask.builder().lessonId(lessonId).teacherId(sourceTask.getTeacherId()).task(sourceTask.getTask())
+				.possibleAnswers(sourceTask.getPossibleAnswers()).correctAnswers(sourceTask.getCorrectAnswers())
+				.hint(sourceTask.getHint()).section(sourceTask.getSection())
+				.hintImageFileName(sourceTask.getHintImageFileName()).points(sourceTask.getPoints()).build();
+	}
+
+	private WriteTask cloneWriteTaskForLesson(WriteTask sourceTask, Integer lessonId) {
+		return WriteTask.builder().lessonId(lessonId).teacherId(sourceTask.getTeacherId()).task(sourceTask.getTask())
+				.correctAnswers(sourceTask.getCorrectAnswers()).hint(sourceTask.getHint())
+				.section(sourceTask.getSection()).hintImageFileName(sourceTask.getHintImageFileName())
+				.points(sourceTask.getPoints()).build();
+	}
+
+	private ScatterTask cloneScatterTaskForLesson(ScatterTask sourceTask, Integer lessonId) {
+		return ScatterTask.builder().lessonId(lessonId).teacherId(sourceTask.getTeacherId()).task(sourceTask.getTask())
+				.words(sourceTask.getWords()).correctAnswers(sourceTask.getCorrectAnswers()).hint(sourceTask.getHint())
+				.section(sourceTask.getSection()).hintImageFileName(sourceTask.getHintImageFileName())
+				.points(sourceTask.getPoints()).build();
+	}
+
+	private SpeakTask cloneSpeakTaskForLesson(SpeakTask sourceTask, Integer lessonId) {
+		return SpeakTask.builder().lessonId(lessonId).teacherId(sourceTask.getTeacherId())
+				.expectedTexts(sourceTask.getExpectedTexts()).hint(sourceTask.getHint())
+				.section(sourceTask.getSection()).hintImageFileName(sourceTask.getHintImageFileName())
+				.points(sourceTask.getPoints()).build();
 	}
 
 	private String requireLessonPublicId(Integer lessonId) {

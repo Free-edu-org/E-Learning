@@ -124,6 +124,8 @@ const ERROR_CODE_TRANSLATIONS: Record<string, string> = {
   LESSON_NOT_FOUND: "Nie znaleziono lekcji.",
   LESSON_RESULT_NOT_FOUND: "Nie znaleziono wyniku lekcji.",
   TASK_ANSWER_NOT_FOUND: "Nie znaleziono odpowiedzi ucznia dla tego zadania.",
+  TASK_EDIT_LOCKED_AFTER_USE:
+    "Tego zadania nie można edytować z poziomu bazy zadań, ponieważ zostało już użyte w wynikach uczniów.",
   USER_GROUP_NOT_FOUND: "Nie znaleziono grupy.",
   GROUP_NAME_ALREADY_EXISTS: "Grupa o tej nazwie już istnieje.",
   STUDENT_ALREADY_IN_GROUP: "Uczeń jest już przypisany do grupy.",

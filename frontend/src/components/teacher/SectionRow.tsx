@@ -43,6 +43,17 @@ interface SectionRowProps {
   existingSections: string[];
   defaultExpanded?: boolean;
   lessonPublicId?: string;
+  teacherLessons?: import("@/api/lessonService").Lesson[];
+  assignmentStateByTaskId?: Record<
+    string,
+    import("./TaskCard").TaskAssignmentState
+  >;
+  onAssignmentChange?: (
+    taskId: string,
+    lessons: import("@/api/lessonService").Lesson[],
+  ) => void;
+  onAssignToLessons?: (task: LessonTaskDraft) => void;
+  autoFocusTaskId?: string | null;
 }
 
 export function SectionRow({
@@ -60,6 +71,11 @@ export function SectionRow({
   existingSections,
   defaultExpanded = false,
   lessonPublicId,
+  teacherLessons,
+  assignmentStateByTaskId,
+  onAssignmentChange,
+  onAssignToLessons,
+  autoFocusTaskId,
 }: SectionRowProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState("");
@@ -259,17 +275,26 @@ export function SectionRow({
           </Tooltip>
         )}
 
-        <Chip
-          label={tasks.length}
-          size="small"
-          color="primary"
-          variant="outlined"
-          sx={{
-            height: 18,
-            fontWeight: 700,
-            "& .MuiChip-label": { px: 0.75, fontSize: "0.7rem" },
-          }}
-        />
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+          <Typography
+            variant="caption"
+            color="primary.main"
+            sx={{ fontWeight: 700, lineHeight: 1 }}
+          >
+            Zadań:
+          </Typography>
+          <Chip
+            label={tasks.length}
+            size="small"
+            color="primary"
+            variant="outlined"
+            sx={{
+              height: 18,
+              fontWeight: 700,
+              "& .MuiChip-label": { px: 0.75, fontSize: "0.7rem" },
+            }}
+          />
+        </Box>
 
         <IconButton
           size="small"
@@ -333,7 +358,20 @@ export function SectionRow({
           strategy={verticalListSortingStrategy}
         >
           <Box
-            sx={{ mt: 1, display: "flex", flexDirection: "column", gap: 1.5 }}
+            sx={{
+              mt: 1,
+              ml: { xs: 1.25, sm: 2.5 },
+              pl: { xs: 1, sm: 1.5 },
+              borderLeft: "2px solid",
+              borderColor: (theme) =>
+                alpha(
+                  theme.palette.primary.main,
+                  theme.palette.mode === "dark" ? 0.18 : 0.12,
+                ),
+              display: "flex",
+              flexDirection: "column",
+              gap: 1.5,
+            }}
           >
             {tasks.map((task, localIdx) => (
               <TaskCard
@@ -345,6 +383,11 @@ export function SectionRow({
                 existingSections={existingSections}
                 defaultExpanded={defaultExpanded}
                 lessonPublicId={lessonPublicId}
+                teacherLessons={teacherLessons}
+                assignmentState={assignmentStateByTaskId?.[task.id]}
+                onAssignmentChange={onAssignmentChange}
+                onAssignToLessons={onAssignToLessons}
+                autoFocusTaskId={autoFocusTaskId}
               />
             ))}
           </Box>
@@ -393,18 +436,26 @@ export function SectionOverlay({
       >
         {displayName}
       </Typography>
-      <Chip
-        label={taskCount}
-        size="small"
-        color="primary"
-        variant="outlined"
-        sx={{
-          height: 18,
-          mr: 0.5,
-          fontWeight: 700,
-          "& .MuiChip-label": { px: 0.75, fontSize: "0.7rem" },
-        }}
-      />
+      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mr: 0.5 }}>
+        <Typography
+          variant="caption"
+          color="primary.main"
+          sx={{ fontWeight: 700, lineHeight: 1 }}
+        >
+          Zadań:
+        </Typography>
+        <Chip
+          label={taskCount}
+          size="small"
+          color="primary"
+          variant="outlined"
+          sx={{
+            height: 18,
+            fontWeight: 700,
+            "& .MuiChip-label": { px: 0.75, fontSize: "0.7rem" },
+          }}
+        />
+      </Box>
     </Box>
   );
 }
