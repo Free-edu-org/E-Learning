@@ -22,8 +22,11 @@ public class WriteTask {
 	@Builder.Default
 	private String publicId = UUID.randomUUID().toString();
 
-	@Column(name = "lesson_id", nullable = false)
+	@Column(name = "lesson_id")
 	private Integer lessonId;
+
+	@Column(name = "teacher_id", nullable = false)
+	private Integer teacherId;
 
 	@Column(nullable = false, columnDefinition = "TEXT")
 	private String task;

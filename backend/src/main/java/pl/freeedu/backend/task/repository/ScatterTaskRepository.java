@@ -13,6 +13,10 @@ public interface ScatterTaskRepository extends JpaRepository<ScatterTask, Intege
 
 	List<ScatterTask> findByLessonId(Integer lessonId);
 
+	List<ScatterTask> findByLessonIdIsNullAndTeacherId(Integer teacherId);
+
+	List<ScatterTask> findByTeacherId(Integer teacherId);
+
 	Optional<ScatterTask> findByPublicId(String publicId);
 
 	@Transactional

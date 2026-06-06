@@ -228,7 +228,7 @@ class TaskServiceTest {
 		// given
 		Integer lessonId = 1;
 		CustomUserDetails teacher = new CustomUserDetails(10, "teacher", "pass", Role.TEACHER);
-		Lesson lesson = Lesson.builder().id(lessonId).build();
+		Lesson lesson = Lesson.builder().id(lessonId).publicId("lesson-1").build();
 
 		when(securityService.getCurrentUser()).thenReturn(Mono.just(teacher));
 		when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
@@ -257,7 +257,8 @@ class TaskServiceTest {
 		Integer lessonId = 1;
 		ChooseTaskRequest request = ChooseTaskRequest.builder().task("T").possibleAnswers("A|B")
 				.correctAnswers(List.of(1)).build();
-		Lesson lesson = Lesson.builder().id(1).publicId("lesson-1").build();
+		Lesson lesson = Lesson.builder().id(1).publicId("lesson-1")
+				.teacher(pl.freeedu.backend.user.model.User.builder().id(77).build()).build();
 
 		when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(lesson));
 		when(chooseTaskRepository.save(any())).thenAnswer(inv -> {
@@ -275,6 +276,83 @@ class TaskServiceTest {
 			assertEquals("task-1", resp.getPublicId());
 			verify(chooseTaskRepository).save(any());
 		}).verifyComplete();
+	}
+
+	@Test
+	void shouldGetTeacherTaskBank() {
+		Integer teacherId = 55;
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(teacherId));
+		when(chooseTaskRepository.findByTeacherId(teacherId))
+				.thenReturn(List.of(ChooseTask.builder().id(1).publicId("bank-1").teacherId(teacherId).task("Bank")
+						.possibleAnswers("A|B").correctAnswers("[1]").build()));
+		when(writeTaskRepository.findByTeacherId(teacherId)).thenReturn(List.of());
+		when(scatterTaskRepository.findByTeacherId(teacherId)).thenReturn(List.of());
+		when(speakTaskRepository.findByTeacherId(teacherId)).thenReturn(List.of());
+
+		StepVerifier.create(taskService.getTeacherTaskBank()).assertNext(response -> {
+			assertNull(response.getLessonPublicId());
+			assertEquals("bank-1", response.getSections().get(0).getChooseTasks().get(0).getPublicId());
+		}).verifyComplete();
+	}
+
+	@Test
+	void shouldAssignTeacherTaskToMultipleLessonsOwnedByTeacher() {
+		Integer teacherId = 55;
+		Integer sourceLessonId = 8;
+		Integer firstLessonId = 9;
+		Integer secondLessonId = 10;
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(teacherId));
+		when(lessonRepository.findById(firstLessonId)).thenReturn(Optional.of(Lesson.builder().id(firstLessonId)
+				.teacher(pl.freeedu.backend.user.model.User.builder().id(teacherId).build()).build()));
+		when(lessonRepository.findById(secondLessonId)).thenReturn(Optional.of(Lesson.builder().id(secondLessonId)
+				.teacher(pl.freeedu.backend.user.model.User.builder().id(teacherId).build()).build()));
+		when(writeTaskRepository.findByPublicId("bank-write"))
+				.thenReturn(Optional.of(WriteTask.builder().id(3).publicId("bank-write").teacherId(teacherId)
+						.lessonId(sourceLessonId).task("Write me").points(1).build()));
+		when(writeTaskRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+		when(chooseTaskRepository.findByLessonId(firstLessonId)).thenReturn(List.of());
+		when(writeTaskRepository.findByLessonId(firstLessonId)).thenReturn(List.of());
+		when(scatterTaskRepository.findByLessonId(firstLessonId)).thenReturn(List.of());
+		when(speakTaskRepository.findByLessonId(firstLessonId)).thenReturn(List.of());
+		when(userLessonRepository.findByLessonId(firstLessonId)).thenReturn(List.of());
+		when(chooseTaskRepository.findByLessonId(secondLessonId)).thenReturn(List.of());
+		when(writeTaskRepository.findByLessonId(secondLessonId)).thenReturn(List.of());
+		when(scatterTaskRepository.findByLessonId(secondLessonId)).thenReturn(List.of());
+		when(speakTaskRepository.findByLessonId(secondLessonId)).thenReturn(List.of());
+		when(userLessonRepository.findByLessonId(secondLessonId)).thenReturn(List.of());
+
+		StepVerifier.create(
+				taskService.assignBankTaskToLessons("write", "bank-write", List.of(firstLessonId, secondLessonId)))
+				.verifyComplete();
+
+		verify(writeTaskRepository, times(2)).save(any());
+		verify(writeTaskRepository).save(argThat(task -> Objects.equals(task.getLessonId(), firstLessonId)));
+		verify(writeTaskRepository).save(argThat(task -> Objects.equals(task.getLessonId(), secondLessonId)));
+	}
+
+	@Test
+	void shouldAssignBankTaskWithoutLessonToSingleLessonWithoutCloning() {
+		Integer teacherId = 55;
+		Integer lessonId = 9;
+		WriteTask bankTask = WriteTask.builder().id(3).publicId("bank-write").teacherId(teacherId).lessonId(null)
+				.task("Write me").points(1).build();
+
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(teacherId));
+		when(lessonRepository.findById(lessonId)).thenReturn(Optional.of(Lesson.builder().id(lessonId)
+				.teacher(pl.freeedu.backend.user.model.User.builder().id(teacherId).build()).build()));
+		when(writeTaskRepository.findByPublicId("bank-write")).thenReturn(Optional.of(bankTask));
+		when(writeTaskRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+		when(chooseTaskRepository.findByLessonId(lessonId)).thenReturn(List.of());
+		when(writeTaskRepository.findByLessonId(lessonId)).thenReturn(List.of(bankTask));
+		when(scatterTaskRepository.findByLessonId(lessonId)).thenReturn(List.of());
+		when(speakTaskRepository.findByLessonId(lessonId)).thenReturn(List.of());
+		when(userLessonRepository.findByLessonId(lessonId)).thenReturn(List.of());
+
+		StepVerifier.create(taskService.assignBankTaskToLessons("write", "bank-write", List.of(lessonId)))
+				.verifyComplete();
+
+		verify(writeTaskRepository, times(1)).save(same(bankTask));
+		assertEquals(lessonId, bankTask.getLessonId());
 	}
 
 	@Test
@@ -299,6 +377,228 @@ class TaskServiceTest {
 		StepVerifier.create(result).assertNext(resp -> {
 			assertEquals("New", resp.getTask());
 		}).verifyComplete();
+	}
+
+	@Test
+	void shouldBlockBankWriteTaskEditWhenTaskWasAlreadyUsed() {
+		// given
+		Integer teacherId = 55;
+		String taskPublicId = "bank-write";
+		WriteTaskRequest request = WriteTaskRequest.builder().task("Updated task").correctAnswers(List.of("correct"))
+				.build();
+		WriteTask task = WriteTask.builder().id(44).publicId(taskPublicId).teacherId(teacherId).lessonId(null)
+				.task("Original task").correctAnswers("[\"correct\"]").build();
+
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(teacherId));
+		when(writeTaskRepository.findByPublicId(taskPublicId)).thenReturn(Optional.of(task));
+		when(userAnswerRepository.existsByTaskIdAndTaskType(44, "write_tasks")).thenReturn(true);
+
+		// when
+		Mono<WriteTaskResponse> result = taskService.updateBankWriteTask(taskPublicId, Mono.just(request));
+
+		// then
+		StepVerifier.create(result).expectErrorSatisfies(error -> {
+			assertInstanceOf(TaskException.class, error);
+			assertEquals(TaskErrorCode.TASK_EDIT_LOCKED_AFTER_USE, ((TaskException) error).getErrorCode());
+		}).verify();
+		verify(writeTaskRepository, never()).save(any());
+	}
+
+	@Test
+	void shouldBlockBankChooseTaskEditWhenTaskWasAlreadyUsed() {
+		// given
+		Integer teacherId = 55;
+		String taskPublicId = "bank-choose";
+		ChooseTaskRequest request = ChooseTaskRequest.builder().task("Updated").possibleAnswers("A|B")
+				.correctAnswers(List.of(0)).build();
+		ChooseTask task = ChooseTask.builder().id(45).publicId(taskPublicId).teacherId(teacherId).lessonId(null)
+				.task("Original").possibleAnswers("A|B").correctAnswers("[0]").build();
+
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(teacherId));
+		when(chooseTaskRepository.findByPublicId(taskPublicId)).thenReturn(Optional.of(task));
+		when(userAnswerRepository.existsByTaskIdAndTaskType(45, "choose_tasks")).thenReturn(true);
+
+		// when
+		Mono<ChooseTaskResponse> result = taskService.updateBankChooseTask(taskPublicId, Mono.just(request));
+
+		// then
+		StepVerifier.create(result).expectErrorSatisfies(error -> {
+			assertInstanceOf(TaskException.class, error);
+			assertEquals(TaskErrorCode.TASK_EDIT_LOCKED_AFTER_USE, ((TaskException) error).getErrorCode());
+		}).verify();
+		verify(chooseTaskRepository, never()).save(any());
+	}
+
+	@Test
+	void shouldBlockBankScatterTaskEditWhenTaskWasAlreadyUsed() {
+		// given
+		Integer teacherId = 55;
+		String taskPublicId = "bank-scatter";
+		ScatterTaskRequest request = ScatterTaskRequest.builder().task("Updated").words("a|b")
+				.correctAnswers(List.of("a b")).build();
+		ScatterTask task = ScatterTask.builder().id(46).publicId(taskPublicId).teacherId(teacherId).lessonId(null)
+				.task("Original").words("a|b").correctAnswers("[\"a b\"]").build();
+
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(teacherId));
+		when(scatterTaskRepository.findByPublicId(taskPublicId)).thenReturn(Optional.of(task));
+		when(userAnswerRepository.existsByTaskIdAndTaskType(46, "scatter_tasks")).thenReturn(true);
+
+		// when
+		Mono<ScatterTaskResponse> result = taskService.updateBankScatterTask(taskPublicId, Mono.just(request));
+
+		// then
+		StepVerifier.create(result).expectErrorSatisfies(error -> {
+			assertInstanceOf(TaskException.class, error);
+			assertEquals(TaskErrorCode.TASK_EDIT_LOCKED_AFTER_USE, ((TaskException) error).getErrorCode());
+		}).verify();
+		verify(scatterTaskRepository, never()).save(any());
+	}
+
+	@Test
+	void shouldBlockBankSpeakTaskEditWhenTaskWasAlreadyUsed() {
+		// given
+		Integer teacherId = 55;
+		String taskPublicId = "bank-speak";
+		SpeakTaskRequest request = SpeakTaskRequest.builder().expectedText("Updated").build();
+		SpeakTask task = SpeakTask.builder().id(47).publicId(taskPublicId).teacherId(teacherId).lessonId(null)
+				.expectedTexts("[\"Original\"]").build();
+
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(teacherId));
+		when(speakTaskRepository.findByPublicId(taskPublicId)).thenReturn(Optional.of(task));
+		when(userAnswerRepository.existsByTaskIdAndTaskType(47, "speak_tasks")).thenReturn(true);
+
+		// when
+		Mono<SpeakTaskResponse> result = taskService.updateBankSpeakTask(taskPublicId, Mono.just(request));
+
+		// then
+		StepVerifier.create(result).expectErrorSatisfies(error -> {
+			assertInstanceOf(TaskException.class, error);
+			assertEquals(TaskErrorCode.TASK_EDIT_LOCKED_AFTER_USE, ((TaskException) error).getErrorCode());
+		}).verify();
+		verify(speakTaskRepository, never()).save(any());
+	}
+
+	@Test
+	void shouldBlockBankChooseTaskDeleteWhenTaskWasAlreadyUsed() {
+		// given
+		Integer teacherId = 55;
+		String taskPublicId = "bank-choose";
+		ChooseTask task = ChooseTask.builder().id(145).publicId(taskPublicId).teacherId(teacherId).lessonId(null)
+				.build();
+
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(teacherId));
+		when(chooseTaskRepository.findByPublicId(taskPublicId)).thenReturn(Optional.of(task));
+		when(userAnswerRepository.existsByTaskIdAndTaskType(145, "choose_tasks")).thenReturn(true);
+
+		// when
+		Mono<Void> result = taskService.deleteBankChooseTask(taskPublicId);
+
+		// then
+		StepVerifier.create(result).expectErrorSatisfies(error -> {
+			assertInstanceOf(TaskException.class, error);
+			assertEquals(TaskErrorCode.TASK_EDIT_LOCKED_AFTER_USE, ((TaskException) error).getErrorCode());
+		}).verify();
+		verify(taskHintImageService, never()).deleteHintImageFileIfPresent(any());
+		verify(chooseTaskRepository, never()).delete(any());
+	}
+
+	@Test
+	void shouldBlockBankWriteTaskDeleteWhenTaskWasAlreadyUsed() {
+		// given
+		Integer teacherId = 55;
+		String taskPublicId = "bank-write";
+		WriteTask task = WriteTask.builder().id(146).publicId(taskPublicId).teacherId(teacherId).lessonId(null).build();
+
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(teacherId));
+		when(writeTaskRepository.findByPublicId(taskPublicId)).thenReturn(Optional.of(task));
+		when(userAnswerRepository.existsByTaskIdAndTaskType(146, "write_tasks")).thenReturn(true);
+
+		// when
+		Mono<Void> result = taskService.deleteBankWriteTask(taskPublicId);
+
+		// then
+		StepVerifier.create(result).expectErrorSatisfies(error -> {
+			assertInstanceOf(TaskException.class, error);
+			assertEquals(TaskErrorCode.TASK_EDIT_LOCKED_AFTER_USE, ((TaskException) error).getErrorCode());
+		}).verify();
+		verify(taskHintImageService, never()).deleteHintImageFileIfPresent(any());
+		verify(writeTaskRepository, never()).delete(any());
+	}
+
+	@Test
+	void shouldBlockBankScatterTaskDeleteWhenTaskWasAlreadyUsed() {
+		// given
+		Integer teacherId = 55;
+		String taskPublicId = "bank-scatter";
+		ScatterTask task = ScatterTask.builder().id(147).publicId(taskPublicId).teacherId(teacherId).lessonId(null)
+				.build();
+
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(teacherId));
+		when(scatterTaskRepository.findByPublicId(taskPublicId)).thenReturn(Optional.of(task));
+		when(userAnswerRepository.existsByTaskIdAndTaskType(147, "scatter_tasks")).thenReturn(true);
+
+		// when
+		Mono<Void> result = taskService.deleteBankScatterTask(taskPublicId);
+
+		// then
+		StepVerifier.create(result).expectErrorSatisfies(error -> {
+			assertInstanceOf(TaskException.class, error);
+			assertEquals(TaskErrorCode.TASK_EDIT_LOCKED_AFTER_USE, ((TaskException) error).getErrorCode());
+		}).verify();
+		verify(taskHintImageService, never()).deleteHintImageFileIfPresent(any());
+		verify(scatterTaskRepository, never()).delete(any());
+	}
+
+	@Test
+	void shouldBlockBankSpeakTaskDeleteWhenTaskWasAlreadyUsed() {
+		// given
+		Integer teacherId = 55;
+		String taskPublicId = "bank-speak";
+		SpeakTask task = SpeakTask.builder().id(148).publicId(taskPublicId).teacherId(teacherId).lessonId(null).build();
+
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(teacherId));
+		when(speakTaskRepository.findByPublicId(taskPublicId)).thenReturn(Optional.of(task));
+		when(userAnswerRepository.existsByTaskIdAndTaskType(148, "speak_tasks")).thenReturn(true);
+
+		// when
+		Mono<Void> result = taskService.deleteBankSpeakTask(taskPublicId);
+
+		// then
+		StepVerifier.create(result).expectErrorSatisfies(error -> {
+			assertInstanceOf(TaskException.class, error);
+			assertEquals(TaskErrorCode.TASK_EDIT_LOCKED_AFTER_USE, ((TaskException) error).getErrorCode());
+		}).verify();
+		verify(taskHintImageService, never()).deleteHintImageFileIfPresent(any());
+		verify(speakTaskRepository, never()).delete(any());
+	}
+
+	@Test
+	void shouldAllowBankWriteTaskEditWhenTaskWasNotUsedYet() {
+		// given
+		Integer teacherId = 55;
+		String taskPublicId = "bank-write";
+		WriteTaskRequest request = WriteTaskRequest.builder().task("Updated task").correctAnswers(List.of("correct"))
+				.hint("Hint").section("Section").points(2).build();
+		WriteTask task = WriteTask.builder().id(44).publicId(taskPublicId).teacherId(teacherId).lessonId(null)
+				.task("Original task").correctAnswers("[\"before\"]").points(1).build();
+
+		when(securityService.getCurrentUserId()).thenReturn(Mono.just(teacherId));
+		when(writeTaskRepository.findByPublicId(taskPublicId)).thenReturn(Optional.of(task));
+		when(userAnswerRepository.existsByTaskIdAndTaskType(44, "write_tasks")).thenReturn(false);
+		when(writeTaskRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+		// when
+		Mono<WriteTaskResponse> result = taskService.updateBankWriteTask(taskPublicId, Mono.just(request));
+
+		// then
+		StepVerifier.create(result).assertNext(response -> {
+			assertEquals("Updated task", response.getTask());
+			assertEquals(List.of("correct"), response.getCorrectAnswers());
+			assertEquals("Hint", response.getHint());
+			assertEquals("Section", response.getSection());
+			assertEquals(2, response.getPoints());
+		}).verifyComplete();
+		verify(writeTaskRepository).save(task);
 	}
 
 	@Test

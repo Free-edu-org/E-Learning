@@ -29,6 +29,7 @@ import { LessonStatsView } from "./features/teacher/LessonStatsView";
 import { TeacherLessonResultView } from "./features/teacher/TeacherLessonResultView";
 import { TeacherStudentsView } from "./features/teacher/TeacherStudentsView";
 import { TeacherStudentProgressView } from "./features/teacher/TeacherStudentProgressView";
+import { TeacherTaskBankView } from "./features/teacher/TeacherTaskBankView";
 import { AdminDashboard } from "./features/admin/AdminDashboard";
 import { AdminAchievementsView } from "./features/admin/AdminAchievementsView";
 import { AdminAchievementEditorView } from "./features/admin/AdminAchievementEditorView";
@@ -141,6 +142,10 @@ function App() {
                   <Route
                     path="/teacher/lessons/:lessonPublicId/students/:studentPublicId/result"
                     element={<TeacherLessonResultView />}
+                  />
+                  <Route
+                    path="/teacher/task-bank"
+                    element={<TeacherTaskBankView />}
                   />
                 </Route>
 

@@ -150,7 +150,7 @@ export function ChooseAnswerBuilder({
         </Box>
       )}
 
-      <Stack direction="row" spacing={1} alignItems="center">
+      <Stack direction="row" spacing={1} alignItems="flex-start">
         <TextField
           size="small"
           placeholder="Wpisz odpowiedź i dodaj..."
@@ -179,6 +179,7 @@ export function ChooseAnswerBuilder({
             answers.length >= INPUT_LIMITS.taskChoiceMaxAnswers
           }
           sx={{
+            mt: 0.75,
             transition: "transform 0.15s ease",
             "&:hover": { transform: "scale(1.1)" },
           }}

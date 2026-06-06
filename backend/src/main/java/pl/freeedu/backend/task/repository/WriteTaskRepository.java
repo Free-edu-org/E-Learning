@@ -13,6 +13,10 @@ public interface WriteTaskRepository extends JpaRepository<WriteTask, Integer> {
 
 	List<WriteTask> findByLessonId(Integer lessonId);
 
+	List<WriteTask> findByLessonIdIsNullAndTeacherId(Integer teacherId);
+
+	List<WriteTask> findByTeacherId(Integer teacherId);
+
 	Optional<WriteTask> findByPublicId(String publicId);
 
 	@Transactional

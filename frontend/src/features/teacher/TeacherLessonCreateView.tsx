@@ -14,6 +14,7 @@ import {
   Typography,
 } from "@mui/material";
 import {
+  LibraryAddOutlined as LibraryAddIcon,
   ArrowBackOutlined as BackIcon,
   AttachFileOutlined as AttachIcon,
   CheckCircleOutlineOutlined as ReadyIcon,
@@ -26,10 +27,12 @@ import {
   EditNoteOutlined as WriteIcon,
 } from "@mui/icons-material";
 import { lessonService } from "@/api/lessonService";
+import { taskService } from "@/api/taskService";
 import { LessonLabelColorDot } from "@/components/lesson/LessonLabelColorDot";
 import { LessonLabelColorPicker } from "@/components/lesson/LessonLabelColorPicker";
 import { userService, type UserProfile } from "@/api/userService";
 import { TaskEditor } from "@/components/teacher/TaskEditor";
+import { TaskBankPickerDialog } from "@/components/teacher/TaskBankPickerDialog";
 import {
   AppDialog,
   AppDialogBody,
@@ -49,6 +52,7 @@ import {
   emptyLessonDraft,
   getLessonEditorErrorMessage,
   getTaskValidationError,
+  isUnmodifiedImportedBankTask,
   type DialogFeedbackState,
   type LessonDraft,
 } from "./lessonEditor";
@@ -73,6 +77,7 @@ export function TeacherLessonCreateView() {
     theme?: string;
   }>({});
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
+  const [taskBankDialogOpen, setTaskBankDialogOpen] = useState(false);
   const [savedDraftSignature, setSavedDraftSignature] = useState(() =>
     JSON.stringify(emptyLessonDraft),
   );
@@ -167,15 +172,32 @@ export function TeacherLessonCreateView() {
         groupPublicIds: groupPublicIds.length > 0 ? groupPublicIds : undefined,
       });
 
-      const taskOperations = draft.tasks.map((task) =>
-        createLessonTask(createdLesson.publicId, task),
+      const taskOperations = draft.tasks.map((task) => task);
+      const assignableBankTasks = taskOperations.filter((task) =>
+        isUnmodifiedImportedBankTask(task),
       );
+      const lessonTaskCreates = taskOperations.filter(
+        (task) => !isUnmodifiedImportedBankTask(task),
+      );
+
+      const combinedOperations = [
+        ...assignableBankTasks.map((task) =>
+          taskService.assignTeacherBankTaskToLesson(
+            task.bankSourceType!,
+            task.bankSourceTaskPublicId!,
+            { lessonPublicIds: [createdLesson.publicId] },
+          ),
+        ),
+        ...lessonTaskCreates.map((task) =>
+          createLessonTask(createdLesson.publicId, task),
+        ),
+      ];
 
       let nextFeedback: DialogFeedbackState;
       let attachmentFailed = false;
 
-      if (taskOperations.length > 0) {
-        const results = await Promise.allSettled(taskOperations);
+      if (combinedOperations.length > 0) {
+        const results = await Promise.allSettled(combinedOperations);
         const failedCount = results.filter(
           (result) => result.status === "rejected",
         ).length;
@@ -185,13 +207,13 @@ export function TeacherLessonCreateView() {
             ? {
                 severity: "warning",
                 message:
-                  failedCount === taskOperations.length
+                  failedCount === combinedOperations.length
                     ? "Lekcja została utworzona, ale nie udało się dodać żadnego zadania."
-                    : `Lekcja została utworzona. Nie udało się dodać ${failedCount} z ${taskOperations.length} zadań.`,
+                    : `Lekcja została utworzona. Nie udało się dodać ${failedCount} z ${combinedOperations.length} zadań.`,
               }
             : {
                 severity: "success",
-                message: `Lekcja i ${taskOperations.length} zadań zostały utworzone.`,
+                message: `Lekcja i ${combinedOperations.length} zadań zostały utworzone.`,
               };
       } else {
         nextFeedback = {
@@ -543,6 +565,27 @@ export function TeacherLessonCreateView() {
                       tasks,
                     }))
                   }
+                  headerActions={
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<LibraryAddIcon />}
+                      onClick={() => setTaskBankDialogOpen(true)}
+                      sx={{
+                        borderRadius: 999,
+                        textTransform: "none",
+                        fontWeight: 600,
+                        borderStyle: "dashed",
+                        transition: "all 0.2s ease",
+                        "&:hover": {
+                          borderStyle: "solid",
+                          transform: "translateY(-1px)",
+                        },
+                      }}
+                    >
+                      Dodaj z bazy zadań
+                    </Button>
+                  }
                 />
               </FormSection>
             </Stack>
@@ -751,6 +794,17 @@ export function TeacherLessonCreateView() {
             </Button>
           </AppDialogFooter>
         </AppDialog>
+
+        <TaskBankPickerDialog
+          open={taskBankDialogOpen}
+          onClose={() => setTaskBankDialogOpen(false)}
+          onImport={(task) =>
+            setDraft((current) => ({
+              ...current,
+              tasks: [...current.tasks, task],
+            }))
+          }
+        />
       </Container>
     </Box>
   );
