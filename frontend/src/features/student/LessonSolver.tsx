@@ -3,6 +3,7 @@ import {
   Alert,
   Box,
   Button,
+  ButtonBase,
   CircularProgress,
   Container,
   Dialog,
@@ -1152,7 +1153,8 @@ export function LessonSolver() {
 
                       {hintImageBlobUrl && (
                         <>
-                          <Box
+                          <ButtonBase
+                            aria-label="Powiększ podpowiedź obrazkową"
                             onClick={() => setHintImageExpanded(true)}
                             sx={{
                               mt: currentTask.hint ? 1.5 : 0,
@@ -1162,7 +1164,13 @@ export function LessonSolver() {
                               position: "relative",
                               display: "inline-block",
                               width: "100%",
+                              textAlign: "left",
                               "&:hover .zoom-overlay": { opacity: 1 },
+                              "&:focus-visible": {
+                                outline: "3px solid",
+                                outlineColor: "primary.main",
+                                outlineOffset: 3,
+                              },
                             }}
                           >
                             <img
@@ -1192,7 +1200,7 @@ export function LessonSolver() {
                                 sx={{ color: "#fff", fontSize: 32 }}
                               />
                             </Box>
-                          </Box>
+                          </ButtonBase>
 
                           <Dialog
                             open={hintImageExpanded}
@@ -1208,6 +1216,7 @@ export function LessonSolver() {
                           >
                             <Box sx={{ position: "relative" }}>
                               <IconButton
+                                aria-label="Zamknij podgląd podpowiedzi"
                                 onClick={() => setHintImageExpanded(false)}
                                 size="small"
                                 sx={{

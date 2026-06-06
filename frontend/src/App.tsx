@@ -36,6 +36,7 @@ import { StudentDashboard } from "./features/student/StudentDashboard";
 import { StudentProgressView } from "./features/student/StudentProgressView";
 import { LessonSolver } from "./features/student/LessonSolver";
 import { StudentLessonResultView } from "./features/student/StudentLessonResultView";
+import { AccessibilityMenu } from "./components/ui/accessibility/AccessibilityMenu";
 
 /** Redirects to the correct dashboard based on the user's role. */
 function RoleBasedRedirect() {
@@ -92,6 +93,7 @@ function App() {
       <AppErrorBoundary>
         <AppThemeProvider>
           <AuthProvider>
+            <AccessibilityMenu />
             <Routes>
               {/* ErrorGuard wraps all routes – shows full-screen error on API failures */}
               <Route element={<ErrorGuard />}>
