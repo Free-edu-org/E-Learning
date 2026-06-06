@@ -206,6 +206,30 @@ Default local development base URL is `http://localhost:8080`
 
 ---
 
+### 1.9. Confirm Email Change *(no auth required)*
+- **URL**: `/api/v1/auth/email-change/confirm`
+- **Method**: `POST`
+- **Description**: Confirms an email address change using the one-time token sent to the new email address. On success, the user's email is updated to the new address.
+
+**Request Body (JSON):**
+```json
+{
+  "token": "email-change-token"
+}
+```
+
+**Success (204 No Content):**
+*(Empty Response Body)*
+
+**Known Errors:**
+- `EMAIL_CHANGE_TOKEN_INVALID` (400 Bad Request): Token not found or malformed.
+- `EMAIL_CHANGE_TOKEN_EXPIRED` (400 Bad Request): Token has expired.
+- `EMAIL_CHANGE_TOKEN_USED` (400 Bad Request): Token was already used.
+- `EMAIL_CHANGE_NEW_EMAIL_TAKEN` (409 Conflict): The new email address is already taken by another account.
+- `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
+
+---
+
 ## 2. User Management (`/api/v1/users`)
 
 ### 2.1. Register Student
@@ -337,7 +361,9 @@ Default local development base URL is `http://localhost:8080`
 ### 2.5. Update User Profile
 - **URL**: `/api/v1/users/{publicId}`
 - **Method**: `PUT`
-- **Description**: Updates username or email. Requires `ADMIN` authority OR the requesting user ID must match the parameter ID.
+- **Description**: Updates username and/or email. Requires `ADMIN` authority OR the requesting user ID must match the parameter ID.
+  - **Username change**: applied immediately.
+  - **Email change**: the current email is NOT updated immediately. A one-time verification link is sent to the new address. The email is updated only after clicking the link (see §1.9).
 
 **Request Body (JSON):**
 ```json
@@ -347,13 +373,14 @@ Default local development base URL is `http://localhost:8080`
 }
 ```
 
-**Success (200 OK):**
+**Success (200 OK):** Returns the current user profile. If only an email change was requested, the `email` field still reflects the old (active) address until the link is confirmed.
 ```json
 {
   "publicId": "33333333-3333-3333-3333-333333333333",
   "username": "newUsername",
-  "email": "new.email@example.com",
+  "email": "old.email@example.com",
   "role": "STUDENT",
+  "status": "ACTIVE",
   "createdAt": "2026-03-02T21:00:00"
 }
 ```

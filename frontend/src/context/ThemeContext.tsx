@@ -6,14 +6,31 @@ import CssBaseline from "@mui/material/CssBaseline";
 
 export type ThemeMode = "light" | "dark";
 
+const FONT_SCALE_STEP = 12.5;
+const MIN_FONT_SCALE = 87.5;
+const DEFAULT_FONT_SCALE = 100;
+const MAX_FONT_SCALE = 125;
+
 export interface ThemeContextType {
   mode: ThemeMode;
+  highContrast: boolean;
+  fontScale: number;
   toggleColorMode: () => void;
+  toggleHighContrast: () => void;
+  increaseFontScale: () => void;
+  decreaseFontScale: () => void;
+  resetAccessibility: () => void;
 }
 
 export const ThemeContext = createContext<ThemeContextType>({
   mode: "light",
+  highContrast: false,
+  fontScale: DEFAULT_FONT_SCALE,
   toggleColorMode: () => {},
+  toggleHighContrast: () => {},
+  increaseFontScale: () => {},
+  decreaseFontScale: () => {},
+  resetAccessibility: () => {},
 });
 
 export const useAppTheme = () => {
@@ -29,67 +46,122 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
     const savedMode = localStorage.getItem("themeMode") as ThemeMode;
     return savedMode || "light";
   });
+  const [highContrast, setHighContrast] = useState(() => {
+    return localStorage.getItem("highContrast") === "true";
+  });
+  const [fontScale, setFontScale] = useState(() => {
+    const savedScale = Number(localStorage.getItem("fontScale"));
+    if (!Number.isFinite(savedScale)) {
+      return DEFAULT_FONT_SCALE;
+    }
+    return Math.min(MAX_FONT_SCALE, Math.max(MIN_FONT_SCALE, savedScale));
+  });
 
   useEffect(() => {
     localStorage.setItem("themeMode", mode);
   }, [mode]);
+
+  useEffect(() => {
+    localStorage.setItem("highContrast", String(highContrast));
+  }, [highContrast]);
+
+  useEffect(() => {
+    localStorage.setItem("fontScale", String(fontScale));
+    document.documentElement.style.fontSize = `${fontScale}%`;
+  }, [fontScale]);
 
   const colorMode = useMemo(
     () => ({
       toggleColorMode: () => {
         setMode((prevMode) => (prevMode === "light" ? "dark" : "light"));
       },
+      toggleHighContrast: () => {
+        setHighContrast((current) => !current);
+      },
+      increaseFontScale: () => {
+        setFontScale((current) =>
+          Math.min(MAX_FONT_SCALE, current + FONT_SCALE_STEP),
+        );
+      },
+      decreaseFontScale: () => {
+        setFontScale((current) =>
+          Math.max(MIN_FONT_SCALE, current - FONT_SCALE_STEP),
+        );
+      },
+      resetAccessibility: () => {
+        setHighContrast(false);
+        setFontScale(DEFAULT_FONT_SCALE);
+      },
       mode,
+      highContrast,
+      fontScale,
     }),
-    [mode],
+    [fontScale, highContrast, mode],
   );
 
   const theme = useMemo(
     () =>
       createTheme({
         palette: {
-          mode,
+          mode: highContrast ? "dark" : mode,
           primary: {
-            main: "#6366f1",
-            light: "#818cf8",
-            dark: "#4f46e5",
-            contrastText: "#ffffff",
+            main: highContrast ? "#facc15" : "#6366f1",
+            light: highContrast ? "#fde047" : "#818cf8",
+            dark: highContrast ? "#eab308" : "#4f46e5",
+            contrastText: highContrast ? "#000000" : "#ffffff",
           },
           secondary: {
-            main: "#8b5cf6",
-            light: "#a78bfa",
-            dark: "#7c3aed",
+            main: highContrast ? "#22d3ee" : "#8b5cf6",
+            light: highContrast ? "#67e8f9" : "#a78bfa",
+            dark: highContrast ? "#06b6d4" : "#7c3aed",
           },
           success: {
-            main: "#10b981",
-            light: "#34d399",
-            dark: "#059669",
+            main: highContrast ? "#22c55e" : "#10b981",
+            light: highContrast ? "#4ade80" : "#34d399",
+            dark: highContrast ? "#16a34a" : "#059669",
           },
           error: {
-            main: "#ef4444",
-            light: "#f87171",
-            dark: "#dc2626",
+            main: highContrast ? "#f87171" : "#ef4444",
+            light: highContrast ? "#fca5a5" : "#f87171",
+            dark: highContrast ? "#ef4444" : "#dc2626",
           },
           warning: {
-            main: "#f59e0b",
-            light: "#fbbf24",
-            dark: "#d97706",
+            main: highContrast ? "#facc15" : "#f59e0b",
+            light: highContrast ? "#fde047" : "#fbbf24",
+            dark: highContrast ? "#eab308" : "#d97706",
           },
           info: {
-            main: "#3b82f6",
-            light: "#60a5fa",
-            dark: "#2563eb",
+            main: highContrast ? "#38bdf8" : "#3b82f6",
+            light: highContrast ? "#7dd3fc" : "#60a5fa",
+            dark: highContrast ? "#0ea5e9" : "#2563eb",
           },
           background: {
-            default: mode === "light" ? "#f5f7fb" : "#0b0d12",
-            paper: mode === "light" ? "#ffffff" : "#151822",
+            default: highContrast
+              ? "#000000"
+              : mode === "light"
+                ? "#f5f7fb"
+                : "#0b0d12",
+            paper: highContrast
+              ? "#050505"
+              : mode === "light"
+                ? "#ffffff"
+                : "#151822",
           },
           text: {
-            primary: mode === "light" ? "#0f172a" : "#f8fafc",
-            secondary: mode === "light" ? "#64748b" : "#a7b0c0",
+            primary: highContrast
+              ? "#ffffff"
+              : mode === "light"
+                ? "#0f172a"
+                : "#f8fafc",
+            secondary: highContrast
+              ? "#facc15"
+              : mode === "light"
+                ? "#64748b"
+                : "#a7b0c0",
           },
-          divider:
-            mode === "light"
+          divider: highContrast
+            ? "rgba(255, 255, 255, 0.58)"
+            : mode === "light"
               ? "rgba(15, 23, 42, 0.08)"
               : "rgba(139, 92, 246, 0.12)",
         },
@@ -115,9 +187,15 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
           MuiCssBaseline: {
             styleOverrides: {
               body: {
+                backgroundColor: highContrast
+                  ? "#000000"
+                  : mode === "light"
+                    ? "#f5f7fb"
+                    : "#0b0d12",
                 scrollbarWidth: "thin",
-                scrollbarColor:
-                  mode === "light"
+                scrollbarColor: highContrast
+                  ? "#facc15 #000000"
+                  : mode === "light"
                     ? "rgba(15,23,42,0.15) transparent"
                     : "rgba(255,255,255,0.1) transparent",
               },
@@ -186,40 +264,62 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
               root: {
                 "& .MuiOutlinedInput-root": {
                   borderRadius: "10px",
-                  backgroundColor: mode === "light" ? "#ffffff" : "#1b2030",
+                  backgroundColor: highContrast
+                    ? "#000000"
+                    : mode === "light"
+                      ? "#ffffff"
+                      : "#1b2030",
+                  color: highContrast ? "#ffffff" : undefined,
                   transition: "box-shadow 0.2s ease, border-color 0.2s ease",
                   "& fieldset": {
-                    borderColor:
-                      mode === "light"
+                    borderColor: highContrast
+                      ? "#facc15"
+                      : mode === "light"
                         ? "rgba(15, 23, 42, 0.14)"
                         : "rgba(139, 92, 246, 0.18)",
                     transition: "border-color 0.2s ease",
                   },
                   "&:hover fieldset": {
-                    borderColor:
-                      mode === "light"
+                    borderColor: highContrast
+                      ? "#fde047"
+                      : mode === "light"
                         ? "rgba(15, 23, 42, 0.28)"
                         : "rgba(139, 92, 246, 0.35)",
                   },
                   "&.Mui-focused fieldset": {
-                    borderColor: "#7c6cff",
+                    borderColor: highContrast ? "#ffffff" : "#7c6cff",
                     borderWidth: "1.5px",
                   },
                   "&.Mui-focused": {
-                    boxShadow:
-                      mode === "light"
+                    boxShadow: highContrast
+                      ? "0 0 0 3px rgba(250, 204, 21, 0.45)"
+                      : mode === "light"
                         ? "0 0 0 3px rgba(99, 102, 241, 0.12)"
                         : "0 0 0 3px rgba(124, 108, 255, 0.18)",
                   },
+                  "& .MuiInputBase-input": {
+                    color: highContrast ? "#ffffff" : undefined,
+                    "&::placeholder": {
+                      color: highContrast ? "#facc15" : undefined,
+                      opacity: highContrast ? 1 : undefined,
+                    },
+                  },
                   "&.Mui-disabled": {
-                    backgroundColor:
-                      mode === "light"
+                    backgroundColor: highContrast
+                      ? "#111111"
+                      : mode === "light"
                         ? "rgba(15, 23, 42, 0.03)"
                         : "rgba(255, 255, 255, 0.02)",
                   },
                 },
+                "& .MuiInputLabel-root": {
+                  color: highContrast ? "#facc15" : undefined,
+                },
                 "& .MuiInputLabel-root.Mui-focused": {
-                  color: "#6366f1",
+                  color: highContrast ? "#ffffff" : "#6366f1",
+                },
+                "& .MuiFormHelperText-root": {
+                  color: highContrast ? "#facc15" : undefined,
                 },
               },
             },
@@ -362,7 +462,7 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
           },
         },
       }),
-    [mode],
+    [highContrast, mode],
   );
 
   return (

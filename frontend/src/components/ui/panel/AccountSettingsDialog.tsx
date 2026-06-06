@@ -19,6 +19,7 @@ import {
   CloseOutlined as CloseIcon,
   CloudUploadOutlined as UploadIcon,
   ExpandMore as ExpandMoreIcon,
+  MarkEmailUnreadOutlined as MarkEmailUnreadIcon,
   VisibilityOutlined as VisibilityIcon,
   VisibilityOffOutlined as VisibilityOffIcon,
 } from "@mui/icons-material";
@@ -227,6 +228,7 @@ export function AccountSettingsDialog({
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [confirmEmail, setConfirmEmail] = useState("");
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [isEditingUsername, setIsEditingUsername] = useState(false);
   const [isEditingEmail, setIsEditingEmail] = useState(false);
 
@@ -263,6 +265,7 @@ export function AccountSettingsDialog({
 
     setUsername(user?.username ?? "");
     setEmail(user?.email ?? "");
+    setPendingEmail((current) => (current === user?.email ? null : current));
     setConfirmEmail("");
     setOldPassword("");
     setNewPassword("");
@@ -319,17 +322,27 @@ export function AccountSettingsDialog({
     setFeedback(null);
     setProfileLoading(true);
     try {
+      const requestedEmail = email.trim();
+      const emailChangeRequested =
+        isEditingEmail && requestedEmail !== user.email;
       const updatedUser = await userService.updateUser(user.publicId, {
         username: isEditingUsername ? username.trim() : user.username,
-        email: isEditingEmail ? email.trim() : user.email,
+        email: isEditingEmail ? requestedEmail : user.email,
       });
-      onUserUpdated(updatedUser);
+      const nextUser = emailChangeRequested
+        ? { ...updatedUser, email: user.email }
+        : updatedUser;
+      onUserUpdated(nextUser);
       setIsEditingUsername(false);
       setIsEditingEmail(false);
+      setEmail(nextUser.email);
       setConfirmEmail("");
+      setPendingEmail(emailChangeRequested ? requestedEmail : null);
       setFeedback({
         severity: "success",
-        message: "Profil został zaktualizowany.",
+        message: emailChangeRequested
+          ? "Wysłaliśmy link potwierdzający na nowy adres e-mail."
+          : "Profil został zaktualizowany.",
       });
     } catch (error) {
       const msg = getErrorMessage(error, "Błąd podczas aktualizacji profilu.");
@@ -918,7 +931,7 @@ export function AccountSettingsDialog({
                         flex: 1,
                       }}
                     >
-                      <Box>
+                      <Box sx={{ minWidth: 0, pr: 2 }}>
                         <Typography
                           variant="caption"
                           fontWeight={700}
@@ -930,6 +943,30 @@ export function AccountSettingsDialog({
                           Email
                         </Typography>
                         <Typography fontWeight={600}>{user?.email}</Typography>
+                        {pendingEmail && (
+                          <Box
+                            sx={{
+                              mt: 1,
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 0.75,
+                              color: inlineEditAccentColor,
+                              maxWidth: "100%",
+                            }}
+                          >
+                            <MarkEmailUnreadIcon sx={{ fontSize: 16 }} />
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                fontWeight: 600,
+                                lineHeight: 1.4,
+                                overflowWrap: "anywhere",
+                              }}
+                            >
+                              Nowy adres czeka na potwierdzenie: {pendingEmail}
+                            </Typography>
+                          </Box>
+                        )}
                       </Box>
                       <Button
                         size="small"

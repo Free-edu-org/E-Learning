@@ -11,6 +11,7 @@ import org.springframework.web.server.ServerWebExchange;
 import pl.freeedu.backend.accountinvitation.exception.AccountInvitationException;
 import pl.freeedu.backend.achievement.exception.AchievementException;
 import pl.freeedu.backend.auth.exception.AuthException;
+import pl.freeedu.backend.emailchange.exception.EmailChangeException;
 import pl.freeedu.backend.emailverification.exception.EmailVerificationException;
 import pl.freeedu.backend.invitation.exception.InvitationException;
 import pl.freeedu.backend.lesson.exception.LessonException;
@@ -53,6 +54,13 @@ public class GlobalExceptionHandler {
 			ServerWebExchange exchange) {
 		log.warn("EmailVerificationException [{} {}]: {}", exchange.getRequest().getMethod(),
 				exchange.getRequest().getPath(), ex.getMessage());
+		return buildProblemDetail(ex.getErrorCode().getStatus(), ex.getMessage(), ex.getErrorCode().name(), exchange);
+	}
+
+	@ExceptionHandler(EmailChangeException.class)
+	public Mono<ProblemDetail> handleEmailChangeException(EmailChangeException ex, ServerWebExchange exchange) {
+		log.warn("EmailChangeException [{} {}]: {}", exchange.getRequest().getMethod(), exchange.getRequest().getPath(),
+				ex.getMessage());
 		return buildProblemDetail(ex.getErrorCode().getStatus(), ex.getMessage(), ex.getErrorCode().name(), exchange);
 	}
 
