@@ -13,6 +13,10 @@ public interface SpeakTaskRepository extends JpaRepository<SpeakTask, Integer> {
 
 	List<SpeakTask> findByLessonId(Integer lessonId);
 
+	List<SpeakTask> findByLessonIdIsNullAndTeacherId(Integer teacherId);
+
+	List<SpeakTask> findByTeacherId(Integer teacherId);
+
 	Optional<SpeakTask> findByPublicId(String publicId);
 
 	@Transactional

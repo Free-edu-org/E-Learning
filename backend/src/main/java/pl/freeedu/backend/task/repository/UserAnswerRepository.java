@@ -18,6 +18,8 @@ public interface UserAnswerRepository extends JpaRepository<UserAnswer, Integer>
 	Optional<UserAnswer> findByUserIdAndLessonIdAndTaskIdAndTaskType(Integer userId, Integer lessonId, Integer taskId,
 			String taskType);
 
+	boolean existsByTaskIdAndTaskType(Integer taskId, String taskType);
+
 	@Query(value = """
 			SELECT ua.task_type,
 			       SUM(CASE WHEN ua.is_correct = TRUE THEN 1 ELSE 0 END) AS correct_count,

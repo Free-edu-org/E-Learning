@@ -310,6 +310,7 @@ export function tasksResponseToDrafts(
       drafts.push({
         id: `backendTask:choose:${task.publicId}`,
         type: "choose",
+        sourceLessonPublicId: task.lessonPublicId,
         task: task.task,
         possibleAnswers: task.possibleAnswers,
         correctAnswer:
@@ -329,6 +330,7 @@ export function tasksResponseToDrafts(
       drafts.push({
         id: `backendTask:write:${task.publicId}`,
         type: "write",
+        sourceLessonPublicId: task.lessonPublicId,
         task: task.task,
         possibleAnswers: "",
         correctAnswer: task.correctAnswer ?? "",
@@ -347,6 +349,7 @@ export function tasksResponseToDrafts(
       drafts.push({
         id: `backendTask:scatter:${task.publicId}`,
         type: "scatter",
+        sourceLessonPublicId: task.lessonPublicId,
         task: task.task,
         possibleAnswers: "",
         correctAnswer: task.correctAnswer ?? "",
@@ -366,6 +369,7 @@ export function tasksResponseToDrafts(
       drafts.push({
         id: `backendTask:speak:${task.publicId}`,
         type: "speak",
+        sourceLessonPublicId: task.lessonPublicId,
         possibleAnswers: "",
         correctAnswer: expectedText,
         correctAnswers: expectedText,
@@ -390,4 +394,53 @@ export function parseBackendDraftId(
   }
 
   return { type: match[1], taskPublicId: match[2] };
+}
+
+function buildTaskContentSnapshot(task: LessonTaskDraft) {
+  return JSON.stringify({
+    type: task.type,
+    task: task.task ?? "",
+    possibleAnswers: task.possibleAnswers,
+    correctAnswer: task.correctAnswer,
+    correctAnswers: task.correctAnswers ?? "",
+    words: task.words,
+    hint: task.hint,
+    section: task.section,
+    points: task.points,
+  });
+}
+
+export function createLessonDraftFromBankTask(
+  task: LessonTaskDraft,
+): LessonTaskDraft {
+  const clonedTask: LessonTaskDraft = {
+    ...task,
+    id: window.crypto.randomUUID(),
+    sourceLessonPublicId: undefined,
+  };
+
+  if (!task.sourceLessonPublicId) {
+    clonedTask.bankSourceTaskPublicId =
+      parseBackendDraftId(task.id)?.taskPublicId ?? null;
+    clonedTask.bankSourceType = task.type;
+    clonedTask.bankSourceSnapshot = buildTaskContentSnapshot(clonedTask);
+  } else {
+    clonedTask.bankSourceTaskPublicId = null;
+    clonedTask.bankSourceType = null;
+    clonedTask.bankSourceSnapshot = null;
+  }
+
+  return clonedTask;
+}
+
+export function isUnmodifiedImportedBankTask(task: LessonTaskDraft): boolean {
+  if (
+    !task.bankSourceTaskPublicId ||
+    !task.bankSourceType ||
+    !task.bankSourceSnapshot
+  ) {
+    return false;
+  }
+
+  return buildTaskContentSnapshot(task) === task.bankSourceSnapshot;
 }

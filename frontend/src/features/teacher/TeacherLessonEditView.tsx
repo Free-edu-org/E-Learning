@@ -17,6 +17,7 @@ import {
   Typography,
 } from "@mui/material";
 import {
+  LibraryAddOutlined as LibraryAddIcon,
   ArrowBackOutlined as BackIcon,
   AttachFileOutlined as AttachIcon,
   CheckCircleOutlineOutlined as ReadyIcon,
@@ -40,6 +41,7 @@ import { LessonLabelColorPicker } from "@/components/lesson/LessonLabelColorPick
 import { taskService } from "@/api/taskService";
 import { userService, type UserProfile } from "@/api/userService";
 import { TaskEditor } from "@/components/teacher/TaskEditor";
+import { TaskBankPickerDialog } from "@/components/teacher/TaskBankPickerDialog";
 import type { LessonTaskDraft } from "@/components/teacher/TaskCard";
 import {
   AppDialog,
@@ -65,6 +67,7 @@ import {
   emptyLessonDraft,
   getLessonEditorErrorMessage,
   getTaskValidationError,
+  isUnmodifiedImportedBankTask,
   parseBackendDraftId,
   tasksResponseToDrafts,
   updateLessonTask,
@@ -108,6 +111,7 @@ export function TeacherLessonEditView() {
     theme?: string;
   }>({});
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
+  const [taskBankDialogOpen, setTaskBankDialogOpen] = useState(false);
   const [savedDraftSignature, setSavedDraftSignature] = useState<string | null>(
     null,
   );
@@ -346,6 +350,17 @@ export function TeacherLessonEditView() {
         }
 
         for (const task of tasksToCreate) {
+          if (isUnmodifiedImportedBankTask(task)) {
+            taskOperations.push(
+              taskService.assignTeacherBankTaskToLesson(
+                task.bankSourceType!,
+                task.bankSourceTaskPublicId!,
+                { lessonPublicIds: [lesson.publicId] },
+              ),
+            );
+            continue;
+          }
+
           taskOperations.push(createLessonTask(lesson.publicId, task));
         }
 
@@ -900,6 +915,27 @@ export function TeacherLessonEditView() {
                     }
                     defaultExpanded={false}
                     lessonPublicId={lessonPublicId}
+                    headerActions={
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<LibraryAddIcon />}
+                        onClick={() => setTaskBankDialogOpen(true)}
+                        sx={{
+                          borderRadius: 999,
+                          textTransform: "none",
+                          fontWeight: 600,
+                          borderStyle: "dashed",
+                          transition: "all 0.2s ease",
+                          "&:hover": {
+                            borderStyle: "solid",
+                            transform: "translateY(-1px)",
+                          },
+                        }}
+                      >
+                        Dodaj z bazy zadań
+                      </Button>
+                    }
                   />
                 ) : (
                   <Alert severity="warning">
@@ -1128,6 +1164,17 @@ export function TeacherLessonEditView() {
             </FormActions>
           </AppDialogFooter>
         </AppDialog>
+
+        <TaskBankPickerDialog
+          open={taskBankDialogOpen}
+          onClose={() => setTaskBankDialogOpen(false)}
+          onImport={(task) =>
+            setDraft((current) => ({
+              ...current,
+              tasks: [...current.tasks, task],
+            }))
+          }
+        />
       </Container>
     </Box>
   );

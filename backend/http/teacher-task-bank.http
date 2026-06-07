@@ -1,0 +1,38 @@
+### Get teacher task bank (TEACHER)
+GET http://localhost:8080/api/v1/teacher/task-bank/tasks
+Authorization: Bearer {{teacher_token}}
+
+### Create choose task in teacher task bank
+POST http://localhost:8080/api/v1/teacher/task-bank/tasks/choose
+Authorization: Bearer {{teacher_token}}
+Content-Type: application/json
+
+{
+  "task": "Choose the correct word",
+  "possibleAnswers": "cat|dog|bird",
+  "correctAnswers": [1],
+  "hint": "Think about the sound",
+  "section": "Animals",
+  "points": 2
+}
+
+### Create write task in teacher task bank
+POST http://localhost:8080/api/v1/teacher/task-bank/tasks/write
+Authorization: Bearer {{teacher_token}}
+Content-Type: application/json
+
+{
+  "task": "Write the past tense of go",
+  "correctAnswers": ["went"],
+  "section": "Grammar",
+  "points": 1
+}
+
+### Assign task bank task to lesson
+POST http://localhost:8080/api/v1/teacher/task-bank/tasks/write/{{task_public_id}}/assign
+Authorization: Bearer {{teacher_token}}
+Content-Type: application/json
+
+{
+  "lessonPublicIds": ["{{lesson_public_id}}", "{{second_lesson_public_id}}"]
+}

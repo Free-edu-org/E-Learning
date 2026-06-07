@@ -40,7 +40,7 @@ export interface CreateSpeakTaskRequest {
 
 export interface TaskResponse {
   publicId: string;
-  lessonPublicId: string;
+  lessonPublicId: string | null;
   task: string;
   hint?: string;
   hintImageUrl?: string | null;
@@ -96,9 +96,13 @@ export interface TaskSectionDto {
 }
 
 export interface LessonTasksResponse {
-  lessonPublicId: string;
+  lessonPublicId: string | null;
   status: string | null;
   sections: TaskSectionDto[];
+}
+
+export interface AssignTaskToLessonRequest {
+  lessonPublicIds: string[];
 }
 
 export const taskService = {
@@ -214,5 +218,92 @@ export const taskService = {
     fetchApi<void>(
       `/api/v1/lessons/${lessonPublicId}/tasks/${taskType}/${taskPublicId}/hint-image`,
       { method: "DELETE" },
+    ),
+
+  getTeacherTaskBank: () =>
+    fetchApi<LessonTasksResponse>("/api/v1/teacher/task-bank/tasks"),
+
+  createTeacherBankChooseTask: (payload: CreateChooseTaskRequest) =>
+    fetchApi<TaskResponse>("/api/v1/teacher/task-bank/tasks/choose", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  createTeacherBankWriteTask: (payload: CreateWriteTaskRequest) =>
+    fetchApi<TaskResponse>("/api/v1/teacher/task-bank/tasks/write", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  createTeacherBankScatterTask: (payload: CreateScatterTaskRequest) =>
+    fetchApi<TaskResponse>("/api/v1/teacher/task-bank/tasks/scatter", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  createTeacherBankSpeakTask: (payload: CreateSpeakTaskRequest) =>
+    fetchApi<TaskResponse>("/api/v1/teacher/task-bank/tasks/speak", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  updateTeacherBankChooseTask: (
+    taskPublicId: string,
+    payload: CreateChooseTaskRequest,
+  ) =>
+    fetchApi<ChooseTaskResponse>(
+      `/api/v1/teacher/task-bank/tasks/choose/${taskPublicId}`,
+      {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      },
+    ),
+  updateTeacherBankWriteTask: (
+    taskPublicId: string,
+    payload: CreateWriteTaskRequest,
+  ) =>
+    fetchApi<WriteTaskResponse>(
+      `/api/v1/teacher/task-bank/tasks/write/${taskPublicId}`,
+      {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      },
+    ),
+  updateTeacherBankScatterTask: (
+    taskPublicId: string,
+    payload: CreateScatterTaskRequest,
+  ) =>
+    fetchApi<ScatterTaskResponse>(
+      `/api/v1/teacher/task-bank/tasks/scatter/${taskPublicId}`,
+      {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      },
+    ),
+  updateTeacherBankSpeakTask: (
+    taskPublicId: string,
+    payload: CreateSpeakTaskRequest,
+  ) =>
+    fetchApi<SpeakTaskResponse>(
+      `/api/v1/teacher/task-bank/tasks/speak/${taskPublicId}`,
+      {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      },
+    ),
+
+  deleteTeacherBankTask: (type: TaskType, taskPublicId: string) =>
+    fetchApi<void>(`/api/v1/teacher/task-bank/tasks/${type}/${taskPublicId}`, {
+      method: "DELETE",
+    }),
+
+  assignTeacherBankTaskToLesson: (
+    type: TaskType,
+    taskPublicId: string,
+    payload: AssignTaskToLessonRequest,
+  ) =>
+    fetchApi<void>(
+      `/api/v1/teacher/task-bank/tasks/${type}/${taskPublicId}/assign`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
     ),
 };

@@ -13,6 +13,10 @@ public interface ChooseTaskRepository extends JpaRepository<ChooseTask, Integer>
 
 	List<ChooseTask> findByLessonId(Integer lessonId);
 
+	List<ChooseTask> findByLessonIdIsNullAndTeacherId(Integer teacherId);
+
+	List<ChooseTask> findByTeacherId(Integer teacherId);
+
 	Optional<ChooseTask> findByPublicId(String publicId);
 
 	@Transactional

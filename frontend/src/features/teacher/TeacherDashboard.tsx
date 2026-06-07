@@ -26,6 +26,7 @@ import {
   CloseOutlined as RemoveFileIcon,
   DeleteOutline as DeleteIcon,
   EditOutlined as EditLessonIcon,
+  Inventory2Outlined as TaskBankIcon,
   SchoolOutlined as SchoolIcon,
   PersonAddOutlined as PersonAddIcon,
   SaveOutlined as SaveIcon,
@@ -972,6 +973,12 @@ export function TeacherDashboard() {
             subtitle="Nowa lekcja z zadaniami"
             onClick={() => navigate("/teacher/lessons/new")}
             sx={{ borderRadius: 3.5 }}
+          />
+          <ActionButton
+            icon={<TaskBankIcon sx={{ fontSize: 32 }} />}
+            title="Baza zadań"
+            subtitle="Twórz zadania bez lekcji i przypisuj je później"
+            onClick={() => navigate("/teacher/task-bank")}
           />
           <ActionButton
             icon={
