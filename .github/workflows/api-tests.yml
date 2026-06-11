@@ -1,0 +1,116 @@
+name: API Tests Pipeline
+
+permissions:
+  pull-requests: write
+  contents: read
+  issues: write
+
+on:
+  pull_request:
+    branches: ["main", "deploy/azure-prod"]
+
+jobs:
+  api-tests:
+    name: API Tests
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_DATABASE: freeedu
+          MYSQL_USER: freeedu
+          MYSQL_PASSWORD: freeedu_pass
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    env:
+      SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/freeedu
+      DB_PASSWORD: freeedu_pass
+      API_TEST_DB_HOST: 127.0.0.1
+      API_TEST_DB_PORT: 3306
+      API_TEST_DB_USER: freeedu
+      API_TEST_DB_PASSWORD: freeedu_pass
+      API_TEST_DB_NAME: freeedu
+      API_TEST_BASE_URL: http://127.0.0.1:8080/api/v1
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'oracle'
+          java-version: '25'
+          cache: 'maven'
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: ./api-tests/package-lock.json
+
+      - name: Make mvnw executable
+        working-directory: ./backend
+        run: chmod +x mvnw
+
+      - name: Install API test dependencies
+        working-directory: ./api-tests
+        run: npm ci
+
+      - name: Start backend
+        working-directory: ./backend
+        run: ./mvnw spring-boot:run > ../backend.log 2>&1 &
+
+      - name: Run API tests
+        working-directory: ./api-tests
+        run: npm test -- --coverage
+
+      - name: Upload backend log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-log
+          path: backend.log
+          if-no-files-found: ignore
+
+      - name: Upload API test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-tests-report
+          path: api-tests/coverage
+          if-no-files-found: ignore
+
+      - name: Summary Report
+        if: always()
+        run: |
+          echo "## API Tests Report" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Comment PR on Failure
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `❌ **API Tests Failed**
+
+            Backend uruchomił się niepoprawnie albo testy integracyjne API nie przeszły.
+
+            **Jak sprawdzić lokalnie?** Uruchom:
+            \`\`\`bash
+            cd backend
+            ./mvnw spring-boot:run
+
+            cd ../api-tests
+            npm ci
+            npm test
+            \`\`\``
+            })
