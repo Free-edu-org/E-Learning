@@ -35,6 +35,9 @@ jobs:
       API_TEST_DB_PASSWORD: freeedu_pass
       API_TEST_DB_NAME: freeedu
       API_TEST_BASE_URL: http://127.0.0.1:8080/api/v1
+      API_TEST_JEST_RESULTS_FILE: jest-results.json
+      API_TEST_SUMMARY_FILE: ci-summary.md
+      API_TEST_COMMENT_FILE: ci-comment.md
 
     steps:
       - uses: actions/checkout@v4
@@ -67,7 +70,12 @@ jobs:
 
       - name: Run API tests
         working-directory: ./api-tests
-        run: npm test -- --coverage
+        run: npm test -- --coverage --json --outputFile=jest-results.json
+
+      - name: Build API test summary
+        if: always()
+        working-directory: ./api-tests
+        run: node scripts/summarize-jest-results.js
 
       - name: Upload backend log
         if: always()
@@ -82,35 +90,28 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: api-tests-report
-          path: api-tests/coverage
+          path: |
+            api-tests/coverage
+            api-tests/jest-results.json
+            api-tests/ci-summary.md
+            api-tests/ci-comment.md
           if-no-files-found: ignore
 
       - name: Summary Report
         if: always()
         run: |
-          echo "## API Tests Report" >> $GITHUB_STEP_SUMMARY
-          echo "- **Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          cat api-tests/ci-summary.md >> $GITHUB_STEP_SUMMARY
 
       - name: Comment PR on Failure
         if: failure() && github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
           script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('api-tests/ci-comment.md', 'utf8');
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `❌ **API Tests Failed**
-
-            Backend uruchomił się niepoprawnie albo testy integracyjne API nie przeszły.
-
-            **Jak sprawdzić lokalnie?** Uruchom:
-            \`\`\`bash
-            cd backend
-            ./mvnw spring-boot:run
-
-            cd ../api-tests
-            npm ci
-            npm test
-            \`\`\``
+              body
             })
