@@ -66,11 +66,13 @@ function buildSummary(results, failures) {
         lines.push('### 🧯 Failure Details');
         lines.push('');
         topFailures.forEach((failure) => {
-            lines.push(`#### ${escapeMarkdown(failure.title)}`);
+            lines.push(`<details>`);
+            lines.push(`<summary>${escapeMarkdown(failure.title)}</summary>`);
             lines.push('');
             lines.push('```text');
             lines.push(failure.message);
             lines.push('```');
+            lines.push('</details>');
             lines.push('');
         });
     }
@@ -104,9 +106,13 @@ function buildComment(results, failures) {
         commentLines.push('');
         commentLines.push(`**${escapeMarkdown(firstFailure.title)}**`);
         commentLines.push('');
+        commentLines.push('<details>');
+        commentLines.push('<summary>Show error details</summary>');
+        commentLines.push('');
         commentLines.push('```text');
         commentLines.push(firstFailure.message);
         commentLines.push('```');
+        commentLines.push('</details>');
     }
 
     return `${commentLines.join('\n')}\n`;
