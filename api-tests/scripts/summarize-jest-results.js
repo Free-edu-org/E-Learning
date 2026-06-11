@@ -46,24 +46,24 @@ function buildFailureList(results) {
 
 function buildSummary(results, failures) {
     const lines = [];
-    lines.push('## API Tests Report');
+    lines.push(results.success ? '## ✅ API Tests Passed' : '## ❌ API Tests Failed');
     lines.push('');
-    lines.push(`- Status: ${results.success ? 'PASSED' : 'FAILED'}`);
-    lines.push(`- Test suites: ${results.numPassedTestSuites}/${results.numTotalTestSuites} passed`);
-    lines.push(`- Tests: ${results.numPassedTests}/${results.numTotalTests} passed`);
-    lines.push(`- Runtime: ${(results.testResults || []).reduce((sum, suite) => sum + (suite.endTime - suite.startTime), 0) / 1000}s`);
+    lines.push(`- ${results.success ? '🟢' : '🔴'} Status: ${results.success ? 'PASSED' : 'FAILED'}`);
+    lines.push(`- ${results.success ? '🧪' : '⚠️'} Test suites: ${results.numPassedTestSuites}/${results.numTotalTestSuites} passed`);
+    lines.push(`- ${results.success ? '📊' : '📉'} Tests: ${results.numPassedTests}/${results.numTotalTests} passed`);
+    lines.push(`- ⏱️ Runtime: ${(results.testResults || []).reduce((sum, suite) => sum + (suite.endTime - suite.startTime), 0) / 1000}s`);
 
     if (failures.length > 0) {
         const topFailures = failures.slice(0, 5);
         lines.push('');
-        lines.push('### Failed Tests');
+        lines.push('### 🔎 Failed Tests');
         lines.push('');
         topFailures.forEach((failure) => {
-            lines.push(`- ${escapeMarkdown(failure.title)} (${escapeMarkdown(failure.location)})`);
+            lines.push(`- ❌ ${escapeMarkdown(failure.title)} (${escapeMarkdown(failure.location)})`);
         });
 
         lines.push('');
-        lines.push('### Failure Details');
+        lines.push('### 🧯 Failure Details');
         lines.push('');
         topFailures.forEach((failure) => {
             lines.push(`#### ${escapeMarkdown(failure.title)}`);
@@ -81,24 +81,26 @@ function buildSummary(results, failures) {
 function buildComment(results, failures) {
     if (results.success) {
         return [
-            '## API Tests Passed',
+            '## ✅ API Tests Passed',
             '',
-            `- Test suites: ${results.numPassedTestSuites}/${results.numTotalTestSuites}`,
-            `- Tests: ${results.numPassedTests}/${results.numTotalTests}`
+            `- 🟢 Status: PASSED`,
+            `- 🧪 Test suites: ${results.numPassedTestSuites}/${results.numTotalTestSuites}`,
+            `- 📊 Tests: ${results.numPassedTests}/${results.numTotalTests}`
         ].join('\n');
     }
 
     const firstFailure = failures[0];
     const commentLines = [
-        '## API Tests Failed',
+        '## ❌ API Tests Failed',
         '',
-        `- Test suites: ${results.numPassedTestSuites}/${results.numTotalTestSuites} passed`,
-        `- Tests: ${results.numPassedTests}/${results.numTotalTests} passed`,
+        `- 🔴 Status: FAILED`,
+        `- ⚠️ Test suites: ${results.numPassedTestSuites}/${results.numTotalTestSuites} passed`,
+        `- 📉 Tests: ${results.numPassedTests}/${results.numTotalTests} passed`,
         ''
     ];
 
     if (firstFailure) {
-        commentLines.push(`### First failing test`);
+        commentLines.push('### 🔥 First failing test');
         commentLines.push('');
         commentLines.push(`**${escapeMarkdown(firstFailure.title)}**`);
         commentLines.push('');
