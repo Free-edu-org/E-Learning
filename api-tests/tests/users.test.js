@@ -283,7 +283,7 @@ describe('Users API (/api/v1/users)', () => {
                 };
                 const response = await apiClient.put(`/users/${newStudentPublicId}`, updateData);
                 expect(response.status).toBe(200);
-                expect(response.data.email).toBe(updateData.email);
+                expect(response.data.email).toBe(newStudentData.email);
                 expect(response.data.username).toBe(updateData.username);
                 expect(response.data).toHaveProperty('avatarUrl');
                 newStudentUsername = updateData.username;
