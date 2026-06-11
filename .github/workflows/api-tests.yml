@@ -102,8 +102,8 @@ jobs:
         run: |
           cat api-tests/ci-summary.md >> $GITHUB_STEP_SUMMARY
 
-      - name: Comment PR on Failure
-        if: failure() && github.event_name == 'pull_request'
+      - name: Comment PR with API test report
+        if: always() && github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
           script: |
