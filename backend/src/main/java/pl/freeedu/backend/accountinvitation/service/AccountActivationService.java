@@ -122,14 +122,17 @@ public class AccountActivationService {
 
 	public Mono<Void> resendInvite(Integer userId) {
 		return Mono.fromCallable(() -> {
-			User user = userRepository.findById(userId)
-					.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
-			if (user.getStatus() != UserStatus.INVITED) {
-				throw new AccountInvitationException(AccountInvitationErrorCode.ACCOUNT_ALREADY_ACTIVE);
-			}
-			String plainToken = createInvitationTokenForExistingUser(user);
-			sendInvitationEmail(user.getEmail(), plainToken);
-			log.info("Invitation resent for user ID: {}", userId);
+			transactionTemplate.execute(status -> {
+				User user = userRepository.findById(userId)
+						.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
+				if (user.getStatus() != UserStatus.INVITED) {
+					throw new AccountInvitationException(AccountInvitationErrorCode.ACCOUNT_ALREADY_ACTIVE);
+				}
+				String plainToken = createInvitationTokenForExistingUser(user);
+				sendInvitationEmail(user.getEmail(), plainToken);
+				log.info("Invitation resent for user ID: {}", userId);
+				return null;
+			});
 			return (Void) null;
 		}).subscribeOn(Schedulers.boundedElastic());
 	}
