@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -143,6 +144,22 @@ class AccountActivationServiceTest {
 			assertEquals(AccountInvitationErrorCode.INVITATION_TOKEN_EXPIRED,
 					((AccountInvitationException) err).getErrorCode());
 		}).verify();
+	}
+
+	@Test
+	void shouldThrowInvitationExceptionWhenMailDeliveryFails() {
+		// given
+		RuntimeException mailFailure = new RuntimeException("smtp failed");
+		doThrow(mailFailure).when(mailService).sendInvitationEmail("teacher@e.com", "plain-token");
+
+		// when
+		AccountInvitationException exception = org.junit.jupiter.api.Assertions.assertThrows(
+				AccountInvitationException.class,
+				() -> accountActivationService.sendInvitationEmail("teacher@e.com", "plain-token"));
+
+		// then
+		assertEquals(AccountInvitationErrorCode.INVITATION_EMAIL_DELIVERY_FAILED, exception.getErrorCode());
+		verify(mailService).sendInvitationEmail("teacher@e.com", "plain-token");
 	}
 
 	// --- activateAccount ---

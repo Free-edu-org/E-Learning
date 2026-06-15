@@ -96,6 +96,7 @@ public class AccountActivationService {
 			mailService.sendInvitationEmail(email, plainToken);
 		} catch (Exception ex) {
 			log.error("Failed to send invitation email to: {}", email, ex);
+			throw new AccountInvitationException(AccountInvitationErrorCode.INVITATION_EMAIL_DELIVERY_FAILED);
 		}
 	}
 

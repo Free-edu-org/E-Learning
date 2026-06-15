@@ -1177,6 +1177,7 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
 - `INVALID_ROLE_FOR_GROUP` (400 Bad Request): Wskazana grupa nie należy do aktualnego nauczyciela.
 - `USER_GROUP_NOT_FOUND` (404 Not Found): Grupa o podanym ID nie istnieje.
 - `EMAIL_ALREADY_TAKEN` (409 Conflict): Email already exists.
+- `INVITATION_EMAIL_DELIVERY_FAILED` (503 Service Unavailable): Konto/token nie zostały udostępnione użytkownikowi, bo wysyłka maila aktywacyjnego nie powiodła się.
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
 - `FORBIDDEN` (403 Forbidden): Token role does not permit access.
 
@@ -1194,6 +1195,7 @@ Zbiór zapytań agregacyjnych specjalnie dostrojonych do ekranu Pupy Nauczyciela
 **Known Errors:**
 - `USER_NOT_FOUND` (404 Not Found): Uczeń o podanym ID nie istnieje.
 - `ACCOUNT_NOT_INVITED` (409 Conflict): Konto ucznia nie ma statusu `INVITED` (już aktywne).
+- `INVITATION_EMAIL_DELIVERY_FAILED` (503 Service Unavailable): Nie udało się wysłać nowego maila aktywacyjnego.
 - `FORBIDDEN` (403 Forbidden): Uczeń nie należy do żadnej grupy tego nauczyciela.
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
 
@@ -1319,6 +1321,7 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
 **Known Errors:**
 - `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
 - `EMAIL_ALREADY_TAKEN` (409 Conflict): Email already exists.
+- `INVITATION_EMAIL_DELIVERY_FAILED` (503 Service Unavailable): Konto/token nie zostały udostępnione użytkownikowi, bo wysyłka maila aktywacyjnego nie powiodła się.
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
 - `FORBIDDEN` (403 Forbidden): Token role does not permit access.
 
@@ -1335,6 +1338,7 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
 **Known Errors:**
 - `USER_NOT_FOUND` (404 Not Found): Nauczyciel o podanym ID nie istnieje.
 - `ACCOUNT_NOT_INVITED` (409 Conflict): Konto nauczyciela nie ma statusu `INVITED` (już aktywne).
+- `INVITATION_EMAIL_DELIVERY_FAILED` (503 Service Unavailable): Nie udało się wysłać nowego maila aktywacyjnego.
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
 - `FORBIDDEN` (403 Forbidden): Token role does not permit access.
 
@@ -1398,6 +1402,7 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
 - `VALIDATION_FAILED` (400 Bad Request): Fields are missing or invalid.
 - `USER_GROUP_NOT_FOUND` (404 Not Found): Group does not exist.
 - `EMAIL_ALREADY_TAKEN` (409 Conflict): Email already exists.
+- `INVITATION_EMAIL_DELIVERY_FAILED` (503 Service Unavailable): Konto/token nie zostały udostępnione użytkownikowi, bo wysyłka maila aktywacyjnego nie powiodła się.
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
 - `FORBIDDEN` (403 Forbidden): Token role does not permit access.
 
@@ -1413,6 +1418,7 @@ Warstwa BFF dla administratora. Dedykowana wyciągom z zakresu całego systemu.
 **Known Errors:**
 - `USER_NOT_FOUND` (404 Not Found): Uczeń o podanym ID nie istnieje.
 - `ACCOUNT_NOT_INVITED` (409 Conflict): Konto ucznia nie ma statusu `INVITED` (już aktywne).
+- `INVITATION_EMAIL_DELIVERY_FAILED` (503 Service Unavailable): Nie udało się wysłać nowego maila aktywacyjnego.
 - `UNAUTHORIZED` (401 Unauthorized): Invalid or missing token.
 - `FORBIDDEN` (403 Forbidden): Token role does not permit access.
 

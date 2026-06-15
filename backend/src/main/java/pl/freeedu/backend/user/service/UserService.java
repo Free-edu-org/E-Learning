@@ -288,7 +288,7 @@ public class UserService {
 
 			Resource resource = new FileSystemResource(filePath);
 			if (!resource.exists() || !resource.isReadable()) {
-				log.error("Avatar file missing or unreadable. Requested: {}, resolved path: {}, exists={}, readable={}",
+				log.warn("Avatar file missing or unreadable. Requested: {}, resolved path: {}, exists={}, readable={}",
 						fileName, filePath.toAbsolutePath(), resource.exists(), resource.isReadable());
 				throw new ResponseStatusException(HttpStatus.NOT_FOUND);
 			}
