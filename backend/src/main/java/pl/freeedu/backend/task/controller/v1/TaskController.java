@@ -214,6 +214,7 @@ public class TaskController {
 			@ApiResponse(responseCode = "400", description = "Audio file is missing", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "403", description = "Lesson is inactive or student has no access", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "404", description = "Lesson or task not found", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "415", description = "Unsupported Media Type - multipart/form-data required", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "503", description = "STT service unavailable", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PostMapping(value = "/tasks/speak/{taskPublicId}/transcribe", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	@PreAuthorize("hasRole('STUDENT')")

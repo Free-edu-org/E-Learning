@@ -2211,6 +2211,7 @@ Notes:
 - `LESSON_NOT_FOUND` (404), `TASK_NOT_FOUND` (404)
 - `LESSON_NOT_ACTIVE` (403), `STUDENT_NO_ACCESS` (403)
 - `LESSON_ALREADY_COMPLETED` (403), `LESSON_NOT_STARTED` (400)
+- `UNSUPPORTED_MEDIA_TYPE` (415): Request must use `multipart/form-data` with `file` part.
 - `SPEAK_ATTEMPT_LIMIT_EXCEEDED` (429): Too many unused attempts for the current `UserLesson + task`.
 - `STT_SERVICE_UNAVAILABLE` (503): Local STT service is not reachable, timed out, or returned an invalid payload.
 - `STT_RECOGNITION_FAILED` (502): STT service returned an empty or unusable transcription.
