@@ -69,7 +69,8 @@ public class AdminDashboardController {
 			@ApiResponse(responseCode = "400", description = "Bad Request - VALIDATION_FAILED", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "401", description = "Unauthorized - invalid token", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden - requires ADMIN role", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
-			@ApiResponse(responseCode = "409", description = "Conflict - EMAIL_ALREADY_TAKEN", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
+			@ApiResponse(responseCode = "409", description = "Conflict - EMAIL_ALREADY_TAKEN", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "503", description = "Service Unavailable - INVITATION_EMAIL_DELIVERY_FAILED", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PostMapping("/teachers")
 	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseStatus(HttpStatus.CREATED)
@@ -94,7 +95,8 @@ public class AdminDashboardController {
 			@ApiResponse(responseCode = "401", description = "Unauthorized - invalid token", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden - requires ADMIN role", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
 			@ApiResponse(responseCode = "404", description = "Not Found - USER_GROUP_NOT_FOUND", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
-			@ApiResponse(responseCode = "409", description = "Conflict - EMAIL_ALREADY_TAKEN or USERNAME_ALREADY_TAKEN", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
+			@ApiResponse(responseCode = "409", description = "Conflict - EMAIL_ALREADY_TAKEN or USERNAME_ALREADY_TAKEN", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "503", description = "Service Unavailable - INVITATION_EMAIL_DELIVERY_FAILED", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PostMapping("/students")
 	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseStatus(HttpStatus.CREATED)
@@ -121,7 +123,8 @@ public class AdminDashboardController {
 	@Operation(summary = "Resend invitation email to a pending student")
 	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Invitation resent successfully"),
 			@ApiResponse(responseCode = "404", description = "Not Found - USER_NOT_FOUND", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
-			@ApiResponse(responseCode = "409", description = "Account is already active", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
+			@ApiResponse(responseCode = "409", description = "Account is already active", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "503", description = "Service Unavailable - INVITATION_EMAIL_DELIVERY_FAILED", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PostMapping("/students/{studentPublicId}/resend-invite")
 	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
@@ -132,7 +135,8 @@ public class AdminDashboardController {
 	@Operation(summary = "Resend invitation email to a pending teacher")
 	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Invitation resent successfully"),
 			@ApiResponse(responseCode = "404", description = "Not Found - USER_NOT_FOUND", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
-			@ApiResponse(responseCode = "409", description = "Account is already active", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
+			@ApiResponse(responseCode = "409", description = "Account is already active", content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+			@ApiResponse(responseCode = "503", description = "Service Unavailable - INVITATION_EMAIL_DELIVERY_FAILED", content = @Content(schema = @Schema(implementation = ProblemDetail.class)))})
 	@PostMapping("/teachers/{teacherPublicId}/resend-invite")
 	@PreAuthorize("hasRole('ADMIN')")
 	@ResponseStatus(HttpStatus.NO_CONTENT)

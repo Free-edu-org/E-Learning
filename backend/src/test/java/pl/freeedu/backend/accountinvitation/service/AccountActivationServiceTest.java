@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -54,6 +55,14 @@ class AccountActivationServiceTest {
 
 	@InjectMocks
 	private AccountActivationService accountActivationService;
+
+	@org.junit.jupiter.api.BeforeEach
+	void setUp() {
+		when(transactionTemplate.execute(any())).thenAnswer(invocation -> {
+			TransactionCallback<?> callback = invocation.getArgument(0);
+			return callback.doInTransaction(mock(TransactionStatus.class));
+		});
+	}
 
 	@Test
 	void shouldCreateInvitedTeacherWithTeacherRole() {
@@ -145,15 +154,27 @@ class AccountActivationServiceTest {
 		}).verify();
 	}
 
+	@Test
+	void shouldThrowInvitationExceptionWhenMailDeliveryFails() {
+		// given
+		RuntimeException mailFailure = new RuntimeException("smtp failed");
+		doThrow(mailFailure).when(mailService).sendInvitationEmail("teacher@e.com", "plain-token");
+
+		// when
+		AccountInvitationException exception = org.junit.jupiter.api.Assertions.assertThrows(
+				AccountInvitationException.class,
+				() -> accountActivationService.sendInvitationEmail("teacher@e.com", "plain-token"));
+
+		// then
+		assertEquals(AccountInvitationErrorCode.INVITATION_EMAIL_DELIVERY_FAILED, exception.getErrorCode());
+		verify(mailService).sendInvitationEmail("teacher@e.com", "plain-token");
+	}
+
 	// --- activateAccount ---
 
 	@Test
 	void shouldActivateAccountSuccessfully() {
 		// given
-		when(transactionTemplate.execute(any())).thenAnswer(invocation -> {
-			TransactionCallback<?> callback = invocation.getArgument(0);
-			return callback.doInTransaction(mock(TransactionStatus.class));
-		});
 		InvitationToken token = InvitationToken.builder().userId(1).expiresAt(LocalDateTime.now().plusHours(24))
 				.build();
 		User user = User.builder().id(1).email("s@e.com").status(UserStatus.INVITED).build();
@@ -179,10 +200,6 @@ class AccountActivationServiceTest {
 	@Test
 	void shouldRejectActivationWhenUsernameAlreadyTakenByActiveAccount() {
 		// given
-		when(transactionTemplate.execute(any())).thenAnswer(invocation -> {
-			TransactionCallback<?> callback = invocation.getArgument(0);
-			return callback.doInTransaction(mock(TransactionStatus.class));
-		});
 		User activeUser = User.builder().id(2).username("taken").status(UserStatus.ACTIVE).build();
 		when(userRepository.findByUsername("taken")).thenReturn(Optional.of(activeUser));
 
@@ -203,10 +220,6 @@ class AccountActivationServiceTest {
 	@Test
 	void shouldRejectActivationWhenTokenInvalid() {
 		// given
-		when(transactionTemplate.execute(any())).thenAnswer(invocation -> {
-			TransactionCallback<?> callback = invocation.getArgument(0);
-			return callback.doInTransaction(mock(TransactionStatus.class));
-		});
 		when(userRepository.findByUsername("newuser")).thenReturn(Optional.empty());
 		when(invitationTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.empty());
 
@@ -227,10 +240,6 @@ class AccountActivationServiceTest {
 	@Test
 	void shouldRejectActivationWhenAccountAlreadyActive() {
 		// given
-		when(transactionTemplate.execute(any())).thenAnswer(invocation -> {
-			TransactionCallback<?> callback = invocation.getArgument(0);
-			return callback.doInTransaction(mock(TransactionStatus.class));
-		});
 		InvitationToken token = InvitationToken.builder().userId(1).expiresAt(LocalDateTime.now().plusHours(24))
 				.build();
 		User user = User.builder().id(1).email("s@e.com").status(UserStatus.ACTIVE).build();
@@ -269,6 +278,28 @@ class AccountActivationServiceTest {
 		// then
 		StepVerifier.create(result).verifyComplete();
 		verify(mailService).sendInvitationEmail(eq("s@e.com"), anyString());
+	}
+
+	@Test
+	void shouldFailResendInviteWhenMailDeliveryFailsInsideTransaction() {
+		// given
+		User user = User.builder().id(1).email("s@e.com").status(UserStatus.INVITED).build();
+		InvitationToken newToken = InvitationToken.builder().userId(1).expiresAt(LocalDateTime.now().plusHours(72))
+				.build();
+		when(userRepository.findById(1)).thenReturn(Optional.of(user));
+		when(invitationTokenRepository.save(any())).thenReturn(newToken);
+		doThrow(new RuntimeException("smtp failed")).when(mailService).sendInvitationEmail(eq("s@e.com"), anyString());
+
+		// when
+		Mono<Void> result = accountActivationService.resendInvite(1);
+
+		// then
+		StepVerifier.create(result).expectErrorSatisfies(err -> {
+			assertInstanceOf(AccountInvitationException.class, err);
+			assertEquals(AccountInvitationErrorCode.INVITATION_EMAIL_DELIVERY_FAILED,
+					((AccountInvitationException) err).getErrorCode());
+		}).verify();
+		verify(transactionTemplate).execute(any());
 	}
 
 	@Test

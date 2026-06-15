@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.support.WebExchangeBindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.server.MethodNotAllowedException;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
 import pl.freeedu.backend.accountinvitation.exception.AccountInvitationException;
 import pl.freeedu.backend.achievement.exception.AchievementException;
@@ -137,6 +138,21 @@ public class GlobalExceptionHandler {
 		log.warn("MethodNotAllowedException [{} {}]: {}", exchange.getRequest().getMethod(),
 				exchange.getRequest().getPath(), ex.getMessage());
 		return buildProblemDetail(HttpStatus.METHOD_NOT_ALLOWED, "Method Not Allowed", "METHOD_NOT_ALLOWED", exchange);
+	}
+
+	@ExceptionHandler(ResponseStatusException.class)
+	public Mono<ProblemDetail> handleResponseStatusException(ResponseStatusException ex, ServerWebExchange exchange) {
+		HttpStatus status = HttpStatus.valueOf(ex.getStatusCode().value());
+		String code = status.name();
+		String message = ex.getReason() != null ? ex.getReason() : status.getReasonPhrase();
+		if (status.is4xxClientError()) {
+			log.warn("ResponseStatusException [{} {}]: {}", exchange.getRequest().getMethod(),
+					exchange.getRequest().getPath(), message);
+		} else {
+			log.error("ResponseStatusException [{} {}]: {}", exchange.getRequest().getMethod(),
+					exchange.getRequest().getPath(), message, ex);
+		}
+		return buildProblemDetail(status, message, code, exchange);
 	}
 
 	@ExceptionHandler(DataIntegrityViolationException.class)

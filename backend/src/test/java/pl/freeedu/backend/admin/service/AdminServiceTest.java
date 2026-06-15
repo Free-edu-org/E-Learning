@@ -11,6 +11,8 @@ import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 import pl.freeedu.backend.accountinvitation.service.AccountActivationService;
+import pl.freeedu.backend.accountinvitation.exception.AccountInvitationErrorCode;
+import pl.freeedu.backend.accountinvitation.exception.AccountInvitationException;
 import pl.freeedu.backend.admin.dto.*;
 import pl.freeedu.backend.user.dto.UserResponse;
 import pl.freeedu.backend.user.exception.UserErrorCode;
@@ -153,6 +155,31 @@ class AdminServiceTest {
 		}).verify();
 		verify(accountActivationService, never()).createInvitedUser(anyString(), any());
 		verify(accountActivationService, never()).sendInvitationEmail(anyString(), anyString());
+	}
+
+	@Test
+	void shouldFailTeacherInviteWhenInvitationEmailCannotBeDelivered() {
+		// given
+		AdminInviteTeacherRequest req = AdminInviteTeacherRequest.builder().email("t@e.com").build();
+		User savedTeacher = User.builder().id(2).publicId("teacher-pub").email("t@e.com").role(Role.TEACHER)
+				.status(UserStatus.INVITED).build();
+
+		when(userRepository.existsByEmail(req.getEmail())).thenReturn(false);
+		when(accountActivationService.createInvitedUser("t@e.com", Role.TEACHER)).thenReturn("plain-token");
+		when(userRepository.findByEmail("t@e.com")).thenReturn(Optional.of(savedTeacher));
+		doThrow(new AccountInvitationException(AccountInvitationErrorCode.INVITATION_EMAIL_DELIVERY_FAILED))
+				.when(accountActivationService).sendInvitationEmail("t@e.com", "plain-token");
+
+		// when
+		Mono<UserResponse> result = adminService.inviteTeacher(req);
+
+		// then
+		StepVerifier.create(result).expectErrorSatisfies(error -> {
+			assertTrue(error instanceof AccountInvitationException);
+			assertEquals(AccountInvitationErrorCode.INVITATION_EMAIL_DELIVERY_FAILED,
+					((AccountInvitationException) error).getErrorCode());
+		}).verify();
+		verify(userMapper, never()).toUserResponse(any());
 	}
 
 	@Test
