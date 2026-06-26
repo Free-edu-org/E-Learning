@@ -30,7 +30,9 @@ jobs:
       - name: Build and push Backend
         run: |
           docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-backend:${{ github.sha }} -f backend/Dockerfile.prod backend
+          docker tag ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-backend:${{ github.sha }} ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-backend:latest
           docker push ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-backend:${{ github.sha }}
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-backend:latest
 
       - name: Deploy to Azure Container App
         uses: azure/container-apps-deploy-action@v1
@@ -57,7 +59,9 @@ jobs:
       - name: Build and push Frontend
         run: |
           docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-frontend:${{ github.sha }} -f frontend/Dockerfile.prod frontend
+          docker tag ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-frontend:${{ github.sha }} ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-frontend:latest
           docker push ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-frontend:${{ github.sha }}
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-frontend:latest
 
       - name: Deploy to Azure Container App
         uses: azure/container-apps-deploy-action@v1
@@ -84,7 +88,9 @@ jobs:
       - name: Build and push STT Service
         run: |
           docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-stt:${{ github.sha }} -f stt-service/Dockerfile.prod stt-service
+          docker tag ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-stt:${{ github.sha }} ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-stt:latest
           docker push ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-stt:${{ github.sha }}
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/freeedu-stt:latest
 
       - name: Deploy to Azure Container App
         uses: azure/container-apps-deploy-action@v1

@@ -5,22 +5,18 @@ services:
     environment:
       MYSQL_DATABASE: freeedu
       MYSQL_USER: freeedu
-      MYSQL_PASSWORD: prod_password_change_me
-      MYSQL_ROOT_PASSWORD: root_password_change_me
-    ports:
-      - "3306:3306"
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     volumes:
       - mysql_prod_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -pprod_password_change_me --silent"]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p${MYSQL_ROOT_PASSWORD} --silent"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.prod
+    image: freeedu.azurecr.io/freeedu-backend:latest
     container_name: freeedu-backend-prod
     environment:
       SPRING_PROFILES_ACTIVE: prod
@@ -28,47 +24,51 @@ services:
       DB_PORT: 3306
       DB_NAME: freeedu
       DB_USER: freeedu
-      DB_PASSWORD: prod_password_change_me
-      JWT_SECRET_KEY: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
-      JWT_EXPIRATION: 86400000
-      FRONTEND_BASE_URL: http://localhost:5173
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      FRONTEND_BASE_URL: https://${DOMAIN_NAME}
       STT_BASE_URL: http://stt-service:8000
-      CORS_ALLOWED_ORIGINS: http://localhost:5173
+      CORS_ALLOWED_ORIGINS: https://${DOMAIN_NAME}
       MAIL_ENABLED: "false"
-      MAIL_HOST: localhost
-      MAIL_PORT: 587
-      MAIL_USERNAME: dummy
-      MAIL_PASSWORD: dummy
-    ports:
-      - "8080:8080"
     depends_on:
       mysql:
         condition: service_healthy
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile.prod
+    image: freeedu.azurecr.io/freeedu-frontend:latest
     container_name: freeedu-frontend-prod
-    ports:
-      - "5173:5173"
     environment:
-      - VITE_API_BASE_URL=http://backend:8080
+      - BACKEND_URL=http://backend:8080
     depends_on:
       - backend
 
   stt-service:
-    build:
-      context: ./stt-service
-      dockerfile: Dockerfile.prod
+    image: freeedu.azurecr.io/freeedu-stt:latest
     container_name: freeedu-stt-prod
     environment:
       STT_MODEL_SIZE: base
       STT_DEVICE: cpu
       STT_COMPUTE_TYPE: int8
       STT_LANGUAGE: en
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: freeedu-caddy-prod
+    restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "80:80"
+      - "443:443"
+    environment:
+      - DOMAIN_NAME=${DOMAIN_NAME}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
 
 volumes:
   mysql_prod_data:
+  caddy_data:
+  caddy_config:
