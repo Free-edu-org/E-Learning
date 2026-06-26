@@ -80,9 +80,9 @@ fi
 
 # 6. Uruchomienie platformy
 echo "Pobieranie najnowszych obrazów FreeEdu..."
-# UWAGA: Jeśli rejestr (ACR/GHCR) jest prywatny, klient musi się uwierzytelnić (np. za pomocą Deployment Tokena)
+# UWAGA: Jeśli rejestr (GHCR) jest prywatny, serwer VPS musi się uwierzytelnić (np. za pomocą Personal Access Token - PAT)
 # Odkomentuj i uzupełnij poniższą linię, jeśli dostarczasz klientowi dane logowania do pobierania obrazów:
-# docker login freeedu.azurecr.io -u NAZWA_UZYTKOWNIKA -p HASLO_TOKENA
+# docker login ghcr.io -u NAZWA_UZYTKOWNIKA -p HASLO_TOKENA
 
 docker compose -f docker-compose.prod.yml pull
 

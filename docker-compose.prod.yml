@@ -16,7 +16,7 @@ services:
       retries: 5
 
   backend:
-    image: freeedu.azurecr.io/freeedu-backend:latest
+    image: ghcr.io/free-edu-org/freeedu-backend:latest
     container_name: freeedu-backend-prod
     environment:
       SPRING_PROFILES_ACTIVE: prod
@@ -36,7 +36,7 @@ services:
         condition: service_healthy
 
   frontend:
-    image: freeedu.azurecr.io/freeedu-frontend:latest
+    image: ghcr.io/free-edu-org/freeedu-frontend:latest
     container_name: freeedu-frontend-prod
     environment:
       - BACKEND_URL=http://backend:8080
@@ -44,7 +44,7 @@ services:
       - backend
 
   stt-service:
-    image: freeedu.azurecr.io/freeedu-stt:latest
+    image: ghcr.io/free-edu-org/freeedu-stt:latest
     container_name: freeedu-stt-prod
     environment:
       STT_MODEL_SIZE: base

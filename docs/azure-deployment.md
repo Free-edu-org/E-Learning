@@ -5,35 +5,34 @@ Dokument opisuje proces wdrożenia aplikacji FreeEdu na platformę Azure przy u�
 ## 1. Architektura Docelowa
 - **Frontend & Backend & STT**: Azure Container Apps (ACA).
 - **Database**: Azure Database for MySQL (Flexible Server).
-- **Registry**: Azure Container Registry (ACR).
+- **Registry**: GitHub Container Registry (GHCR).
 - **Storage**: Azure Blob Storage (dla uploadów).
 - **Mail**: Zewnętrzny serwer SMTP (np. SendGrid).
 
 ## 2. Kolejność Tworzenia Zasobów
 
 1. **Resource Group**: Wspólna grupa dla wszystkich zasobów.
-2. **Azure Container Registry**: Do przechowywania obrazów Docker.
-3. **Azure Database for MySQL**: Wybrać **Flexible Server** (wspierana wersja **8.0**). Skonfigurować sieć (Allow access to Azure services).
+2. **Azure Database for MySQL**: Wybrać **Flexible Server** (wspierana wersja **8.0**). Skonfigurować sieć (Allow access to Azure services).
 4. **Azure Storage Account**: Kontener dla plików (Blob Storage).
 5. **Azure Container Apps Environment**: Środowisko dla kontenerów.
 
 ## 3. Przygotowanie Obrazów (Docker)
 
 ```bash
-# Logowanie do ACR
-az acr login --name <registry_name>
+# Logowanie do GHCR
+echo $GITHUB_TOKEN | docker login ghcr.io -u <github_username> --password-stdin
 
 # Build i Push Backend
-docker build -t <registry_name>.azurecr.io/freeedu-backend:latest ./backend
-docker push <registry_name>.azurecr.io/freeedu-backend:latest
+docker build -t ghcr.io/free-edu-org/freeedu-backend:latest ./backend
+docker push ghcr.io/free-edu-org/freeedu-backend:latest
 
 # Build i Push Frontend
-docker build -t <registry_name>.azurecr.io/freeedu-frontend:latest ./frontend
-docker push <registry_name>.azurecr.io/freeedu-frontend:latest
+docker build -t ghcr.io/free-edu-org/freeedu-frontend:latest ./frontend
+docker push ghcr.io/free-edu-org/freeedu-frontend:latest
 
 # Build i Push STT
-docker build -t <registry_name>.azurecr.io/freeedu-stt:latest ./stt-service
-docker push <registry_name>.azurecr.io/freeedu-stt:latest
+docker build -t ghcr.io/free-edu-org/freeedu-stt:latest ./stt-service
+docker push ghcr.io/free-edu-org/freeedu-stt:latest
 ```
 
 ## 4. Przykładowa Komenda Wdrożenia (CLI)
@@ -44,7 +43,7 @@ az containerapp create \
   --name freeedu-backend \
   --resource-group <resource_group> \
   --environment <aca_env> \
-  --image <registry_name>.azurecr.io/freeedu-backend:latest \
+  --image ghcr.io/free-edu-org/freeedu-backend:latest \
   --target-port 8080 \
   --ingress external \
   --env-vars \
