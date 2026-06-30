@@ -641,16 +641,11 @@ describe('Tasks API (/api/v1/lessons/{lessonPublicId}/tasks)', () => {
             expect(response.status).toBe(403);
         });
 
-        it('should return 400 when audio file is missing (or 500 if mapping fails)', async () => {
+        it('should return 415 when audio file request is sent without multipart content type', async () => {
             setAuthToken(dedicatedStudentToken);
             const response = await apiClient.post(transcribeUrl(), {});
-            expect([400, 500]).toContain(response.status);
-            if (response.status === 400) {
-                expect(response.data.code).toBe('STT_AUDIO_REQUIRED');
-            } else {
-                // If server mapping throws before TaskException is produced, generic 500 is returned
-                expect(response.data.code).toBe('INTERNAL_SERVER_ERROR');
-            }
+            expect(response.status).toBe(415);
+            expect(response.data.code).toBe('UNSUPPORTED_MEDIA_TYPE');
         });
     });
 });

@@ -7,10 +7,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.web.server.ResponseStatusException;
 import pl.freeedu.backend.auth.exception.AuthErrorCode;
 import pl.freeedu.backend.auth.exception.AuthException;
 import pl.freeedu.backend.emailchange.service.EmailChangeService;
@@ -315,6 +317,22 @@ class UserServiceTest {
 
 		// then
 		StepVerifier.create(result).expectError(UserException.class).verify();
+	}
+
+	@Test
+	void shouldReturnNotFoundWhenAvatarFileDoesNotExist() {
+		// given
+		String missingFileName = "missing-avatar.jpg";
+
+		// when
+		Mono<org.springframework.http.ResponseEntity<org.springframework.core.io.Resource>> result = userService
+				.getAvatarFile(missingFileName);
+
+		// then
+		StepVerifier.create(result).expectErrorSatisfies(error -> {
+			assertTrue(error instanceof ResponseStatusException);
+			assertEquals(HttpStatus.NOT_FOUND, ((ResponseStatusException) error).getStatusCode());
+		}).verify();
 	}
 
 	private static void deleteTestAvatars(String userPublicId) {

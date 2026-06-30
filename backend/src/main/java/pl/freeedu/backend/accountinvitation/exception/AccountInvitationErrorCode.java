@@ -12,7 +12,9 @@ public enum AccountInvitationErrorCode implements ErrorCode {
 							"This account is already active.", HttpStatus.CONFLICT), ACCOUNT_NOT_INVITED(
 									"Account is not in invited state.", HttpStatus.CONFLICT), ACCOUNT_NOT_ACTIVE(
 											"Account is not yet activated. Please check your invitation email.",
-											HttpStatus.UNAUTHORIZED);
+											HttpStatus.UNAUTHORIZED), INVITATION_EMAIL_DELIVERY_FAILED(
+													"Invitation email could not be delivered. Please try again later.",
+													HttpStatus.SERVICE_UNAVAILABLE);
 
 	private final String defaultMessage;
 	private final HttpStatus status;

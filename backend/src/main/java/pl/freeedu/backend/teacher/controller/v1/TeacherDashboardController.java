@@ -144,7 +144,8 @@ public class TeacherDashboardController {
 			@ApiResponse(responseCode = "400", description = "Bad Request"),
 			@ApiResponse(responseCode = "403", description = "Forbidden - requires TEACHER role"),
 			@ApiResponse(responseCode = "404", description = "Group not found"),
-			@ApiResponse(responseCode = "409", description = "Conflict - EMAIL_ALREADY_TAKEN or USERNAME_ALREADY_TAKEN")})
+			@ApiResponse(responseCode = "409", description = "Conflict - EMAIL_ALREADY_TAKEN or USERNAME_ALREADY_TAKEN"),
+			@ApiResponse(responseCode = "503", description = "Service Unavailable - INVITATION_EMAIL_DELIVERY_FAILED")})
 	@PostMapping("/students")
 	@PreAuthorize("hasRole('TEACHER')")
 	@ResponseStatus(HttpStatus.CREATED)
@@ -171,7 +172,8 @@ public class TeacherDashboardController {
 	@ApiResponses(value = {@ApiResponse(responseCode = "204", description = "Invitation resent successfully"),
 			@ApiResponse(responseCode = "403", description = "Forbidden - not the student's teacher"),
 			@ApiResponse(responseCode = "404", description = "Student not found"),
-			@ApiResponse(responseCode = "409", description = "Account is already active")})
+			@ApiResponse(responseCode = "409", description = "Account is already active"),
+			@ApiResponse(responseCode = "503", description = "Service Unavailable - INVITATION_EMAIL_DELIVERY_FAILED")})
 	@PostMapping("/students/{studentPublicId}/resend-invite")
 	@PreAuthorize("hasRole('TEACHER')")
 	@ResponseStatus(HttpStatus.NO_CONTENT)

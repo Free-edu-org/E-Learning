@@ -29,6 +29,8 @@ const ERROR_TRANSLATIONS: Record<string, string> = {
   "Audio file is required": "Plik audio jest wymagany.",
   "Speech-to-text service is unavailable":
     "Usługa rozpoznawania mowy jest chwilowo niedostępna.",
+  "Invitation email could not be delivered. Please try again later.":
+    "Nie udało się dostarczyć wiadomości e-mail z zaproszeniem. Spróbuj ponownie później.",
   "Lesson not found": "Nie znaleziono lekcji.",
   "Lesson result not found": "Nie znaleziono wyniku lekcji.",
   "User group not found": "Nie znaleziono grupy.",
@@ -136,6 +138,8 @@ const ERROR_CODE_TRANSLATIONS: Record<string, string> = {
   USER_NOT_FOUND: "Nie znaleziono użytkownika.",
   EMAIL_ALREADY_TAKEN: "Ten adres email jest już zajęty.",
   USERNAME_ALREADY_TAKEN: "Ta nazwa użytkownika jest już zajęta.",
+  INVITATION_EMAIL_DELIVERY_FAILED:
+    "Nie udało się dostarczyć wiadomości e-mail z zaproszeniem. Spróbuj ponownie później.",
   INVALID_TEACHER_ASSIGNMENT: "Wybrany użytkownik musi mieć rolę nauczyciela.",
   INVALID_STUDENT_ASSIGNMENT: "Wybrany użytkownik musi mieć rolę ucznia.",
   NOT_LESSON_OWNER: "Tylko właściciel lekcji może ją edytować lub usuwać.",

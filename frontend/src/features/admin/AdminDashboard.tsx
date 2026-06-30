@@ -1454,10 +1454,10 @@ export function AdminDashboard() {
         severity: "success",
         message: `Zaproszenie wysłane ponownie na ${user.email}.`,
       });
-    } catch {
+    } catch (error) {
       setPageFeedback({
         severity: "error",
-        message: "Nie udało się wysłać zaproszenia.",
+        message: getErrorMessage(error, "Nie udało się wysłać zaproszenia."),
       });
     }
   };
@@ -4819,8 +4819,7 @@ export function AdminDashboard() {
                                     setUserDraft((current) => ({
                                       ...current,
                                       groupPublicId: event.target.value as
-                                        | string
-                                        | "",
+                                        string | "",
                                     }));
                                   }}
                                   size="small"
