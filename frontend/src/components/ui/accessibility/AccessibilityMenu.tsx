@@ -41,18 +41,16 @@ export function AccessibilityMenu() {
         zIndex: theme.zIndex.modal + 1,
       }}
     >
-      <Button
+      <IconButton
+        aria-label="Otwórz menu dostępności"
         aria-controls={open ? "accessibility-menu" : undefined}
         aria-expanded={open ? "true" : undefined}
         aria-haspopup="menu"
-        startIcon={<AccessibilityIcon />}
-        variant="contained"
         size="small"
         onClick={(event) => setAnchorEl(event.currentTarget)}
         sx={{
-          minHeight: 38,
-          borderRadius: "999px",
-          px: 1.5,
+          width: 38,
+          height: 38,
           color: highContrast ? "#000000" : "primary.contrastText",
           bgcolor: highContrast ? "#facc15" : "primary.main",
           boxShadow: (t) =>
@@ -64,8 +62,8 @@ export function AccessibilityMenu() {
           },
         }}
       >
-        Dostępność
-      </Button>
+        <AccessibilityIcon fontSize="small" />
+      </IconButton>
 
       <Popover
         id="accessibility-menu"

@@ -1,11 +1,5 @@
 export type LessonLabelColor =
-  | "gray"
-  | "red"
-  | "orange"
-  | "yellow"
-  | "green"
-  | "blue"
-  | "purple";
+  "gray" | "red" | "orange" | "yellow" | "green" | "blue" | "purple";
 
 export interface LessonLabelColorOption {
   value: LessonLabelColor;
