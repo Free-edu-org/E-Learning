@@ -391,8 +391,7 @@ export function StudentProgressView() {
                         labelStyle={{ color: "#cbd5e1", fontWeight: 600 }}
                         formatter={(value: unknown, name: unknown, item) => {
                           const entry = item.payload as
-                            | NormalizedSkill
-                            | undefined;
+                            NormalizedSkill | undefined;
                           const pct =
                             typeof value === "number" ? `${value}%` : "";
                           if (name === "Dobrze") {

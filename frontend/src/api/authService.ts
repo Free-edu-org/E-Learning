@@ -19,10 +19,7 @@ export interface MessageResponse {
 }
 
 export type EmailVerificationTokenState =
-  | "VALID"
-  | "EXPIRED"
-  | "USED"
-  | "ALREADY_VERIFIED";
+  "VALID" | "EXPIRED" | "USED" | "ALREADY_VERIFIED";
 
 export interface ResetPasswordRequest {
   token: string;

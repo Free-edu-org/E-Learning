@@ -1,12 +1,7 @@
 import { alpha, type Theme } from "@mui/material/styles";
 
 export type AchievementPaletteColor =
-  | "warning"
-  | "success"
-  | "info"
-  | "primary"
-  | "secondary"
-  | "error";
+  "warning" | "success" | "info" | "primary" | "secondary" | "error";
 
 const COLOR_MAP: Record<string, AchievementPaletteColor> = {
   warning: "warning",
