@@ -4819,8 +4819,7 @@ export function AdminDashboard() {
                                     setUserDraft((current) => ({
                                       ...current,
                                       groupPublicId: event.target.value as
-                                        | string
-                                        | "",
+                                        string | "",
                                     }));
                                   }}
                                   size="small"

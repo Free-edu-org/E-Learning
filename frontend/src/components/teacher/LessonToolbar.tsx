@@ -30,8 +30,7 @@ import {
 
 export const NO_LABEL_COLOR_FILTER = "none" as const;
 export type LessonLabelColorFilter =
-  | LessonLabelColor
-  | typeof NO_LABEL_COLOR_FILTER;
+  LessonLabelColor | typeof NO_LABEL_COLOR_FILTER;
 
 const toolbarFieldSx: SxProps<Theme> = {
   minWidth: 180,
