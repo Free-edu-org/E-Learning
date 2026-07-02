@@ -6,7 +6,7 @@ Najprostszym i zalecanym sposobem uruchomienia całego środowiska (baza danych,
 ## Wymagania wstępne
 - Zainstalowany **Docker** oraz **Docker Compose** (np. aplikacja Docker Desktop w systemie Windows/macOS lub pakiety docker-ce i docker-compose-plugin w systemie Linux).
 - Połączenie z internetem (do pobrania podstawowych obrazów Dockera i zależności podczas budowania).
-- Porty na komputerze hosta, które nie mogą być zajęte: `80` (frontend), `8080` (backend API), `3306` (MySQL), `8000` (STT Service).
+- Porty na komputerze hosta, które nie mogą być zajęte: `5173` (frontend), `8080` (backend API), `3306` (MySQL), `8000` (STT Service).
 
 ## 1. Przygotowanie zmiennych środowiskowych
 
