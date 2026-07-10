@@ -94,10 +94,10 @@ function formatDuration(seconds: number | null | undefined): string {
 
 function buildDistributionData(results: LessonStatsStudentResult[]) {
   const buckets = [
-    { range: "0-20%", min: 0, max: 20, count: 0 },
-    { range: "20-40%", min: 20, max: 40, count: 0 },
-    { range: "40-60%", min: 40, max: 60, count: 0 },
-    { range: "60-80%", min: 60, max: 80, count: 0 },
+    { range: "0-19%", min: 0, max: 20, count: 0 },
+    { range: "20-39%", min: 20, max: 40, count: 0 },
+    { range: "40-59%", min: 40, max: 60, count: 0 },
+    { range: "60-79%", min: 60, max: 80, count: 0 },
     { range: "80-100%", min: 80, max: 101, count: 0 },
   ];
   for (const r of results) {
