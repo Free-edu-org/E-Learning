@@ -9,7 +9,7 @@ Route: `/teacher/lessons/:lessonPublicId/stats`
 - **Nagłówek** — przycisk Powrót, tytuł "Wyniki lekcji", podtytuł z nazwą lekcji
 - **Karty statystyk** — Średni wynik (%), Uczniowie którzy ukończyli (liczba), Najlepszy wynik (%)
 - **Wykres "Wyniki uczniów"** — słupki per uczeń, posortowane malejąco (fioletowe, recharts)
-- **Wykres "Rozkład wyników"** — liczba uczniów w przedziałach 0-20%, 20-40%, 40-60%, 60-80%, 80-100% (zielone)
+- **Wykres "Rozkład wyników"** — liczba uczniów w przedziałach 0-19%, 20-39%, 40-59%, 60-79%, 80-100% (zielone)
 - **Tabela szczegółowych wyników** — imię ucznia, data ukończenia, Punkty (X/Y), Procent (kolor zależny od wyniku), przycisk Zobacz profil
 
 ## Dane
